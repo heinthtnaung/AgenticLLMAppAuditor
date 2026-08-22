@@ -1,0 +1,8 @@
+# --- Phase 1: Environment & LLM Surface Extractor ---
+# Python 3.10+ required (uses modern type hints like list[Path]).
+
+# Offline model client (Task 1.2) — talks to your local Ollama server.
+ollama>=0.3.0
+
+# Testing (Task 1.7)
+pytest>=8.0.0
