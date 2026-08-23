@@ -13,42 +13,12 @@ Phase 3, but detection logic in this phase is deterministic code.
 
 ---
 
-## Coding rules (apply to every task below)
+## Coding rules
 
-These are binding for all Phase 1 code.
-
-1. **Keep it simple.** Prefer the most obvious solution. If a task feels
-   complicated, split it into smaller functions rather than writing clever code.
-2. **Avoid deep nesting.** No more than 2 levels of nested loops or
-   conditionals. Use early `return`/`continue` (guard clauses) and helper
-   functions to keep code flat.
-3. **Small functions, one job each.** A function should do one thing and be
-   short enough to read without scrolling (aim < 30 lines).
-4. **Clear names.** Descriptive names for functions and variables
-   (`extract_tool_calls`, not `etc` or `process`). No single-letter names
-   except short loop counters.
-5. **Type hints everywhere.** Every function has typed parameters and return
-   type. Use `dataclass` for structured data.
-6. **Docstrings.** Every module and public function has a one-line docstring
-   saying what it does.
-7. **No premature optimisation.** Write clear code first. Only optimise if a
-   measured problem exists.
-8. **Fail clearly.** Validate inputs; raise explicit errors with useful
-   messages instead of failing silently or returning `None` ambiguously.
-9. **Pure functions where possible.** Prefer functions that take input and
-   return output without hidden side effects. Keep file I/O at the edges.
-10. **Stable JSON output.** All artifacts are JSON with a fixed schema.
-    Do not change a schema without updating everything that reads it.
-11. **Standard library first.** Use the Python standard library (especially
-    `ast`, `pathlib`, `json`) before reaching for third-party packages.
-12. **One responsibility per file.** Keep each module focused (loader,
-    extractor, model client, etc. live in separate files).
-13. **Constants, not magic values.** Named constants for skip-lists, size
-    limits, and file extensions — defined once at the top of a module.
-14. **Write a test as you go.** Each task has a check against the demo apps
-    before it is considered done.
-15. **No dead code / no TODO left behind.** Remove commented-out code before
-    marking a task complete.
+Every task below is held to the binding rules in
+[`CODING_RULES.md`](./CODING_RULES.md). They are not repeated here: this plan
+used to carry its own copy, and the two lists had already drifted to the point
+of numbering different rules as 11.
 
 ---
 
@@ -231,6 +201,37 @@ found". See [`SCHEMAS.md`](./SCHEMAS.md).
 
 ---
 
+## Task 1.11 — Audit a repository straight from a URL
+
+So the tool can be pointed at any project, not only one already on disk.
+
+**Do:**
+- Write `src/repo_fetcher.py`, one job: clone a URL, pin the commit, write a
+  manifest. `src/main.py` accepts a URL wherever it accepts a path.
+- Downloads go to `workspace/`, which is gitignored. `corpus/` stays the
+  pinned, ground-truthed set the evaluation is scored against.
+- The manifest is written **beside** the checkout, never inside it: the
+  auditor does not write to the code it audits.
+
+**Security, because the input is now untrusted:**
+- Only `https://` and `git@` are accepted. `http://` has no transport
+  integrity, and `ext::` runs a command by design.
+- The directory name derived from the URL is validated. Without that,
+  `https://host/org/..` resolves outside the download directory, and with
+  `--force` the tool would delete it.
+- Submodules are not recursed: one can point at a host the user never named.
+- Symlinks in a downloaded repository are skipped, or their targets would be
+  read and could reach the report.
+- git runs non-interactively, so a private repository fails with a message
+  instead of hanging on an invisible credential prompt.
+- The code is only ever parsed. Nothing is imported, installed, or run.
+
+**Done when:** `python src/main.py <url>` downloads, extracts, and writes
+`artifacts/<app>/surfaces.json`; a local path still makes no network call; and
+every fetcher test passes offline.
+
+---
+
 ## Phase 1 exit checklist
 
 - [x] Repo scaffolded, installs cleanly, demo apps under `corpus/`.
@@ -245,6 +246,7 @@ found". See [`SCHEMAS.md`](./SCHEMAS.md).
       and awaiting human sign-off (`TODO.md` B3).
 - [x] Tests pass; code follows the coding rules above.
 - [x] Language registry, and a JavaScript/TypeScript backend (tasks 1.8-1.10).
+- [x] A repository can be audited straight from a URL (task 1.11).
 
 The finished flow is walked through step by step in [`FLOW.md`](./FLOW.md).
 

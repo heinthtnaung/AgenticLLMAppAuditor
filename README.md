@@ -100,6 +100,7 @@ contains a `ground_truth.json`.
 
 ## Documentation
 
+- [`docs/CODING_RULES.md`](docs/CODING_RULES.md) — the standard this code is held to
 - [`docs/FLOW.md`](docs/FLOW.md) — how the system works, step by step
 - [`docs/TODO.md`](docs/TODO.md) — roadmap, current progress, open blockers
 - [`docs/PHASE_1_PLAN.md`](docs/PHASE_1_PLAN.md) — Phase 1 task breakdown
