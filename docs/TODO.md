@@ -95,6 +95,9 @@ Phase 1 detail, per `docs/PHASE_1_PLAN.md`:
 
 ## Phase 2 — SBOM/AIBOM + advisory ingestion & mapping
 
+See [`PHASE_2_PLAN.md`](./PHASE_2_PLAN.md) for the task breakdown and
+done-criteria.
+
 - [ ] Generate SBOMs for each test app via Syft/Trivy (CycloneDX/SPDX JSON)
 - [ ] Define the lightweight AIBOM JSON schema (models, datasets, tools,
       agents)

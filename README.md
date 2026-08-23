@@ -183,6 +183,7 @@ leaves the app **silently ungraded**, so the layout matters.
 - [`docs/FLOW.md`](docs/FLOW.md) — how the system works, step by step
 - [`docs/TODO.md`](docs/TODO.md) — roadmap, current progress, open blockers
 - [`docs/PHASE_1_PLAN.md`](docs/PHASE_1_PLAN.md) — Phase 1 task breakdown
+- [`docs/PHASE_2_PLAN.md`](docs/PHASE_2_PLAN.md) — Phase 2 task breakdown
 - [`docs/SCHEMAS.md`](docs/SCHEMAS.md) — the JSON contracts between phases
 
 ## Licence
