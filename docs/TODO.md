@@ -21,15 +21,21 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done
     - https://github.com/13o-bbr-bbq/Broken_LLM_Integration_App
 - [~] Select + verify 2–3 open-source LangGraph/LangChain apps (checklist and
       manifest template ready; live verification done by hand) — **two of the
-      three are JavaScript/TypeScript and cannot be analysed**, see B5
-    - https://github.com/langchain-ai/agent-chat-ui
-    - https://github.com/langchain-ai/langgraphjs-studio-starter
+      three are JavaScript/TypeScript**; the auditor now reads those too, and
+      one has been adopted as a fixture (see below)
+    - ~~https://github.com/langchain-ai/agent-chat-ui~~ — **dropped**: 56 source
+      files yielding a single generic `fetch` surface. It is a frontend that
+      talks to a server over `langgraph-sdk`, so it has no prompts, agents, or
+      tools to audit. No parser could change that.
+    - https://github.com/langchain-ai/langgraphjs-studio-starter — adopted as
+      `corpus/oss-app-langgraphjs-starter` (TypeScript, 5 surfaces, no planted
+      vulnerabilities, so it measures false positives on clean code)
     - https://github.com/langchain-ai/open_deep_research
 - [~] Manually establish ground truth for the demo apps — drafted as
       `corpus/<app>/ground_truth.json`, 10 findings, `verified: false`.
       Needs the human second-person check. See B3.
 - [ ] Manually establish ground truth for the open-source apps (read code,
-      list surfaces/issues, second-person check) — see B5 first
+      list surfaces/issues, second-person check)
 
 ---
 
@@ -59,9 +65,14 @@ Phase 1 detail, per `docs/PHASE_1_PLAN.md`:
 - [x] Settings read from the environment (`src/config.py` + `.env.example`);
       the test corpus is discovered on disk instead of listed in code
 - [x] System flow documented step by step in `docs/FLOW.md`
-- [~] 1.7 Validation — 167 tests passing (166 without a local model server), all 9 code-linked ground-truth
-      surfaces found; the by-hand cross-check of both `ground_truth.json`
-      files is a human task. See B3.
+- [x] 1.8 Language registry (`src/languages.py`) — extension to language and
+      to tree-sitter grammar, kept as two separate ideas
+- [x] 1.9 JavaScript/TypeScript backend (`src/detectors_js.py`,
+      `src/extractor_js.py`, `src/ts_utils.py`) via tree-sitter
+- [x] 1.10 `oss-app-langgraphjs-starter` added as the clean-code fixture
+- [~] 1.7 Validation — the suite is green, all 9 code-linked ground-truth
+      surfaces found; the by-hand cross-check of every `ground_truth.json`
+      is a human task. See B3a/B3b/B3c.
 
 ---
 
@@ -81,7 +92,12 @@ Phase 1 detail, per `docs/PHASE_1_PLAN.md`:
 - [ ] Detector precision follow-ups deferred from Phase 1: distinguish read
       from write in `open()`, drop message classes (`SystemMessage`,
       `HumanMessage`, `MessagesPlaceholder`) from `PROMPT_CLASSES` if they
-      prove noisy on the open-source apps, and decide whether `src/` becomes
+      prove noisy on the open-source apps; the JavaScript side has the same
+      `load`/`query`/`execute` breadth problem, no HTTP-route data source
+      (Express/Next handlers are the main untrusted input in JS apps), and 29
+      framework names no fixture exercises; one malformed `.ts` aborts a whole
+      repo scan, which JS repos will hit more often than Python ones; and
+      decide whether `src/` becomes
       a real package (it is currently flat, with `tests/conftest.py` adding it
       to `sys.path`). Also: a non-UTF-8 source file with no PEP 263 cookie now
       aborts the whole repo scan rather than being scanned approximately.
@@ -126,9 +142,10 @@ resolved; do not tick the task above until its blocker is gone.
 
 | # | Blocker | Who / what unblocks it |
 |---|---|---|
-| B3 | `corpus/*/ground_truth.json` is **AI-drafted and unverified** (`verified: false`, `source: "ai_drafted"`). Phase 4's precision/recall is graded against this file, so it is not thesis-grade until a human confirms it. | A human reads both apps and flips `verified`, `verified_by`, `verified_date`. Note the drafted count is **10** findings, not the 9 recorded in Phase 0 above — confirm which is right. |
+| B3a | The two Python demo apps' `ground_truth.json` are **AI-drafted and unverified** (`verified: false`). Phase 4's precision/recall is graded against them, so no number is thesis-grade until a human confirms. | A human reads both apps and flips `verified`, `verified_by`, `verified_date`. Note the drafted count is **10** findings, not the 9 recorded in Phase 0 — confirm which is right. **Blocks Phase 4.** |
+| B3b | `oss-app-langgraphjs-starter`'s ground truth is also AI-drafted. Its 5 surfaces were identified by reading `src/agent.ts` before running the extractor, so the exhaustiveness claim is independent — but still unverified. | Same human check. **Must not block Phase 2.** |
+| B3c | Neither Python fixture has an **exhaustive** `expected_surfaces` list, so surface *precision* cannot be measured on them (only recall). Deriving the list from the extractor's own output would make precision trivially 100% and the metric worthless. | A human enumerates every surface in both apps by reading the code, then sets `expected_surfaces_complete: true`. |
 | B4 | The Phase 1 line **"Stand up the LangGraph skeleton"** duplicates Phase 3's "agentic audit workflow (planner picks next probe over shared state)". Building it now would break rule 15. | Decide whether to move the line to Phase 3. Not implemented either way. |
-| B5 | Two of the three selected open-source apps — **`agent-chat-ui` and `langgraphjs-studio-starter` — are JavaScript/TypeScript**. The extractor is Python-only by design, so it cannot analyse them. | Phase 0 corpus decision: replace them with Python LangGraph apps, or narrow the evaluation to `open_deep_research`. Do not add a JS parser. |
 | B6 | The **exact OWASP risk subset is still unsigned** (Phase 0, line 1). Scope can creep until it is. | Sign off the 3–4 risks. |
 | B7 | **Phase owners are unassigned** across Hein / Bing Hong / JW. | Agree the split. |
 

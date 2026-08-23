@@ -1,11 +1,13 @@
-"""Task 1.7: every LLM surface named in a demo app's ground truth must be extracted."""
+"""Task 1.7: every LLM surface named in a corpus app's ground truth must be extracted."""
 
 import pytest
-from conftest import CORPUS_DIR, DEMO_APPS, ground_truth
-from extractor import extract_file, extract_repo, parse_file
+from conftest import CORPUS_APPS, CORPUS_DIR, ground_truth
+from extractor import extract_file, extract_repo
+from extractor_js import parse_source
+from extractor_python import parse_file
 from surface import SURFACE_KINDS, surfaces_to_json
 
-# Named explicitly: DEMO_APPS is discovered on disk, so its order is not a contract.
+# Named explicitly: CORPUS_APPS is discovered on disk, so its order is not a contract.
 SUPPORT_AGENT_APP = "vuln-app-1-support-agent"
 
 # A finding's line may point at any line of the construct, so allow a small window.
@@ -19,9 +21,9 @@ def _surface_findings(app: str) -> list[dict]:
 
 
 def _expected_cases() -> list:
-    """Build one pytest case per ground-truth surface across both demo apps."""
+    """Build one pytest case per ground-truth finding that names a surface."""
     cases = []
-    for app in DEMO_APPS:
+    for app in CORPUS_APPS:
         cases.extend(pytest.param(app, f, id=f["id"]) for f in _surface_findings(app))
     return cases
 
@@ -37,8 +39,8 @@ def _line_window(finding: dict) -> tuple[int, int]:
 
 @pytest.fixture(scope="module")
 def extracted() -> dict:
-    """Extract both demo apps once and share the result across the tests."""
-    return {app: extract_repo(str(CORPUS_DIR / app)) for app in DEMO_APPS}
+    """Extract every corpus app once and share the result across the tests."""
+    return {app: extract_repo(str(CORPUS_DIR / app)) for app in CORPUS_APPS}
 
 
 @pytest.mark.parametrize("app, finding", EXPECTED_SURFACE_CASES)
@@ -78,7 +80,7 @@ def test_ground_truth_surface_name_matches(extracted: dict, app: str, finding: d
     )
 
 
-@pytest.mark.parametrize("app", DEMO_APPS)
+@pytest.mark.parametrize("app", CORPUS_APPS)
 def test_extract_repo_returns_repo_relative_paths(extracted: dict, app: str) -> None:
     """Extracted files are repo-relative posix paths, so output is machine-independent."""
     files = {surface.file for surface in extracted[app]}
@@ -86,7 +88,7 @@ def test_extract_repo_returns_repo_relative_paths(extracted: dict, app: str) -> 
     assert not [f for f in files if f.startswith("/") or "\\" in f]
 
 
-@pytest.mark.parametrize("app", DEMO_APPS)
+@pytest.mark.parametrize("app", CORPUS_APPS)
 def test_extract_repo_uses_only_known_kinds(extracted: dict, app: str) -> None:
     """Every extracted surface carries one of the four declared kinds."""
     kinds = {surface.kind for surface in extracted[app]}
@@ -95,12 +97,12 @@ def test_extract_repo_uses_only_known_kinds(extracted: dict, app: str) -> None:
 
 def test_support_agent_finds_all_four_kinds(extracted: dict) -> None:
     """Demo app 1 exercises all four detectors, not just one."""
-    kinds = {surface.kind for surface in extracted["vuln-app-1-support-agent"]}
+    kinds = {surface.kind for surface in extracted[SUPPORT_AGENT_APP]}
     assert kinds == set(SURFACE_KINDS)
 
 
-def test_extract_repo_on_repo_without_python_returns_empty(tmp_path) -> None:
-    """A repository with no Python files yields no surfaces rather than an error."""
+def test_extract_repo_on_repo_without_source_returns_empty(tmp_path) -> None:
+    """A repository with no source files yields no surfaces rather than an error."""
     (tmp_path / "README.md").write_text("no code here\n", encoding="utf-8")
     assert extract_repo(str(tmp_path)) == []
 
@@ -114,11 +116,19 @@ def test_extract_file_uses_the_given_label(tmp_path) -> None:
 
 
 def test_parse_file_names_the_file_with_broken_syntax(tmp_path) -> None:
-    """An unparsable file raises a SyntaxError naming the file and line."""
+    """An unparsable Python file raises a SyntaxError naming the file and line."""
     broken = tmp_path / "broken.py"
     broken.write_text("def oops(:\n", encoding="utf-8")
     with pytest.raises(SyntaxError, match="broken.py"):
         parse_file(broken)
+
+
+def test_parse_source_names_the_file_with_broken_typescript(tmp_path) -> None:
+    """A malformed TypeScript file raises an error naming the file, never zero surfaces."""
+    broken = tmp_path / "broken.ts"
+    broken.write_text("function oops( {\n", encoding="utf-8")
+    with pytest.raises(SyntaxError, match="broken.ts"):
+        parse_source(broken.read_bytes(), broken)
 
 
 def test_extract_file_requires_a_file_label() -> None:

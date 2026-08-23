@@ -2,6 +2,9 @@
 __pycache__/
 *.pyc
 
+# JavaScript (corpus fixtures ship a lockfile, never installed packages)
+node_modules/
+
 # Virtual environment (this project uses exactly one: .venv)
 .venv/
 

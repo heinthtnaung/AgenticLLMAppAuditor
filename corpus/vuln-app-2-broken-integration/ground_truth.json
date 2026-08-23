@@ -1,5 +1,49 @@
 {
   "app": "vuln-app-2-broken-integration",
+  "expected_surface_count": 4,
+  "expected_surfaces": [
+    {
+      "code_anchor": "prompt = PromptTemplate(template=prompt_leaking_lv1_template",
+      "file": "chatapp/backend/app/llm_agent.py",
+      "id": "SURF-01",
+      "kind": "PROMPT_TEMPLATE",
+      "line": 21,
+      "line_end": null,
+      "module": "langchain.prompts",
+      "name": "PromptTemplate"
+    },
+    {
+      "code_anchor": "docs = loader.load()",
+      "file": "chatapp/backend/app/llm_agent.py",
+      "id": "SURF-02",
+      "kind": "DATA_SOURCE",
+      "line": 148,
+      "line_end": null,
+      "module": "",
+      "name": "loader.load"
+    },
+    {
+      "code_anchor": "return SQLDatabaseChain.from_llm(",
+      "file": "chatapp/backend/app/llm_db_chain.py",
+      "id": "SURF-03",
+      "kind": "AGENT_DEF",
+      "line": 11,
+      "line_end": null,
+      "module": "langchain_experimental.sql",
+      "name": "SQLDatabaseChain.from_llm"
+    },
+    {
+      "code_anchor": "pal_chain = PALChain(",
+      "file": "chatapp/backend/app/llm_shell_chain.py",
+      "id": "SURF-04",
+      "kind": "AGENT_DEF",
+      "line": 30,
+      "line_end": null,
+      "module": "langchain_experimental.pal_chain.base",
+      "name": "PALChain"
+    }
+  ],
+  "expected_surfaces_complete": false,
   "finding_count": 5,
   "findings": [
     {
@@ -78,7 +122,8 @@
       "title": "langchain_experimental pinned and used for code-executing chains"
     }
   ],
-  "schema_version": 1,
+  "findings_complete": false,
+  "schema_version": 2,
   "source": "ai_drafted",
   "upstream_commit": "fb42c727b644a4f36ebd3f5ea47044e12aa8a6a9",
   "verified": false,

@@ -10,8 +10,11 @@ CORPUS_DIR = REPO_ROOT / "corpus"
 
 GROUND_TRUTH_NAME = "ground_truth.json"
 
+# The ground_truth.json schema this suite knows how to read.
+GROUND_TRUTH_SCHEMA_VERSION = 2
 
-def discover_demo_apps(corpus_dir: Path = CORPUS_DIR) -> tuple[str, ...]:
+
+def discover_corpus_apps(corpus_dir: Path = CORPUS_DIR) -> tuple[str, ...]:
     """Find every corpus app that ships a ground_truth.json, so adding one needs no edit here."""
     apps = sorted(path.parent.name for path in corpus_dir.glob(f"*/{GROUND_TRUTH_NAME}"))
     if not apps:
@@ -22,8 +25,9 @@ def discover_demo_apps(corpus_dir: Path = CORPUS_DIR) -> tuple[str, ...]:
     return tuple(apps)
 
 
-# The deliberately vulnerable demo apps used as grading fixtures, found on disk.
-DEMO_APPS = discover_demo_apps()
+# Every audited fixture found on disk: the vulnerable demo apps and the clean
+# open-source template used to measure false positives.
+CORPUS_APPS = discover_corpus_apps()
 
 # src/ is a plain folder of modules, not a package, so it must be importable.
 if str(SRC_DIR) not in sys.path:
@@ -36,10 +40,10 @@ def read_json(path: Path) -> dict:
 
 
 def ground_truth(app: str) -> dict:
-    """Return a demo app's ground_truth.json, the grading key for that app."""
+    """Return a corpus app's ground_truth.json, the grading key for that app."""
     return read_json(CORPUS_DIR / app / "ground_truth.json")
 
 
 def manifest(app: str) -> dict:
-    """Return a demo app's MANIFEST.json, which records its upstream provenance."""
+    """Return a corpus app's MANIFEST.json, which records its upstream provenance."""
     return read_json(CORPUS_DIR / app / "MANIFEST.json")

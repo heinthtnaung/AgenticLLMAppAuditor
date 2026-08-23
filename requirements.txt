@@ -1,10 +1,21 @@
 # --- Phase 1: Environment & LLM surface extractor ---
 # Python 3.10+ required (uses modern type hints like list[Path]).
 #
-# The auditor itself needs no third-party packages: the extractor is built on
-# ast, pathlib and json, and src/model_client.py talks to the local Ollama
-# server over urllib. Ollama is installed as a SERVER, not from here:
+# The auditor analyses Python with the standard library's own `ast` module.
+# There is no JavaScript parser in the standard library, so tree-sitter is the
+# one exception to the stdlib-first rule. It parses locally, with no network
+# access, so the offline boundary is unaffected.
+#
+# Versions are pinned exactly, not with >=: a grammar update renames node
+# types, which would silently change surfaces.json -- the artifact Phase 4's
+# precision and recall are computed from.
+tree-sitter==0.26.0
+tree-sitter-javascript==0.25.0
+tree-sitter-typescript==0.23.2
+
+# Ollama is installed as a SERVER, not from here. src/model_client.py talks to
+# it over urllib:
 #   ollama pull qwen2.5-coder:7b-instruct
 
-# Testing (Task 1.7)
+# Testing
 pytest>=8.0.0

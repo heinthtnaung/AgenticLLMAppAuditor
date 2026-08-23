@@ -14,7 +14,7 @@ OUTPUT_NAME = "surfaces.json"
 
 def build_parser() -> argparse.ArgumentParser:
     """Describe the command line arguments."""
-    parser = argparse.ArgumentParser(description="Extract the LLM surfaces of a Python repository.")
+    parser = argparse.ArgumentParser(description="Extract the LLM surfaces of a repository.")
     parser.add_argument("repo_path", help="path to the repository to analyse")
     parser.add_argument(
         "--artifacts-dir",

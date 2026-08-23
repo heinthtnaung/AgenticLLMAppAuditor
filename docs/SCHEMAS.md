@@ -23,7 +23,7 @@ how consumers find the matching `corpus/<app>/ground_truth.json`.
 
 | Field | Type | Required | Meaning |
 |---|---|---|---|
-| `schema_version` | int | yes | Currently `1`. |
+| `schema_version` | int | yes | Currently `2`. |
 | `surface_count` | int | yes | `len(surfaces)`, so a reader can sanity-check at a glance. |
 | `surfaces` | list | yes | Sorted by `(file, line, kind, name)`. May be empty. |
 
@@ -41,7 +41,23 @@ Each entry in `surfaces`:
 | `file` | str | yes | Repo-relative POSIX path. |
 | `line` | int | yes | `node.lineno`, 1 or greater. |
 | `detail` | str | yes | Short human-readable note. **Descriptive only — not part of identity.** |
-| `module` | str | yes (may be `""`) | Module the construct was imported from, e.g. `langchain_experimental.sql`. This is Phase 2's join key to an SBOM component. `""` when it cannot be resolved from the file's imports. |
+| `language` | str | yes | `python`, `javascript`, or `typescript`. Says which ecosystem's rules apply to `module`, so a consumer never has to re-derive it from the file extension. |
+| `module` | str | yes (may be `""`) | **The import specifier exactly as the source wrote it** — a dotted path in Python (`langchain_experimental.sql`), an npm or builtin specifier in JS/TS (`@langchain/langgraph/prebuilt`, `node:fs/promises`). `""` for a relative import, which is the app's own code and has no SBOM component, and for a construct with no backing import. |
+
+### Joining `module` to a package (Phase 2's job)
+
+Phase 1 stores the specifier verbatim and knows nothing about npm or PyPI —
+that is what keeps adding a third language cheap. Phase 2 applies the
+ecosystem's package-root rule:
+
+| `language` | Rule | Example |
+|---|---|---|
+| `javascript`, `typescript` | scoped (`@…`): first **two** segments; otherwise the first | `@langchain/community/tools/tavily_search` → `@langchain/community` |
+| `python` | first dotted segment, then a distribution lookup | `langchain_experimental.sql` → `langchain-experimental` |
+
+Truncating in Phase 1 would be lossy and irreversible, and the subpath is
+itself a risk signal: `langchain_experimental.sql` is the dangerous submodule,
+`langchain` is not.
 
 **Identity is `(file, line, kind, name)`.** Two records matching on those four
 are the same surface even if `detail` differs, and are collapsed by
@@ -56,7 +72,7 @@ and by the Phase 4 scorer. This file is committed: the grading key is evidence.
 
 | Field | Type | Required | Meaning |
 |---|---|---|---|
-| `schema_version` | int | yes | Currently `1`. |
+| `schema_version` | int | yes | Currently `2`. |
 | `app` | str | yes | Must equal the corpus directory name and `MANIFEST.json`'s `name`. |
 | `upstream_commit` | str | yes | The commit the line numbers are valid against. Must equal `MANIFEST.json`'s `upstream_commit`. |
 | `source` | str | yes | `ai_drafted`, `upstream_docs`, or `manual_review`. |
@@ -64,6 +80,10 @@ and by the Phase 4 scorer. This file is committed: the grading key is evidence.
 | `verified_by` | str \| null | yes | Who verified it; `null` while unverified. |
 | `verified_date` | str \| null | yes | `YYYY-MM-DD`; `null` while unverified. |
 | `finding_count` | int | yes | `len(findings)`. |
+| `findings_complete` | bool | yes | `true` = the app is asserted to contain no other findings, so anything else reported is a false positive. `false` = recall only. |
+| `expected_surfaces` | list | yes | Surfaces the extractor must find, independent of any finding. May be empty. |
+| `expected_surface_count` | int | yes | `len(expected_surfaces)`. |
+| `expected_surfaces_complete` | bool | yes | `true` = this is **every** surface in the app, so an extra extracted surface is a false positive. `false` = recall only. |
 | `findings` | list | yes | Sorted by `(file, line, id)`. |
 
 Each entry in `findings`:
@@ -90,9 +110,37 @@ surface's line falls within `[line, (line_end or line) + LINE_TOLERANCE]` with
 `LINE_TOLERANCE = 3`. Exact line equality is wrong here: a detector may
 legitimately report a decorator line where a human noted the `def`.
 
-**Known limitation, to be stated in the write-up:** because surfaces are only
-referenced *from findings*, Task 1.7 measures recall of finding-linked
-surfaces, not exhaustive surface recall.
+Each `expected_surfaces` record mirrors a `Surface`: `id` (`SURF-01`, never
+renumbered), `kind`, `name`, `file`, `line`, `line_end`, `code_anchor`, and
+`module`. It deliberately carries **no** `owasp_id` or `description` — a
+surface is not a vulnerability, and adding risk vocabulary here is exactly what
+would poison the grading key.
+
+**A clean app is a real result.** `finding_count: 0` with
+`findings_complete: true` means "asserted clean", so recall is *undefined*, not
+0% — a scorer must print `n/a`. Every finding reported against such an app is a
+false positive. This is the only place the write-up can honestly claim a
+false-positive rate.
+
+**Known limitation, to be stated in the write-up:** exhaustiveness is only
+claimed where `expected_surfaces_complete` is `true`. Today that is the
+TypeScript fixture alone, whose surfaces were enumerated by reading the source
+before the extractor was run. The two Python fixtures are recall-only: an
+exhaustive list derived from the tool's own output would make precision
+trivially 100% and the metric worthless (`TODO.md` B3c).
+
+---
+
+## `corpus/<app>/extracted_baseline.json` — regression protection only
+
+A snapshot of what the extractor produces today, generated from its own output.
+A test asserts the current run still matches, so a change that silently drops
+or adds surfaces fails loudly.
+
+**It is not ground truth and the Phase 4 scorer must never read it.** Because it
+is tool-derived, measuring the tool against it would report perfect accuracy by
+construction. It carries `"source": "tool_derived"` and a note saying exactly
+that, and a test asserts the marker is present.
 
 ---
 

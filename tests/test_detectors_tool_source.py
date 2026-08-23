@@ -57,3 +57,16 @@ def test_route_handlers_are_data_sources_with_readable_detail() -> None:
     found = {s.name: s.detail for s in find_data_sources(parse(BOTH_ROUTES_SOURCE), "api.py")}
     assert found["flask_handler"] == "http route input"
     assert found["fastapi_handler"] == "http post route input"
+
+
+RELATIVE_IMPORT_SOURCE = """
+from .settings import Tool
+
+lookup = Tool(name="GetUser", func=None)
+"""
+
+
+def test_relative_import_records_no_module() -> None:
+    """First-party code is not a package, so a relative import must record no module."""
+    surface = only(find_tool_calls(parse(RELATIVE_IMPORT_SOURCE), FILE))
+    assert surface.module == ""

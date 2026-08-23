@@ -3,7 +3,7 @@
 How the auditor works today, step by step. Everything on this page is
 **implemented and tested** unless it is marked *planned*.
 
-One sentence version: point it at a Python repository, and it walks every
+One sentence version: point it at a repository, and it walks every
 source file's syntax tree looking for the four places an LLM touches the
 application, then writes what it found to a JSON file.
 
@@ -47,14 +47,15 @@ hardcoded anywhere.
 
 ### Step 2 — Decide which files to read (`repo_loader.py`)
 
-`list_python_files()` walks the repository and keeps every `.py` file, except:
+`list_source_files()` walks the repository and keeps every `.py` file, except:
 
 | Skipped | Why | Constant |
 |---|---|---|
 | `.git`, `.venv`, `__pycache__`, `node_modules`, … | not the app's own code | `SKIP_DIRS` |
 | files over 1 MB | generated or vendored, not hand-written | `MAX_FILE_BYTES` |
+| `*.d.ts`, `*.min.js`, `*.bundle.js` | declarations and bundles: no behaviour to audit | `IGNORED_SUFFIXES` |
 
-`list_python_files()` itself stays pure and just returns the list; `main.py`
+`list_source_files()` itself stays pure and just returns the list; `main.py`
 asks `list_oversized_files()` separately and **reports the skips on stderr**,
 so nothing is dropped silently — a missed file could be a missed vulnerability.
 
@@ -62,14 +63,36 @@ A path that does not exist raises immediately, naming the path.
 
 ### Step 3 — Turn each file into a syntax tree (`extractor.py`)
 
+The auditor reads more than one language, so this is where it picks a parser.
+`languages.py` maps the file extension to a language, and `extractor.py`
+dispatches:
+
+| Language | Parser | Why |
+|---|---|---|
+| Python | the standard library's `ast` | it resolves imports properly, which a tree-sitter query cannot do without reimplementing module semantics |
+| JavaScript, TypeScript | tree-sitter | the standard library has no JavaScript parser |
+
+Two backends is a deliberate choice, and it has an honest cost: two name
+tables (`detector_names.py` and `detector_names_js.py`) that can drift apart.
+What keeps the seam invisible is that both produce the same `Surface` type, so
+nothing downstream knows or cares which parser ran.
+
+One trap worth naming: `.jsx` is *JavaScript* the language but needs
+tree-sitter's *TSX* grammar to parse its embedded markup. `languages.py` keeps
+those two ideas in separate tables for exactly that reason.
+
 `extract_repo()` loops the file list and calls `extract_file()` on each.
-`parse_file()` reads the source with `tokenize.open` (which honours a file's
-own encoding declaration) and hands it to `ast.parse`.
+On the Python side, `parse_file()` reads the source with `tokenize.open`
+(which honours a file's own encoding declaration) and hands it to `ast.parse`.
+On the JavaScript side, `parse_source()` has to check `root_node.has_error`
+itself and raise: tree-sitter never raises on bad syntax, it just returns a
+tree full of ERROR nodes, so an unchecked malformed file would silently yield
+zero surfaces.
 
 Each file is labelled with its path **relative to the repository root**, in
 POSIX form. That is what makes the output identical on Windows, WSL, and Linux.
 
-### Step 4 — Run the four detectors (`detectors.py`)
+### Step 4 — Run the four detectors (`detectors.py`, `detectors_js.py`)
 
 This is the heart of Phase 1. Four independent detectors, one per surface kind.
 Each one walks the tree flatly with `ast.walk` and never calls the others:
@@ -94,9 +117,10 @@ flowchart LR
 | `find_tool_calls` | `@tool` functions, `Tool(...)` constructors, tool subclasses | `Tool(name='GetUserTransactions')` at `tools.py:40` |
 | `find_data_sources` | file reads, HTTP calls, database queries, retrieval, web route handlers | `st.chat_input(...)` at `main.py:60` |
 
-The names each detector recognises live in **`detector_names.py`**, as plain
-constants. Supporting a new framework means adding a name to a set there, not
-rewriting a detector.
+The names each detector recognises live in **`detector_names.py`** (Python) and
+**`detector_names_js.py`** (JavaScript/TypeScript), as plain constants.
+Supporting a new framework means adding a name to a set there, not rewriting a
+detector.
 
 Every detector also builds a small import table for the file
 (`ast_utils.build_import_table`) so each finding records which package it came
@@ -200,11 +224,17 @@ treated as contracts. The field lists are in [`SCHEMAS.md`](./SCHEMAS.md).
 | File | Its one job |
 |---|---|
 | `main.py` | command line entry point |
+| `languages.py` | which extension is which language, and which grammar reads it |
 | `repo_loader.py` | which files to analyse |
-| `extractor.py` | parse a file, run the detectors, walk a repo |
-| `detectors.py` | the four detectors |
-| `detector_names.py` | the framework names each detector looks for |
-| `ast_utils.py` | shared syntax-tree helpers |
+| `extractor.py` | pick the backend for a file, and walk a repository |
+| `extractor_python.py` | parse Python with `ast`, run the Python detectors |
+| `extractor_js.py` | parse JS/TS with tree-sitter, run the JS detectors |
+| `detectors.py` | the four detectors, Python |
+| `detectors_js.py` | the four detectors, JavaScript and TypeScript |
+| `detector_names.py` | the framework names, Python |
+| `detector_names_js.py` | the framework names, JavaScript and TypeScript |
+| `ast_utils.py` | shared `ast` helpers |
+| `ts_utils.py` | shared tree-sitter helpers |
 | `surface.py` | the data model and stable JSON output |
 | `config.py` | settings, from the environment |
 | `model_client.py` | talk to the local model (Phase 3) |
@@ -212,5 +242,12 @@ treated as contracts. The field lists are in [`SCHEMAS.md`](./SCHEMAS.md).
 Every module stays under the project's 200-line cap, so none of them grows
 into a file that does two jobs.
 
-Call direction is one-way — `main` → `extractor` → `detectors` → `surface` —
-so any file can be read on its own without chasing a cycle.
+Call direction is one-way:
+
+```
+main -> extractor -> extractor_python -> detectors    -> surface
+                  \-> extractor_js     -> detectors_js -^
+```
+
+so any file can be read on its own without chasing a cycle. The two backends
+meet only at `Surface`: nothing downstream knows which parser ran.

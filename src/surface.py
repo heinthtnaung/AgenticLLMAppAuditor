@@ -7,6 +7,8 @@ records differing just in `detail` are the same surface and are deduplicated.
 import json
 from dataclasses import asdict, dataclass
 
+from languages import LANGUAGES
+
 # The four kinds of LLM surface Phase 1 detects.
 PROMPT_TEMPLATE = "PROMPT_TEMPLATE"
 AGENT_DEF = "AGENT_DEF"
@@ -16,17 +18,23 @@ DATA_SOURCE = "DATA_SOURCE"
 SURFACE_KINDS = (PROMPT_TEMPLATE, AGENT_DEF, TOOL_CALL, DATA_SOURCE)
 
 # Artifact schema version. Bump it whenever a field is added or renamed.
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 
 @dataclass(frozen=True)
 class Surface:
-    """One LLM surface: what kind it is, what it is called, and where it lives."""
+    """One LLM surface: what kind it is, what it is called, and where it lives.
+
+    `language` says which language `file` is written in, so a consumer knows
+    which ecosystem's rules apply to `module` without re-deriving it from the
+    file extension.
+    """
 
     kind: str
     name: str
     file: str
     line: int
+    language: str
     detail: str
     module: str = ""
 
@@ -34,6 +42,8 @@ class Surface:
         """Reject a surface that a later phase could not act on."""
         if self.kind not in SURFACE_KINDS:
             raise ValueError(f"unknown surface kind {self.kind!r}; expected one of {SURFACE_KINDS}")
+        if self.language not in LANGUAGES:
+            raise ValueError(f"unknown language {self.language!r}; expected one of {LANGUAGES}")
         if not self.name:
             raise ValueError("surface name must not be empty")
         if not self.file:

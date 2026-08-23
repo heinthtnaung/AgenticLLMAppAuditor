@@ -1,5 +1,59 @@
 {
   "app": "vuln-app-1-support-agent",
+  "expected_surface_count": 5,
+  "expected_surfaces": [
+    {
+      "code_anchor": "system_msg = \"\"\"Assistant helps the current user retrieve th",
+      "file": "main.py",
+      "id": "SURF-01",
+      "kind": "PROMPT_TEMPLATE",
+      "line": 21,
+      "line_end": null,
+      "module": "",
+      "name": "system_msg"
+    },
+    {
+      "code_anchor": "if prompt := st.chat_input(placeholder=\"Show my recent trans",
+      "file": "main.py",
+      "id": "SURF-02",
+      "kind": "DATA_SOURCE",
+      "line": 60,
+      "line_end": null,
+      "module": "streamlit",
+      "name": "st.chat_input"
+    },
+    {
+      "code_anchor": "executor = AgentExecutor.from_agent_and_tools(",
+      "file": "main.py",
+      "id": "SURF-03",
+      "kind": "AGENT_DEF",
+      "line": 71,
+      "line_end": null,
+      "module": "langchain.agents",
+      "name": "AgentExecutor.from_agent_and_tools"
+    },
+    {
+      "code_anchor": "get_recent_transactions_tool = Tool(",
+      "file": "tools.py",
+      "id": "SURF-04",
+      "kind": "TOOL_CALL",
+      "line": 40,
+      "line_end": null,
+      "module": "langchain.agents",
+      "name": "GetUserTransactions"
+    },
+    {
+      "code_anchor": "cursor.execute(f\"SELECT * FROM Transactions WHERE userId = '",
+      "file": "transaction_db.py",
+      "id": "SURF-05",
+      "kind": "DATA_SOURCE",
+      "line": 62,
+      "line_end": null,
+      "module": "",
+      "name": "cursor.execute"
+    }
+  ],
+  "expected_surfaces_complete": false,
   "finding_count": 5,
   "findings": [
     {
@@ -78,7 +132,8 @@
       "title": "Model-supplied userId is interpolated into SQL with an f-string"
     }
   ],
-  "schema_version": 1,
+  "findings_complete": false,
+  "schema_version": 2,
   "source": "ai_drafted",
   "upstream_commit": "c0cf9a14adad76e9d6a53c41741f625334bd9971",
   "verified": false,

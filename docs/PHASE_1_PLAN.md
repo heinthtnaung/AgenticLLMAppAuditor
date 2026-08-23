@@ -4,7 +4,8 @@
 surfaces" (prompt templates, agent definitions, tool-call sites, and data
 sources feeding prompts/tools), with exact file + line locations.
 
-**Language:** Python only.
+**Languages:** Python (stdlib `ast`) and JavaScript/TypeScript (tree-sitter).
+The design is language-agnostic: `src/languages.py` is where a new one starts.
 
 **Important scope rule:** Phase 1 uses **static analysis only** — no LLM
 reasoning, no probes. The model server is set up here so it is ready for
@@ -93,7 +94,7 @@ Walk a local repo and return the Python files worth analysing.
 - Write `src/repo_loader.py`.
 - Define constants at the top: `SKIP_DIRS` (`.venv`, `__pycache__`,
   `node_modules`, `.git`), `MAX_FILE_BYTES`.
-- Function `list_python_files(repo_path: str) -> list[Path]` that returns
+- Function `list_source_files(repo_path: str) -> list[Path]` that returns
   `.py` files, skipping the skip-dirs and oversized files.
 - Use guard clauses (`continue`) instead of nested `if`s.
 
@@ -108,8 +109,9 @@ Define the structured output shape before writing the extractor.
 
 **Do:**
 - Write `src/surface.py`.
-- A `@dataclass Surface` with fields: `kind` (str), `name` (str),
-  `file` (str), `line` (int), `detail` (str).
+- A `@dataclass Surface`. Its fields are defined once in
+  [`SCHEMAS.md`](./SCHEMAS.md) — do not restate them here, or the two
+  documents will disagree.
 - `kind` is one of a fixed set of constants:
   `PROMPT_TEMPLATE`, `AGENT_DEF`, `TOOL_CALL`, `DATA_SOURCE`.
 - A function `surfaces_to_json(surfaces: list[Surface]) -> str`.
@@ -179,6 +181,56 @@ the two demo apps is missed.
 
 ---
 
+## Task 1.8 — Language registry
+
+Make the choice of language explicit and data-driven, so adding one is an
+edit in a single place.
+
+**Do:**
+- Write `src/languages.py` holding two separate tables: extension to
+  **language** (the artifact vocabulary: `python`, `javascript`,
+  `typescript`), and extension to **tree-sitter grammar** (internal).
+  They differ: `.jsx` is JavaScript but needs the TSX grammar.
+- Add `IGNORED_SUFFIXES` for files with no behaviour to audit
+  (`.d.ts`, `.min.js`, `.bundle.js`).
+- Add a required `language` field to `Surface`, and bump `SCHEMA_VERSION`.
+
+**Done when:** `language_of` and `grammar_of` disagree for `.jsx`, both raise
+for an unregistered extension, and every emitted surface carries a language.
+
+---
+
+## Task 1.9 — JavaScript and TypeScript backend
+
+**Do:**
+- Split parsing per language: `src/extractor_python.py` (`ast`) and
+  `src/extractor_js.py` (tree-sitter). `src/extractor.py` keeps only the
+  dispatch and the repository walk.
+- Write `src/ts_utils.py` and `src/detectors_js.py` — the same four surface
+  kinds, the same name-table approach as the Python side.
+- tree-sitter never raises on bad syntax, so `parse_source` must check
+  `root_node.has_error` and raise, naming the file.
+
+**Done when:** `extract_repo` on a mixed repository returns surfaces from both
+languages, each carrying the right `language` and `module`, and a malformed
+`.ts` file fails loudly rather than yielding nothing.
+
+---
+
+## Task 1.10 — A clean-code fixture
+
+**Do:**
+- Add `corpus/oss-app-langgraphjs-starter`, pinned in `MANIFEST.json`.
+- Record its surfaces in `ground_truth.json` as `expected_surfaces`, with
+  `findings: []`. It has no planted vulnerabilities: that is the point, it is
+  what lets the evaluation report a false-positive rate.
+
+**Done when:** the extractor finds exactly the recorded surfaces and no others,
+and the app's zero findings read as "asserted clean" rather than "nothing
+found". See [`SCHEMAS.md`](./SCHEMAS.md).
+
+---
+
 ## Phase 1 exit checklist
 
 - [x] Repo scaffolded, installs cleanly, demo apps under `corpus/`.
@@ -191,7 +243,8 @@ the two demo apps is missed.
 - [~] All surfaces in `ground_truth.json` are found; none missed.
       Every one is matched by a test, but the ground truth itself is AI-drafted
       and awaiting human sign-off (`TODO.md` B3).
-- [x] Tests pass (167; 166 without a local model server); code follows the coding rules above.
+- [x] Tests pass; code follows the coding rules above.
+- [x] Language registry, and a JavaScript/TypeScript backend (tasks 1.8-1.10).
 
 The finished flow is walked through step by step in [`FLOW.md`](./FLOW.md).
 

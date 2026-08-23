@@ -78,7 +78,13 @@ def text_build_shape(value: ast.expr) -> str:
 
 
 def _record_import_from(node: ast.ImportFrom, table: dict[str, str]) -> None:
-    """Record 'from x.y import a as b' as b -> x.y."""
+    """Record 'from x.y import a as b' as b -> x.y.
+
+    A relative import (`from .settings import ...`) is the app's own code, not a
+    package, so it records no module rather than a name that looks third-party.
+    """
+    if node.level:
+        return
     for alias in node.names:
         table[alias.asname or alias.name] = node.module or ""
 

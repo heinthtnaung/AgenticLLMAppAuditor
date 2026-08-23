@@ -1,9 +1,13 @@
 # AgenticLLMAppAuditor
 
-An offline, human-in-the-loop security auditor for Python LLM applications
+An offline, human-in-the-loop security auditor for LLM applications
 (LangChain / LangGraph). It analyses a repository and reports findings mapped
 to a subset of the OWASP Top 10 for LLM Applications, backed by SBOM/AIBOM
 evidence.
+
+It reads **Python** (via the standard library's `ast`) and **JavaScript and
+TypeScript** (via tree-sitter). The design is language-agnostic: adding one
+starts in `src/languages.py`.
 
 It **reports only** — it never edits, patches, or merges the audited code — and
 it runs offline against a local model.
@@ -30,6 +34,9 @@ python -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
+
+If `python -m venv` reports that `ensurepip` is unavailable, install the
+matching venv package first (on Debian/Ubuntu: `sudo apt install python3-venv`).
 
 ### Settings (optional)
 
