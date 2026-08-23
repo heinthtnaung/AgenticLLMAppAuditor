@@ -28,6 +28,10 @@ artifacts/
 *.bin
 *.safetensors
 
+# Report working files (the built docs/report.docx is what ships)
+docs/REPORT.md
+docs/build_report.py
+
 # AI / agent tooling (local only — not part of the submitted project)
 .claude/
 CLAUDE.md
