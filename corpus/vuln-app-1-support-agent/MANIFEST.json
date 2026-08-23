@@ -1,0 +1,10 @@
+{
+  "name": "vuln-app-1-support-agent",
+  "role": "deliberately_vulnerable_demo",
+  "upstream_url": "https://github.com/ReversecLabs/damn-vulnerable-llm-agent",
+  "upstream_commit": "c0cf9a14adad76e9d6a53c41741f625334bd9971",
+  "upstream_commit_date": "2025-06-25T14:58:42+01:00",
+  "framework": "langchain",
+  "language": "python",
+  "note": "Audited fixture. Do not modify the application code."
+}

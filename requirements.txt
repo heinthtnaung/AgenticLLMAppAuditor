@@ -1,0 +1,10 @@
+# --- Phase 1: Environment & LLM surface extractor ---
+# Python 3.10+ required (uses modern type hints like list[Path]).
+#
+# The auditor itself needs no third-party packages: the extractor is built on
+# ast, pathlib and json, and src/model_client.py talks to the local Ollama
+# server over urllib. Ollama is installed as a SERVER, not from here:
+#   ollama pull qwen2.5-coder:7b-instruct
+
+# Testing (Task 1.7)
+pytest>=8.0.0

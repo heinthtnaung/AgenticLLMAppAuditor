@@ -1,0 +1,279 @@
+/* App.css */
+:root {
+    --header-bar-height: 40px;
+    --chat-log-margin-top: 70px;
+    --chat-log-margin-left-right: 10px;
+    --chat-log-margin-bottom: 10px;
+    --input-area-height: 20px;
+    --input-area-left-right: 10px;
+    --input-area-left-bottom: 10px;
+    --input-area-margin: 20px;
+}
+
+body {
+    background-color: #87ceeb;
+    margin: 0;
+    padding: 0;
+}
+
+.App {
+    color: black;
+    width: calc(100% - 20px);
+}
+
+.headerBar {
+    height: var(--header-bar-height);
+    line-height: 40px;
+    background-color: #333;
+    color: white;
+    text-align: center;
+    padding: 10px;
+    font-size: 24px;
+    width: 100%;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+}
+
+.chatLog {
+    margin: var(--chat-log-margin-top) var(--chat-log-margin-left-right) var(--chat-log-margin-left-right) var(--chat-log-margin-bottom);
+    background-color: #ffffff;
+    width: calc(100% - 20px);
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    overflow-y: auto;
+    /*height: 400px;*/
+    height: calc(100vh - var(--header-bar-height) - var(--chat-log-margin-top) - var(--chat-log-margin-bottom) - var(--input-area-height) - 20px);
+}
+
+.chatLog .user, .chatLog .bot {
+    border-radius: 10px;
+    max-width: 50%;
+    word-wrap: break-word;
+    display: block;
+    margin-bottom: 10px;
+}
+
+.chatLog .user {
+    text-align: right;
+    background-color: #e6f7ff;
+    margin: 10px;
+}
+
+.chatLog .bot {
+    text-align: left;
+    background-color: #fff3e0;
+    margin: 10px;
+}
+
+.inputArea {
+    margin: 0 var(--input-area-left-right) var(--input-area-left-bottom) var(--input-area-left-right);
+    width: 100%;
+    display: grid;
+    grid-template-columns: 10fr 1fr 1fr;
+    gap: 10px;
+}
+
+.inputArea input[type="text"] {
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+}
+
+.inputArea input[type="checkbox"] {
+    align-self: center;
+}
+
+.inputArea button {
+    padding: 10px;
+    border: none;
+    border-radius: 4px;
+    background-color: #008CBA;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
+
+.bubble-container {
+    /*width: 50%;*/
+    width: 100%;
+    margin: auto auto 10px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.user-bubble, .bot-bubble {
+    position: relative;
+    background-color: #f1f1f1;
+    border-radius: 5px;
+    padding: 10px;
+    width: fit-content;
+    max-width: 70%;
+}
+
+.user-bubble:before, .bot-bubble:before {
+    content: "";
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-style: solid;
+}
+
+.user-bubble {
+    align-self: flex-end;
+    background-color: #e6f7ff;
+}
+
+.user-bubble:before {
+    border-width: 10px 10px 10px 0;
+    border-color: transparent #e6f7ff transparent transparent;
+    right: 0;
+    top: 0;
+}
+
+.bot-bubble {
+    align-self: flex-start;
+    background-color: #fff3e0;
+}
+
+.bot-bubble:before {
+    border-width: 10px 0 10px 10px;
+    border-color: transparent transparent transparent #fff3e0;
+    left: 0;
+    top: 0;
+}
+
+.icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin: 5px;
+}
+
+.user-container, .bot-container {
+    display: flex;
+}
+
+.user-container {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.bot-container {
+    display: flex;
+    justify-content: flex-start;
+}
+
+/* ── Header auth area ─────────────────────────────────────────── */
+.headerBar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    box-sizing: border-box;
+}
+
+.headerRight {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.headerUsername {
+    font-size: 14px;
+    color: #ccc;
+}
+
+.logoutButton {
+    padding: 4px 12px;
+    font-size: 13px;
+    border: 1px solid #aaa;
+    border-radius: 4px;
+    background-color: transparent;
+    color: #eee;
+    cursor: pointer;
+}
+
+.logoutButton:hover {
+    background-color: #555;
+}
+
+/* ── Login page ───────────────────────────────────────────────── */
+.loginPage {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #87ceeb;
+}
+
+.loginBox {
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 40px 36px;
+    width: 320px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    text-align: center;
+}
+
+.loginTitle {
+    margin: 0 0 4px;
+    font-size: 24px;
+    color: #333;
+}
+
+.loginSubtitle {
+    margin: 0 0 24px;
+    font-size: 13px;
+    color: #999;
+}
+
+.loginField {
+    margin-bottom: 14px;
+}
+
+.loginField input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+.loginField input:focus {
+    outline: none;
+    border-color: #008CBA;
+}
+
+.loginError {
+    color: #d9534f;
+    font-size: 13px;
+    margin-bottom: 12px;
+}
+
+.loginButton {
+    width: 100%;
+    padding: 10px;
+    background-color: #008CBA;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+.loginButton:hover {
+    background-color: #0056b3;
+}
+
+.loginButton:disabled {
+    background-color: #aaa;
+    cursor: not-allowed;
+}
