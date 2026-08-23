@@ -5,6 +5,9 @@ from conftest import CORPUS_DIR, DEMO_APPS, ground_truth
 from extractor import extract_file, extract_repo, parse_file
 from surface import SURFACE_KINDS, surfaces_to_json
 
+# Named explicitly: DEMO_APPS is discovered on disk, so its order is not a contract.
+SUPPORT_AGENT_APP = "vuln-app-1-support-agent"
+
 # A finding's line may point at any line of the construct, so allow a small window.
 LINE_TOLERANCE = 3
 
@@ -121,17 +124,17 @@ def test_parse_file_names_the_file_with_broken_syntax(tmp_path) -> None:
 def test_extract_file_requires_a_file_label() -> None:
     """extract_file will not guess a label, so a misused call fails at the call site."""
     with pytest.raises(TypeError):
-        extract_file(CORPUS_DIR / DEMO_APPS[0] / "main.py")
+        extract_file(CORPUS_DIR / SUPPORT_AGENT_APP / "main.py")
 
 
 def test_extract_file_rejects_an_absolute_label() -> None:
     """An absolute label is refused outright rather than producing a machine-specific artifact."""
-    path = CORPUS_DIR / DEMO_APPS[0] / "main.py"
+    path = CORPUS_DIR / SUPPORT_AGENT_APP / "main.py"
     with pytest.raises(ValueError, match="repo-relative"):
         extract_file(path, str(path))
 
 
 def test_repeated_runs_produce_identical_bytes() -> None:
     """The same repository always serialises to the same bytes."""
-    repo = str(CORPUS_DIR / DEMO_APPS[0])
+    repo = str(CORPUS_DIR / SUPPORT_AGENT_APP)
     assert surfaces_to_json(extract_repo(repo)) == surfaces_to_json(extract_repo(repo))

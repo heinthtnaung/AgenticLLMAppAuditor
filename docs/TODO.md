@@ -4,6 +4,8 @@ Single source of truth for what is done and what is next.
 **Update this file every time a task is finished** — tick the box in the same
 change that completes the work (see rule 20 in `.claude/AGENTS.md`).
 
+How the system currently works: [`FLOW.md`](./FLOW.md).
+
 Legend: `[ ]` not started · `[~]` in progress · `[x]` done
 
 ---
@@ -35,10 +37,10 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done
 
 See `docs/PHASE_1_PLAN.md` for the task-level breakdown and done-criteria.
 
-- [~] Set up offline model server (Ollama or vLLM) + download chosen model
+- [x] Set up offline model server (Ollama or vLLM) + download chosen model
       (Llama / Qwen & GLM 5.2 / Gemma 4 / Qwen-coder)
-      — client written (`src/model_client.py`), **blocked**: Ollama not
-      installed, so Task 1.2's smoke test has never run. See B1.
+      — Ollama 0.32.15 running, `qwen2.5-coder:7b-instruct` pulled (4.4 GB),
+      `python src/model_client.py` returns a reply from the local server.
 - [ ] Stand up the LangGraph skeleton (shared state, planner node, bounded
       loop with step cap)
       — **not started, and believed misfiled**: this is Phase 3 work. See B4.
@@ -49,12 +51,15 @@ Phase 1 detail, per `docs/PHASE_1_PLAN.md`:
 
 - [x] 1.1 Scaffolding — `src/ corpus/ tests/ artifacts/`, `requirements.txt`,
       `README.md`, `.venv` installs cleanly
-- [~] 1.2 Offline model client — written; smoke test blocked on B1
+- [x] 1.2 Offline model client — `ask()` verified against the local server
 - [x] 1.3 Repo loader — `src/repo_loader.py`
 - [x] 1.4 Surface data model — `src/surface.py`
 - [x] 1.5 Surface extractor — `src/detectors.py` + `src/extractor.py`
 - [x] 1.6 CLI entry point — `src/main.py`
-- [~] 1.7 Validation — 121 tests passing, all 9 code-linked ground-truth
+- [x] Settings read from the environment (`src/config.py` + `.env.example`);
+      the test corpus is discovered on disk instead of listed in code
+- [x] System flow documented step by step in `docs/FLOW.md`
+- [~] 1.7 Validation — 167 tests passing (166 without a local model server), all 9 code-linked ground-truth
       surfaces found; the by-hand cross-check of both `ground_truth.json`
       files is a human task. See B3.
 
@@ -121,8 +126,6 @@ resolved; do not tick the task above until its blocker is gone.
 
 | # | Blocker | Who / what unblocks it |
 |---|---|---|
-| B1 | **Ollama is not installed**, so Task 1.2's done-criterion (`ask("say hello")` returns text offline) has never been met. `src/model_client.py` is written and fails with a clear error. | Install Ollama, then `ollama pull qwen2.5-coder:7b-instruct`, then run the smoke test. |
-| B2 | This machine's Python 3.14 has **no `ensurepip`**, so `python -m venv .venv` cannot create pip on its own. Worked around by bootstrapping pip inside `.venv`; the clean fix is the system package. | `sudo apt install python3.14-venv`, then recreate `.venv`. |
 | B3 | `corpus/*/ground_truth.json` is **AI-drafted and unverified** (`verified: false`, `source: "ai_drafted"`). Phase 4's precision/recall is graded against this file, so it is not thesis-grade until a human confirms it. | A human reads both apps and flips `verified`, `verified_by`, `verified_date`. Note the drafted count is **10** findings, not the 9 recorded in Phase 0 above — confirm which is right. |
 | B4 | The Phase 1 line **"Stand up the LangGraph skeleton"** duplicates Phase 3's "agentic audit workflow (planner picks next probe over shared state)". Building it now would break rule 15. | Decide whether to move the line to Phase 3. Not implemented either way. |
 | B5 | Two of the three selected open-source apps — **`agent-chat-ui` and `langgraphjs-studio-starter` — are JavaScript/TypeScript**. The extractor is Python-only by design, so it cannot analyse them. | Phase 0 corpus decision: replace them with Python LangGraph apps, or narrow the evaluation to `open_deep_research`. Do not add a JS parser. |

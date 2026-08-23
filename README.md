@@ -31,8 +31,23 @@ source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-If `python -m venv` reports that `ensurepip` is unavailable, install the
-matching venv package first (on Debian/Ubuntu: `sudo apt install python3-venv`).
+### Settings (optional)
+
+Everything runs on sensible defaults with no configuration. To point the
+auditor at a different model or a non-standard Ollama address, copy the
+template and edit it:
+
+```sh
+cp .env.example .env
+```
+
+`.env` is gitignored — it holds your machine's settings, not the project's.
+A real environment variable always wins over a value in `.env`, which in turn
+wins over the built-in default:
+
+```sh
+AUDITOR_MODEL=llama3.1:8b python src/main.py corpus/vuln-app-1-support-agent
+```
 
 ## Usage
 
@@ -63,8 +78,22 @@ pinned to an upstream commit in each app's `MANIFEST.json`. They are audited
 input, not dependencies: never install their requirements, and never "fix"
 their code.
 
+### Adding an app to the corpus
+
+Clone it into `corpus/<name>/`, delete its `.git`, and write two files beside
+the code:
+
+- `MANIFEST.json` — the upstream URL and the exact commit taken. Every line
+  number in the ground truth is only valid against that commit.
+- `ground_truth.json` — the known findings. Without it the extractor still
+  runs, but the app cannot be scored, so it contributes nothing to Phase 4.
+
+Nothing else needs editing: the test suite discovers any corpus directory that
+contains a `ground_truth.json`.
+
 ## Documentation
 
+- [`docs/FLOW.md`](docs/FLOW.md) — how the system works, step by step
 - [`docs/TODO.md`](docs/TODO.md) — roadmap, current progress, open blockers
 - [`docs/PHASE_1_PLAN.md`](docs/PHASE_1_PLAN.md) — Phase 1 task breakdown
 - [`docs/SCHEMAS.md`](docs/SCHEMAS.md) — the JSON contracts between phases

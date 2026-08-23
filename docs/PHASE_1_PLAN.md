@@ -182,15 +182,18 @@ the two demo apps is missed.
 ## Phase 1 exit checklist
 
 - [x] Repo scaffolded, installs cleanly, demo apps under `corpus/`.
-- [ ] Offline model client returns a response (ready for Phase 3).
-      Client written; blocked on Ollama not being installed (see `TODO.md` B1).
+- [x] Offline model client returns a response (ready for Phase 3).
+      Verified: `python src/model_client.py` answers from the local server.
 - [x] Repo loader returns correct file lists.
 - [x] `Surface` data model + stable JSON serialisation.
 - [x] Four independent detectors implemented.
 - [x] `surfaces.json` produced for both demo apps.
-- [x] All surfaces in `ground_truth.json` are found; none missed.
-      Ground truth is AI-drafted and awaiting human sign-off (`TODO.md` B3).
-- [x] Tests pass (121); code follows the coding rules above.
+- [~] All surfaces in `ground_truth.json` are found; none missed.
+      Every one is matched by a test, but the ground truth itself is AI-drafted
+      and awaiting human sign-off (`TODO.md` B3).
+- [x] Tests pass (167; 166 without a local model server); code follows the coding rules above.
+
+The finished flow is walked through step by step in [`FLOW.md`](./FLOW.md).
 
 **Artifacts produced this phase:** `artifacts/<app>/surfaces.json`
 (consumed by Phase 2 mapping and Phase 3 auditing). Its schema, and the

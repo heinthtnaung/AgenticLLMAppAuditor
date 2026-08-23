@@ -5,6 +5,9 @@ __pycache__/
 # Virtual environment (this project uses exactly one: .venv)
 .venv/
 
+# Local settings (copy .env.example to .env)
+.env
+
 # Tests
 .pytest_cache/
 

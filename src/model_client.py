@@ -2,15 +2,23 @@
 
 Set up in Phase 1 so it is ready for Phase 3; no detection logic uses it yet.
 Uses urllib rather than the ollama package to keep the stdlib-first rule.
+The three settings come from the environment, so no machine-specific value
+is baked into the source. See .env.example. They are read once at import, so
+editing .env takes effect on the next run, not mid-run.
 """
 
 import json
 import urllib.error
 import urllib.request
 
-MODEL = "qwen2.5-coder:7b-instruct"
-SERVER_URL = "http://localhost:11434/api/generate"
-TIMEOUT_SECONDS = 120
+import config
+
+MODEL = config.get("AUDITOR_MODEL")
+SERVER_URL = config.get("AUDITOR_SERVER_URL")
+TIMEOUT_SECONDS = config.get_int("AUDITOR_TIMEOUT_SECONDS")
+
+if TIMEOUT_SECONDS <= 0:
+    raise ValueError(f"AUDITOR_TIMEOUT_SECONDS must be greater than zero, got {TIMEOUT_SECONDS}")
 
 
 def ask(prompt: str) -> str:
@@ -42,3 +50,8 @@ def ask(prompt: str) -> str:
     if "response" not in body:
         raise RuntimeError(f"model server reply had no 'response' field: {body}")
     return body["response"]
+
+
+if __name__ == "__main__":
+    # Task 1.2 smoke test: python src/model_client.py
+    print(ask("Say hello in one short sentence."))
