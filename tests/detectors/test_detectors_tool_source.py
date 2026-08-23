@@ -12,8 +12,8 @@ from detector_helpers import (
     only,
     parse,
 )
-from detectors import find_data_sources, find_tool_calls
-from surface import DATA_SOURCE, TOOL_CALL
+from detectors.detectors import find_data_sources, find_tool_calls
+from artifacts.surface import DATA_SOURCE, TOOL_CALL
 
 
 def test_finds_tool_decorated_function() -> None:

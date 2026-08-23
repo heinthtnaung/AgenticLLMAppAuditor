@@ -9,7 +9,7 @@ import json
 
 import pytest
 from conftest import BASELINE_SUFFIX, CORPUS_APPS, CORPUS_DIR, evidence_path, require_corpus
-from extractor import extract_repo
+from parsing.extractor import extract_repo
 
 def baseline(app: str) -> dict:
     """Read one app's recorded extractor output."""

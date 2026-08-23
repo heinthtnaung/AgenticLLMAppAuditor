@@ -2,8 +2,8 @@
 
 import pytest
 from conftest import CORPUS_APPS, app_is_present, CORPUS_DIR, ground_truth, require_corpus
-from extractor import extract_repo
-from surface import Surface
+from parsing.extractor import extract_repo
+from artifacts.surface import Surface
 
 # An expected surface's line may point at any line of a multi-line construct.
 LINE_TOLERANCE = 3

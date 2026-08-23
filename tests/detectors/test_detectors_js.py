@@ -2,14 +2,14 @@
 
 import pytest
 from detector_helpers_js import FILE, only, other_detectors, run
-from detectors_js import (
+from detectors.detectors_js import (
     find_agent_defs,
     find_data_sources,
     find_prompt_templates,
     find_tool_calls,
 )
-from languages import TYPESCRIPT
-from surface import AGENT_DEF, DATA_SOURCE, PROMPT_TEMPLATE, TOOL_CALL
+from parsing.languages import TYPESCRIPT
+from artifacts.surface import AGENT_DEF, DATA_SOURCE, PROMPT_TEMPLATE, TOOL_CALL
 
 PROMPT_CALL = """
 import { ChatPromptTemplate } from "@langchain/core/prompts";

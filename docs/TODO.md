@@ -15,17 +15,17 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done
 
 ## Phase 0 — Decisions to lock first
 
-- [ ] Confirm the exact 3–4 OWASP LLM Top 10 risks (proposal names: LLM01
+- [x] Confirm the exact 3–4 OWASP LLM Top 10 risks (proposal names: LLM01
       direct + indirect injection, LLM06 excessive agency / unsafe tool use,
       inadequate auditability) — sign this off so scope can't creep
     - LLM01 – Prompt Injection
-    - LLM03 – Supply Chain Vulnerabilities in LLM Apps 
+    - LLM03 – Supply Chain Vulnerabilities (2025 numbering; was LLM05)
     - LLM06 – Excessive Agency and Tool Permissions
-    - LLM08 – Vector Database / RAG Retrieval Risks
+    - Inadequate auditability of agent actions (not a stock OWASP entry)
 
-      **Not yet signed off, and it does not match what the code enforces.**
-      See B6: three of the ten drafted findings fall outside this list, and
-      no fixture exercises retrieval at all.
+      LLM08 (vector database / RAG retrieval) was considered and **dropped**:
+      no corpus app performs retrieval, so its recall would be 0/0.
+
 - [x] Collect deliberately-vulnerable demo apps (2 apps; **10** findings
       drafted, not the 9 first estimated — see B3a)
     - https://github.com/ReversecLabs/damn-vulnerable-llm-agent
@@ -98,12 +98,25 @@ Phase 1 detail, per `docs/PHASE_1_PLAN.md`:
 See [`PHASE_2_PLAN.md`](./PHASE_2_PLAN.md) for the task breakdown and
 done-criteria.
 
-- [ ] Generate SBOMs for each test app via Syft/Trivy (CycloneDX/SPDX JSON)
-- [ ] Define the lightweight AIBOM JSON schema (models, datasets, tools,
-      agents)
-- [ ] Ingest CSAF/VEX-style advisories for selected components
-- [ ] Build surface-to-component mapping (link each LLM surface to its
-      SBOM/AIBOM components) — join on each surface's `module` field
+- [~] Generate an SBOM via Syft. **Not** CycloneDX or SPDX as produced: that
+      output carries a random id, a timestamp and absolute paths, so it cannot
+      be byte-identical across runs. `sbom.json` is a normalised shape keeping
+      CycloneDX field names and PURL identity. One Python app so far
+- [x] Define the AIBOM schema and build it (`src/aibom.py`), derived from
+      `surfaces.json` so every entry traces to a surface. `datasets` is absent:
+      no surface kind produces one
+- [x] Write the advisory data policy (`SCHEMAS.md`): fetched out-of-band as a
+      documented manual step, read from disk, never at runtime
+- [ ] Read npm manifests, so a JavaScript app can be given an SBOM. Until
+      then `src/main.py` refuses one rather than reporting every real
+      import as an undeclared dependency
+- [ ] Build the advisory matcher — **deferred, not forgotten**: of five
+      components two have no version and three are inferred from a range, so
+      there is nothing an honest matcher could key on yet
+- [x] Build surface-to-component mapping (`src/mapping.py`), joining on each
+      surface's `module`. Five outcomes, all exercised on the corpus:
+      third_party 6, stdlib 3, first_party 1, used_but_undeclared 1,
+      unresolved 8. It found PyYAML used but never declared
 - [ ] Decide on `artifacts/<app>/target.json` (app name + upstream commit +
       file count). Proposed during Phase 1 and **declined there** as out of
       scope: every field is already recoverable from the artifact directory
@@ -120,8 +133,8 @@ done-criteria.
       PEP 263 cookie, aborts a whole repo scan. Loud, but JS repos will hit it
       often
 - [ ] Decide whether `src/` becomes a real package. It is flat today, with
-      `tests/conftest.py` putting it on `sys.path`; at 17 modules that is
-      starting to strain
+      `tests/conftest.py` putting it on `sys.path`; now 23 modules and two
+      entry points
 
 ---
 
@@ -189,9 +202,7 @@ resolved; do not tick the task above until its blocker is gone.
 |---|---|---|
 | B3 | The demo app's grading key is **AI-drafted and unverified** (`verified: false`). Phase 4's precision/recall is graded against them, so no number is thesis-grade until a human confirms. | A human reads the app and flips `verified`, `verified_by`, `verified_date`. **Blocks Phase 4.** |
 | B4 | The Phase 1 line **"Stand up the LangGraph skeleton"** duplicates Phase 3's "agentic audit workflow (planner picks next probe over shared state)". Building it now would break rule 15. | Decide whether to move the line to Phase 3. Not implemented either way. |
-| B6 | The **OWASP subset is written down in Phase 0 but not signed off, and the code enforces a different set.** `tests/test_ground_truth.py` allows `{LLM01, LLM02, LLM05, LLM06, AUDITABILITY}`; Phase 0 proposes `{LLM01, LLM03, LLM06, LLM08}`. Three of the ten drafted findings fall outside the proposed list. | Decide the four, then see B6a/B6b/B6c below for what each costs. |
-| B6a | **LLM05 vs LLM03 is a renumbering, not a new risk.** Supply chain is LLM05 in the 2023/24 list and LLM03 in the 2025 list; `VULN2-05` is already that finding. | Pick an edition, say which one the thesis cites, and renumber the fixtures to match. Cheap. |
-| B6c | **Dropping `AUDITABILITY` orphans `VULN1-05`, and `LLM02` was never in any subset but grades `VULN1-04`.** AUDITABILITY is also the only non-stock item — the part that is your contribution rather than OWASP's. | Decide whether to keep both. Whatever the subset, `ALLOWED_OWASP_IDS` must still accept every id the fixtures use, or those findings become ungradeable. |
+| B6 | **The subset is now decided but the corpus does not exercise all of it.** The project cites the 2025 OWASP list: LLM01, LLM03 (supply chain), LLM06, and auditability. The one corpus app has findings for LLM01, LLM02, LLM06 and AUDITABILITY -- **nothing for LLM03**, so the risk Phase 2 exists to report has no ground-truth finding to be graded against. | Add an LLM03 finding to the grading key once Phase 2 can produce evidence for one. The app has two used-but-undeclared dependencies (PyYAML, python-dotenv), which is a real candidate. |
 | B7 | **Phase owners are unassigned** across Hein / Bing Hong / JW. | Agree the split. |
 
 ---
@@ -205,7 +216,7 @@ resolved; do not tick the task above until its blocker is gone.
       apps)
 - [ ] Team split — the proposal lists three people (Hein, Bing Hong, JW);
       assign owners per phase
-- [x] Project documentation written and kept in step with the code:
+- [~] Project documentation written and kept in step with the code:
       `CODING_RULES.md` (the binding standard, tracked so the whole team and
       an examiner get it), `FLOW.md` (how the system works), `SCHEMAS.md`
       (the JSON contracts between phases)

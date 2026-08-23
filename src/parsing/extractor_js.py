@@ -6,14 +6,14 @@ import tree_sitter_javascript
 import tree_sitter_typescript
 from tree_sitter import Language, Node, Parser
 
-from detectors_js import (
+from detectors.detectors_js import (
     find_agent_defs,
     find_data_sources,
     find_prompt_templates,
     find_tool_calls,
 )
-from languages import JAVASCRIPT, TSX_GRAMMAR, TYPESCRIPT, grammar_of
-from surface import Surface
+from parsing.languages import JAVASCRIPT, TSX_GRAMMAR, TYPESCRIPT, grammar_of
+from artifacts.surface import Surface
 
 DETECTORS = (find_prompt_templates, find_agent_defs, find_tool_calls, find_data_sources)
 

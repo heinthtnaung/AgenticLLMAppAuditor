@@ -6,7 +6,7 @@ can speak for; the rest are there so a real app is not missed, and are listed
 as an untested-coverage gap in docs/TODO.md.
 """
 
-from detector_names import PROMPT_NAME_HINTS  # noqa: F401  (language-neutral, shared)
+from detectors.detector_names import PROMPT_NAME_HINTS  # noqa: F401  (language-neutral, shared)
 
 # --- Prompt surfaces -------------------------------------------------------
 # Object keys that carry prompt text in a chat message: {role, content}.

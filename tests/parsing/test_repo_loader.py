@@ -2,7 +2,7 @@
 
 import pytest
 from conftest import CORPUS_DIR, require_corpus
-from repo_loader import MAX_FILE_BYTES, SKIP_DIRS, list_oversized_files, list_source_files
+from parsing.repo_loader import MAX_FILE_BYTES, SKIP_DIRS, list_oversized_files, list_source_files
 
 SUPPORT_AGENT = CORPUS_DIR / "vuln-app-1-support-agent"
 LANGGRAPH_JS = CORPUS_DIR / "oss-app-langgraphjs-starter"

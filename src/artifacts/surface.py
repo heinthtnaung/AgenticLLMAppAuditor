@@ -7,7 +7,7 @@ records differing just in `detail` are the same surface and are deduplicated.
 import json
 from dataclasses import asdict, dataclass
 
-from languages import LANGUAGES
+from parsing.languages import LANGUAGES
 
 # The four kinds of LLM surface Phase 1 detects.
 PROMPT_TEMPLATE = "PROMPT_TEMPLATE"

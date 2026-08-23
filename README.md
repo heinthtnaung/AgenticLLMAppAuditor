@@ -33,6 +33,7 @@ tasks, so you can start without them.
 |---|---|---|---|
 | **Python** | 3.10 or newer | everything — the auditor uses modern type hints | `python3 --version` |
 | **git** | any | cloning this repository | `git --version` |
+| **Syft** | 1.51.0 | building an SBOM (`src/main.py`). Not needed to extract surfaces | `syft version` |
 | **Ollama** | any | only the local model client (`src/model_client.py`), which is set up for Phase 3 and unused by the extractor | `ollama --version` |
 
 On Debian or Ubuntu, Python's venv support is a separate package:
@@ -49,8 +50,16 @@ There are only two dependencies, and neither is needed to read Python:
 | `tree-sitter` + `tree-sitter-javascript` + `tree-sitter-typescript` | parsing JavaScript and TypeScript. Python is read with the standard library's `ast`, so these are only used for JS/TS |
 | `pytest` | running the tests |
 
-The auditor makes **no network calls at all**. Ollama, when you use it, runs on
-your own machine.
+The auditor makes **no network calls**. Ollama and Syft both run on your own
+machine; Syft is told explicitly not to check for its own updates, which is
+the one thing it would otherwise do over the network.
+
+Install Syft to `~/.local/bin` without root:
+
+```sh
+curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh \
+  | sh -s -- -b ~/.local/bin
+```
 
 ### Optional: the local model
 
@@ -125,13 +134,23 @@ else runs.
 
 ### Running the auditor
 
-Extract the LLM surfaces of a repository:
+Audit a repository:
 
 ```sh
 python src/main.py corpus/vuln-app-1-support-agent
 ```
 
-It writes `artifacts/<app>/surfaces.json` and makes no network call.
+It writes everything it can into `artifacts/<app>/` and makes no network call:
+
+| Artifact | Needs |
+|---|---|
+| `surfaces.json` | nothing but the source |
+| `aibom.json` | the same — it is derived from the surfaces |
+| `sbom.json` | Syft, and a dependency manifest this project can read |
+| `mapping.json` | the SBOM, to join surfaces to components |
+
+Without Syft it writes the first two and says why the others were skipped,
+rather than failing.
 
 This writes `artifacts/<app>/surfaces.json`. Run the tests with:
 

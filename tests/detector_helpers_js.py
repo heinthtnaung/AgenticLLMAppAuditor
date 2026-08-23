@@ -2,14 +2,14 @@
 
 import textwrap
 
-from detectors_js import (
+from detectors.detectors_js import (
     find_agent_defs,
     find_data_sources,
     find_prompt_templates,
     find_tool_calls,
 )
-from extractor_js import GRAMMARS
-from languages import TYPESCRIPT
+from parsing.extractor_js import GRAMMARS
+from parsing.languages import TYPESCRIPT
 from tree_sitter import Node, Parser
 
 FILE = "app/snippet.ts"

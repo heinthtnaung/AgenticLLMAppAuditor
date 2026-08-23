@@ -4,9 +4,9 @@ import argparse
 import sys
 from pathlib import Path
 
-from extractor import extract_repo
-from repo_loader import list_oversized_files
-from surface import surfaces_to_json
+from parsing.extractor import extract_repo
+from parsing.repo_loader import list_oversized_files
+from artifacts.surface import surfaces_to_json
 
 DEFAULT_ARTIFACTS_DIR = Path("artifacts")
 OUTPUT_NAME = "surfaces.json"

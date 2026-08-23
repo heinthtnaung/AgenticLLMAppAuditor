@@ -9,8 +9,13 @@ SRC_DIR = REPO_ROOT / "src"
 
 # src/ is a plain folder of modules, not a package, so it must be importable
 # before anything below can import from it.
-if str(SRC_DIR) not in sys.path:
-    sys.path.insert(0, str(SRC_DIR))
+TESTS_DIR = Path(__file__).resolve().parent
+
+# src/ so the modules under test import, and tests/ so the shared helpers next
+# to this file are importable from the subfolders that hold the tests.
+for directory in (SRC_DIR, TESTS_DIR):
+    if str(directory) not in sys.path:
+        sys.path.insert(0, str(directory))
 
 import pytest  # noqa: E402
 

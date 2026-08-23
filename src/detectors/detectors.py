@@ -2,7 +2,7 @@
 
 import ast
 
-from ast_utils import (
+from parsing.ast_utils import (
     assigned_name,
     build_import_table,
     call_leaf,
@@ -13,7 +13,7 @@ from ast_utils import (
     keyword_string,
     text_build_shape,
 )
-from detector_names import (
+from detectors.detector_names import (
     AGENT_FACTORIES,
     DATA_SOURCE_CALLS,
     DATA_SOURCE_METHODS,
@@ -26,8 +26,8 @@ from detector_names import (
     TOOL_CLASSES,
     TOOL_DECORATORS,
 )
-from languages import PYTHON
-from surface import AGENT_DEF, DATA_SOURCE, PROMPT_TEMPLATE, TOOL_CALL, Surface
+from parsing.languages import PYTHON
+from artifacts.surface import AGENT_DEF, DATA_SOURCE, PROMPT_TEMPLATE, TOOL_CALL, Surface
 
 FUNCTION_NODES = (ast.FunctionDef, ast.AsyncFunctionDef)
 

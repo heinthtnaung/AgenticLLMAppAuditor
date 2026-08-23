@@ -2,7 +2,7 @@
 
 import pytest
 from conftest import CORPUS_APPS, CORPUS_DIR, GROUND_TRUTH_SCHEMA_VERSION, ground_truth, manifest, require_corpus
-from surface import SURFACE_KINDS
+from artifacts.surface import SURFACE_KINDS
 
 # The OWASP subset this project audits, plus the auditability risk it adds.
 ALLOWED_OWASP_IDS = frozenset({"LLM01", "LLM02", "LLM05", "LLM06", "AUDITABILITY"})

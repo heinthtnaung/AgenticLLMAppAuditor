@@ -200,7 +200,10 @@ model is set up here so Phase 3 can start immediately.
 
 ## 5. Where the later phases attach
 
-*Planned — none of this is built yet.*
+Phase 2 is built. `python src/main.py <repo>` produces `sbom.json`,
+`aibom.json` and `mapping.json` beside the surfaces, joining each surface to
+the dependency it came from on the `module` field. Phases 3 and 4 are not
+built.
 
 ```mermaid
 flowchart TD
@@ -225,6 +228,17 @@ treated as contracts. The field lists are in [`SCHEMAS.md`](./SCHEMAS.md).
 
 ## 6. Module map
 
+`src/` groups modules by what they do. The folders are plain directories, not
+packages — Python imports them without an `__init__.py`, so there are no empty
+files to explain.
+
+| Folder | What it holds |
+|---|---|
+| `parsing/` | turning a repository's source files into syntax trees |
+| `detectors/` | finding the four kinds of LLM surface in a tree |
+| `artifacts/` | the JSON documents each run produces, and their shapes |
+| `deps/` | reading an app's dependencies, and matching imports to packages |
+
 | File | Its one job |
 |---|---|
 | `main.py` | command line entry point |
@@ -243,6 +257,12 @@ treated as contracts. The field lists are in [`SCHEMAS.md`](./SCHEMAS.md).
 | `surface.py` | the data model and stable JSON output |
 | `config.py` | settings, from the environment |
 | `model_client.py` | talk to the local model (Phase 3) |
+| `syft_runner.py` | run the SBOM generator: the only outside process |
+| `requirements_parser.py` | what the app says it depends on |
+| `sbom.py` | normalise that into a deterministic bill of materials |
+| `component_match.py` | which package an import came from |
+| `mapping.py` | join each surface to its component, or say why not |
+| `aibom.py` | the models, tools and agents, from the surfaces |
 
 Every module stays under the project's 200-line cap, so none of them grows
 into a file that does two jobs.

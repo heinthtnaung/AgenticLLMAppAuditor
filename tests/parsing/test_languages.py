@@ -1,7 +1,7 @@
 """The language registry: which files the auditor can read, and which parser each needs."""
 
 import pytest
-from languages import (
+from parsing.languages import (
     JAVASCRIPT,
     LANGUAGE_BY_EXTENSION,
     LANGUAGES,

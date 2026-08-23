@@ -26,6 +26,16 @@ artifact directory name, `ground_truth.app`, and `manifest.name`.
 | Regression snapshot | `corpus/evidence/<app>.baseline.json` | tool-derived |
 | Phase 1 output | `artifacts/<app>/surfaces.json` | `src/main.py` |
 
+**`schema_version` is per file.** Each artifact versions independently; that
+`surfaces.json` is at 2 while a new file starts at 1 is not a mistake.
+
+**External tools are normalised, never stored raw.** Syft's output carries a
+random UUID, a wall-clock timestamp, and absolute paths, so two runs differ. Any
+artifact derived from an external tool drops timestamps, UUIDs, absolute paths,
+tool-internal identifiers, and synthesised values the tool guessed. What is
+stored is this project's own shape, using the standard's field names where they
+fit so the lineage stays obvious.
+
 `src/corpus_paths.py` owns these paths. Import them from there rather than
 joining strings, so a later phase cannot guess wrong.
 
@@ -90,6 +100,174 @@ are the same surface even if `detail` differs, and are collapsed by
 
 ---
 
+## `artifacts/<app>/sbom.json` — Phase 2 output
+
+What the app's dependency manifests and the SBOM generator say about its
+components. Not raw CycloneDX: the determinism rule above makes storing Syft's
+output as produced impossible, and a rewritten document wearing a standard's
+name would invite a reader to feed it to a CycloneDX tool that would then choke.
+
+| Field | Type | Required | Meaning |
+|---|---|---|---|
+| `schema_version` | int | yes | Currently `1`. |
+| `generator_name` | str | yes | The external tool, e.g. `syft`. |
+| `generator_version` | str | yes | Pinned. If it changes, the artifact *should* change. |
+| `version_guessing_enabled` | bool | yes | Whether the generator was allowed to infer a version from a range constraint. |
+| `scanned_manifests` | list[str] | yes | The dependency manifests that exist and were read, sorted. Empty when the app declares none. This is what makes "streamlit is missing" a checkable claim rather than an accusation. |
+| `component_count` | int | yes | `len(components)`. |
+| `components` | list | yes | Sorted by `(ecosystem, name, version or "")`. |
+
+Each component:
+
+| Field | Type | Required | Meaning |
+|---|---|---|---|
+| `name` | str | yes | PEP 503-normalised distribution name — lowercase, runs of `-_.` collapsed to `-`. Never an import name. |
+| `ecosystem` | str | yes | `pypi` or `npm`. One ecosystem per document: only Python manifests are read today, and an npm app needs its own manifest reader before its components could be labelled correctly. |
+| `version` | str \| null | yes | Read **only** together with `version_source`. |
+| `version_source` | str | yes | `pinned`, `inferred`, `unconstrained`, or `unknown`. |
+| `version_constraint` | str \| null | yes | Exactly as the manifest wrote it, e.g. `~=0.3.25`. Without it, `inferred` is an unfalsifiable claim. |
+| `purl` | str | yes | The join key. **Carries a version only when `version_source` is `pinned`.** |
+| `declared` | bool | yes | Named in a dependency manifest. |
+| `tool_reported` | bool | yes | The generator emitted it. |
+| `declared_in` | str \| null | yes | Which manifest declared it. |
+
+**A versioned PURL is a fact, never a guess.** `~=0.3.25` admits `0.3.99`, so
+recording `pkg:pypi/langchain@0.3.25` would let any purl-keyed advisory lookup
+manufacture a false positive. Inferred versions live in `version` and
+`version_source` only, where a consumer has to look at them deliberately.
+
+An exact pin is read from the **manifest**, not from the generator. The
+manifest is what the app declares; a generator reporting a different version is
+reporting a different fact, and preferring it would let the PURL assert a
+version the app never asked for.
+
+The invariant is one-directional: a versioned PURL implies `pinned`, but
+`pinned` does not imply a versioned PURL — a pin the generator never saw and
+whose constraint could not be read yields a bare PURL rather than a guess.
+
+The two booleans are more useful than one enum: `declared and not
+tool_reported` is a dependency the generator dropped, and `tool_reported and
+not declared` is an undeclared one. At least one must be true.
+
+---
+
+## `artifacts/<app>/aibom.json` — Phase 2 output
+
+The AI-specific pieces: which models, tools and agents the app defines. Derived
+from `surfaces.json`, never by re-parsing source, so every entry is traceable.
+
+| Field | Type | Required | Meaning |
+|---|---|---|---|
+| `schema_version` | int | yes | Currently `1`. |
+| `component_count` | int | yes | `len(components)`. |
+| `components` | list | yes | Sorted by `(kind, file, line, name)`. |
+
+Each component:
+
+| Field | Type | Required | Meaning |
+|---|---|---|---|
+| `kind` | str | yes | `MODEL`, `TOOL`, or `AGENT`. |
+| `name` | str | yes | Copied from the surface. |
+| `surface_id` | str | yes | The `surfaces.json` record it came from. An entry that cannot be traced back is an entry nobody can check. |
+| `file`, `line` | str, int | yes | Copied from the surface, so the file reads on its own. |
+| `module` | str | yes (may be `""`) | Copied from the surface. |
+| `model_source` | str | yes | `unstated` for a model client whose model is chosen at runtime, `not_applicable` for tools and agents. |
+
+One list with a `kind`, rather than three lists, so a reader who understands
+`surfaces.json` understands this immediately and a fourth kind is additive.
+
+**Why there is no `model_identifier` yet.** `surfaces.json` records no model
+name, so the field would always be null. Capturing
+`ChatOpenAI(model="gpt-4o")` needs a new field on `Surface`; until a fixture
+exercises it, an always-null field would be worse than its absence. Adding it
+later is additive.
+
+The MODEL/AGENT split is decided by checking the surface name against
+`MODEL_CLASSES`, **not** by reading `detail` — `detail` is documented as
+descriptive only, so parsing it would make a reworded string break this file.
+
+---
+
+## `artifacts/<app>/mapping.json` — Phase 2 output
+
+Joins each surface to the component it comes from, or records why there is
+none. Exactly one entry per surface.
+
+| Field | Type | Required | Meaning |
+|---|---|---|---|
+| `schema_version` | int | yes | Currently `1`. |
+| `surface_count` | int | yes | One entry per surface extracted in the same run. Phase 2 does not re-read `surfaces.json`, so this is an in-process invariant, asserted by tests rather than checkable from disk alone. |
+| `mapped_count` | int | yes | Entries with reason `third_party`. |
+| `unmapped_count` | int | yes | The rest. |
+| `reason_counts` | object | yes | All five reasons always present, including zeros. |
+| `undeclared_components` | list[str] | yes | Distinct names used but not declared, sorted. **Not exhaustive — see below.** |
+| `entries` | list | yes | Sorted by `surface_id`. |
+
+Each entry:
+
+| Field | Type | Required | Meaning |
+|---|---|---|---|
+| `surface_id` | str | yes | Verbatim from `surfaces.json`. |
+| `module` | str | yes (may be `""`) | Copied from the surface; not derivable from `surface_id`, and without it this file cannot be read alone. |
+| `package_root` | str \| null | yes | The package-root of `module`. Shows the working, so the join is checkable. |
+| `component_name` | str \| null | yes | Resolved distribution name. |
+| `ecosystem` | str \| null | yes | `pypi` or `npm`. |
+| `purl` | str \| null | yes | Copied from the matching component. **Non-null only when `third_party`**, so `purl != null` means exactly "joined". |
+| `reason` | str | yes | One of the five below. |
+| `resolved_by` | str | yes | `normalised_name`, `alias_table`, or `none` — how the import name became a distribution name. |
+
+The five reasons:
+
+| Reason | Meaning |
+|---|---|
+| `third_party` | Joined to a component in `sbom.json`. |
+| `stdlib` | Part of the language runtime, or a builtin. No distribution exists. |
+| `first_party` | The app's own code. |
+| `used_but_undeclared` | Names something that is neither the language runtime, nor the app's own code, nor a component in the SBOM. **A supply-chain finding, not a mapping gap.** |
+| `unresolved` | The owning distribution could not be determined; needs the dataflow analysis in Phase 3. |
+
+An unmapped surface is the normal case, not a defect: on the corpus app, 6 of
+19 surfaces join to a component. The reason field exists so a reader never has
+to work out which kind of "no" they are looking at.
+
+Three checks run before that conclusion is reached, and each exists because
+skipping it produced a false finding: the language's own runtime (Node's
+builtins are not Python's), the app's own top-level modules, and then the SBOM.
+Without the second, `from myapp.loaders import x` reads as a missing
+dependency.
+
+**`undeclared_components` is not exhaustive.** It can only report a package
+that some surface points at. The corpus app also imports `dotenv` without
+declaring it, but nothing in the application creates a surface for
+`load_dotenv()`, so a surface-keyed artifact has nowhere to record it. A
+complete answer needs a repository-wide import inventory, which is not part of
+this phase.
+
+**Coverage is printed, not stored.** A percentage is derived from the counts,
+and a float in the artifact would break byte-identical output for no gain.
+
+---
+
+## Advisory data policy
+
+Generating an SBOM is local. Fetching advisories is not, and the auditor makes
+no network calls — so advisories are **not** fetched at runtime.
+
+The policy, when advisory matching is built: a snapshot is downloaded
+out-of-band as a documented manual step, committed or pinned like the corpus
+is, and read from disk. A snapshot is reproducible, which is what an
+evaluation needs, and it is out of date the day after it is taken — that
+trade-off belongs in the write-up rather than in a footnote.
+
+Matching is **deferred** for now, and the reason is a property of the data
+rather than of the code: of the corpus app's five components, two have no
+version at all and three have one inferred from a range constraint. There is
+nothing an honest matcher could key on. Asserting a match against `~=0.3.25`
+would claim a vulnerability the app may not have, which is the one failure this
+phase must not produce.
+
+---
+
 ## `corpus/evidence/<app>.ground_truth.json` — Phase 1 input, Phase 4 grading key
 
 Hand-authored (currently AI-drafted, see `verified`). Read by Task 1.7's tests
@@ -116,7 +294,7 @@ Each entry in `findings`:
 | Field | Type | Required | Meaning |
 |---|---|---|---|
 | `id` | str | yes | App-scoped label, e.g. `VULN1-02`. Cited in results tables — never renumbered. |
-| `owasp_id` | str | yes | `LLM01`, `LLM02`, `LLM05`, `LLM06`, or `AUDITABILITY`. |
+| `owasp_id` | str | yes | `LLM01`, `LLM02`, `LLM03`, `LLM06`, or `AUDITABILITY`, from the **2025** OWASP list. |
 | `title` | str | yes | One line. |
 | `description` | str | yes | One to three sentences: what is wrong, and why it is that class. |
 | `file` | str | yes | Repo-relative POSIX path — **the same convention as `surfaces.json`**, because this is the join key. |
@@ -148,11 +326,9 @@ false positive. This is the only place the write-up can honestly claim a
 false-positive rate.
 
 **Known limitation, to be stated in the write-up:** exhaustiveness is only
-claimed where `expected_surfaces_complete` is `true`. Today that is the
-TypeScript fixture alone, whose surfaces were enumerated by reading the source
-before the extractor was run. The two Python fixtures are recall-only: an
-exhaustive list derived from the tool's own output would make precision
-trivially 100% and the metric worthless (`TODO.md` B3c).
+claimed where `expected_surfaces_complete` is `true`. The one committed
+fixture is recall-only: an exhaustive list derived from the tool's own output
+would make precision trivially 100% and the metric worthless (`TODO.md` B3).
 
 ---
 
@@ -177,7 +353,7 @@ A `ground_truth.json` must agree with its fixture's manifest on `name` and
 
 ---
 
-## `corpus/<app>/extracted_baseline.json` — regression protection only
+## `corpus/evidence/<app>.baseline.json` — regression protection only
 
 A snapshot of what the extractor produces today, generated from its own output.
 A test asserts the current run still matches, so a change that silently drops
@@ -192,6 +368,5 @@ that, and a test asserts the marker is present.
 
 ## Later phases
 
-`sbom.json`, `aibom.json`, `mapping.json` (Phase 2) and `findings.json`
-(Phase 3) are not defined yet. Define each one here **before** writing the code
-that produces it.
+`findings.json` (Phase 3) is not defined yet. Define it here **before** writing
+the code that produces it.

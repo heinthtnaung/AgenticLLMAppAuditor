@@ -22,20 +22,27 @@ Every task below is held to the binding rules in
 
 ## Before starting: two things to settle
 
-**Sign off the OWASP subset.** Supply chain is the risk this whole phase
-reports, and it is `LLM05` in the 2023/24 list but `LLM03` in the 2025 list.
-The code currently emits `LLM05`; `TODO.md` Phase 0 proposes `LLM03`. Deciding
-after Phase 2 ships means relabelling every finding it produced. See `TODO.md`
-B6.
+**The OWASP subset is decided.** The project cites the **2025** list, so
+supply chain is **LLM03**. Note what that exposes: the corpus app's grading key
+has findings for LLM01, LLM02, LLM06 and auditability, and **none for LLM03**.
+The risk this phase reports currently has nothing to be graded against, so
+producing evidence for one is part of the phase's job, not an afterthought
+(`TODO.md` B6).
 
 **Know how much of the corpus this phase can actually reach.** On the one
 corpus app, **6 of 19 surfaces carry a third-party module**:
 
-| Surfaces | `module` | Joinable? |
+| Surfaces | `module` | Outcome |
 |---|---|---|
-| 6 | `langchain.agents`, `langchain_litellm`, `streamlit` | yes |
-| 2 | `os`, `yaml` | standard library or renamed distribution |
-| 11 | `""` | no — `open()`, `cursor.execute()`, methods on local variables |
+| 6 | `langchain.agents` ×4, `langchain_litellm`, `streamlit` | joins to a component |
+| 1 | `yaml` | resolves to **PyYAML, which the app never declares** — a supply-chain finding |
+| 1 | `os` | standard library, no component exists |
+| 11 | `""` | `open()`, `cursor.execute()` — builtins and methods on local variables |
+
+`yaml` is **not** standard library: it is PyYAML, and `requirements.txt` does
+not list it. Nor does it list `python-dotenv`, which three files import. Those
+are real findings, and the reason `mapping.json` needs a `used_but_undeclared`
+outcome distinct from "unresolved".
 
 An unmapped surface is therefore the **normal** case, not a defect. Design for
 it: `mapping.json` must be able to say "this surface has no component" without
@@ -73,7 +80,12 @@ boundary in `AGENTS.md` updated to match if it needs to be.
 **Do:**
 - Write `src/sbom.py`, one job: run the chosen generator over an app directory
   and normalise its output into `artifacts/<app>/sbom.json`.
-- Store CycloneDX or SPDX as produced; do not invent a third format.
+- **Normalise, do not store as produced.** Measured: Syft's CycloneDX output
+  carries a random `serialNumber`, a wall-clock timestamp, and an absolute
+  path, so two runs differ — which the determinism rule forbids. `sbom.json` is
+  therefore this project's own shape, using CycloneDX field names and PURL
+  identity so the lineage stays obvious. Raw Syft output is not written to
+  `artifacts/`.
 - Components are identified by **PURL** (`pkg:pypi/langchain@0.3.25`), because
   that is the identifier advisories use.
 - Keep the output deterministic: sorted components, no timestamps, no absolute
@@ -98,9 +110,13 @@ that looks complete and is not.
 - Apply the package-root rule already documented in
   [`SCHEMAS.md`](./SCHEMAS.md): npm scoped names take two path segments,
   unscoped take one; Python takes the first dotted segment.
-- Then map that root to a distribution name. Prefer the installed metadata
-  (`importlib.metadata.packages_distributions()`) over a hand-written table,
-  so the mapping is derived rather than guessed.
+- Then map that root to a distribution name. **Not** via
+  `importlib.metadata.packages_distributions()`: it reads the auditor's own
+  virtual environment, which does not contain the audited app's dependencies
+  and must not — so it returns nothing for `yaml`, `langchain` and `streamlit`,
+  and would make the artifact depend on whose machine produced it. Resolve
+  against `sbom.json`'s own component list, with a small named table for
+  genuine renames (`yaml` → `pyyaml`, `dotenv` → `python-dotenv`).
 - Return nothing for the standard library and for first-party code. Both are
   correct answers, not failures.
 
@@ -137,19 +153,30 @@ is an entry nobody can check.
 **Do:**
 - Write `src/mapping.py` producing `artifacts/<app>/mapping.json`: each entry
   joins a surface `id` to a component PURL, or records that there is none.
-- Say **why** there is none — standard library, first-party, or unresolved.
-  Those three are different facts and a reader should not have to guess.
+- Say **why** there is none. Five outcomes, because they are five different
+  facts: `third_party`, `stdlib`, `first_party`, `used_but_undeclared`, and
+  `unresolved`. Collapsing the fourth into the fifth would throw away the
+  strongest supply-chain evidence this corpus contains.
 - Report coverage: how many surfaces mapped, how many did not, and why. A
   mapping that silently covers a third of the surfaces looks the same as one
   that covers all of them.
 
-**Done when:** every surface in the corpus app appears in `mapping.json`
-exactly once, the six third-party surfaces carry a PURL that exists in
-`sbom.json`, and the coverage figure is printed rather than buried.
+**Done when:** all 19 surfaces appear in `mapping.json` exactly once, the six
+that join carry a PURL present in `sbom.json`, `yaml` is reported as
+`used_but_undeclared` rather than unresolved, and the coverage figure is
+printed rather than buried.
 
 ---
 
-## Task 2.6 — Advisory ingestion
+## Task 2.6 — Advisory ingestion (deferred)
+
+**Deferred, with the policy still written.** Of the five components, two have
+no version and three have a version inferred from a range constraint. There is
+nothing an advisory matcher could honestly match yet: asserting a match against
+`~=0.3.25` would claim a vulnerability the app may not have. Task 2.1's policy
+write-up still happens; the matcher waits until version resolution improves.
+
+When it is built:
 
 **Do:**
 - Write `src/advisories.py`, one job: read the local advisory snapshot and

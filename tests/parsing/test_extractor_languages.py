@@ -1,9 +1,9 @@
 """extract_repo must dispatch to both language backends over one mixed repository."""
 
 from conftest import CORPUS_DIR
-from extractor import extract_repo
-from languages import PYTHON, TYPESCRIPT
-from surface import PROMPT_TEMPLATE, surfaces_to_json
+from parsing.extractor import extract_repo
+from parsing.languages import PYTHON, TYPESCRIPT
+from artifacts.surface import PROMPT_TEMPLATE, surfaces_to_json
 
 PYTHON_SOURCE = 'system_prompt = "You are a helpful support assistant."\n'
 

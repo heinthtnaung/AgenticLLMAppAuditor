@@ -18,7 +18,7 @@ from detector_helpers import (
     other_detectors,
     parse,
 )
-from detectors import (
+from detectors.detectors import (
     find_agent_defs,
     find_data_sources,
     find_prompt_templates,

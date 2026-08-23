@@ -2,10 +2,10 @@
 
 import pytest
 from conftest import CORPUS_APPS, app_is_present, CORPUS_DIR, ground_truth, require_corpus
-from extractor import extract_file, extract_repo
-from extractor_js import parse_source
-from extractor_python import parse_file
-from surface import SURFACE_KINDS, surfaces_to_json
+from parsing.extractor import extract_file, extract_repo
+from parsing.extractor_js import parse_source
+from parsing.extractor_python import parse_file
+from artifacts.surface import SURFACE_KINDS, surfaces_to_json
 
 # Named explicitly: CORPUS_APPS is discovered on disk, so its order is not a contract.
 SUPPORT_AGENT_APP = "vuln-app-1-support-agent"

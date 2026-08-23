@@ -3,7 +3,7 @@
 from collections.abc import Iterator
 from pathlib import Path
 
-from languages import IGNORED_SUFFIXES, SOURCE_EXTENSIONS
+from parsing.languages import IGNORED_SUFFIXES, SOURCE_EXTENSIONS
 
 # Directories that never contain the audited app's own source code.
 SKIP_DIRS = frozenset({

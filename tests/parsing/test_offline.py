@@ -10,8 +10,8 @@ import socket
 
 import pytest
 from conftest import CORPUS_APPS, CORPUS_DIR, require_corpus
-from extractor import extract_repo
-from surface import surfaces_to_json
+from parsing.extractor import extract_repo
+from artifacts.surface import surfaces_to_json
 
 
 class NoNetwork(socket.socket):

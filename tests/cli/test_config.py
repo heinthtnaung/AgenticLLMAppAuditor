@@ -9,11 +9,11 @@ from pathlib import Path
 
 import pytest
 import config
+from conftest import REPO_ROOT
 
 # One setting is enough to prove the resolution order; the rest share the same code path.
 SETTING = "AUDITOR_MODEL"
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 @pytest.fixture(autouse=True)

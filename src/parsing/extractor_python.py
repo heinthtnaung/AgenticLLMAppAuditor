@@ -4,13 +4,13 @@ import ast
 import tokenize
 from pathlib import Path
 
-from detectors import (
+from detectors.detectors import (
     find_agent_defs,
     find_data_sources,
     find_prompt_templates,
     find_tool_calls,
 )
-from surface import Surface
+from artifacts.surface import Surface
 
 DETECTORS = (find_prompt_templates, find_agent_defs, find_tool_calls, find_data_sources)
 

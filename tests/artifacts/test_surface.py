@@ -3,8 +3,8 @@
 import json
 
 import pytest
-from languages import JAVASCRIPT, PYTHON
-from surface import (
+from parsing.languages import JAVASCRIPT, PYTHON
+from artifacts.surface import (
     AGENT_DEF,
     PROMPT_TEMPLATE,
     SCHEMA_VERSION,

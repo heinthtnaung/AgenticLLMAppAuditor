@@ -2,11 +2,11 @@
 
 from pathlib import Path
 
-import extractor_js
-import extractor_python
-from languages import PYTHON, language_of
-from repo_loader import list_source_files
-from surface import Surface
+from parsing import extractor_js
+from parsing import extractor_python
+from parsing.languages import PYTHON, language_of
+from parsing.repo_loader import list_source_files
+from artifacts.surface import Surface
 
 
 def extract_file(path: Path, file_label: str) -> list[Surface]:

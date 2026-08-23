@@ -12,8 +12,8 @@ from detector_helpers import (
     only,
     parse,
 )
-from detectors import find_agent_defs, find_prompt_templates
-from surface import AGENT_DEF, PROMPT_TEMPLATE
+from detectors.detectors import find_agent_defs, find_prompt_templates
+from artifacts.surface import AGENT_DEF, PROMPT_TEMPLATE
 
 
 def test_finds_prompt_template_constructor() -> None:

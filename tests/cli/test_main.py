@@ -7,7 +7,7 @@ import sys
 import main as main_module
 from conftest import CORPUS_DIR, require_corpus
 from main import OUTPUT_NAME, main
-from surface import SCHEMA_VERSION, SURFACE_KINDS
+from artifacts.surface import SCHEMA_VERSION, SURFACE_KINDS
 
 APP = "vuln-app-1-support-agent"
 

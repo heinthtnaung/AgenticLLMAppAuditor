@@ -6,7 +6,7 @@ approach, so the two backends stay recognisably the same shape.
 
 from tree_sitter import Node
 
-from detector_names_js import (
+from detectors.detector_names_js import (
     AGENT_FACTORIES,
     DATA_SOURCE_CALLS,
     DATA_SOURCE_MEMBERS,
@@ -20,9 +20,9 @@ from detector_names_js import (
     TOOL_CLASSES,
     TOOL_FACTORIES,
 )
-from languages import language_of
-from surface import AGENT_DEF, DATA_SOURCE, PROMPT_TEMPLATE, TOOL_CALL, Surface
-from ts_utils import (
+from parsing.languages import language_of
+from artifacts.surface import AGENT_DEF, DATA_SOURCE, PROMPT_TEMPLATE, TOOL_CALL, Surface
+from parsing.ts_utils import (
     CALL_NODES,
     build_import_table,
     call_name,
