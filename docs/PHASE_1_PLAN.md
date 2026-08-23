@@ -4,7 +4,8 @@
 surfaces" (prompt templates, agent definitions, tool-call sites, and data
 sources feeding prompts/tools), with exact file + line locations.
 
-**Language:** Python only.
+**Languages:** Python (stdlib `ast`) and JavaScript/TypeScript (tree-sitter).
+The design is language-agnostic: `src/languages.py` is where a new one starts.
 
 **Important scope rule:** Phase 1 uses **static analysis only** — no LLM
 reasoning, no probes. The model server is set up here so it is ready for
@@ -12,42 +13,12 @@ Phase 3, but detection logic in this phase is deterministic code.
 
 ---
 
-## Coding rules (apply to every task below)
+## Coding rules
 
-These are binding for all Phase 1 code.
-
-1. **Keep it simple.** Prefer the most obvious solution. If a task feels
-   complicated, split it into smaller functions rather than writing clever code.
-2. **Avoid deep nesting.** No more than 2 levels of nested loops or
-   conditionals. Use early `return`/`continue` (guard clauses) and helper
-   functions to keep code flat.
-3. **Small functions, one job each.** A function should do one thing and be
-   short enough to read without scrolling (aim < 30 lines).
-4. **Clear names.** Descriptive names for functions and variables
-   (`extract_tool_calls`, not `etc` or `process`). No single-letter names
-   except short loop counters.
-5. **Type hints everywhere.** Every function has typed parameters and return
-   type. Use `dataclass` for structured data.
-6. **Docstrings.** Every module and public function has a one-line docstring
-   saying what it does.
-7. **No premature optimisation.** Write clear code first. Only optimise if a
-   measured problem exists.
-8. **Fail clearly.** Validate inputs; raise explicit errors with useful
-   messages instead of failing silently or returning `None` ambiguously.
-9. **Pure functions where possible.** Prefer functions that take input and
-   return output without hidden side effects. Keep file I/O at the edges.
-10. **Stable JSON output.** All artifacts are JSON with a fixed schema.
-    Do not change a schema without updating everything that reads it.
-11. **Standard library first.** Use the Python standard library (especially
-    `ast`, `pathlib`, `json`) before reaching for third-party packages.
-12. **One responsibility per file.** Keep each module focused (loader,
-    extractor, model client, etc. live in separate files).
-13. **Constants, not magic values.** Named constants for skip-lists, size
-    limits, and file extensions — defined once at the top of a module.
-14. **Write a test as you go.** Each task has a check against the demo apps
-    before it is considered done.
-15. **No dead code / no TODO left behind.** Remove commented-out code before
-    marking a task complete.
+Every task below is held to the binding rules in
+[`CODING_RULES.md`](./CODING_RULES.md). They are not repeated here: this plan
+used to carry its own copy, and the two lists had already drifted to the point
+of numbering different rules as 11.
 
 ---
 
@@ -93,7 +64,7 @@ Walk a local repo and return the Python files worth analysing.
 - Write `src/repo_loader.py`.
 - Define constants at the top: `SKIP_DIRS` (`.venv`, `__pycache__`,
   `node_modules`, `.git`), `MAX_FILE_BYTES`.
-- Function `list_python_files(repo_path: str) -> list[Path]` that returns
+- Function `list_source_files(repo_path: str) -> list[Path]` that returns
   `.py` files, skipping the skip-dirs and oversized files.
 - Use guard clauses (`continue`) instead of nested `if`s.
 
@@ -108,8 +79,9 @@ Define the structured output shape before writing the extractor.
 
 **Do:**
 - Write `src/surface.py`.
-- A `@dataclass Surface` with fields: `kind` (str), `name` (str),
-  `file` (str), `line` (int), `detail` (str).
+- A `@dataclass Surface`. Its fields are defined once in
+  [`SCHEMAS.md`](./SCHEMAS.md) — do not restate them here, or the two
+  documents will disagree.
 - `kind` is one of a fixed set of constants:
   `PROMPT_TEMPLATE`, `AGENT_DEF`, `TOOL_CALL`, `DATA_SOURCE`.
 - A function `surfaces_to_json(surfaces: list[Surface]) -> str`.
@@ -179,19 +151,92 @@ the two demo apps is missed.
 
 ---
 
+## Task 1.8 — Language registry
+
+Make the choice of language explicit and data-driven, so adding one is an
+edit in a single place.
+
+**Do:**
+- Write `src/languages.py` holding two separate tables: extension to
+  **language** (the artifact vocabulary: `python`, `javascript`,
+  `typescript`), and extension to **tree-sitter grammar** (internal).
+  They differ: `.jsx` is JavaScript but needs the TSX grammar.
+- Add `IGNORED_SUFFIXES` for files with no behaviour to audit
+  (`.d.ts`, `.min.js`, `.bundle.js`).
+- Add a required `language` field to `Surface`, and bump `SCHEMA_VERSION`.
+
+**Done when:** `language_of` and `grammar_of` disagree for `.jsx`, both raise
+for an unregistered extension, and every emitted surface carries a language.
+
+---
+
+## Task 1.9 — JavaScript and TypeScript backend
+
+**Do:**
+- Split parsing per language: `src/extractor_python.py` (`ast`) and
+  `src/extractor_js.py` (tree-sitter). `src/extractor.py` keeps only the
+  dispatch and the repository walk.
+- Write `src/ts_utils.py` and `src/detectors_js.py` — the same four surface
+  kinds, the same name-table approach as the Python side.
+- tree-sitter never raises on bad syntax, so `parse_source` must check
+  `root_node.has_error` and raise, naming the file.
+
+**Done when:** `extract_repo` on a mixed repository returns surfaces from both
+languages, each carrying the right `language` and `module`, and a malformed
+`.ts` file fails loudly rather than yielding nothing.
+
+---
+
+## Task 1.10 — A clean-code fixture
+
+**Do:**
+- Add `corpus/oss-app-langgraphjs-starter`, pinned in
+  `corpus/evidence/<app>.manifest.json`.
+- Record its surfaces in `corpus/evidence/<app>.ground_truth.json` as
+  `expected_surfaces`, with
+  `findings: []`. It has no planted vulnerabilities: that is the point, it is
+  what lets the evaluation report a false-positive rate.
+
+**Done when:** the extractor finds exactly the recorded surfaces and no others,
+and the app's zero findings read as "asserted clean" rather than "nothing
+found". See [`SCHEMAS.md`](./SCHEMAS.md).
+
+---
+
+## Not in Phase 1 — auditing a repository by URL
+
+Downloading a repository from a URL and auditing it was built and then
+**removed**, deliberately. Phase 1 is offline static analysis over one pinned
+fixture, and fetching brought in an untrusted input with the safety work that
+implies: URL allow-listing, path-traversal guards on the derived directory
+name, symlink handling, non-interactive git. All of that is real, and none of
+it belongs in the phase that establishes the extractor.
+
+It returns in Phase 3 or 4, when the evaluation actually needs more than one
+app. See `docs/TODO.md`.
+
+---
+
 ## Phase 1 exit checklist
 
-- [ ] Repo scaffolded, installs cleanly, demo apps under `corpus/`.
-- [ ] Offline model client returns a response (ready for Phase 3).
-- [ ] Repo loader returns correct file lists.
-- [ ] `Surface` data model + stable JSON serialisation.
-- [ ] Four independent detectors implemented.
-- [ ] `surfaces.json` produced for both demo apps.
-- [ ] All surfaces in `ground_truth.json` are found; none missed.
-- [ ] Tests pass; code follows the coding rules above.
+- [x] Repo scaffolded, installs cleanly, demo apps under `corpus/`.
+- [x] Offline model client returns a response (ready for Phase 3).
+      Verified: `python src/model_client.py` answers from the local server.
+- [x] Repo loader returns correct file lists.
+- [x] `Surface` data model + stable JSON serialisation.
+- [x] Four independent detectors implemented.
+- [x] `surfaces.json` produced for both demo apps.
+- [~] All surfaces in `ground_truth.json` are found; none missed.
+      Every one is matched by a test, but the ground truth itself is AI-drafted
+      and awaiting human sign-off (`TODO.md` B3).
+- [x] Tests pass; code follows the coding rules above.
+- [x] Language registry, and a JavaScript/TypeScript backend (tasks 1.8-1.10).
+
+The finished flow is walked through step by step in [`FLOW.md`](./FLOW.md).
 
 **Artifacts produced this phase:** `artifacts/<app>/surfaces.json`
-(consumed by Phase 2 mapping and Phase 3 auditing).
+(consumed by Phase 2 mapping and Phase 3 auditing). Its schema, and the
+`ground_truth.json` input schema, are documented in [`SCHEMAS.md`](./SCHEMAS.md).
 
 ---
 

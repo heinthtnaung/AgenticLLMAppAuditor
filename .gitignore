@@ -2,11 +2,23 @@
 __pycache__/
 *.pyc
 
+# JavaScript (corpus fixtures ship a lockfile, never installed packages)
+node_modules/
+
 # Virtual environment (this project uses exactly one: .venv)
 .venv/
 
+# Local settings (copy .env.example to .env)
+.env
+
 # Tests
 .pytest_cache/
+
+# The audited app's source is third-party code and is not committed. Download
+# it with the command in the README; corpus/evidence/ (this project's own
+# grading key, manifest and baseline) IS committed.
+corpus/*
+!corpus/evidence/
 
 # Generated artifacts (surfaces.json, sbom.json, findings.json, ...)
 artifacts/
@@ -15,6 +27,10 @@ artifacts/
 *.gguf
 *.bin
 *.safetensors
+
+# Report working files (the built docs/report.docx is what ships)
+docs/REPORT.md
+docs/build_report.py
 
 # AI / agent tooling (local only — not part of the submitted project)
 .claude/

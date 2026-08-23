@@ -2,7 +2,12 @@
 
 Single source of truth for what is done and what is next.
 **Update this file every time a task is finished** — tick the box in the same
-change that completes the work (see rule 20 in `.claude/AGENTS.md`).
+change that completes the work (see rule 20 in
+[`CODING_RULES.md`](./CODING_RULES.md)).
+
+How the system works: [`FLOW.md`](./FLOW.md) · the standard it is held to:
+[`CODING_RULES.md`](./CODING_RULES.md) · the JSON contracts:
+[`SCHEMAS.md`](./SCHEMAS.md).
 
 Legend: `[ ]` not started · `[~]` in progress · `[x]` done
 
@@ -13,15 +18,33 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done
 - [ ] Confirm the exact 3–4 OWASP LLM Top 10 risks (proposal names: LLM01
       direct + indirect injection, LLM06 excessive agency / unsafe tool use,
       inadequate auditability) — sign this off so scope can't creep
-- [x] Collect deliberately-vulnerable demo apps (2 apps, 9 planted findings,
-      ground truth)
+    - LLM01 – Prompt Injection
+    - LLM03 – Supply Chain Vulnerabilities in LLM Apps 
+    - LLM06 – Excessive Agency and Tool Permissions
+    - LLM08 – Vector Database / RAG Retrieval Risks
+
+      **Not yet signed off, and it does not match what the code enforces.**
+      See B6: three of the ten drafted findings fall outside this list, and
+      no fixture exercises retrieval at all.
+- [x] Collect deliberately-vulnerable demo apps (2 apps; **10** findings
+      drafted, not the 9 first estimated — see B3a)
     - https://github.com/ReversecLabs/damn-vulnerable-llm-agent
     - https://github.com/13o-bbr-bbq/Broken_LLM_Integration_App
-- [x] Select + verify 2–3 open-source LangGraph/LangChain apps (checklist and
-      manifest template ready; live verification done by hand)
-    - https://github.com/langchain-ai/agent-chat-ui
-    - https://github.com/langchain-ai/langgraphjs-studio-starter
+- [~] Select + verify 2–3 open-source LangGraph/LangChain apps (checklist and
+      manifest template ready; live verification done by hand) — **two of the
+      three are JavaScript/TypeScript**; the auditor now reads those too, and
+      one has been adopted as a fixture (see below)
+    - ~~https://github.com/langchain-ai/agent-chat-ui~~ — **dropped**: 56 source
+      files yielding a single generic `fetch` surface. It is a frontend that
+      talks to a server over `langgraph-sdk`, so it has no prompts, agents, or
+      tools to audit. No parser could change that.
+    - https://github.com/langchain-ai/langgraphjs-studio-starter — adopted as
+      `corpus/oss-app-langgraphjs-starter` (TypeScript, 5 surfaces, no planted
+      vulnerabilities, so it measures false positives on clean code)
     - https://github.com/langchain-ai/open_deep_research
+- [~] Manually establish ground truth for the demo app — drafted as
+      `corpus/evidence/vuln-app-1-support-agent.ground_truth.json`, 5 findings,
+      `verified: false`. Needs the human second-person check. See B3.
 - [ ] Manually establish ground truth for the open-source apps (read code,
       list surfaces/issues, second-person check)
 
@@ -31,13 +54,43 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done
 
 See `docs/PHASE_1_PLAN.md` for the task-level breakdown and done-criteria.
 
-- [ ] Set up offline model server (Ollama or vLLM) + download chosen model
+- [x] Set up offline model server (Ollama or vLLM) + download chosen model
       (Llama / Qwen & GLM 5.2 / Gemma 4 / Qwen-coder)
+      — Ollama 0.32.15 running, `qwen2.5-coder:7b-instruct` pulled (4.4 GB),
+      `python src/model_client.py` returns a reply from the local server.
 - [ ] Stand up the LangGraph skeleton (shared state, planner node, bounded
       loop with step cap)
-- [ ] Build the LLM surface extractor (prompt templates, agent definitions,
+      — **not started, and believed misfiled**: this is Phase 3 work. See B4.
+- [x] Build the LLM surface extractor (prompt templates, agent definitions,
       tool-call sites, prompt/tool data sources) with location recording
 
+Phase 1 detail, per `docs/PHASE_1_PLAN.md`:
+
+- [x] The audited app's source is downloaded, not committed: this repository
+      holds no third-party project code, only the evidence about it. The
+      README carries the pinned clone command, and tests that need the app
+      skip with a pointer to it
+- [x] 1.1 Scaffolding — `src/ corpus/ tests/ artifacts/`, `requirements.txt`,
+      `README.md`, `.venv` installs cleanly
+- [x] 1.2 Offline model client — `ask()` verified against the local server
+- [x] 1.3 Repo loader — `src/repo_loader.py`
+- [x] 1.4 Surface data model — `src/surface.py`
+- [x] 1.5 Surface extractor — `src/detectors.py` + `src/extractor.py`
+- [x] 1.6 CLI entry point — `src/main.py`
+- [~] 1.7 Validation — the suite is green and every code-linked ground-truth
+      surface is found; the by-hand cross-check of each grading key is a human
+      task. See B3.
+- [x] Settings read from the environment (`src/config.py` + `.env.example`);
+      the test corpus is discovered on disk instead of listed in code
+- [x] System flow documented step by step in `docs/FLOW.md`
+- [x] 1.8 Language registry (`src/languages.py`) — extension to language and
+      to tree-sitter grammar, kept as two separate ideas
+- [x] 1.9 JavaScript/TypeScript backend (`src/detectors_js.py`,
+      `src/extractor_js.py`, `src/ts_utils.py`) via tree-sitter
+- [x] 1.10 `oss-app-langgraphjs-starter` added as the clean-code fixture
+- [x] Evidence split out of the audited code: `corpus/<app>/` is now a
+      byte-identical upstream copy, and everything authored about it lives in
+      `corpus/evidence/`, owned by `src/corpus_paths.py`
 ---
 
 ## Phase 2 — SBOM/AIBOM + advisory ingestion & mapping
@@ -47,12 +100,54 @@ See `docs/PHASE_1_PLAN.md` for the task-level breakdown and done-criteria.
       agents)
 - [ ] Ingest CSAF/VEX-style advisories for selected components
 - [ ] Build surface-to-component mapping (link each LLM surface to its
-      SBOM/AIBOM components)
+      SBOM/AIBOM components) — join on each surface's `module` field
+- [ ] Decide on `artifacts/<app>/target.json` (app name + upstream commit +
+      file count). Proposed during Phase 1 and **declined there** as out of
+      scope: every field is already recoverable from the artifact directory
+      name and `corpus/evidence/<app>.manifest.json`. Revisit if Phase 2 needs the
+      commit pinned next to the output.
+- [ ] Detector precision, deferred from Phase 1: tell read from write in
+      `open()`; drop `SystemMessage` / `HumanMessage` / `MessagesPlaceholder`
+      from `PROMPT_CLASSES` if they prove noisy; the JS side has the same
+      `load` / `query` / `execute` breadth problem
+- [ ] Detector coverage gaps: no HTTP-route data source on the JS side, though
+      Express and Next handlers are the main untrusted input in JS apps; and
+      29 JS framework names no fixture exercises
+- [ ] Robustness: one malformed `.ts`, or one non-UTF-8 Python file with no
+      PEP 263 cookie, aborts a whole repo scan. Loud, but JS repos will hit it
+      often
+- [ ] Decide whether `src/` becomes a real package. It is flat today, with
+      `tests/conftest.py` putting it on `sys.path`; at 17 modules that is
+      starting to strain
 
 ---
 
 ## Phase 3 — LangGraph auditor, probes & reporting
 
+- [ ] Audit a repository straight from a URL, and restore corpus fixtures from
+      their pinned manifests. Both were built during Phase 1 and removed again
+      to keep it offline and simple. Bringing them back means bringing back the
+      safety work an untrusted input needs: an https/git@ allow-list, a
+      validated directory name (`.../org/..` would otherwise escape the
+      download directory), skipped symlinks, no submodule recursion, and
+      non-interactive git. Worth doing when the evaluation needs more than one
+      app, not before.
+
+      The reviewed implementation and its 78 offline tests are kept on the
+      `phase3/url-fetcher` tag, so this is a restore rather than a rewrite:
+
+      ```sh
+      git checkout phase3/url-fetcher -- src/repo_fetcher.py \
+          tests/repo_fetcher_fakes.py tests/test_repo_fetcher_*.py
+      ```
+
+      A companion `src/fetch_corpus.py`, which restored fixtures from their
+      pinned manifests, was written and removed within a single change and is
+      not in history. It was ~85 lines: read each `*.manifest.json`, `git init`
+      + `fetch --depth 1 <commit>` + `checkout FETCH_HEAD`, verify `rev-parse
+      HEAD` equals the pinned commit, then delete `.git`. That verification is
+      the load-bearing part — without it a moved upstream silently invalidates
+      every line number in the grading key.
 - [ ] Implement the agentic audit workflow (planner picks next probe over
       shared state)
 - [ ] Implement probe: taint-style dataflow tracing (untrusted source →
@@ -82,6 +177,22 @@ See `docs/PHASE_1_PLAN.md` for the task-level breakdown and done-criteria.
 
 ---
 
+## Blocked / needs a decision
+
+Anything that stops work or needs a human call. Clear these as they are
+resolved; do not tick the task above until its blocker is gone.
+
+| # | Blocker | Who / what unblocks it |
+|---|---|---|
+| B3 | The demo app's grading key is **AI-drafted and unverified** (`verified: false`). Phase 4's precision/recall is graded against them, so no number is thesis-grade until a human confirms. | A human reads the app and flips `verified`, `verified_by`, `verified_date`. **Blocks Phase 4.** |
+| B4 | The Phase 1 line **"Stand up the LangGraph skeleton"** duplicates Phase 3's "agentic audit workflow (planner picks next probe over shared state)". Building it now would break rule 15. | Decide whether to move the line to Phase 3. Not implemented either way. |
+| B6 | The **OWASP subset is written down in Phase 0 but not signed off, and the code enforces a different set.** `tests/test_ground_truth.py` allows `{LLM01, LLM02, LLM05, LLM06, AUDITABILITY}`; Phase 0 proposes `{LLM01, LLM03, LLM06, LLM08}`. Three of the ten drafted findings fall outside the proposed list. | Decide the four, then see B6a/B6b/B6c below for what each costs. |
+| B6a | **LLM05 vs LLM03 is a renumbering, not a new risk.** Supply chain is LLM05 in the 2023/24 list and LLM03 in the 2025 list; `VULN2-05` is already that finding. | Pick an edition, say which one the thesis cites, and renumber the fixtures to match. Cheap. |
+| B6c | **Dropping `AUDITABILITY` orphans `VULN1-05`, and `LLM02` was never in any subset but grades `VULN1-04`.** AUDITABILITY is also the only non-stock item — the part that is your contribution rather than OWASP's. | Decide whether to keep both. Whatever the subset, `ALLOWED_OWASP_IDS` must still accept every id the fixtures use, or those findings become ungradeable. |
+| B7 | **Phase owners are unassigned** across Hein / Bing Hong / JW. | Agree the split. |
+
+---
+
 ## Cross-cutting / documentation
 
 - [ ] Related-work / competitive-landscape section (verify Garak, PyRIT, Syft,
@@ -91,3 +202,7 @@ See `docs/PHASE_1_PLAN.md` for the task-level breakdown and done-criteria.
       apps)
 - [ ] Team split — the proposal lists three people (Hein, Bing Hong, JW);
       assign owners per phase
+- [x] Project documentation written and kept in step with the code:
+      `CODING_RULES.md` (the binding standard, tracked so the whole team and
+      an examiner get it), `FLOW.md` (how the system works), `SCHEMAS.md`
+      (the JSON contracts between phases)
