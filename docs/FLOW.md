@@ -21,7 +21,7 @@ flowchart TD
     D --> S[surface.py<br/>tidy up and serialise]
     S --> A[(artifacts/my-app/<br/>surfaces.json)]
 
-    GT[(corpus/my-app/<br/>ground_truth.json<br/>the known answers)] -.->|tests compare| A
+    GT[(corpus/evidence/<br/>my-app.ground_truth.json<br/>the known answers)] -.->|tests compare| A
 
     style U fill:#e8f0fe,stroke:#4285f4
     style A fill:#e6f4ea,stroke:#34a853
@@ -42,8 +42,12 @@ python src/main.py corpus/vuln-app-1-support-agent
 ```
 
 `build_parser()` takes the repository path, plus an optional `--artifacts-dir`.
-The path is the only required input: nothing about which app to audit is
-hardcoded anywhere.
+The path is the only required input, and the tool makes no network call at any
+point: nothing leaves the machine.
+
+The audited app's source is not committed to this repository — it is a
+third-party project, downloaded once with the command in the README and
+pinned to the commit its grading key was written against.
 
 ### Step 2 — Decide which files to read (`repo_loader.py`)
 
@@ -225,6 +229,7 @@ treated as contracts. The field lists are in [`SCHEMAS.md`](./SCHEMAS.md).
 |---|---|
 | `main.py` | command line entry point |
 | `languages.py` | which extension is which language, and which grammar reads it |
+| `corpus_paths.py` | where the corpus keeps code, and where it keeps evidence |
 | `repo_loader.py` | which files to analyse |
 | `extractor.py` | pick the backend for a file, and walk a repository |
 | `extractor_python.py` | parse Python with `ast`, run the Python detectors |

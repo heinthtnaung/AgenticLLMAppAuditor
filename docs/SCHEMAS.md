@@ -13,13 +13,38 @@ Two conventions apply to every file here:
   timestamps or absolute paths are written. The same input always produces the
   same bytes.
 
+## Where everything lives
+
+`<app>` is the single join key across every row: the corpus directory name, the
+artifact directory name, `ground_truth.app`, and `manifest.name`.
+
+| Kind | Path | Written by |
+|---|---|---|
+| Audited code | `corpus/<app>/` | upstream, byte-identical, never written to. **Downloaded, not committed** — see the README |
+| Grading key | `corpus/evidence/<app>.ground_truth.json` | hand-authored |
+| Provenance, fixture | `corpus/evidence/<app>.manifest.json` | hand-authored |
+| Regression snapshot | `corpus/evidence/<app>.baseline.json` | tool-derived |
+| Phase 1 output | `artifacts/<app>/surfaces.json` | `src/main.py` |
+
+`src/corpus_paths.py` owns these paths. Import them from there rather than
+joining strings, so a later phase cannot guess wrong.
+
+**`corpus/<app>/` is a byte-identical copy of upstream at `upstream_commit`.**
+If a file with an evidence name ever appears inside it, that file is upstream's
+own and must never be read. A test asserts none does.
+
+These three files moved out of `corpus/<app>/` after Phase 1. No field changed
+and `schema_version` stays 2: a relocation is not a record change, and because
+the old paths no longer exist a stale reader fails loudly rather than reading
+the wrong file.
+
 ---
 
 ## `artifacts/<app>/surfaces.json` — Phase 1 output
 
 Produced by `src/main.py` via `surface.surfaces_to_json`. Read by Phase 2
-mapping and Phase 3 auditing. `<app>` is the audited directory's name, which is
-how consumers find the matching `corpus/<app>/ground_truth.json`.
+mapping and Phase 3 auditing. `<app>` is the audited directory's name — see the table above for how
+consumers find its grading key.
 
 | Field | Type | Required | Meaning |
 |---|---|---|---|
@@ -65,7 +90,7 @@ are the same surface even if `detail` differs, and are collapsed by
 
 ---
 
-## `corpus/<app>/ground_truth.json` — Phase 1 input, Phase 4 grading key
+## `corpus/evidence/<app>.ground_truth.json` — Phase 1 input, Phase 4 grading key
 
 Hand-authored (currently AI-drafted, see `verified`). Read by Task 1.7's tests
 and by the Phase 4 scorer. This file is committed: the grading key is evidence.
@@ -73,8 +98,8 @@ and by the Phase 4 scorer. This file is committed: the grading key is evidence.
 | Field | Type | Required | Meaning |
 |---|---|---|---|
 | `schema_version` | int | yes | Currently `2`. |
-| `app` | str | yes | Must equal the corpus directory name and `MANIFEST.json`'s `name`. |
-| `upstream_commit` | str | yes | The commit the line numbers are valid against. Must equal `MANIFEST.json`'s `upstream_commit`. |
+| `app` | str | yes | Must equal the corpus directory name and the manifest's `name`. |
+| `upstream_commit` | str | yes | The commit the line numbers are valid against. Must equal the manifest's `upstream_commit`. |
 | `source` | str | yes | `ai_drafted`, `upstream_docs`, or `manual_review`. |
 | `verified` | bool | yes | `false` until a human has checked it. **A scorer run against `false` is not thesis-grade and must say so loudly.** |
 | `verified_by` | str \| null | yes | Who verified it; `null` while unverified. |
@@ -128,6 +153,27 @@ TypeScript fixture alone, whose surfaces were enumerated by reading the source
 before the extractor was run. The two Python fixtures are recall-only: an
 exhaustive list derived from the tool's own output would make precision
 trivially 100% and the metric worthless (`TODO.md` B3c).
+
+---
+
+## `<app>.manifest.json` — where the audited code came from
+
+It lives at `corpus/evidence/<app>.manifest.json`, never inside the code,
+because the auditor does not write to what it audits — and an upstream
+repository may ship a `MANIFEST.json` of its own.
+
+| Field | Type | Required | Meaning |
+|---|---|---|---|
+| `name` | str | yes | The directory holding the code. |
+| `role` | str | yes | `deliberately_vulnerable_demo`, `open_source_reference`, or `downloaded`. |
+| `upstream_url` | str | yes | Where it came from. |
+| `upstream_commit` | str | yes | The commit the code is at. **Every line number recorded anywhere is only valid against this.** |
+| `upstream_commit_date` | str | yes | ISO 8601. |
+| `framework`, `language` | str | fixtures only | What a corpus fixture exercises. |
+| `note` | str | no | Free text. |
+
+A `ground_truth.json` must agree with its fixture's manifest on `name` and
+`upstream_commit`; a test asserts it.
 
 ---
 

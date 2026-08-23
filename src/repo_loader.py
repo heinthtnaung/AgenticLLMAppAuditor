@@ -43,6 +43,11 @@ def _walk_source_files(root: Path) -> Iterator[Path]:
     """Yield every readable source file under root that is not in a skipped directory."""
     for extension in SOURCE_EXTENSIONS:
         for candidate in root.rglob(f"*{extension}"):
+            if candidate.is_symlink():
+                # A downloaded repository is untrusted: a symlink can point at
+                # anything on this machine, and its contents would end up in
+                # the report.
+                continue
             if not candidate.is_file() or candidate.name.endswith(IGNORED_SUFFIXES):
                 continue
             if any(part in SKIP_DIRS for part in candidate.relative_to(root).parts):

@@ -14,6 +14,12 @@ node_modules/
 # Tests
 .pytest_cache/
 
+# The audited app's source is third-party code and is not committed. Download
+# it with the command in the README; corpus/evidence/ (this project's own
+# grading key, manifest and baseline) IS committed.
+corpus/*
+!corpus/evidence/
+
 # Generated artifacts (surfaces.json, sbom.json, findings.json, ...)
 artifacts/
 

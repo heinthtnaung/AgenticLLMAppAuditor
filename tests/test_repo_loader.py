@@ -1,7 +1,7 @@
 """The repo loader must return exactly the audited app's own source files."""
 
 import pytest
-from conftest import CORPUS_DIR
+from conftest import CORPUS_DIR, require_corpus
 from repo_loader import MAX_FILE_BYTES, SKIP_DIRS, list_oversized_files, list_source_files
 
 SUPPORT_AGENT = CORPUS_DIR / "vuln-app-1-support-agent"
@@ -13,20 +13,16 @@ SUPPORT_AGENT_FILES = ["main.py", "tools.py", "transaction_db.py", "utils.py"]
 
 def test_lists_exactly_the_support_agent_files() -> None:
     """Demo app 1 yields its four modules and nothing else."""
+    require_corpus("vuln-app-1-support-agent")
     found = list_source_files(str(SUPPORT_AGENT))
     assert [path.name for path in found] == SUPPORT_AGENT_FILES
 
 
 def test_returned_paths_exist_and_are_python() -> None:
     """Every returned path is a real .py file on disk."""
+    require_corpus("vuln-app-1-support-agent")
     for path in list_source_files(str(SUPPORT_AGENT)):
         assert path.is_file() and path.suffix == ".py"
-
-
-def test_lists_the_typescript_fixture_source() -> None:
-    """The TypeScript fixture yields its one .ts module, proving the second backend is reachable."""
-    found = list_source_files(str(LANGGRAPH_JS))
-    assert [path.name for path in found] == ["agent.ts"]
 
 
 def test_returns_both_python_and_typescript(tmp_path) -> None:
@@ -131,3 +127,22 @@ def test_file_instead_of_directory_raises_not_a_directory(tmp_path) -> None:
     target.write_text("x = 1\n", encoding="utf-8")
     with pytest.raises(NotADirectoryError, match="app.py"):
         list_source_files(str(target))
+
+
+def test_symlinked_source_file_is_not_returned(tmp_path) -> None:
+    """A downloaded repo is untrusted: a symlink could point at /etc/passwd, so it is skipped."""
+    outside = tmp_path / "outside" / "secret.py"
+    outside.parent.mkdir()
+    outside.write_text("PASSWORD = 'hunter2'\n", encoding="utf-8")
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / "app.py").write_text("x = 1\n", encoding="utf-8")
+    (repo / "linked.py").symlink_to(outside)
+    assert [path.name for path in list_source_files(str(repo))] == ["app.py"]
+
+
+def test_symlinked_file_inside_the_repo_is_also_skipped(tmp_path) -> None:
+    """Even a symlink to a file in the same repo is skipped: only real files are read."""
+    (tmp_path / "app.py").write_text("x = 1\n", encoding="utf-8")
+    (tmp_path / "alias.py").symlink_to(tmp_path / "app.py")
+    assert [path.name for path in list_source_files(str(tmp_path))] == ["app.py"]

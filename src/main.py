@@ -31,16 +31,30 @@ def report_skipped_files(repo_path: str) -> None:
         print(f"warning: skipped oversized file {path}", file=sys.stderr)
 
 
+# Conditions the user can fix, reported as a message rather than a traceback.
+EXPECTED_FAILURES = (FileNotFoundError, NotADirectoryError, FileExistsError, ValueError, RuntimeError)
+
+
 def main() -> int:
     """Extract surfaces and write the artifact. Returns the process exit code."""
     args = build_parser().parse_args()
-    report_skipped_files(args.repo_path)
+    try:
+        return run(args)
+    except EXPECTED_FAILURES as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 1
 
-    surfaces = extract_repo(args.repo_path)
+
+def run(args: argparse.Namespace) -> int:
+    """Do the work: fetch if needed, extract, write the artifact."""
+    repo_path = args.repo_path
+    report_skipped_files(repo_path)
+
+    surfaces = extract_repo(repo_path)
     if not surfaces:
-        print(f"warning: no LLM surfaces found in {args.repo_path}", file=sys.stderr)
+        print(f"warning: no LLM surfaces found in {repo_path}", file=sys.stderr)
 
-    app_name = Path(args.repo_path).resolve().name
+    app_name = Path(repo_path).resolve().name
     output_path = args.artifacts_dir / app_name / OUTPUT_NAME
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(surfaces_to_json(surfaces), encoding="utf-8")

@@ -190,8 +190,10 @@ languages, each carrying the right `language` and `module`, and a malformed
 ## Task 1.10 — A clean-code fixture
 
 **Do:**
-- Add `corpus/oss-app-langgraphjs-starter`, pinned in `MANIFEST.json`.
-- Record its surfaces in `ground_truth.json` as `expected_surfaces`, with
+- Add `corpus/oss-app-langgraphjs-starter`, pinned in
+  `corpus/evidence/<app>.manifest.json`.
+- Record its surfaces in `corpus/evidence/<app>.ground_truth.json` as
+  `expected_surfaces`, with
   `findings: []`. It has no planted vulnerabilities: that is the point, it is
   what lets the evaluation report a false-positive rate.
 
@@ -201,34 +203,17 @@ found". See [`SCHEMAS.md`](./SCHEMAS.md).
 
 ---
 
-## Task 1.11 — Audit a repository straight from a URL
+## Not in Phase 1 — auditing a repository by URL
 
-So the tool can be pointed at any project, not only one already on disk.
+Downloading a repository from a URL and auditing it was built and then
+**removed**, deliberately. Phase 1 is offline static analysis over one pinned
+fixture, and fetching brought in an untrusted input with the safety work that
+implies: URL allow-listing, path-traversal guards on the derived directory
+name, symlink handling, non-interactive git. All of that is real, and none of
+it belongs in the phase that establishes the extractor.
 
-**Do:**
-- Write `src/repo_fetcher.py`, one job: clone a URL, pin the commit, write a
-  manifest. `src/main.py` accepts a URL wherever it accepts a path.
-- Downloads go to `workspace/`, which is gitignored. `corpus/` stays the
-  pinned, ground-truthed set the evaluation is scored against.
-- The manifest is written **beside** the checkout, never inside it: the
-  auditor does not write to the code it audits.
-
-**Security, because the input is now untrusted:**
-- Only `https://` and `git@` are accepted. `http://` has no transport
-  integrity, and `ext::` runs a command by design.
-- The directory name derived from the URL is validated. Without that,
-  `https://host/org/..` resolves outside the download directory, and with
-  `--force` the tool would delete it.
-- Submodules are not recursed: one can point at a host the user never named.
-- Symlinks in a downloaded repository are skipped, or their targets would be
-  read and could reach the report.
-- git runs non-interactively, so a private repository fails with a message
-  instead of hanging on an invisible credential prompt.
-- The code is only ever parsed. Nothing is imported, installed, or run.
-
-**Done when:** `python src/main.py <url>` downloads, extracts, and writes
-`artifacts/<app>/surfaces.json`; a local path still makes no network call; and
-every fetcher test passes offline.
+It returns in Phase 3 or 4, when the evaluation actually needs more than one
+app. See `docs/TODO.md`.
 
 ---
 
@@ -246,7 +231,6 @@ every fetcher test passes offline.
       and awaiting human sign-off (`TODO.md` B3).
 - [x] Tests pass; code follows the coding rules above.
 - [x] Language registry, and a JavaScript/TypeScript backend (tasks 1.8-1.10).
-- [x] A repository can be audited straight from a URL (task 1.11).
 
 The finished flow is walked through step by step in [`FLOW.md`](./FLOW.md).
 

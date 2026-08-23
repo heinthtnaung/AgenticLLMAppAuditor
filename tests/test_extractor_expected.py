@@ -1,7 +1,7 @@
 """The expected_surfaces grading key: every one is found, and clean apps gain no extras."""
 
 import pytest
-from conftest import CORPUS_APPS, CORPUS_DIR, ground_truth
+from conftest import CORPUS_APPS, app_is_present, CORPUS_DIR, ground_truth, require_corpus
 from extractor import extract_repo
 from surface import Surface
 
@@ -34,12 +34,17 @@ def _surface_identity(surface: Surface) -> tuple[str, str, str]:
 @pytest.fixture(scope="module")
 def extracted() -> dict:
     """Extract every corpus app once and share the result across the tests."""
-    return {app: extract_repo(str(CORPUS_DIR / app)) for app in CORPUS_APPS}
+    return {
+        app: extract_repo(str(CORPUS_DIR / app))
+        for app in CORPUS_APPS
+        if app_is_present(app)
+    }
 
 
 @pytest.mark.parametrize("app, record", EXPECTED_SURFACE_CASES)
 def test_expected_surface_is_extracted(extracted: dict, app: str, record: dict) -> None:
     """Each expected surface is produced with its exact file, kind and name, at the right line."""
+    require_corpus(app)
     lines = [
         surface.line
         for surface in extracted[app]
@@ -58,6 +63,7 @@ def test_expected_surface_is_extracted(extracted: dict, app: str, record: dict) 
 @pytest.mark.parametrize("app, record", EXPECTED_SURFACE_CASES)
 def test_expected_surface_module_matches(extracted: dict, app: str, record: dict) -> None:
     """The expected surface's module is resolved, so Phase 2 can map it to an SBOM component."""
+    require_corpus(app)
     modules = {
         surface.module
         for surface in extracted[app]
@@ -72,6 +78,7 @@ def test_expected_surface_module_matches(extracted: dict, app: str, record: dict
 @pytest.mark.parametrize("app", CORPUS_APPS)
 def test_no_unexpected_surface_when_complete(extracted: dict, app: str) -> None:
     """Where the grading key claims to list every surface, the extractor invents none."""
+    require_corpus(app)
     truth = ground_truth(app)
     if not truth["expected_surfaces_complete"]:
         pytest.skip(f"{app} ground truth does not claim a complete surface list")

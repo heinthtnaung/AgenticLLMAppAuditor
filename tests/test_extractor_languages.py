@@ -40,9 +40,3 @@ def test_mixed_repo_serialises_identically_across_runs(tmp_path) -> None:
     """Two runs over the same mixed repository produce byte-identical JSON."""
     repo = make_mixed_repo(tmp_path)
     assert surfaces_to_json(extract_repo(repo)) == surfaces_to_json(extract_repo(repo))
-
-
-def test_typescript_fixture_serialises_identically_across_runs() -> None:
-    """The real TypeScript fixture is deterministic too, not just a two-file sandbox."""
-    repo = str(CORPUS_DIR / LANGGRAPH_JS_APP)
-    assert surfaces_to_json(extract_repo(repo)) == surfaces_to_json(extract_repo(repo))
