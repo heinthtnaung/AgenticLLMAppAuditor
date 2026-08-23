@@ -181,17 +181,20 @@ the two demo apps is missed.
 
 ## Phase 1 exit checklist
 
-- [ ] Repo scaffolded, installs cleanly, demo apps under `corpus/`.
+- [x] Repo scaffolded, installs cleanly, demo apps under `corpus/`.
 - [ ] Offline model client returns a response (ready for Phase 3).
-- [ ] Repo loader returns correct file lists.
-- [ ] `Surface` data model + stable JSON serialisation.
-- [ ] Four independent detectors implemented.
-- [ ] `surfaces.json` produced for both demo apps.
-- [ ] All surfaces in `ground_truth.json` are found; none missed.
-- [ ] Tests pass; code follows the coding rules above.
+      Client written; blocked on Ollama not being installed (see `TODO.md` B1).
+- [x] Repo loader returns correct file lists.
+- [x] `Surface` data model + stable JSON serialisation.
+- [x] Four independent detectors implemented.
+- [x] `surfaces.json` produced for both demo apps.
+- [x] All surfaces in `ground_truth.json` are found; none missed.
+      Ground truth is AI-drafted and awaiting human sign-off (`TODO.md` B3).
+- [x] Tests pass (121); code follows the coding rules above.
 
 **Artifacts produced this phase:** `artifacts/<app>/surfaces.json`
-(consumed by Phase 2 mapping and Phase 3 auditing).
+(consumed by Phase 2 mapping and Phase 3 auditing). Its schema, and the
+`ground_truth.json` input schema, are documented in [`SCHEMAS.md`](./SCHEMAS.md).
 
 ---
 
