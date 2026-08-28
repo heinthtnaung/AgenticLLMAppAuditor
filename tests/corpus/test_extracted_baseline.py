@@ -28,7 +28,7 @@ def test_extractor_output_matches_the_baseline(app: str) -> None:
     """Every surface in the baseline is still found, and no new one appeared."""
     require_corpus(app)
     recorded = {(s["file"], s["line"], s["kind"], s["name"]) for s in baseline(app)["surfaces"]}
-    found = {(s.file, s.line, s.kind, s.name) for s in extract_repo(str(CORPUS_DIR / app))}
+    found = {(s.file, s.line, s.kind, s.name) for s in extract_repo(str(CORPUS_DIR / app)).surfaces}
     assert found - recorded == set(), "new surfaces appeared; re-record the baseline if intended"
     assert recorded - found == set(), "surfaces disappeared; this is a regression unless intended"
 

@@ -8,7 +8,8 @@ Two conventions apply to every file here:
 
 - **Paths are repo-relative POSIX** (`chatapp/backend/app/main.py`), never
   absolute and never with backslashes. This is what makes an artifact
-  byte-identical on a different machine. `Surface` enforces it.
+  byte-identical on a different machine. `artifacts/repo_path.py` defines the
+  rule; `Surface` and `SkippedFile` both enforce it.
 - **Output is deterministic.** Records are sorted, keys are sorted, and no
   timestamps or absolute paths are written. The same input always produces the
   same bytes.
@@ -27,7 +28,7 @@ artifact directory name, `ground_truth.app`, and `manifest.name`.
 | Phase 1 output | `artifacts/<app>/surfaces.json` | `src/main.py` |
 
 **`schema_version` is per file.** Each artifact versions independently; that
-`surfaces.json` is at 2 while a new file starts at 1 is not a mistake.
+`surfaces.json` is at 3 while a new file starts at 1 is not a mistake.
 
 **External tools are normalised, never stored raw.** Syft's output carries a
 random UUID, a wall-clock timestamp, and absolute paths, so two runs differ. Any
@@ -39,12 +40,19 @@ fit so the lineage stays obvious.
 `src/corpus_paths.py` owns these paths. Import them from there rather than
 joining strings, so a later phase cannot guess wrong.
 
+**There is deliberately no `target.json`.** One was proposed, to carry the app
+name, the upstream commit and the file count next to the output. All three are
+already recoverable — the app name is the artifact directory's, and the rest
+are in `corpus/evidence/<app>.manifest.json` — so it would be a second place
+to state the same facts, and therefore a second place for them to disagree.
+
 **`corpus/<app>/` is a byte-identical copy of upstream at `upstream_commit`.**
 If a file with an evidence name ever appears inside it, that file is upstream's
 own and must never be read. A test asserts none does.
 
-These three files moved out of `corpus/<app>/` after Phase 1. No field changed
-and `schema_version` stays 2: a relocation is not a record change, and because
+These three files moved out of `corpus/<app>/` after Phase 1. No field changed,
+and the ground-truth, manifest and baseline files keep their own versions: a
+relocation is not a record change, and because
 the old paths no longer exist a stale reader fails loudly rather than reading
 the wrong file.
 
@@ -58,13 +66,98 @@ consumers find its grading key.
 
 | Field | Type | Required | Meaning |
 |---|---|---|---|
-| `schema_version` | int | yes | Currently `2`. |
+| `schema_version` | int | yes | Currently `3`. |
 | `surface_count` | int | yes | `len(surfaces)`, so a reader can sanity-check at a glance. |
 | `surfaces` | list | yes | Sorted by `(file, line, kind, name)`. May be empty. |
+| `skipped_file_count` | int | yes | `len(skipped_files)`. |
+| `skipped_files` | list | yes | Files the scan could not analyse, sorted by `(file, reason)`. May be empty. |
 
 A repository with no LLM surfaces is a valid result, not an error: the file is
 still written with `surface_count: 0` and an empty `surfaces` list, so Phase 4
 can tell "audited, nothing found" apart from "never audited".
+
+### `skipped_files` — the caveat attached to the claim
+
+A scan that could not read every file is still a valid scan and still exits 0:
+refusing would turn one unparseable vendored file into a total audit failure.
+But then "these are all the surfaces" needs the caveat "except in these files"
+travelling with it, which is why this lives here and not in a file of its own.
+A sidecar can be absent, stale, or simply never opened, and the moment it is,
+an unqualified recall number gets computed off a partial scan.
+
+Required rather than optional for the same reason as `scanned_manifests` in
+`sbom.json`: `skipped_files: []` is a falsifiable claim that nothing was
+skipped, while an absent key would force every reader to guess between that and
+"written by a producer too old to report skips".
+
+Each entry in `skipped_files`:
+
+| Field | Type | Required | Meaning |
+|---|---|---|---|
+| `file` | str | yes | Repo-relative POSIX path, same rule as a surface's `file`. |
+| `reason` | str | yes | One of `unparseable_syntax`, `undecodable_bytes`, `too_large`. |
+| `line` | int or null | yes | Where the parser gave up; `null` when unknown. **Descriptive only — never a join key.** |
+
+The reasons all mean *this file could not be analysed*. A file that parses and
+yields nothing is not recorded here, and no reason may ever be added for it.
+
+**The parser's own error message is deliberately not stored.** Two reasons, both
+verified on this repo: `SyntaxError.msg` wording changes between CPython
+versions this project supports, so two graders on two interpreters would get
+different bytes from identical input; and for a non-UTF-8 file with no PEP 263
+cookie the message contains an absolute path — `invalid or missing encoding
+declaration for '/home/…'`. `line` carries the one machine-stable part; the
+interpreter's own wording is discarded with the exception, and what is printed
+is the same `file`, `reason` and `line` the artifact records.
+
+`reason` comes from the raise site, never from the exception type: a non-UTF-8
+file with no cookie raises `SyntaxError` from `tokenize.open`, while one with a
+utf-8 cookie raises `UnicodeDecodeError`. Both are `undecodable_bytes`.
+
+**`skipped_files: []` does not claim every byte was read.** It covers only files
+the scan would otherwise have analysed. Skip-dirs (`node_modules`, `.venv`) and
+ignored suffixes are dropped before this point and are not app code.
+
+Two limits are known and deliberate:
+
+- **Undecodable bytes are recorded for Python only.** `tokenize.open` refuses
+  the file, so Python records `undecodable_bytes`. tree-sitter reads bytes and
+  `ts_utils.node_text` decodes with `errors="replace"`, so a `.ts` file never
+  reaches that reason — and where the bad bytes sit decides what happens
+  instead. In an identifier, the grammar errors and the file is recorded as
+  `unparseable_syntax`. In a string literal it parses, and the surface is
+  reported with a U+FFFD in its `name` only if the name derives from that
+  string; bytes in a value that never becomes a name produce a surface that
+  looks entirely clean. `tests/parsing/test_extractor_skip_limits.py` pins it.
+- **An unreadable file is not a skip reason.** A permission error still stops
+  the scan. `SKIP_REASONS` covers files that could not be *analysed*, not files
+  that could not be *opened*, and the second needs its own decision.
+
+### What a Phase 4 scorer must do with it
+
+Alongside the `finding_count: 0` → `n/a` rule:
+
+1. Read `skipped_files` before computing anything.
+2. Intersect its `file` values with the grading key's files.
+3. **No overlap:** recall is reportable as normal — a skip there could not have
+   hidden a graded surface. Still print "scan partial, n files skipped".
+4. **Any overlap:** that is not reportable as the app's recall. A graded surface
+   in a skipped file is a third outcome beside true and false negative — it was
+   never scanned. Exclude the app, or report recall over the scanned subset with
+   the excluded count stated. A miss caused by the loader measures the loader,
+   not the detector; averaging the two makes the detector's number
+   unfalsifiable, the same argument that forbids scoring against the
+   tool-derived baseline.
+5. Precision is unaffected: a skipped file emits no surfaces, so it cannot
+   produce a false positive.
+
+The ratio is the wrong test — one skipped 2000-line file can hide forty
+surfaces while `skipped_file_count: 1` reads as trivial. Use the intersection.
+
+`corpus/evidence/<app>.baseline.json` has no skip list because the fixture has
+no unreadable file. It must gain one the day a fixture legitimately does,
+otherwise a regression that *starts* skipping a file shows up only as
+"surfaces disappeared", with no reason attached.
 
 Each entry in `surfaces`:
 
@@ -103,9 +196,13 @@ are the same surface even if `detail` differs, and are collapsed by
 ## `artifacts/<app>/sbom.json` — Phase 2 output
 
 What the app's dependency manifests and the SBOM generator say about its
-components. Not raw CycloneDX: the determinism rule above makes storing Syft's
-output as produced impossible, and a rewritten document wearing a standard's
-name would invite a reader to feed it to a CycloneDX tool that would then choke.
+components.
+
+This is not CycloneDX or SPDX. Those describe what a scanner found; this also
+records **how much a version can be trusted**, which neither format has a field
+for: a version guessed from `~=0.3.25` looks exactly like an exact pin, and that
+distinction is what stops an advisory lookup claiming a vulnerability the app
+may not have.
 
 | Field | Type | Required | Meaning |
 |---|---|---|---|

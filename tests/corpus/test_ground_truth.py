@@ -5,7 +5,10 @@ from conftest import CORPUS_APPS, CORPUS_DIR, GROUND_TRUTH_SCHEMA_VERSION, groun
 from artifacts.surface import SURFACE_KINDS
 
 # The OWASP subset this project audits, plus the auditability risk it adds.
-ALLOWED_OWASP_IDS = frozenset({"LLM01", "LLM02", "LLM05", "LLM06", "AUDITABILITY"})
+# The 2025 OWASP list: supply chain is LLM03, which was LLM05 before it. Both
+# LLM02 and AUDITABILITY stay: the grading key uses them, and dropping either
+# would make a real finding ungradeable.
+ALLOWED_OWASP_IDS = frozenset({"LLM01", "LLM02", "LLM03", "LLM06", "AUDITABILITY"})
 
 # code_anchor stores the first 60 characters of the trimmed source line.
 ANCHOR_LENGTH = 60

@@ -104,3 +104,37 @@ def build_import_table(tree: ast.AST) -> dict[str, str]:
         if isinstance(node, ast.Import):
             _record_import(node, table)
     return table
+
+
+# Which argument of open() carries the mode, and the flags that mean writing.
+OPEN_MODE_ARGUMENT = 1
+# `+` opens for update, so `r+` writes as well as reads.
+WRITE_MODE_FLAGS = ("w", "a", "x", "+")
+
+
+def open_mode(node: ast.Call) -> str | None:
+    """Return the mode an open() call names, or None if it is not a literal.
+
+    An absent mode is not unknown: Python's default is text reading, so it
+    comes back as "r". Only a mode built at runtime returns None, because
+    guessing at one would be worse than saying nothing.
+    """
+    given = node.args[OPEN_MODE_ARGUMENT] if len(node.args) > OPEN_MODE_ARGUMENT else None
+    # A keyword read after the positional never actually overrides one: giving
+    # mode both ways is a TypeError, so at most one of the two is ever present.
+    for keyword in node.keywords:
+        if keyword.arg == "mode":
+            given = keyword.value
+    if given is None:
+        return "r"
+    if isinstance(given, ast.Constant) and isinstance(given.value, str):
+        return given.value
+    return None
+
+
+def file_access_detail(node: ast.Call) -> str:
+    """Say whether an open() call reads or writes, when the source makes it plain."""
+    mode = open_mode(node)
+    if mode is None:
+        return "file access, mode decided at runtime"
+    return "file write" if any(f in mode for f in WRITE_MODE_FLAGS) else "file read"

@@ -183,7 +183,13 @@ for an unregistered extension, and every emitted surface carries a language.
 
 **Done when:** `extract_repo` on a mixed repository returns surfaces from both
 languages, each carrying the right `language` and `module`, and a malformed
-`.ts` file fails loudly rather than yielding nothing.
+`.ts` file is never mistaken for one holding no surfaces.
+
+Phase 2 changed *how* that last point holds. `parse_source` still refuses to
+return a tree with error nodes, but the repository walk now catches the refusal,
+records the file in `surfaces.json`'s `skipped_files`, and carries on — so one
+bad file costs that file rather than the whole scan. Loud at the parse layer,
+recorded at the walk.
 
 ---
 

@@ -50,7 +50,6 @@ HIGH_PRIVILEGE_TOOLS = frozenset({
 # --- Data source surfaces --------------------------------------------------
 # Full dotted call names, mapped to how the surface is described.
 DATA_SOURCE_CALLS = {
-    "open": "file access",
     "json.load": "json file read",
     "yaml.load": "yaml file read",
     "yaml.safe_load": "yaml file read",
@@ -66,6 +65,10 @@ DATA_SOURCE_CALLS = {
     "st.text_area": "end-user text input",
     "st.file_uploader": "user-uploaded file",
 }
+
+# open() is deliberately not in the table above: its mode says whether data
+# comes in or goes out, so its detail is computed rather than looked up.
+OPEN_CALL = "open"
 
 # Method names that read outside data regardless of the object they sit on.
 DATA_SOURCE_METHODS = {

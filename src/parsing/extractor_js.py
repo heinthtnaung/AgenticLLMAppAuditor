@@ -12,6 +12,7 @@ from detectors.detectors_js import (
     find_prompt_templates,
     find_tool_calls,
 )
+from artifacts.skipped_file import UNPARSEABLE_SYNTAX, UnreadableSource
 from parsing.languages import JAVASCRIPT, TSX_GRAMMAR, TYPESCRIPT, grammar_of
 from artifacts.surface import Surface
 
@@ -33,7 +34,10 @@ def parse_source(source: bytes, path: Path) -> Node:
     """
     tree = Parser(GRAMMARS[grammar_of(str(path))]).parse(source)
     if tree.root_node.has_error:
-        raise SyntaxError(f"cannot parse {path}: the file is not valid {grammar_of(str(path))}")
+        raise UnreadableSource(
+            f"cannot parse {path.name}: the file is not valid {grammar_of(str(path))}",
+            UNPARSEABLE_SYNTAX,
+        )
     return tree.root_node
 
 

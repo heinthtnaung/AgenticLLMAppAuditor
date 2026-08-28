@@ -1,10 +1,11 @@
 """Task 1.7: every LLM surface named in a corpus app's ground truth must be extracted."""
 
 import pytest
-from conftest import CORPUS_APPS, app_is_present, CORPUS_DIR, ground_truth, require_corpus
+from conftest import CORPUS_APPS, app_is_present, CORPUS_DIR, ground_truth, require_corpus, scan_to_json
 from parsing.extractor import extract_file, extract_repo
 from parsing.extractor_js import parse_source
 from parsing.extractor_python import parse_file
+from artifacts.skipped_file import UnreadableSource
 from artifacts.surface import SURFACE_KINDS, surfaces_to_json
 
 # Named explicitly: CORPUS_APPS is discovered on disk, so its order is not a contract.
@@ -41,7 +42,7 @@ def _line_window(finding: dict) -> tuple[int, int]:
 def extracted() -> dict:
     """Extract every corpus app once and share the result across the tests."""
     return {
-        app: extract_repo(str(CORPUS_DIR / app))
+        app: extract_repo(str(CORPUS_DIR / app)).surfaces
         for app in CORPUS_APPS
         if app_is_present(app)
     }
@@ -113,7 +114,7 @@ def test_support_agent_finds_all_four_kinds(extracted: dict) -> None:
 def test_extract_repo_on_repo_without_source_returns_empty(tmp_path) -> None:
     """A repository with no source files yields no surfaces rather than an error."""
     (tmp_path / "README.md").write_text("no code here\n", encoding="utf-8")
-    assert extract_repo(str(tmp_path)) == []
+    assert extract_repo(str(tmp_path)).surfaces == []
 
 
 def test_extract_file_uses_the_given_label(tmp_path) -> None:
@@ -125,10 +126,10 @@ def test_extract_file_uses_the_given_label(tmp_path) -> None:
 
 
 def test_parse_file_names_the_file_with_broken_syntax(tmp_path) -> None:
-    """An unparsable Python file raises a SyntaxError naming the file and line."""
+    """An unparsable Python file raises UnreadableSource naming the file and line."""
     broken = tmp_path / "broken.py"
     broken.write_text("def oops(:\n", encoding="utf-8")
-    with pytest.raises(SyntaxError, match="broken.py"):
+    with pytest.raises(UnreadableSource, match="broken.py"):
         parse_file(broken)
 
 
@@ -136,7 +137,7 @@ def test_parse_source_names_the_file_with_broken_typescript(tmp_path) -> None:
     """A malformed TypeScript file raises an error naming the file, never zero surfaces."""
     broken = tmp_path / "broken.ts"
     broken.write_text("function oops( {\n", encoding="utf-8")
-    with pytest.raises(SyntaxError, match="broken.ts"):
+    with pytest.raises(UnreadableSource, match="broken.ts"):
         parse_source(broken.read_bytes(), broken)
 
 
@@ -158,4 +159,4 @@ def test_repeated_runs_produce_identical_bytes() -> None:
     """The same repository always serialises to the same bytes."""
     require_corpus("vuln-app-1-support-agent")
     repo = str(CORPUS_DIR / SUPPORT_AGENT_APP)
-    assert surfaces_to_json(extract_repo(repo)) == surfaces_to_json(extract_repo(repo))
+    assert scan_to_json(repo) == scan_to_json(repo)

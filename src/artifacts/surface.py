@@ -7,6 +7,8 @@ records differing just in `detail` are the same surface and are deduplicated.
 import json
 from dataclasses import asdict, dataclass
 
+from artifacts.repo_path import is_repo_relative_posix
+from artifacts.skipped_file import SkippedFile, sort_key as skipped_sort_key
 from parsing.languages import LANGUAGES
 
 # The four kinds of LLM surface Phase 1 detects.
@@ -18,7 +20,7 @@ DATA_SOURCE = "DATA_SOURCE"
 SURFACE_KINDS = (PROMPT_TEMPLATE, AGENT_DEF, TOOL_CALL, DATA_SOURCE)
 
 # Artifact schema version. Bump it whenever a field is added or renamed.
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 
 @dataclass(frozen=True)
@@ -48,7 +50,7 @@ class Surface:
             raise ValueError("surface name must not be empty")
         if not self.file:
             raise ValueError("surface file must not be empty")
-        if not _is_repo_relative_posix(self.file):
+        if not is_repo_relative_posix(self.file):
             raise ValueError(f"surface file must be a repo-relative posix path, got {self.file!r}")
         if self.line < 1:
             raise ValueError(f"surface line must be 1 or greater, got {self.line}")
@@ -57,13 +59,6 @@ class Surface:
     def id(self) -> str:
         """Stable cross-phase handle, derived from the surface itself, never its position."""
         return f"{self.file}:{self.line}:{self.kind}:{self.name}"
-
-
-def _is_repo_relative_posix(file: str) -> bool:
-    """Say whether a path is repo-relative with forward slashes, so output is machine-independent."""
-    if file.startswith("/") or "\\" in file:
-        return False
-    return ":" not in file.split("/")[0]
 
 
 def sort_key(surface: Surface) -> tuple[str, int, str, str]:
@@ -79,12 +74,19 @@ def deduplicate(surfaces: list[Surface]) -> list[Surface]:
     return list(unique.values())
 
 
-def surfaces_to_json(surfaces: list[Surface]) -> str:
-    """Serialise surfaces to the stable surfaces.json format."""
+def surfaces_to_json(surfaces: list[Surface], skipped: list[SkippedFile]) -> str:
+    """Serialise the surfaces and the unreadable files to the stable surfaces.json format.
+
+    `skipped` is required and has no default: a caller allowed to leave it out
+    would emit an empty skip list, which claims a complete scan.
+    """
     ordered = deduplicate(surfaces)
     records = [{**asdict(surface), "id": surface.id} for surface in ordered]
+    skips = [asdict(skip) for skip in sorted(skipped, key=skipped_sort_key)]
     document = {
         "schema_version": SCHEMA_VERSION,
+        "skipped_file_count": len(skips),
+        "skipped_files": skips,
         "surface_count": len(records),
         "surfaces": records,
     }

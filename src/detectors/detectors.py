@@ -10,6 +10,7 @@ from parsing.ast_utils import (
     call_root,
     decorator_names,
     dotted_name,
+    file_access_detail,
     keyword_string,
     text_build_shape,
 )
@@ -20,6 +21,7 @@ from detectors.detector_names import (
     HIGH_PRIVILEGE_TOOLS,
     HTTP_METHODS,
     MODEL_CLASSES,
+    OPEN_CALL,
     PROMPT_CLASSES,
     PROMPT_NAME_HINTS,
     ROUTE_DECORATOR_ROOTS,
@@ -154,6 +156,9 @@ def _source_from_call(node: ast.AST, file: str, imports: dict[str, str]) -> Surf
         return None
     name = call_name(node)
     module = imports.get(call_root(node), "")
+    if name == OPEN_CALL:
+        return Surface(DATA_SOURCE, name, file, node.lineno, PYTHON,
+                       detail=file_access_detail(node), module=module)
     if name in DATA_SOURCE_CALLS:
         return Surface(DATA_SOURCE, name, file, node.lineno, PYTHON, detail=DATA_SOURCE_CALLS[name], module=module)
     leaf = call_leaf(node)

@@ -3,7 +3,8 @@
 from conftest import CORPUS_DIR
 from parsing.extractor import extract_repo
 from parsing.languages import PYTHON, TYPESCRIPT
-from artifacts.surface import PROMPT_TEMPLATE, surfaces_to_json
+from conftest import scan_to_json
+from artifacts.surface import PROMPT_TEMPLATE
 
 PYTHON_SOURCE = 'system_prompt = "You are a helpful support assistant."\n'
 
@@ -22,13 +23,13 @@ def make_mixed_repo(root) -> str:
 
 def test_mixed_repo_yields_surfaces_from_both_languages(tmp_path) -> None:
     """A repository with Python and TypeScript reports surfaces from both backends."""
-    surfaces = extract_repo(make_mixed_repo(tmp_path))
+    surfaces = extract_repo(make_mixed_repo(tmp_path)).surfaces
     assert {surface.language for surface in surfaces} == {PYTHON, TYPESCRIPT}
 
 
 def test_mixed_repo_names_the_surface_from_each_file(tmp_path) -> None:
     """Each file contributes its own prompt surface, at the right file and line."""
-    surfaces = extract_repo(make_mixed_repo(tmp_path))
+    surfaces = extract_repo(make_mixed_repo(tmp_path)).surfaces
     found = sorted((s.file, s.line, s.name, s.kind) for s in surfaces)
     assert found == [
         ("agent.py", 1, "system_prompt", PROMPT_TEMPLATE),
@@ -39,4 +40,4 @@ def test_mixed_repo_names_the_surface_from_each_file(tmp_path) -> None:
 def test_mixed_repo_serialises_identically_across_runs(tmp_path) -> None:
     """Two runs over the same mixed repository produce byte-identical JSON."""
     repo = make_mixed_repo(tmp_path)
-    assert surfaces_to_json(extract_repo(repo)) == surfaces_to_json(extract_repo(repo))
+    assert scan_to_json(repo) == scan_to_json(repo)

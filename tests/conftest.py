@@ -32,6 +32,16 @@ from corpus_paths import (  # noqa: E402  (import must follow the sys.path line)
     evidence_path,
 )
 
+from parsing.extractor import extract_repo  # noqa: E402
+from artifacts.surface import surfaces_to_json  # noqa: E402
+
+
+def scan_to_json(repo_path: str) -> str:
+    """Serialise one whole scan, so two separate walks can be compared byte for byte."""
+    scan = extract_repo(repo_path)
+    return surfaces_to_json(scan.surfaces, scan.skipped)
+
+
 # The ground_truth.json schema this suite knows how to read.
 GROUND_TRUTH_SCHEMA_VERSION = 2
 

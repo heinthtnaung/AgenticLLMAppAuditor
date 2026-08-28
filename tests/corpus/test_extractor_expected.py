@@ -35,7 +35,7 @@ def _surface_identity(surface: Surface) -> tuple[str, str, str]:
 def extracted() -> dict:
     """Extract every corpus app once and share the result across the tests."""
     return {
-        app: extract_repo(str(CORPUS_DIR / app))
+        app: extract_repo(str(CORPUS_DIR / app)).surfaces
         for app in CORPUS_APPS
         if app_is_present(app)
     }

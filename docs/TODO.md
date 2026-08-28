@@ -78,8 +78,9 @@ Phase 1 detail, per `docs/PHASE_1_PLAN.md`:
 - [x] 1.5 Surface extractor — `src/detectors.py` + `src/extractor.py`
 - [x] 1.6 CLI entry point — `src/main.py`
 - [~] 1.7 Validation — the suite is green and every code-linked ground-truth
-      surface is found; the by-hand cross-check of each grading key is a human
-      task. See B3.
+      surface is found *in the files the scan could read*; a scorer has to read
+      `skipped_files` before treating that as recall (see `docs/SCHEMAS.md`).
+      The by-hand cross-check of each grading key is a human task. See B3.
 - [x] Settings read from the environment (`src/config.py` + `.env.example`);
       the test corpus is discovered on disk instead of listed in code
 - [x] System flow documented step by step in `docs/FLOW.md`
@@ -117,24 +118,45 @@ done-criteria.
       surface's `module`. Five outcomes, all exercised on the corpus:
       third_party 6, stdlib 3, first_party 1, used_but_undeclared 1,
       unresolved 8. It found PyYAML used but never declared
-- [ ] Decide on `artifacts/<app>/target.json` (app name + upstream commit +
-      file count). Proposed during Phase 1 and **declined there** as out of
-      scope: every field is already recoverable from the artifact directory
-      name and `corpus/evidence/<app>.manifest.json`. Revisit if Phase 2 needs the
-      commit pinned next to the output.
-- [ ] Detector precision, deferred from Phase 1: tell read from write in
-      `open()`; drop `SystemMessage` / `HumanMessage` / `MessagesPlaceholder`
-      from `PROMPT_CLASSES` if they prove noisy; the JS side has the same
-      `load` / `query` / `execute` breadth problem
+- [x] ~~`artifacts/<app>/target.json`~~ — **declined for good.** Every field it
+      would carry is already recoverable: the app name is the artifact
+      directory's name, and the upstream commit and file count come from
+      `corpus/evidence/<app>.manifest.json`. A second place to state the same
+      facts is a second place for them to disagree. Recorded in `SCHEMAS.md`
+- [x] `open()` now reports read against write, from its mode argument. An
+      absent mode reads as `r`, which is Python's documented default rather
+      than a guess; a mode built at runtime says so instead of guessing.
+      `+` counts as a write flag: `r+` and `rb+` open a read-write handle and
+      were reported as reads until that was fixed and tested
+- [ ] Detector precision, deferred from Phase 1: drop `SystemMessage` /
+      `HumanMessage` / `MessagesPlaceholder` from `PROMPT_CLASSES` if they
+      prove noisy; the JS side has the same `load` / `query` / `execute`
+      breadth problem
 - [ ] Detector coverage gaps: no HTTP-route data source on the JS side, though
       Express and Next handlers are the main untrusted input in JS apps; and
       29 JS framework names no fixture exercises
-- [ ] Robustness: one malformed `.ts`, or one non-UTF-8 Python file with no
-      PEP 263 cookie, aborts a whole repo scan. Loud, but JS repos will hit it
-      often
-- [ ] Decide whether `src/` becomes a real package. It is flat today, with
-      `tests/conftest.py` putting it on `sys.path`; now 23 modules and two
-      entry points
+- [x] Robustness: a malformed `.ts` or a non-UTF-8 Python file no longer
+      aborts the scan, and an oversized file — already skipped, but only ever
+      warned about — is now recorded too. The walk records the file in
+      `surfaces.json`'s new `skipped_files` and carries on (`schema_version` 3).
+      It goes in the artifact rather than only stderr because Phase 4 grades
+      recall from that file, and a skip in a console log makes a missed surface
+      indistinguishable from a detector miss. Only `UnreadableSource` is
+      caught, so a detector bug stays loud — `UnicodeDecodeError` is a
+      `ValueError` subclass, and a broad `except` would file a bug as a
+      deliberate skip. The parser's message is deliberately not stored: its
+      wording is CPython-version dependent and can contain an absolute path.
+      The skip list is sorted at the walk, not only in the serialiser, so the
+      warnings printed and the records written cannot disagree on order. The
+      two known limits in `SCHEMAS.md` — a non-UTF-8 `.ts` file is mangled
+      rather than skipped, and an unopenable file still aborts the scan — are
+      pinned by `tests/parsing/test_extractor_skip_limits.py`, so changing
+      either is a conscious decision with a failing test attached
+- [x] ~~Make `src/` a real package~~ — **declined.** It is 24 modules in four
+      folders with one entry point, and the folders are plain directories that
+      Python imports without an `__init__.py`. `python src/main.py` works,
+      `tests/conftest.py` handles the path, and converting would touch every
+      import for no reader benefit. Recorded in `FLOW.md`
 
 ---
 
