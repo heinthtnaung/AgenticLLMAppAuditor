@@ -15,7 +15,7 @@ from artifacts.findings_document import (
     model_run,
 )
 from artifacts.surface import Surface
-from checks import permissions, supply_chain, taint
+from checks import permissions, supply_chain, taint, workflow
 from artifacts.skipped_file import UnreadableSource
 from parsing.extractor_python import parse_file
 from parsing.languages import PYTHON, language_of
@@ -41,16 +41,19 @@ def build_findings(repo_path: str, surfaces: list[Surface],
                    mapping_document: dict | None) -> dict:
     """Return the findings document for one app.
 
+    The planner decides the order and records what it ran, so
+    `coverage.checks_run` is what the workflow actually did rather than a list
+    written by hand beside it.
+
     The model is not used yet: these checks read artifacts and report what they
     find, so there is no prose to write. `model_run.status` says `disabled`
     rather than leaving a reader to guess why every narrative is null.
     """
-    findings = run_static_checks(surfaces, mapping_document)
-    traced, probes = taint.run_over_repo(repo_path, surfaces)
-    findings += traced
+    planned = _checks_that_examined_something(repo_path, mapping_document)
+    state = workflow.audit(repo_path, surfaces, mapping_document, planned)
     return build_findings_document(
-        findings, probes,
-        coverage(len(surfaces), _checks_that_examined_something(repo_path, mapping_document)),
+        state["findings"], state["probes"],
+        coverage(len(surfaces), state["checks_run"]),
         model_run(MODEL_DISABLED),
     )
 

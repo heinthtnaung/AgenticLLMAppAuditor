@@ -277,11 +277,20 @@ done-criteria.
       file, but it is why `DATA_SOURCE_METHODS` could not be narrowed by the
       receiver's type: that would drop real detections on evidence from an
       unrelated scope
-- [ ] Implement the agentic audit workflow: the LangGraph skeleton (shared
-      state, planner node, bounded loop with a step cap) and the planner that
-      picks the next probe over that state. Moved here from Phase 1, which had
-      it as its own line — the two described the same work, and nothing was
-      built under either, so only the line moved
+- [x] The agentic audit workflow (`src/checks/workflow.py`), on **LangGraph**.
+      Shared `AuditState`, a planner node, an actor node, and a bounded loop
+      with `MAX_STEPS = 20` -- the cap is the mechanism that stops a planner bug
+      looping over someone else's repository, not a promise. The planner decides
+      *which check runs next*; it does not decide what counts as a finding, which
+      stays with the checks that read evidence and cite it. It is the real path
+      now, not a parallel one: `coverage.checks_run` is what the workflow did
+      rather than a list written beside it. Same output as before -- 2 findings,
+      9 probes, byte-identical across runs.
+      The dependency is a deliberate exception to the stdlib-first rule, taken
+      because the thesis argues an agentic LLM app should be audited by one. It
+      brings 33 packages including `langsmith`, whose tracing would send data off
+      the machine, so the module disables it before importing langgraph rather
+      than trusting a default
 - [x] Taint-style dataflow tracing (`src/checks/taint.py`, built on the new
       `src/parsing/bindings.py`). Traces an untrusted value to a model or a
       model-driven tool **within one file**, which is a hard limit rather than a
