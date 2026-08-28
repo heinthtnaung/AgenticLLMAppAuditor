@@ -15,10 +15,13 @@ a finding: that stays with the checks, which read evidence and cite it.
 import os
 from typing import Annotated, TypedDict
 
-# LangSmith would send traces off the machine. The auditor is offline, so this
-# is turned off before langgraph is imported rather than left to a default.
-os.environ.setdefault("LANGSMITH_TRACING", "false")
-os.environ.setdefault("LANGCHAIN_TRACING_V2", "false")
+# LangSmith would send traces off the machine -- node inputs and outputs, so
+# the audited repository's paths, file names, surface names and line numbers.
+# Assigned, never setdefault: a machine that develops LangChain apps commonly
+# exports LANGSMITH_TRACING=true, and setdefault would yield to it. The auditor
+# is offline, and that is not conditional on how the machine is configured.
+os.environ["LANGSMITH_TRACING"] = "false"
+os.environ["LANGCHAIN_TRACING_V2"] = "false"
 
 from langgraph.graph import END, START, StateGraph  # noqa: E402  (after the opt-out)
 
@@ -29,6 +32,9 @@ from checks import permissions, supply_chain, taint
 # may run. Higher than the plan needs, so a new check does not silently stop
 # the loop short; low enough that a planner bug cannot spin.
 MAX_STEPS = 20
+
+# Every check the planner knows how to run. A name outside this is refused.
+KNOWN_CHECKS = (permissions.CHECK_NAME, supply_chain.CHECK_NAME, taint.CHECK_NAME)
 
 
 def _extend(left: list, right: list) -> list:
@@ -56,7 +62,12 @@ def _run_one(name: str, state: AuditState) -> tuple[list[Finding], list[Probe]]:
     if name == supply_chain.CHECK_NAME:
         return supply_chain.find_undeclared_dependencies(
             state["mapping_document"], supply_chain.surface_fields(state["surfaces"])), []
-    return taint.run_over_repo(state["repo_path"], state["surfaces"])
+    if name == taint.CHECK_NAME:
+        return taint.run_over_repo(state["repo_path"], state["surfaces"])
+    # Refused rather than fallen through: an unknown name would otherwise reach
+    # coverage.checks_run claiming a check ran that this auditor does not have,
+    # with another check's results attributed to it.
+    raise ValueError(f"unknown check {name!r}; expected one of {KNOWN_CHECKS}")
 
 
 def plan(state: AuditState) -> dict:

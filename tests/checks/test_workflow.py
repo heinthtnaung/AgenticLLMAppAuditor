@@ -134,3 +134,15 @@ def test_a_repository_that_does_not_exist_fails_loudly(tmp_path) -> None:
     missing = tmp_path / "not-downloaded"
     with pytest.raises(FileNotFoundError, match=str(missing)):
         workflow.audit(str(missing), [], None, [TAINT_CHECK])
+
+
+def test_a_check_name_the_workflow_does_not_know_is_refused(tmp_path) -> None:
+    """A plan naming a check that does not exist must fail rather than run something else.
+
+    The last branch of the dispatch is unguarded, so an unknown name falls
+    through to the trace: its results are attributed to the unknown check and
+    the name reaches `coverage.checks_run`, claiming a check ran that the
+    auditor does not have.
+    """
+    with pytest.raises(ValueError, match="not_a_real_check"):
+        workflow.audit(str(tmp_path), [], None, ["not_a_real_check"])

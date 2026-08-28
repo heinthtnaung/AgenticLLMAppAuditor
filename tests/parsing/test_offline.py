@@ -4,18 +4,42 @@ Audited source is often proprietary, so the guarantee that it never leaves the
 machine is the reason the tool can be pointed at a private repository at all.
 It is asserted here rather than assumed, because a stray import could break it
 silently.
+
+The audit workflow is the part of the tool that most threatens the guarantee.
+LangGraph brings in `langsmith`, whose tracing uploads every node's input and
+output -- which here means the audited repository's paths, file names and code
+identifiers. The workflow module opts out of it at import time, and the last
+tests below hold that opt-out to the guarantee rather than to a default.
 """
 
+import importlib.util
+import os
 import socket
 
 import pytest
+from checks import workflow
+from checks.permissions import CHECK_NAME as PERMISSION_CHECK
+from checks.supply_chain import CHECK_NAME as SUPPLY_CHAIN_CHECK
+from checks.taint import CHECK_NAME as TAINT_CHECK
 from deps import syft_runner
 from artifacts.aibom import build_aibom
-from conftest import CORPUS_APPS, CORPUS_DIR, require_corpus, scan_to_json
+from conftest import CORPUS_APPS, CORPUS_DIR, SRC_DIR, require_corpus, scan_to_json
 from parsing.extractor import extract_repo
 from artifacts.mapping import build_mapping
-from dependency_fixtures import corpus_sbom
+from dependency_fixtures import SUPPORT_AGENT, corpus_sbom
+from findings_fixtures import corpus_inputs
 from artifacts.surface import surfaces_to_json
+
+# The checks the workflow plans for a Python app: the widest path through it.
+PYTHON_APP_PLAN = [PERMISSION_CHECK, SUPPLY_CHAIN_CHECK, TAINT_CHECK]
+
+# What that app really yields, so a silent run cannot pass this file.
+SUPPORT_AGENT_FINDINGS = 2
+
+WORKFLOW_SOURCE = SRC_DIR / "checks" / "workflow.py"
+
+# The two settings that would send a trace of the audit to LangSmith.
+TRACING_VARIABLES = ("LANGSMITH_TRACING", "LANGCHAIN_TRACING_V2")
 
 
 class NoNetwork(socket.socket):
@@ -80,3 +104,44 @@ def test_the_sbom_generator_is_told_not_to_phone_home() -> None:
     this setting is what actually keeps the SBOM step offline.
     """
     assert syft_runner.SYFT_ENV["SYFT_CHECK_FOR_APP_UPDATE"] == "false"
+
+
+def test_compiling_the_audit_graph_touches_no_network(no_network) -> None:
+    """Building the loop is local: the framework looks nothing up as it wires it."""
+    assert workflow.build_graph() is not None
+    assert no_network.attempts == []
+
+
+def test_running_the_whole_audit_workflow_touches_no_network(no_network) -> None:
+    """Every check the planner can run, over a real app, with every socket refused."""
+    require_corpus(SUPPORT_AGENT)
+    state = workflow.audit(*corpus_inputs(SUPPORT_AGENT, corpus_sbom()), PYTHON_APP_PLAN)
+    assert len(state["findings"]) == SUPPORT_AGENT_FINDINGS, "a silent run would prove little"
+    assert no_network.attempts == []
+
+
+def reimport_the_workflow() -> None:
+    """Re-run the module's import-time tracing opt-out, whatever the environment now says."""
+    spec = importlib.util.spec_from_file_location("workflow_reimported", WORKFLOW_SOURCE)
+    spec.loader.exec_module(importlib.util.module_from_spec(spec))
+
+
+def test_importing_the_workflow_leaves_langsmith_tracing_off() -> None:
+    """The opt-out is taken by importing the module, not by anything a caller must remember."""
+    reimport_the_workflow()
+    assert [os.environ[name] for name in TRACING_VARIABLES] == ["false", "false"]
+
+
+def test_the_tracing_opt_out_overrules_an_environment_that_asked_for_tracing(monkeypatch) -> None:
+    """Offline is the tool's guarantee, so an inherited `true` must not switch tracing back on.
+
+    A machine that develops LangChain apps commonly exports these already. If
+    one of them survives into an audit, langsmith uploads each node's input and
+    output -- the audited repository's paths and code identifiers -- to
+    api.smith.langchain.com, which is exactly the breach this file exists to
+    prevent.
+    """
+    for name in TRACING_VARIABLES:
+        monkeypatch.setenv(name, "true")
+    reimport_the_workflow()
+    assert [os.environ[name] for name in TRACING_VARIABLES] == ["false", "false"]

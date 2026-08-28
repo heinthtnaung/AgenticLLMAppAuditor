@@ -18,6 +18,10 @@ from parsing.languages import PYTHON
 
 WORKFLOW_MODULE = Path("checks/workflow.py")
 
+# A check that does both of the things the workflow must not do, so the two
+# negatives below are read against a module where they would fire.
+TAINT_MODULE = Path("checks/taint.py")
+
 # An OWASP id as this project writes it: LLM01, LLM03, LLM06.
 OWASP_ID_PATTERN = re.compile(r"LLM\d\d")
 
@@ -70,3 +74,14 @@ def test_the_workflow_returns_exactly_what_the_check_concluded(tmp_path) -> None
     state = workflow.audit(str(tmp_path), surfaces, None, [permissions.CHECK_NAME])
     assert state["findings"] == permissions.find_over_privileged_tools(surfaces)
     assert state["findings"] != []
+
+
+def test_the_owasp_pattern_matches_the_way_a_check_writes_a_risk() -> None:
+    """Guard: a pattern matching nothing would make the workflow look innocent forever."""
+    written = " ".join(string_literals(parse_module(TAINT_MODULE)))
+    assert OWASP_ID_PATTERN.search(written) is not None
+
+
+def test_the_matcher_sees_a_module_that_does_build_a_finding() -> None:
+    """Guard: the same for the record check, run over a module that builds both records."""
+    assert called_names(parse_module(TAINT_MODULE)) & RESULT_RECORDS == RESULT_RECORDS
