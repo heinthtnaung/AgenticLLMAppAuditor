@@ -9,8 +9,13 @@ SRC_DIR = REPO_ROOT / "src"
 
 # src/ is a plain folder of modules, not a package, so it must be importable
 # before anything below can import from it.
-if str(SRC_DIR) not in sys.path:
-    sys.path.insert(0, str(SRC_DIR))
+TESTS_DIR = Path(__file__).resolve().parent
+
+# src/ so the modules under test import, and tests/ so the shared helpers next
+# to this file are importable from the subfolders that hold the tests.
+for directory in (SRC_DIR, TESTS_DIR):
+    if str(directory) not in sys.path:
+        sys.path.insert(0, str(directory))
 
 import pytest  # noqa: E402
 
@@ -26,6 +31,16 @@ from corpus_paths import (  # noqa: E402  (import must follow the sys.path line)
     discover_corpus_apps,
     evidence_path,
 )
+
+from parsing.extractor import extract_repo  # noqa: E402
+from artifacts.surface import surfaces_to_json  # noqa: E402
+
+
+def scan_to_json(repo_path: str) -> str:
+    """Serialise one whole scan, so two separate walks can be compared byte for byte."""
+    scan = extract_repo(repo_path)
+    return surfaces_to_json(scan.surfaces, scan.skipped)
+
 
 # The ground_truth.json schema this suite knows how to read.
 GROUND_TRUTH_SCHEMA_VERSION = 2

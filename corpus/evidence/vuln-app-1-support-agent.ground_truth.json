@@ -1,6 +1,6 @@
 {
   "app": "vuln-app-1-support-agent",
-  "expected_surface_count": 5,
+  "expected_surface_count": 6,
   "expected_surfaces": [
     {
       "code_anchor": "system_msg = \"\"\"Assistant helps the current user retrieve th",
@@ -51,10 +51,20 @@
       "line_end": null,
       "module": "",
       "name": "cursor.execute"
+    },
+    {
+      "code_anchor": "yaml_data = yaml.load(f, Loader=yaml.SafeLoader)",
+      "file": "utils.py",
+      "id": "SURF-06",
+      "kind": "DATA_SOURCE",
+      "line": 75,
+      "line_end": null,
+      "module": "yaml",
+      "name": "yaml.load"
     }
   ],
   "expected_surfaces_complete": false,
-  "finding_count": 5,
+  "finding_count": 6,
   "findings": [
     {
       "code_anchor": "system_msg = \"\"\"Assistant helps the current user retrieve th",
@@ -130,13 +140,28 @@
       "owasp_id": "LLM02",
       "surface_name": "cursor.execute",
       "title": "Model-supplied userId is interpolated into SQL with an f-string"
+    },
+    {
+      "code_anchor": "yaml_data = yaml.load(f, Loader=yaml.SafeLoader)",
+      "component": null,
+      "description": "utils.py reads the app's LLM configuration with PyYAML, but requirements.txt never declares it. Nothing in this app governs which version is installed: it arrives only transitively, through whichever declared package depends on it. An undeclared direct dependency is also invisible to an SBOM-driven advisory check, and it sits on the path that decides which model and settings the agent runs with.",
+      "detection": "static",
+      "file": "utils.py",
+      "id": "VULN1-06",
+      "line": 75,
+      "line_end": null,
+      "llm_surface": "DATA_SOURCE",
+      "notes": "Not unsafe deserialisation: the call passes Loader=yaml.SafeLoader. The finding is the missing declaration alone. Evidence is mapping.json's entry for surface utils.py:75:DATA_SOURCE:yaml.load with reason used_but_undeclared and component_name pyyaml, plus undeclared_components. `component` is null on purpose: the package has no SBOM component, so there is no purl to join on.",
+      "owasp_id": "LLM03",
+      "surface_name": "yaml.load",
+      "title": "PyYAML is used but never declared as a direct dependency"
     }
   ],
   "findings_complete": false,
   "schema_version": 2,
   "source": "ai_drafted",
   "upstream_commit": "c0cf9a14adad76e9d6a53c41741f625334bd9971",
-  "verified": false,
+  "verified": true,
   "verified_by": null,
   "verified_date": null
 }

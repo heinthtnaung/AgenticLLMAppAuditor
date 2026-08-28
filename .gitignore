@@ -20,8 +20,10 @@ node_modules/
 corpus/*
 !corpus/evidence/
 
-# Generated artifacts (surfaces.json, sbom.json, findings.json, ...)
-artifacts/
+# Generated output (surfaces.json, sbom.json, mapping.json, ...). Anchored with
+# a leading slash on purpose: a bare `artifacts/` also matches src/artifacts/
+# and tests/artifacts/, which silently made those source files unstageable.
+/artifacts/
 
 # Local model weights — never commit these
 *.gguf

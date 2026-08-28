@@ -86,12 +86,23 @@ tree-sitter's *TSX* grammar to parse its embedded markup. `languages.py` keeps
 those two ideas in separate tables for exactly that reason.
 
 `extract_repo()` loops the file list and calls `extract_file()` on each.
-On the Python side, `parse_file()` reads the source with `tokenize.open`
-(which honours a file's own encoding declaration) and hands it to `ast.parse`.
+On the Python side, `read_source()` reads the source with `tokenize.open`
+(which honours a file's own encoding declaration) and `parse_file()` hands it to
+`ast.parse`. The two are separate functions on purpose: the standard library
+reports a bad *encoding* and a bad *statement* both as `SyntaxError`, so only
+the call site can tell those two skip reasons apart.
 On the JavaScript side, `parse_source()` has to check `root_node.has_error`
 itself and raise: tree-sitter never raises on bad syntax, it just returns a
 tree full of ERROR nodes, so an unchecked malformed file would silently yield
 zero surfaces.
+
+Both backends raise `UnreadableSource`, which carries the reason. **The walk
+catches it and keeps going**, returning a `ScanResult` of the surfaces found
+*and* the files it could not read — one unparseable vendored file costs that
+file, not the whole audit. Only `UnreadableSource` is caught: a detector's own
+`ValueError` is a bug and stays loud, which matters because
+`UnicodeDecodeError` is itself a `ValueError` subclass and a broad `except`
+would file a detector bug as a deliberate skip.
 
 Each file is labelled with its path **relative to the repository root**, in
 POSIX form. That is what makes the output identical on Windows, WSL, and Linux.
@@ -148,6 +159,12 @@ with no surfaces is a valid answer, not an error: the file is still written
 with `surface_count: 0`, so "audited, found nothing" is distinguishable from
 "never audited".
 
+The unreadable files are written into the same document as `skipped_files`, and
+also printed. Recording them beside the surfaces is deliberate: Phase 4 scores
+recall from this file, and a skip mentioned only in a console log would make a
+missed surface indistinguishable from a detector that failed to find one.
+`docs/SCHEMAS.md` states what a scorer must do about it.
+
 ---
 
 ## 3. How it is checked
@@ -155,7 +172,7 @@ with `surface_count: 0`, so "audited, found nothing" is distinguishable from
 ```mermaid
 flowchart LR
     C[corpus/my-app/<br/>the app being audited] --> E[extract_repo]
-    E --> F[surfaces found]
+    E --> F[ScanResult<br/>surfaces + skipped files]
     G[corpus/my-app/<br/>ground_truth.json] --> M{does every known<br/>finding match a<br/>surface we found?}
     F --> M
     M -->|yes| OK([pass])
@@ -200,13 +217,16 @@ model is set up here so Phase 3 can start immediately.
 
 ## 5. Where the later phases attach
 
-*Planned — none of this is built yet.*
+Phase 2 is built. `python src/main.py <repo>` produces `sbom.json`,
+`sbom.cyclonedx.json`, `aibom.json` and `mapping.json` beside the surfaces,
+joining each surface to the dependency it came from on the `module` field.
+Phases 3 and 4 are not built.
 
 ```mermaid
 flowchart TD
     P1[Phase 1<br/>surface extractor] --> SJ[(surfaces.json)]
     SJ --> P2[Phase 2<br/>SBOM / AIBOM + mapping]
-    P2 --> MJ[(sbom.json, aibom.json,<br/>mapping.json)]
+    P2 --> MJ[(sbom.json, sbom.cyclonedx.json,<br/>aibom.json, mapping.json)]
     SJ --> P3[Phase 3<br/>agentic auditor + probes]
     MJ --> P3
     P3 --> FJ[(findings.json)]
@@ -225,6 +245,22 @@ treated as contracts. The field lists are in [`SCHEMAS.md`](./SCHEMAS.md).
 
 ## 6. Module map
 
+`src/` groups modules by what they do. The folders are plain directories, not
+packages — Python imports them without an `__init__.py`, so there are no empty
+files to explain.
+
+**It is deliberately not an installable package.** `python src/main.py` runs it
+and `tests/conftest.py` puts `src/` on the path; making it a package would mean
+rewriting every import and invoking it as `python -m`, for no gain a reader
+would notice.
+
+| Folder | What it holds |
+|---|---|
+| `parsing/` | turning a repository's source files into syntax trees |
+| `detectors/` | finding the four kinds of LLM surface in a tree |
+| `artifacts/` | the JSON documents each run produces, and their shapes |
+| `deps/` | reading an app's dependencies, and matching imports to packages |
+
 | File | Its one job |
 |---|---|
 | `main.py` | command line entry point |
@@ -241,8 +277,19 @@ treated as contracts. The field lists are in [`SCHEMAS.md`](./SCHEMAS.md).
 | `ast_utils.py` | shared `ast` helpers |
 | `ts_utils.py` | shared tree-sitter helpers |
 | `surface.py` | the data model and stable JSON output |
+| `skipped_file.py` | the record for a file the scan could not read |
+| `repo_path.py` | the path rule every artifact path field obeys |
 | `config.py` | settings, from the environment |
 | `model_client.py` | talk to the local model (Phase 3) |
+| `syft_runner.py` | run the SBOM generator: the only outside process |
+| `requirements_parser.py` | what a Python app says it depends on |
+| `npm_manifest.py` | what a JavaScript app says it depends on |
+| `package_names.py` | each ecosystem's rules for names, pins and purls |
+| `sbom.py` | normalise that into a deterministic bill of materials |
+| `cyclonedx.py` | re-emit the same scan in the standard CycloneDX format |
+| `component_match.py` | which package an import came from |
+| `mapping.py` | join each surface to its component, or say why not |
+| `aibom.py` | the models, tools and agents, from the surfaces |
 
 Every module stays under the project's 200-line cap, so none of them grows
 into a file that does two jobs.
