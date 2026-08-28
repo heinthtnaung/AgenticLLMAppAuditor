@@ -183,7 +183,171 @@ missed surface indistinguishable from a detector that failed to find one.
 
 ---
 
-## 3. How it is checked
+## 3. The audit loop, on LangGraph
+
+Phase 3 plans its own work. The auditor is itself an agentic LLM app, which is
+why it is built with the same framework as the apps it audits -- not because a
+bounded loop needs one.
+
+```mermaid
+stateDiagram-v2
+    direction LR
+    [*] --> plan
+    plan --> act : one check chosen
+    act --> plan : work left, under the cap
+    act --> [*] : nothing left, or cap reached
+
+    note right of plan
+        picks the next check.
+        It never decides what
+        counts as a finding.
+    end note
+    note right of act
+        runs it, appends its
+        findings and probes
+        to the shared state
+    end note
+```
+
+Three things about that loop matter more than its shape.
+
+**The cap is a mechanism, not a promise.** `MAX_STEPS = 20`. An unbounded
+planner over someone else's repository is exactly what the safety boundary
+exists to prevent, so the loop stops whether or not work remains, and a test
+proves it stops with work outstanding.
+
+**The planner chooses which check runs, and nothing else.** What counts as a
+finding stays with the checks, which read evidence and cite it. A planner that
+decided findings would be a second detector, and Phase 4 grades the detectors.
+
+**Only checks with something to examine are planned.** The taint trace reads an
+`ast` tree, so on a JavaScript app it is never handed to the planner and never
+appears in `coverage.checks_run` -- because a check listed there and silent
+means "looked, found nothing", which would be a false claim.
+
+```mermaid
+flowchart LR
+    S[(surfaces.json)] --> W
+    M[(mapping.json)] --> W
+    W[AuditState<br/>shared, appended to] --> P1[permissions<br/>privileged tool classes]
+    W --> P2[supply chain<br/>used but never declared]
+    W --> P3[taint<br/>untrusted value to a model]
+    P1 --> F[(findings.json)]
+    P2 --> F
+    P3 --> F
+    P3 -.->|could not follow| PR[probes:<br/>inconclusive]
+    PR --> F
+
+    classDef built fill:#e6f4ea,stroke:#34a853,stroke-width:2px
+    class S,M,W,P1,P2,P3,F,PR built
+```
+
+---
+
+## 4. What it looks for in a LangChain or LangGraph app
+
+The four surface kinds are not abstract: each is a set of framework names the
+detectors match. This is what makes the auditor specific to LLM applications
+rather than a general linter.
+
+```mermaid
+flowchart TD
+    APP[A LangChain / LangGraph app] --> PT
+    APP --> AD
+    APP --> TC
+    APP --> DS
+
+    PT["PROMPT_TEMPLATE<br/>ChatPromptTemplate, HumanMessage,<br/>MessagesPlaceholder"]
+    AD["AGENT_DEF<br/>AgentExecutor, LLMChain, StateGraph,<br/>ChatOpenAI, ChatLiteLLM"]
+    TC["TOOL_CALL<br/>@tool, BaseTool, ShellTool,<br/>PythonREPLTool"]
+    DS["DATA_SOURCE<br/>st.chat_input, open(), cursor.execute,<br/>retrievers, app.get('/x')"]
+
+    PT --> R1[LLM01<br/>prompt injection]
+    DS --> R1
+    TC --> R2[LLM06<br/>excessive agency]
+    AD --> R3[AUDITABILITY<br/>no durable record<br/>of tool calls]
+    DS --> R4[LLM03<br/>supply chain,<br/>via the package it came from]
+
+    classDef built fill:#e6f4ea,stroke:#34a853,stroke-width:2px
+    classDef partial fill:#e6f4ea,stroke:#34a853,stroke-dasharray:5 3
+    classDef planned fill:#f1f3f4,stroke:#9aa0a6,stroke-dasharray:4 3
+    class PT,AD,TC,DS built
+    class R1,R4 built
+    class R2 partial
+    class R3 planned
+```
+
+Green is reported today. `MessagesPlaceholder` is kept in the prompt table on
+purpose: a history slot is exactly where an indirect injection lands.
+
+LLM06 is dashed because only half of it is reached. A privileged tool class is
+found; a tool that accepts any identifier without checking who asked -- which
+is what the corpus actually grades -- needs the dataflow to reason about a
+missing check rather than a present capability. AUDITABILITY is grey: proving
+an app keeps no durable record of its tool calls means reasoning about absence,
+which no check does yet.
+
+---
+
+## 5. When the local model is called
+
+**Today: never, during an audit.** Every artifact this tool produces is written
+by deterministic static analysis. Nothing in `src/` outside `model_client.py`
+calls it, and every run records `model_run.status: "disabled"` with each
+finding's `narrative` left null.
+
+That is deliberate, not an oversight. What the model is for is *explaining
+evidence this project already gathered* -- never finding it, and never
+classifying it, because classification is exactly what Phase 4 scores. A
+finding the model invented would be a finding no artifact backs.
+
+```mermaid
+flowchart TD
+    A[audit runs] --> C[checks read surfaces,<br/>mapping and the SBOM]
+    C --> EV[evidence:<br/>surface ids, purls, probe outcomes]
+    EV --> F[(findings.json)]
+
+    EV -.->|planned| Q[build a prompt<br/>from the evidence]
+    Q -.-> MC[model_client.ask<br/>temperature 0, seed 0]
+    MC -.-> OL[(local Ollama<br/>on this machine)]
+    OL -.-> N[narrative + ranking]
+    N -.-> F
+
+    classDef built fill:#e6f4ea,stroke:#34a853,stroke-width:2px
+    classDef ready fill:#fff8e1,stroke:#f9ab00,stroke-dasharray:5 3
+    classDef planned fill:#f1f3f4,stroke:#9aa0a6,stroke-dasharray:4 3
+    class A,C,EV,F built
+    class MC,OL ready
+    class Q,N planned
+```
+
+Green runs today. Amber is built and tested but reached only by hand --
+`python src/model_client.py` answers, and its decoding settings are pinned.
+Grey is not written yet.
+
+**Where the model would join, and what bounds it.** Only two fields in
+`findings.json` may ever be model-authored: each finding's `narrative`, and
+`model_run.ranking`. Not `owasp_id`, not `file`, not `line` -- those are copied
+from evidence. Not `severity` or `confidence` -- the grading key has no such
+field, so nothing could check them. And never a suggested fix, which would be
+one copy-paste from crossing the no-auto-patching boundary.
+
+**Why `status` has three values.** `disabled` means nobody asked for prose;
+`unavailable` means it was asked for and the server did not answer;
+`used` names the model and records the settings sent. A reader must be able to
+tell a run with no narrative from a run whose narrative failed, which is the
+same distinction `skipped_files` and the probe outcomes make elsewhere.
+
+**The model never leaves the machine.** It is a local Ollama server, and the
+decoding settings are fixed -- temperature 0, seed 0 -- so a recorded run can
+be repeated rather than merely described. LangGraph brought `langsmith` into
+the dependency tree, whose tracing would have posted node inputs and outputs
+off the machine; `workflow.py` disables it by assignment before importing
+langgraph, and the offline test covers a full audit under a blocked socket.
+
+---
+
+## 6. How it is checked
 
 ```mermaid
 flowchart LR
@@ -211,7 +375,7 @@ AssertionError: VULN2-03: no AGENT_DEF surface extracted for
 
 ---
 
-## 4. Settings and the model client
+## 7. Settings and the model client
 
 Two pieces exist but sit outside the extraction flow above.
 
@@ -225,13 +389,12 @@ flowchart LR
 ```
 
 **`model_client.py`** sends a prompt to the local Ollama server and returns the
-text. It is fully working — `python src/model_client.py` answers — but **no
-detection logic uses it yet**. Phase 1 is deterministic static analysis; the
-model is set up here so Phase 3 can start immediately.
+text. Section 5 covers when it is called, which is currently never during an
+audit.
 
 ---
 
-## 5. Where the later phases attach
+## 8. Where the later phases attach
 
 Phases 1 and 2 are built and tagged. Phase 3 is substantially built: a planner
 runs three checks over one app and writes `findings.json`, which currently
@@ -269,7 +432,7 @@ treated as contracts. The field lists are in [`SCHEMAS.md`](./SCHEMAS.md).
 
 ---
 
-## 6. Module map
+## 9. Module map
 
 `src/` groups modules by what they do. The folders are plain directories, not
 packages — Python imports them without an `__init__.py`, so there are no empty
