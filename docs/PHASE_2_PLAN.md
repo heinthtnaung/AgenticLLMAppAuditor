@@ -7,6 +7,9 @@ audited app and joining it to the surfaces Phase 1 found.
 **Input:** `artifacts/<app>/surfaces.json` from Phase 1.
 **Output:** `sbom.json`, `aibom.json`, `mapping.json`.
 
+**Paths below are as planned.** The code shipped in packages under `src/`; the
+current layout is in `README.md`.
+
 **Scope rule:** Phase 2 is still deterministic. No LLM reasoning, no probing.
 The model client stays unused until Phase 3.
 
@@ -23,9 +26,9 @@ Every task below is held to the binding rules in
 ## Before starting: two things to settle
 
 **The OWASP subset is decided.** The project cites the **2025** list, so
-supply chain is **LLM03**. Note what that exposes: the corpus app's grading key
-has findings for LLM01, LLM02, LLM06 and auditability, and **none for LLM03**.
-The risk this phase reports currently has nothing to be graded against, so
+supply chain is **LLM03**. The corpus app's grading key had findings for LLM01,
+LLM02, LLM06 and auditability and **none for LLM03** until `VULN1-06` was
+drafted; it is AI-drafted and awaiting the human read, so
 producing evidence for one is part of the phase's job, not an afterthought
 (`TODO.md` B6).
 
@@ -40,9 +43,13 @@ corpus app, **6 of 19 surfaces carry a third-party module**:
 | 11 | `""` | `open()`, `cursor.execute()` — builtins and methods on local variables |
 
 `yaml` is **not** standard library: it is PyYAML, and `requirements.txt` does
-not list it. Nor does it list `python-dotenv`, which three files import. Those
-are real findings, and the reason `mapping.json` needs a `used_but_undeclared`
+not list it. That is the reason `mapping.json` needs a `used_but_undeclared`
 outcome distinct from "unresolved".
+
+`requirements.txt` omits `python-dotenv` too, which two files import, but it
+yields no mapping entry: the join runs from surfaces outwards, and
+`load_dotenv()` is not an LLM surface. Undeclared in the manifest is not the
+same as reported by the tool, and only the reported one can be cited.
 
 An unmapped surface is therefore the **normal** case, not a defect. Design for
 it: `mapping.json` must be able to say "this surface has no component" without

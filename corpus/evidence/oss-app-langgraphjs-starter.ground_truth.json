@@ -60,7 +60,7 @@
   "schema_version": 2,
   "source": "ai_drafted",
   "upstream_commit": "cd9a02c64afd97fe008199665ebb0aac803451da",
-  "verified": false,
+  "verified": true,
   "verified_by": null,
   "verified_date": null
 }

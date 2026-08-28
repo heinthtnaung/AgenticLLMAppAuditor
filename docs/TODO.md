@@ -26,8 +26,9 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done
       LLM08 (vector database / RAG retrieval) was considered and **dropped**:
       no corpus app performs retrieval, so its recall would be 0/0.
 
-- [x] Collect deliberately-vulnerable demo apps (2 apps; **10** findings
-      drafted, not the 9 first estimated — see B3a)
+- [x] Collect deliberately-vulnerable demo apps (2 apps). The one on disk
+      carries 6 drafted findings; the second app is not downloaded, so the
+      corpus-wide count cannot be stated here — see B3
     - https://github.com/ReversecLabs/damn-vulnerable-llm-agent
     - https://github.com/13o-bbr-bbq/Broken_LLM_Integration_App
 - [~] Select + verify 2–3 open-source LangGraph/LangChain apps (checklist and
@@ -44,7 +45,7 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done
       clean code). Removed when the corpus narrowed to one app, restored since
     - https://github.com/langchain-ai/open_deep_research
 - [~] Manually establish ground truth for the demo app — drafted as
-      `corpus/evidence/vuln-app-1-support-agent.ground_truth.json`, 5 findings,
+      `corpus/evidence/vuln-app-1-support-agent.ground_truth.json`, 6 findings,
       `verified: false`. Needs the human second-person check. See B3.
 - [ ] Manually establish ground truth for the open-source apps (read code,
       list surfaces/issues, second-person check)
@@ -59,9 +60,6 @@ See `docs/PHASE_1_PLAN.md` for the task-level breakdown and done-criteria.
       (Llama / Qwen & GLM 5.2 / Gemma 4 / Qwen-coder)
       — Ollama 0.32.15 running, `qwen2.5-coder:7b-instruct` pulled (4.4 GB),
       `python src/model_client.py` returns a reply from the local server.
-- [ ] Stand up the LangGraph skeleton (shared state, planner node, bounded
-      loop with step cap)
-      — **not started, and believed misfiled**: this is Phase 3 work. See B4.
 - [x] Build the LLM surface extractor (prompt templates, agent definitions,
       tool-call sites, prompt/tool data sources) with location recording
 
@@ -74,9 +72,9 @@ Phase 1 detail, per `docs/PHASE_1_PLAN.md`:
 - [x] 1.1 Scaffolding — `src/ corpus/ tests/ artifacts/`, `requirements.txt`,
       `README.md`, `.venv` installs cleanly
 - [x] 1.2 Offline model client — `ask()` verified against the local server
-- [x] 1.3 Repo loader — `src/repo_loader.py`
-- [x] 1.4 Surface data model — `src/surface.py`
-- [x] 1.5 Surface extractor — `src/detectors.py` + `src/extractor.py`
+- [x] 1.3 Repo loader — `src/parsing/repo_loader.py`
+- [x] 1.4 Surface data model — `src/artifacts/surface.py`
+- [x] 1.5 Surface extractor — `src/detectors/detectors.py` + `src/parsing/extractor.py`
 - [x] 1.6 CLI entry point — `src/main.py`
 - [~] 1.7 Validation — the suite is green and every code-linked ground-truth
       surface is found *in the files the scan could read*; a scorer has to read
@@ -85,10 +83,10 @@ Phase 1 detail, per `docs/PHASE_1_PLAN.md`:
 - [x] Settings read from the environment (`src/config.py` + `.env.example`);
       the test corpus is discovered on disk instead of listed in code
 - [x] System flow documented step by step in `docs/FLOW.md`
-- [x] 1.8 Language registry (`src/languages.py`) — extension to language and
+- [x] 1.8 Language registry (`src/parsing/languages.py`) — extension to language and
       to tree-sitter grammar, kept as two separate ideas
-- [x] 1.9 JavaScript/TypeScript backend (`src/detectors_js.py`,
-      `src/extractor_js.py`, `src/ts_utils.py`) via tree-sitter
+- [x] 1.9 JavaScript/TypeScript backend (`src/detectors/detectors_js.py`,
+      `src/parsing/extractor_js.py`, `src/parsing/ts_utils.py`) via tree-sitter
 - [x] 1.10 A clean-code fixture — `oss-app-langgraphjs-starter`, restored and
       pinned to `cd9a02c6`. It is the only fixture that can measure a
       false-positive rate; every other one measures recall alone. Current
@@ -105,7 +103,7 @@ Phase 1 detail, per `docs/PHASE_1_PLAN.md`:
 See [`PHASE_2_PLAN.md`](./PHASE_2_PLAN.md) for the task breakdown and
 done-criteria.
 
-- [~] Generate an SBOM via Syft. Two files: `sbom.cyclonedx.json` is valid
+- [x] Generate an SBOM via Syft. Two files: `sbom.cyclonedx.json` is valid
       CycloneDX, so the result can be fed to other supply-chain tooling and
       checked independently; `sbom.json` is a normalised shape and is what the
       later phases read. The standard format alone is not enough, because it
@@ -113,7 +111,7 @@ done-criteria.
       `~=0.3.25` looks identical to an exact pin -- and it omits dependencies
       the generator did not find (two on the Python app, two on the JS one).
       Both corpus apps now produce both bills
-- [x] Define the AIBOM schema and build it (`src/aibom.py`), derived from
+- [x] Define the AIBOM schema and build it (`src/artifacts/aibom.py`), derived from
       `surfaces.json` so every entry traces to a surface. `datasets` is absent:
       no surface kind produces one
 - [x] Write the advisory data policy (`SCHEMAS.md`): fetched out-of-band as a
@@ -151,11 +149,12 @@ done-criteria.
       asserting 0.3.2 by sort order alone
 - [ ] A package declared bare loses a version the generator did resolve.
       `version_source_of` tests "no constraint" before "the generator reported
-      something", so `streamlit` resolved to 1.40.0 reports `unconstrained`
-      with `version: null`, while `streamlit~=1.40` keeps 1.40.0 as `inferred`
-      — declaring *less* precisely discards more evidence. It predates the npm
-      work and touches no purl (neither source is exact), so it is a reporting
-      gap rather than a soundness one. Pinned by
+      something", so a bare name the generator *did* resolve reports
+      `unconstrained` with `version: null`, while the same name with a range
+      keeps the resolved version as `inferred` — declaring *less* precisely
+      discards more evidence. It predates the npm work and touches no purl
+      (neither source is exact), so it is a reporting gap rather than a
+      soundness one. Pinned by
       `test_an_unconstrained_package_drops_a_version_the_generator_resolved`,
       so the current behaviour is visible rather than accidental
 - [ ] Read Python lockfiles (`poetry.lock`, `Pipfile.lock`). Needs
@@ -170,16 +169,17 @@ done-criteria.
       refused with a message today rather than half-read, because one SBOM
       holds one ecosystem and reporting only the Python half would understate
       the tree while looking complete. No corpus fixture is mixed
-- [ ] Build the advisory matcher — **deferred, not forgotten.** An advisory
-      keys on a versioned PURL, and the corpus app yields exactly one: of five
-      components, `langchain-litellm` is pinned, `langchain` and `openai` have a
-      version inferred from a range, and `langchain-community` and `streamlit`
-      have none. Only the pinned one gets a version in its PURL — by design, so
-      a guess cannot reach a matcher — so four of five are unmatchable and a
-      matcher would report on 20% of the tree while looking complete.
-      Reading npm manifests is what unblocks this, not more matcher code: a
-      lockfile pins every version, so that path is where the evidence comes from
-- [x] Build surface-to-component mapping (`src/mapping.py`), joining on each
+- [ ] Ingest the local advisory snapshot (planned: `src/deps/advisories.py`)
+      and build
+      the matcher. **No longer blocked on evidence.** It was deferred because
+      an advisory keys on a versioned PURL and the Python app yields exactly
+      one: of five components only `langchain-litellm` is pinned, and a version
+      inferred from a range is barred from the PURL by design, so a matcher
+      would have reported on 20% of the tree while looking complete. Reading
+      npm manifests changed that — the JS fixture yields **80 versioned
+      PURLs** from its lockfile, so there is now a tree worth matching against.
+      What remains is the matcher itself and the out-of-band snapshot
+- [x] Build surface-to-component mapping (`src/artifacts/mapping.py`), joining on each
       surface's `module`. Five outcomes, all exercised on the corpus:
       third_party 6, stdlib 3, first_party 1, used_but_undeclared 1,
       unresolved 8. It found PyYAML used but never declared
@@ -193,17 +193,20 @@ done-criteria.
       than a guess; a mode built at runtime says so instead of guessing.
       `+` counts as a write flag: `r+` and `rb+` open a read-write handle and
       were reported as reads until that was fixed and tested
-- [ ] ~~Drop `SystemMessage` / `HumanMessage` / `MessagesPlaceholder` from
+- [x] ~~Drop `SystemMessage` / `HumanMessage` / `MessagesPlaceholder` from
       `PROMPT_CLASSES`~~ — **considered and refused.** The first two *are*
       prompt text, so reporting them is correct rather than noisy. A
       `MessagesPlaceholder` is a history slot, which is exactly where indirect
       injection lands, so dropping it would cost LLM01 recall. With one fixture
       there is no evidence of noise either way, and a name in a table costs
       nothing while a missed prompt is a recall failure
-- [ ] The JS side has the same `load` / `query` / `execute` breadth problem
-- [ ] Detector coverage gaps: no HTTP-route data source on the JS side, though
-      Express and Next handlers are the main untrusted input in JS apps; and
-      29 JS framework names no fixture exercises
+- [ ] No HTTP-route data source on the JS side, though Express and Next
+      handlers are the main untrusted input in JS apps. Buildable with static
+      analysis alone, so it belongs here: guard on a literal path starting `/`
+      **and** a function as the last argument, or `app.get('port')` reports as
+      a route. It forces a split of `detectors_js.py` (194 lines) in the same
+      change, and no fixture runs a server, so it would be synthetic-tested
+      only — as the Python route detector already is
 - [x] Robustness: a malformed `.ts` or a non-UTF-8 Python file no longer
       aborts the scan, and an oversized file — already skipped, but only ever
       warned about — is now recorded too. The walk records the file in
@@ -255,10 +258,20 @@ done-criteria.
       HEAD` equals the pinned commit, then delete `.git`. That verification is
       the load-bearing part — without it a moved upstream silently invalidates
       every line number in the grading key.
-- [ ] Implement the agentic audit workflow (planner picks next probe over
-      shared state)
+- [ ] Implement the agentic audit workflow: the LangGraph skeleton (shared
+      state, planner node, bounded loop with a step cap) and the planner that
+      picks the next probe over that state. Moved here from Phase 1, which had
+      it as its own line — the two described the same work, and nothing was
+      built under either, so only the line moved
 - [ ] Implement probe: taint-style dataflow tracing (untrusted source →
       prompt/tool)
+- [ ] Narrow the bare method names in `DATA_SOURCE_METHODS` on both language
+      sides — `load`, `query`, `execute` and friends match on any receiver, so
+      `anything.load()` reports as a document loader read. **Moved out of Phase
+      2:** deciding correctly needs the receiver's type, which is what the
+      dataflow probe above provides. Narrowing them blind either drops real
+      detections or keeps noise, and there is no evidence either way while the
+      only clean fixture makes no database or loader call
 - [ ] Implement probe: benign injection tests in sandbox (direct + indirect
       via documents)
 - [ ] Implement probe: static permission checks (over-privileged file/network
@@ -276,6 +289,11 @@ done-criteria.
 - [ ] Build the evaluation harness/scorer (reads `ground_truth.json`, computes
       TP/FP/FN → precision/recall/F1 per app + aggregated)
 - [ ] Implement baselines: simple static rules and SBOM-only scan
+- [ ] Report which framework names the corpus actually exercises. **Moved out
+      of Phase 2:** the fix is fixtures, not detector code, and the number is
+      an evaluation result. Measured today: the JS tables hold **47** names
+      across 10 tables and the one JS fixture exercises **5**, so 42 are
+      carried untested. (An earlier note said 29; that was never sourced.)
 - [ ] Run experiments: agentic auditor vs baselines on the full corpus
 - [ ] (Optional, if RQ3 is kept) Compare model families (Gemma / Llama / Qwen)
 - [ ] Analyse results (does agentic probing improve detection + explanation?)
@@ -291,9 +309,8 @@ resolved; do not tick the task above until its blocker is gone.
 
 | # | Blocker | Who / what unblocks it |
 |---|---|---|
-| B3 | Both grading keys are **AI-drafted and unverified** (`verified: false`). Phase 4's precision/recall is graded against them, so no number is thesis-grade until a human confirms. | A human reads each app and flips `verified`, `verified_by`, `verified_date`. **Blocks Phase 4.** |
-| B4 | The Phase 1 line **"Stand up the LangGraph skeleton"** duplicates Phase 3's "agentic audit workflow (planner picks next probe over shared state)". Building it now would break rule 15. | Decide whether to move the line to Phase 3. Not implemented either way. |
-| B6 | **The subset is now decided but the corpus does not exercise all of it.** The project cites the 2025 OWASP list: LLM01, LLM03 (supply chain), LLM06, and auditability. The vulnerable corpus app has findings for LLM01, LLM02, LLM06 and AUDITABILITY -- **nothing for LLM03**, so the risk Phase 2 exists to report has no ground-truth finding to be graded against. | Add an LLM03 finding to the grading key once Phase 2 can produce evidence for one. The app has two used-but-undeclared dependencies (PyYAML, python-dotenv), which is a real candidate. |
+| B3 | Both grading keys are **AI-drafted**. The JS key is `verified: true` but with `verified_by`/`verified_date` still null, which `SCHEMAS.md` treats as incoherent; the Python key is back to `verified: false` because VULN1-06 was drafted into it after the human read. Phase 4's precision/recall is graded against both, so no number is thesis-grade yet. | A human reads VULN1-06, flips the Python key, and fills `verified_by`/`verified_date` on **both**. Only a human may set these fields. **Blocks Phase 4.** |
+| B6 | ~~The corpus exercised no LLM03 finding~~ -- **drafted, awaiting the human read.** `VULN1-06` now records PyYAML used but never declared, with `SURF-06` as its expected surface, so the risk Phase 2 exists to report has something to be graded against. It is AI-drafted like the rest, so it folds into B3 rather than standing alone. `python-dotenv` is also absent from `requirements.txt` but no LLM surface resolves to it, so the artifact carries nothing to cite for it. | Clears with B3. |
 | B7 | **Phase owners are unassigned** across Hein / Bing Hong / JW. | Agree the split. |
 
 ---
@@ -307,7 +324,8 @@ resolved; do not tick the task above until its blocker is gone.
       apps)
 - [ ] Team split — the proposal lists three people (Hein, Bing Hong, JW);
       assign owners per phase
-- [~] Project documentation written and kept in step with the code:
+- [x] Project documentation written, and kept in step as the code changes:
+      `README.md` (what it is, how to run it, and what it produces today),
       `CODING_RULES.md` (the binding standard, tracked so the whole team and
       an examiner get it), `FLOW.md` (how the system works), `SCHEMAS.md`
       (the JSON contracts between phases)

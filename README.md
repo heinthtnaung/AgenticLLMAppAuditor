@@ -7,7 +7,7 @@ evidence.
 
 It reads **Python** (via the standard library's `ast`) and **JavaScript and
 TypeScript** (via tree-sitter). The design is language-agnostic: adding one
-starts in `src/languages.py`.
+starts in `src/parsing/languages.py`.
 
 It **reports only** — it never edits, patches, or merges the audited code — and
 it runs offline against a local model.
@@ -17,10 +17,35 @@ Tan Bing Hong.
 
 ## Status
 
-**Phase 1: LLM surface extractor.** Static analysis only — the extractor finds
-prompt templates, agent definitions, tool definitions, and data-source sites,
-and records where each one lives. LLM-driven detection and sandboxed probing
-are Phase 3.
+**Phase 2: SBOM/AIBOM and surface-to-component mapping.** Static analysis only.
+LLM-driven detection and sandboxed probing are Phase 3, and the local model
+client is set up but not yet used to detect anything.
+
+Phase 1 is complete: the extractor finds prompt templates, agent definitions,
+tool definitions and data-source sites, and records where each one lives.
+Phase 2 adds a bill of materials for Python and npm dependencies, an inventory
+of the models, tools and agents, and a join from each surface to the package it
+came from.
+
+What that produces on the two fixtures today:
+
+| Fixture | surfaces | components | surfaces joined to a package |
+|---|---|---|---|
+| `vuln-app-1-support-agent` (Python) | 19 | 5 | 6 of 19 |
+| `oss-app-langgraphjs-starter` (TypeScript) | 5 | 82 | 4 of 5 |
+
+Most unjoined surfaces are not defects: a language builtin, the app's own code,
+or a call on a local variable whose type static analysis cannot follow.
+
+One kind is a finding. A package used but never declared is a supply-chain
+risk — one surface in the Python fixture hits it, importing PyYAML.
+`mapping.json` records which of the five reasons each surface got, so "no
+package exists" is never confused with "we could not tell", and neither is
+confused with a finding.
+
+The second app has no planted vulnerabilities, so it is the fixture that
+measures **false positives**: it currently reports 5 of 5 expected surfaces and
+nothing else.
 
 Progress and blockers: [`docs/TODO.md`](docs/TODO.md).
 
@@ -33,7 +58,7 @@ tasks, so you can start without them.
 |---|---|---|---|
 | **Python** | 3.10 or newer | everything — the auditor uses modern type hints | `python3 --version` |
 | **git** | any | cloning this repository | `git --version` |
-| **Syft** | 1.51.0 | building an SBOM (`src/main.py`). Not needed to extract surfaces | `syft version` |
+| **Syft** | 1.51.0 | building an SBOM (`src/main.py`) from a `requirements.txt` or a `package.json`. Not needed to extract surfaces | `syft version` |
 | **Ollama** | any | only the local model client (`src/model_client.py`), which is set up for Phase 3 and unused by the extractor | `ollama --version` |
 
 On Debian or Ubuntu, Python's venv support is a separate package:
@@ -126,20 +151,21 @@ second is an official starter template with nothing planted in it, so it is the
 only fixture that can measure **false positives** — a detector that flags
 something here is wrong by construction.
 
-**Both lines matter.** Every line number in the grading key is recorded against
-commit `c0cf9a14`, which happens to be the default branch today — but the
-moment upstream commits anything, a plain `git clone` lands on different code.
-That drift is caught (the `code_anchor` test fails, naming the findings), but
-it is far easier to pin the commit than to debug the failure later. Each
-commit is recorded in that app's
+**The checkout line matters as much as the clone.** Every line number in a
+grading key is recorded against that app's pinned commit. Both happen to be on
+the default branch today, but the moment upstream commits anything a plain
+`git clone` lands on different code. The drift is caught — the `code_anchor`
+test fails and names the findings — but pinning is far cheaper than debugging
+that later. Each commit is recorded in its
 `corpus/evidence/<app>.manifest.json`.
 
 Optionally, `rm -rf corpus/*/.git` afterwards. It saves a few MB and stops a
 later `git pull` silently moving you off the pin. Nothing depends on it: the
 auditor skips `.git` directories anyway.
 
-Until you run this, the tests that need the app skip and say so; everything
-else runs.
+Until you run this, the tests that need an app skip and say so; everything else
+runs. The suite is green without Syft and without Ollama too — those tests skip
+rather than fail, so a fresh checkout needs only Python.
 
 ### Running the auditor
 
@@ -153,16 +179,18 @@ It writes everything it can into `artifacts/<app>/` and makes no network call:
 
 | Artifact | Needs |
 |---|---|
-| `surfaces.json` | nothing but the source |
+| `surfaces.json` | nothing but the source. Also records any file it could not read, so a later phase never mistakes a partial scan for a complete one |
 | `aibom.json` | the same — it is derived from the surfaces |
-| `sbom.json` | Syft, and a dependency manifest this project can read |
+| `sbom.json` | Syft, plus a `requirements.txt` (Python) or a `package.json` (npm) |
 | `sbom.cyclonedx.json` | the same scan, re-emitted in the standard format |
-| `mapping.json` | the SBOM, to join surfaces to components |
+| `mapping.json` | the SBOM, to join each surface to the package it came from |
 
-Without Syft it writes the first two and says why the others were skipped,
-rather than failing.
+Producing less is a normal outcome, not a failure. Without Syft, or with no
+manifest it knows how to read, it writes the first two and says on stderr why
+the rest were skipped. A repository declaring **both** a Python and an npm
+manifest is refused a bill rather than given half of one.
 
-This writes `artifacts/<app>/surfaces.json`. Run the tests with:
+Run the tests with:
 
 ```sh
 python -m pytest tests -q
@@ -172,6 +200,12 @@ python -m pytest tests -q
 
 ```
 src/         the auditor's source code, one responsibility per module
+  parsing/   read a repository and turn its files into syntax trees
+  detectors/ find the four kinds of LLM surface in a tree
+  artifacts/ the JSON documents each run produces, and their shapes
+  deps/      read an app's dependencies, and match imports to packages
+  main.py    the single entry point; model_client.py talks to Ollama
+  config.py  settings from the environment; corpus_paths.py locates fixtures
 corpus/
   <app>/     the audited app, downloaded not committed (see Usage)
   evidence/  committed: grading key, manifest, baseline — this project's work
@@ -201,6 +235,10 @@ app directory:
 - `corpus/evidence/<name>.ground_truth.json` — the known findings and expected
   surfaces. Without it the extractor still runs, but the app cannot be scored,
   so it contributes nothing to Phase 4.
+- `corpus/evidence/<name>.baseline.json` — a snapshot of what the extractor
+  finds today, so a change that silently drops or adds a surface fails a test.
+  It is tool-derived, so it can never measure the tool's own accuracy: that is
+  the grading key's job, and Phase 4 must not read this file.
 
 Nothing else needs editing: the suite discovers a fixture from its grading key
 in `corpus/evidence/`. Putting those files inside `corpus/<name>/` instead
