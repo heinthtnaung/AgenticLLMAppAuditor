@@ -6,7 +6,8 @@ answer to a question one module owns.
 """
 
 from artifacts.finding import STATIC, Finding
-from artifacts.mapping import THIRD_PARTY, USED_BUT_UNDECLARED
+from artifacts.mapping import UNRESOLVED, USED_BUT_UNDECLARED
+from artifacts.surface import Surface
 
 CHECK_NAME = "undeclared_dependency"
 
@@ -47,6 +48,22 @@ def find_undeclared_dependencies(mapping_document: dict, surfaces_by_id: dict) -
             continue
         found.append(_finding_for({**entry, **surface}))
     return found
+
+
+def unresolved_component_count(mapping_document: dict | None) -> int | None:
+    """Count the surfaces whose owning component could not be determined.
+
+    Only the `unresolved` reason: `stdlib` and `first_party` are answers, not
+    gaps, and `used_but_undeclared` is already reported as a finding. None
+    means there was no mapping at all, which is not the same as none unresolved.
+    """
+    if mapping_document is None:
+        return None
+    if "reason_counts" not in mapping_document:
+        raise ValueError(
+            "mapping document has no reason_counts; it was not built by "
+            "artifacts.mapping.build_mapping and cannot be read for coverage")
+    return mapping_document["reason_counts"][UNRESOLVED]
 
 
 def surface_fields(surfaces: list[Surface]) -> dict[str, dict]:

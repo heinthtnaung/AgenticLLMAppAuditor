@@ -11,13 +11,19 @@ import pytest
 from artifacts.finding import STATIC
 from artifacts.mapping import (
     FIRST_PARTY,
+    MAPPING_REASONS,
     STDLIB,
     THIRD_PARTY,
     UNRESOLVED,
     USED_BUT_UNDECLARED,
 )
 from artifacts.surface import DATA_SOURCE
-from checks.supply_chain import CHECK_NAME, OWASP_ID, find_undeclared_dependencies
+from checks.supply_chain import (
+    CHECK_NAME,
+    OWASP_ID,
+    find_undeclared_dependencies,
+    unresolved_component_count,
+)
 
 SURFACE_ID = "utils.py:75:DATA_SOURCE:yaml.load"
 COMPONENT = "pyyaml"
@@ -40,6 +46,11 @@ def mapping_entry(reason: str = USED_BUT_UNDECLARED,
 def mapping_document(*entries: dict) -> dict:
     """Wrap entries in the shape build_mapping produces."""
     return {"entries": list(entries)}
+
+
+def reason_counts(counts: dict[str, int]) -> dict:
+    """Wrap reason counts in the shape build_mapping produces, zeros included."""
+    return {"reason_counts": {reason: 0 for reason in MAPPING_REASONS} | counts}
 
 
 def test_an_undeclared_package_is_reported() -> None:
@@ -102,3 +113,28 @@ def test_two_surfaces_on_one_package_are_two_findings() -> None:
     document = mapping_document(mapping_entry(), mapping_entry(surface_id=other_id))
     findings = find_undeclared_dependencies(document, fields)
     assert len({finding.id for finding in findings}) == 2
+
+
+# --- The count of surfaces owning no component -----------------------------
+
+def test_no_mapping_at_all_counts_nothing_rather_than_none_unresolved() -> None:
+    """Null says there was no bill of materials; 0 would claim a reach the check never had."""
+    assert unresolved_component_count(None) is None
+
+
+def test_only_the_unresolved_reason_is_counted() -> None:
+    """`stdlib` and `first_party` are answers, and `used_but_undeclared` is already a finding."""
+    document = reason_counts(
+        {UNRESOLVED: 2, STDLIB: 3, FIRST_PARTY: 1, USED_BUT_UNDECLARED: 1})
+    assert unresolved_component_count(document) == 2
+
+
+def test_a_mapping_that_resolved_every_surface_counts_zero() -> None:
+    """A mapping existed and left no gap, which is not the same as no mapping."""
+    assert unresolved_component_count(reason_counts({THIRD_PARTY: 4})) == 0
+
+
+def test_a_mapping_without_reason_counts_is_refused() -> None:
+    """A hand-built dict is not a mapping.json, and guessing 0 from it would be a false claim."""
+    with pytest.raises(ValueError, match="no reason_counts"):
+        unresolved_component_count({"entries": []})

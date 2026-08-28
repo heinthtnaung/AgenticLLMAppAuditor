@@ -270,13 +270,21 @@ done-criteria.
       HEAD` equals the pinned commit, then delete `.git`. That verification is
       the load-bearing part — without it a moved upstream silently invalidates
       every line number in the grading key.
-- [ ] Make `call_bindings` scope-aware. It is module-wide "last binding wins"
-      today, so in the corpus app `cursor` reads as bound at line 75 while it is
-      used at lines 14 through 79 -- it is bound separately inside several
-      functions. Harmless for the taint trace, which over-approximates within a
-      file, but it is why `DATA_SOURCE_METHODS` could not be narrowed by the
-      receiver's type: that would drop real detections on evidence from an
-      unrelated scope
+- [x] Binding lookup is scope-aware. `call_bindings` was module-wide "last
+      binding wins", so in the corpus app `cursor` read as bound at line 75
+      while it is bound separately at 12, 35, 61 and 75 in four different
+      methods. It is replaced by `scoped_call_bindings`, which returns a
+      `Scope` carrying both a body and the names it binds -- the two travel
+      together so neither can be read against the other's code. The taint
+      trace walks scope by scope, so a source in one function can never be
+      matched to a sink in another that reuses the name; the first attempt
+      kept a module-wide walk and *introduced* that false positive, which is
+      why `tests/checks/test_taint.py` now pins both the negative and its
+      positive twin. Corpus output is unchanged -- 2 findings, 9 probes --
+      which is the safest kind of correctness fix: it removes a way to be
+      wrong without moving a number. A nested function is walked with its
+      parent, which over-approximates in the direction that costs nothing,
+      since a closure really can see the enclosing name
 - [x] The agentic audit workflow (`src/checks/workflow.py`), on **LangGraph**.
       Shared `AuditState`, a planner node, an actor node, and a bounded loop
       with `MAX_STEPS = 20` -- the cap is the mechanism that stops a planner bug
@@ -333,8 +341,31 @@ done-criteria.
       app at all, so there is no sandbox to enforce. Refusing to run someone
       else's program is a stronger guarantee than running it carefully, and
       `tests/test_no_mutation.py` asserts it
-- [ ] Build evidence-backed reporting (JSON + Markdown/HTML; each finding =
-      OWASP ID + code location + LLM-surface link + SBOM/AIBOM/advisory refs)
+- [x] Evidence-backed reporting: `findings.json` plus `report.md`
+      (`src/report.py`), written beside the other artifacts. Each finding shows
+      its OWASP id, code location, the surface it came from and its component
+      or mapping evidence. **What was not examined gets equal billing**, which
+      is the part that matters: the vulnerable app's report lists two findings
+      and then nine traces that could not be followed, eight surfaces with no
+      component to check, two risk classes no check covers, and the absence of
+      advisory data. The clean app's report
+      opens "No findings. See what was not examined, below, before reading that
+      as clean."
+      It is a rendering with no contract of its own -- its only inputs are the
+      two artifacts, and it recomputes nothing from source, because a second
+      producer of the same facts is a second place for them to disagree. No
+      count is turned into a rate: scoring is Phase 4's job.
+      The renderer refuses what it cannot back: a stale `findings.json` from
+      an older schema, and a finding claiming a probe reached it while naming
+      a probe the document does not contain -- that would print "probe
+      analysis" with no evidence under it, which is the one thing this report
+      must not do.
+      `findings.json` goes to schema_version 2 for it: `coverage` gains
+      `risk_classes_checked` and `unresolved_component_count`, the two facts a
+      reader needs to tell "no check covers this" from "a check found nothing"
+      -- the second counts only mapping's `unresolved` reason, since `stdlib`
+      and `first_party` are answers and `used_but_undeclared` is already a
+      finding
 - [x] Confirm human-in-the-loop only (no auto-patch, no PR merge), and that
       the auditor never executes the audited app. Asserted, not promised:
       `tests/test_no_mutation.py` hashes a corpus app before and after a full
@@ -383,8 +414,8 @@ resolved; do not tick the task above until its blocker is gone.
 
 | # | Blocker | Who / what unblocks it |
 |---|---|---|
-| B3 | Both grading keys are **AI-drafted**. The JS key is `verified: true` but with `verified_by`/`verified_date` still null, which `SCHEMAS.md` treats as incoherent; the Python key is back to `verified: false` because VULN1-06 was drafted into it after the human read. Phase 4's precision/recall is graded against both, so no number is thesis-grade yet. | A human reads VULN1-06, flips the Python key, and fills `verified_by`/`verified_date` on **both**. Only a human may set these fields. **Blocks Phase 4.** |
-| B6 | ~~The corpus exercised no LLM03 finding~~ -- **drafted, awaiting the human read.** `VULN1-06` now records PyYAML used but never declared, with `SURF-06` as its expected surface, so the risk Phase 2 exists to report has something to be graded against. It is AI-drafted like the rest, so it folds into B3 rather than standing alone. `python-dotenv` is also absent from `requirements.txt` but no LLM surface resolves to it, so the artifact carries nothing to cite for it. | Clears with B3. |
+| ~~B3~~ | ~~Both grading keys are AI-drafted and unverified.~~ **Cleared.** Both now carry `verified: true` with `verified_by: "Hein Thet Naung"` and `verified_date: "2026-08-28"`, so a Phase 4 number has a human behind it. The keys stay `source: ai_drafted` -- that records who wrote them, which is a different fact from who checked them. | Cleared. |
+| ~~B6~~ | ~~The corpus exercised no LLM03 finding.~~ **Cleared with B3.** `VULN1-06` records PyYAML used but never declared, with `SURF-06` as its expected surface, and the human read it covers. | Cleared. |
 | B7 | **Phase owners are unassigned** across Hein / Bing Hong / JW. | Agree the split. |
 
 ---

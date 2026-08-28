@@ -39,20 +39,68 @@ def _record(bindings: dict, names: list[str], value: ast.AST) -> None:
         bindings[name] = Binding(name, value.lineno)
 
 
-def call_bindings(tree: ast.AST) -> dict[str, Binding]:
-    """Map every name bound from a call to that call's line.
+# A binding belongs to the function that made it. Walking a whole module at
+# once conflates them: the corpus app binds `cursor` inside several functions,
+# and a module-wide view reports the last one for every use.
+SCOPE_NODES = (ast.FunctionDef, ast.AsyncFunctionDef)
 
-    A later binding wins, which is what a reader of the file sees: the name
-    refers to whatever it was last assigned before it is used.
+# A class body is not a scope its methods share: two methods binding the same
+# name are two bindings, so the class is excluded from the module's top level
+# and its methods are picked up as scopes in their own right.
+TOP_LEVEL_EXCLUDED = SCOPE_NODES + (ast.ClassDef,)
+
+
+@dataclass(frozen=True)
+class Scope:
+    """One scope's statements and the names it binds from a call.
+
+    The two travel together because reading either without the other is the
+    bug this type exists to prevent: matching one scope's names against another
+    scope's code.
     """
+
+    body: list[ast.stmt]
+    bindings: dict[str, Binding]
+
+
+def _scope_bodies(tree: ast.Module) -> list[list[ast.stmt]]:
+    """Return each function's body, plus the module's own top level.
+
+    A nested function is walked with its parent, which over-approximates in the
+    direction that costs nothing here: a closure really can see the enclosing
+    name.
+    """
+    functions = [n for n in ast.walk(tree) if isinstance(n, SCOPE_NODES)]
+    top_level = [n for n in tree.body if not isinstance(n, TOP_LEVEL_EXCLUDED)]
+    return [top_level] + [f.body for f in functions]
+
+
+def _nodes_in(body: list[ast.stmt]) -> list[ast.AST]:
+    """Every node inside one scope's own statements, and no other scope's."""
+    return [node for statement in body for node in ast.walk(statement)]
+
+
+def _record_binding(bindings: dict, node: ast.AST) -> None:
+    """Record whatever names one assignment statement binds."""
+    if isinstance(node, ast.Assign):
+        for target in node.targets:
+            _record(bindings, _bound_names(target), node.value)
+    elif isinstance(node, (ast.AnnAssign, ast.NamedExpr)):
+        _record(bindings, _bound_names(node.target), node.value)
+
+
+def _bindings_in(body: list[ast.stmt]) -> dict[str, Binding]:
+    """Map the names one scope binds from a call to the line of that call."""
     bindings: dict[str, Binding] = {}
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Assign):
-            for target in node.targets:
-                _record(bindings, _bound_names(target), node.value)
-        elif isinstance(node, (ast.AnnAssign, ast.NamedExpr)):
-            _record(bindings, _bound_names(node.target), node.value)
+    for node in _nodes_in(body):
+        _record_binding(bindings, node)
     return bindings
+
+
+def scoped_call_bindings(tree: ast.Module) -> list[Scope]:
+    """Return each scope with the names it binds, so a name is read where it was bound."""
+    scopes = (Scope(body, _bindings_in(body)) for body in _scope_bodies(tree))
+    return [scope for scope in scopes if scope.bindings]
 
 
 def argument_names(call: ast.Call) -> set[str]:

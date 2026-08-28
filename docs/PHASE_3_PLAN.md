@@ -259,9 +259,14 @@ proved by a test per refusal, before it is wired into the CLI.
       for a finding. **Untested in practice**: every run so far is
       `model_run.status: "disabled"`, so the bound holds by construction and the
       `used` path has never been exercised against a live server.
-- [ ] Report states what was not tested alongside what was.
-- [ ] Tests pass; `project-guard` clean on the finished code. Tests pass at
-      929; the guard has not yet reviewed the taint probe or the narrowing.
+- [x] Report states what was not tested alongside what was. `src/report.py`
+      gives skipped files, unfollowed traces, unresolved components and
+      uncovered risk classes the same billing as the findings.
+- [x] Tests pass at 1037; `project-guard` clean on the finished code. The guard's
+      second pass on the report and the scope fix found a real regression --
+      per-scope bindings matched against a module-wide walk, a false-positive
+      class the old code did not have -- which is fixed and now has the
+      cross-scope test whose absence let it land.
 - [x] `TODO.md` ticked in the same change as the work.
 
 **Artifacts produced this phase:** `artifacts/<app>/findings.json` and the

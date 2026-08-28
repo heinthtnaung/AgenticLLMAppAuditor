@@ -6,6 +6,10 @@ where it stops: a source that reaches nothing, a sink that is not a model, and
 the source the file never named, which is reported as inconclusive rather than
 dropped. "We could not look" and "we looked and found nothing" are different
 answers, and the probe record is what keeps them apart.
+
+The last two hold the other boundary: a scope. A source in one function and a
+sink call in another that reuses the name are not a trace, and reporting one
+was a real regression.
 """
 
 import ast
@@ -38,6 +42,27 @@ response = executor("hardcoded")
 
 # A source whose value the file never binds to a name.
 UNBOUND = 'st.chat_input("ask")\n'
+
+# The same source and sink, one function deep: the positive twin of the case
+# below, without which "no finding" could equally mean the trace found nothing.
+ONE_FUNCTION = '''def handle():
+    prompt = st.chat_input("ask")
+    executor = AgentExecutor.from_agent_and_tools(tools=tools)
+    executor(prompt)
+'''
+
+# Two functions reusing the names `prompt` and `executor`. Only the second one
+# calls the agent, and the value it hands over came from a sanitiser, not from
+# the chat input -- so there is nothing here to report.
+CROSS_SCOPE = '''def takes_input():
+    prompt = st.chat_input("ask")
+    executor = AgentExecutor.from_agent_and_tools(tools=tools)
+
+def answers():
+    prompt = sanitise()
+    executor = AgentExecutor.from_agent_and_tools(tools=tools)
+    executor(prompt)
+'''
 
 
 def surface(kind: str, name: str, line: int, file: str = FILE) -> Surface:
@@ -171,3 +196,18 @@ def test_a_source_reaching_two_sinks_is_reported_once() -> None:
                                  surface(AGENT_DEF, AGENT_NAME, 2),
                                  surface(AGENT_DEF, AGENT_NAME, 3)])
     assert len({finding.id for finding in findings}) == len(findings)
+
+
+def test_a_source_and_a_sink_inside_one_function_are_reported() -> None:
+    """The trace has to work in a function body, or the isolation test below proves nothing."""
+    findings, _ = trace(ONE_FUNCTION, [surface(DATA_SOURCE, SOURCE_NAME, 2),
+                                       surface(AGENT_DEF, AGENT_NAME, 3)])
+    assert [f.line for f in findings] == [2]
+
+
+def test_a_source_in_one_function_is_not_matched_to_a_sink_call_in_another() -> None:
+    """The name is reused, but the untrusted value never leaves the function that took it."""
+    surfaces = [surface(DATA_SOURCE, SOURCE_NAME, 2),
+                surface(AGENT_DEF, AGENT_NAME, 3),
+                surface(AGENT_DEF, AGENT_NAME, 7)]
+    assert trace(CROSS_SCOPE, surfaces) == ([], [])

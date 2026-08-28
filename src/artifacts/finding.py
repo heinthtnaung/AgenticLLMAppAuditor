@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from artifacts.repo_path import is_repo_relative_posix
 
 # Artifact schema version. Bump it whenever a field or a vocabulary changes.
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 # The risks this project reports, from the 2025 OWASP Top 10 for LLM
 # Applications. LLM02 is here because the corpus grades one: omit it and that

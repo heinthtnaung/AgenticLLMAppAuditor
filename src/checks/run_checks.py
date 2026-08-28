@@ -5,9 +5,7 @@ checks themselves live one per module; this decides which run and records what
 they covered.
 """
 
-from pathlib import Path
-
-from artifacts.finding import Finding, Probe
+from artifacts.finding import Finding
 from artifacts.findings_document import (
     MODEL_DISABLED,
     build_findings_document,
@@ -16,16 +14,23 @@ from artifacts.findings_document import (
 )
 from artifacts.surface import Surface
 from checks import permissions, supply_chain, taint, workflow
-from artifacts.skipped_file import UnreadableSource
-from parsing.extractor_python import parse_file
-from parsing.languages import PYTHON, language_of
-from parsing.repo_loader import list_source_files
 
-# Every check this module knows how to run. `coverage.checks_run` reports the
-# ones that actually examined something on this app, which is not the same
-# list: a check named there but silent means "looked, found nothing", so a
+# Which OWASP class each check can report. The artifact carries the classes a
+# run actually examined, so a scorer can tell "no check covers this risk" from
+# "a check covered it and stayed silent" -- without importing this module and
+# scoring a stale artifact against fresh code.
+RISK_CLASS_BY_CHECK = {
+    supply_chain.CHECK_NAME: supply_chain.OWASP_ID,
+    permissions.CHECK_NAME: permissions.OWASP_ID,
+    taint.CHECK_NAME: taint.OWASP_ID,
+}
+
+# Every check this module knows how to run, taken from the map above so a check
+# can never be planned without declaring the risk it covers. `coverage.checks_run`
+# reports the ones that actually examined something on this app, which is not the
+# same list: a check named there but silent means "looked, found nothing", so a
 # check that could not look at all must be absent rather than silent.
-CHECK_NAMES = (supply_chain.CHECK_NAME, permissions.CHECK_NAME, taint.CHECK_NAME)
+CHECK_NAMES = tuple(RISK_CLASS_BY_CHECK)
 
 
 def run_static_checks(surfaces: list[Surface], mapping_document: dict | None) -> list[Finding]:
@@ -51,9 +56,15 @@ def build_findings(repo_path: str, surfaces: list[Surface],
     """
     planned = _checks_that_examined_something(repo_path, mapping_document)
     state = workflow.audit(repo_path, surfaces, mapping_document, planned)
+    # From what actually ran, not from the plan: the workflow can stop at
+    # MAX_STEPS, and claiming a risk class no check reached inverts the whole
+    # point of the field.
+    classes = sorted({RISK_CLASS_BY_CHECK[name] for name in state["checks_run"]})
     return build_findings_document(
         state["findings"], state["probes"],
-        coverage(len(surfaces), state["checks_run"]),
+        coverage(len(surfaces), state["checks_run"], risk_classes_checked=classes,
+                 unresolved_component_count=supply_chain.unresolved_component_count(
+                     mapping_document)),
         model_run(MODEL_DISABLED),
     )
 

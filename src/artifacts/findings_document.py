@@ -11,6 +11,7 @@ from dataclasses import asdict
 
 from artifacts.finding import (
     CONFIRMED,
+    OWASP_IDS,
     PROBE,
     SCHEMA_VERSION,
     Finding,
@@ -53,16 +54,45 @@ def model_run(status: str, identifier: str | None = None,
     }
 
 
+def _check_risk_classes(risk_classes_checked: list[str] | None) -> None:
+    """Reject a risk class outside the vocabulary a reader can look up.
+
+    An unknown id both claims a class that does not exist and makes the real
+    one render as uncovered, which is the wrong direction to be wrong in.
+    """
+    unknown = sorted(set(risk_classes_checked or []) - set(OWASP_IDS))
+    if unknown:
+        raise ValueError(f"unknown risk classes {unknown}; expected ids from {OWASP_IDS}")
+
+
+def _check_unresolved(count: int | None, surfaces_considered: int) -> None:
+    """Reject an unresolved count that contradicts the surfaces it is counted from."""
+    if count is None:
+        return
+    if count < 0:
+        raise ValueError(f"unresolved_component_count must not be negative, got {count}")
+    if count > surfaces_considered:
+        raise ValueError(
+            f"unresolved_component_count {count} exceeds the {surfaces_considered} "
+            "surfaces considered; the mapping holds one entry per surface")
+
+
 def coverage(surfaces_considered: int, checks_run: list[str],
-             advisory_data: str = ADVISORY_NOT_INGESTED) -> dict:
+             advisory_data: str = ADVISORY_NOT_INGESTED,
+             risk_classes_checked: list[str] | None = None,
+             unresolved_component_count: int | None = None) -> dict:
     """Say what the search covered, so a short findings list is not read as a clean bill."""
     if surfaces_considered < 0:
         raise ValueError(f"surfaces_considered must not be negative, got {surfaces_considered}")
     if advisory_data not in (ADVISORY_NOT_INGESTED, ADVISORY_SNAPSHOT):
         raise ValueError(f"unknown advisory state {advisory_data!r}")
+    _check_risk_classes(risk_classes_checked)
+    _check_unresolved(unresolved_component_count, surfaces_considered)
     return {
         "surfaces_considered": surfaces_considered,
         "checks_run": sorted(checks_run),
+        "risk_classes_checked": sorted(risk_classes_checked or []),
+        "unresolved_component_count": unresolved_component_count,
         "advisory_data": advisory_data,
     }
 

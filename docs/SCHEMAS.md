@@ -35,6 +35,8 @@ artifact directory name, `ground_truth.app`, and `manifest.name`.
 | Phase 2 output | `artifacts/<app>/sbom.cyclonedx.json` | `src/main.py`, the same scan in the standard format |
 | Phase 2 output | `artifacts/<app>/aibom.json` | `src/main.py` |
 | Phase 2 output | `artifacts/<app>/mapping.json` | `src/main.py` |
+| Phase 3 output | `artifacts/<app>/findings.json` | `src/main.py` |
+| Phase 3 output | `artifacts/<app>/report.md` | `src/report.py` — **not JSON and not a contract.** A rendering of the two files above for a person to read; nothing consumes it, and nothing may join on it. It is listed here so a reader of this file does not find an artifact it never mentions. |
 
 **`schema_version` is per file.** Each artifact versions independently; that
 `surfaces.json` and `sbom.json` are at 3 and `mapping.json` at 2, while a new
@@ -559,7 +561,7 @@ very settings that would then be free to vary.
 
 | Field | Type | Required | Meaning |
 |---|---|---|---|
-| `schema_version` | int | yes | Currently `1`. |
+| `schema_version` | int | yes | Currently `2`. Version 1 had neither `risk_classes_checked` nor `unresolved_component_count`: a reader could not tell an unexamined risk class from an examined-and-silent one, nor learn that the supply-chain check had surfaces it could say nothing about. |
 | `coverage` | object | yes | What the search covered, so a short list is not read as a clean bill. |
 | `model_run` | object | yes | What produced the prose. Model-authored content is confined to here and to `narrative`. |
 | `probe_count` | int | yes | `len(probes)`. |
@@ -577,9 +579,18 @@ same distinction `surfaces.json` makes, and the clean fixture depends on it.
 | `surfaces_considered` | int | yes | How many `surfaces.json` records the checks ran over. |
 | `checks_run` | list[str] | yes | The checks that had something to examine on this app, sorted. Not derivable from `probes`: a check that examined subjects and concluded nothing about any of them leaves no probe record, and that silence is the dangerous one. A check **absent** here could not look at all — no mapping to read, or no file in a language it understands — so its absence is never a clean result. The taint trace reads `ast`, so it is absent on a JavaScript-only app. |
 | `advisory_data` | str | yes | `not_ingested` or `snapshot`. **Today always `not_ingested`** — advisory ingestion is Phase 2's one unfinished item, so an LLM03 finding here cites the SBOM and mapping but nothing about what is known to be wrong with a component. |
+| `risk_classes_checked` | list[str] | yes | The OWASP ids the checks in `checks_run` are capable of reporting, sorted. Lets a reader — and the Phase 4 scorer — tell **"no check covers this risk"** from "a check covered it and stayed silent", without importing the auditor and scoring a stale artifact against fresh code. LLM01 comes from the taint trace, LLM03 from the supply-chain check, LLM06 from the permissions check; a class missing here was never looked for. |
+| `unresolved_component_count` | int \| null | yes | How many of `surfaces_considered` the mapping could not name an owning component for — `mapping.json`'s `unresolved` reason, and only that one. `stdlib` and `first_party` are answers rather than gaps and `used_but_undeclared` is already a finding, so `unmapped_count` is the wrong number to read here: 8 of the vulnerable fixture's 19 surfaces, not 13. `null` means there was no mapping to resolve against — no manifest, so no bill of materials — and a `0` there would claim a reach the check never had. |
 
 There is deliberately no `skipped_file_count`: that is `surfaces.json`'s fact,
 and a second copy is a second place for it to disagree. A reader opens both.
+
+`unresolved_component_count` is the copy that *is* made, and the difference is
+reachability: a reader of `findings.json` already has `surfaces.json` in front
+of them, but the report takes only those two files and the Phase 4 scorer only
+this one and the grading key, so nothing downstream can open `mapping.json`.
+`surfaces_considered` is the same trade, and both are held to the same defence
+— a test asserting the copy still agrees with its source.
 
 `model_run`:
 

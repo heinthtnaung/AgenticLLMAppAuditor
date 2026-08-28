@@ -1,4 +1,4 @@
-"""The CLI writes all six artifacts, or fails with a message and exit 1.
+"""The CLI writes all seven artifacts, or fails with a message and exit 1.
 
 Syft is stubbed throughout, so this runs offline on a machine that has never
 installed it.
@@ -14,6 +14,7 @@ from deps.requirements_parser import MANIFEST_NAME as PYPI_MANIFEST
 from parsing.languages import PYTHON
 from main import (
     FINDINGS_NAME,
+    REPORT_NAME,
     AIBOM_NAME,
     CYCLONEDX_NAME,
     MAPPING_NAME,
@@ -29,11 +30,16 @@ from dependency_fixtures import corpus_sbom
 from artifacts.surface import DATA_SOURCE, PROMPT_TEMPLATE, Surface
 
 # Each artifact versions independently, so a shared number would be a
-# coincidence rather than a contract. Two of the three went to 2 in the npm
-# change: sbom.json when `locked` joined the vocabulary, mapping.json when an
-# ambiguous join stopped copying the component's purl and started synthesising
-# a version-less one. aibom.json did not move.
-EXPECTED_SCHEMA_VERSIONS = {SBOM_NAME: 3, AIBOM_NAME: 1, MAPPING_NAME: 2}
+# coincidence rather than a contract. Two went to 2 in the npm change:
+# sbom.json when `locked` joined the vocabulary, mapping.json when an ambiguous
+# join stopped copying the component's purl and started synthesising a
+# version-less one. findings.json went to 2 when `coverage` gained two fields:
+# `risk_classes_checked`, without which the Phase 4 scorer cannot tell "no
+# check covers this risk" from "a check covered it and stayed silent", and
+# `unresolved_component_count`, without which it cannot learn that the
+# supply-chain check had surfaces it could say nothing about at all.
+# aibom.json did not move.
+EXPECTED_SCHEMA_VERSIONS = {SBOM_NAME: 3, AIBOM_NAME: 1, MAPPING_NAME: 2, FINDINGS_NAME: 2}
 
 # The artifacts carrying this project's own schema_version. Derived from the
 # table above, so a future artifact cannot be listed here and left unchecked.
@@ -41,7 +47,7 @@ ARTIFACT_NAMES = tuple(EXPECTED_SCHEMA_VERSIONS)
 
 # Everything a successful run leaves on disk, including the standard-format
 # bill, which carries CycloneDX's version rather than one of ours.
-ALL_ARTIFACT_NAMES = (SURFACES_NAME, CYCLONEDX_NAME, FINDINGS_NAME) + ARTIFACT_NAMES
+ALL_ARTIFACT_NAMES = (SURFACES_NAME, CYCLONEDX_NAME, REPORT_NAME) + ARTIFACT_NAMES
 APP_NAME = "tiny-app"
 
 # One agent surface importing langchain, so the mapping has something to join.
@@ -73,13 +79,13 @@ def test_writes_the_sbom_aibom_and_mapping_and_exits_zero(monkeypatch, tmp_path)
         assert (tmp_path / "artifacts" / APP_NAME / name).is_file(), name
 
 
-def test_writes_six_artifacts_and_says_so(monkeypatch, tmp_path, capsys) -> None:
-    """Both bills and the findings land beside the other three, and the count agrees."""
+def test_writes_seven_artifacts_and_says_so(monkeypatch, tmp_path, capsys) -> None:
+    """Both bills, the findings and the report land beside the rest, and the count agrees."""
     stub_syft(monkeypatch, STUB_GENERATOR_OUTPUT)
     assert run_cli(monkeypatch, write_app(tmp_path), tmp_path / "artifacts") == 0
     written = sorted(p.name for p in (tmp_path / "artifacts" / APP_NAME).iterdir())
     assert written == sorted(ALL_ARTIFACT_NAMES)
-    assert "wrote 6 artifacts" in capsys.readouterr().out
+    assert "wrote 7 artifacts" in capsys.readouterr().out
 
 
 def test_the_standard_format_bill_is_written_beside_the_project_one(monkeypatch, tmp_path) -> None:

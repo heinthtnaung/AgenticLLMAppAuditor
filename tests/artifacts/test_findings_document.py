@@ -9,7 +9,13 @@ import json
 
 import pytest
 
-from artifacts.finding import SCHEMA_VERSION, INCONCLUSIVE, SURFACE_SUBJECT, Probe
+from artifacts.finding import (
+    SCHEMA_VERSION,
+    INCONCLUSIVE,
+    OWASP_IDS,
+    SURFACE_SUBJECT,
+    Probe,
+)
 from artifacts.findings_document import (
     ADVISORY_NOT_INGESTED,
     ADVISORY_SNAPSHOT,
@@ -32,6 +38,10 @@ MODEL = "qwen2.5-coder:7b-instruct"
 
 # What the client really sends, so the artifact records a repeatable run.
 DECODE_SETTINGS = {"temperature": 0, "seed": 0}
+
+# Supply chain's id in the pre-2025 list, which is how a wrong id realistically
+# gets written: an edition confused, not a value invented.
+STALE_EDITION_RISK = "LLM05"
 
 
 def test_coverage_sorts_the_checks_that_ran() -> None:
@@ -61,6 +71,62 @@ def test_coverage_refuses_a_negative_surface_count() -> None:
     """A negative count is not a coverage claim anyone could check."""
     with pytest.raises(ValueError, match="must not be negative"):
         coverage(-1, [RULE_ID])
+
+
+def test_coverage_accepts_no_unresolved_count_at_all() -> None:
+    """No mapping means nothing to resolve against, and null says so where 0 would not."""
+    assert coverage(3, [RULE_ID])["unresolved_component_count"] is None
+
+
+def test_coverage_carries_an_unresolved_count_it_was_given() -> None:
+    """The number is copied from the mapping, so the block must hand it back unchanged."""
+    assert coverage(3, [RULE_ID], unresolved_component_count=2)["unresolved_component_count"] == 2
+
+
+def test_coverage_accepts_every_surface_being_unresolved() -> None:
+    """An app whose imports resolve to nothing is a real audit, not a contradiction."""
+    assert coverage(3, [RULE_ID], unresolved_component_count=3)["unresolved_component_count"] == 3
+
+
+def test_coverage_refuses_a_negative_unresolved_count() -> None:
+    """Fewer than none untraceable is not a number any mapping could produce."""
+    with pytest.raises(ValueError, match="unresolved_component_count must not be negative, got -1"):
+        coverage(3, [RULE_ID], unresolved_component_count=-1)
+
+
+def test_coverage_refuses_more_unresolved_surfaces_than_it_considered() -> None:
+    """The mapping holds one entry per surface, so a larger count contradicts the surfaces."""
+    with pytest.raises(ValueError, match="4 exceeds the 3 surfaces considered"):
+        coverage(3, [RULE_ID], unresolved_component_count=4)
+
+
+def test_coverage_refuses_a_risk_class_outside_the_vocabulary() -> None:
+    """An unknown id claims a class that does not exist, and the message has to name it."""
+    with pytest.raises(ValueError, match="unknown risk classes") as refused:
+        coverage(3, [RULE_ID], risk_classes_checked=["LLM06", STALE_EDITION_RISK])
+    assert STALE_EDITION_RISK in str(refused.value)
+
+
+def test_coverage_accepts_the_classes_a_run_really_covered() -> None:
+    """A run covering two of the five records those two, sorted like every other list here."""
+    covered = coverage(3, [RULE_ID], risk_classes_checked=["LLM06", "LLM03"])
+    assert covered["risk_classes_checked"] == ["LLM03", "LLM06"]
+
+
+def test_coverage_accepts_the_whole_vocabulary() -> None:
+    """Every id in OWASP_IDS is valid input, or the field could never say all five were covered."""
+    covered = coverage(3, [RULE_ID], risk_classes_checked=list(OWASP_IDS))
+    assert covered["risk_classes_checked"] == sorted(OWASP_IDS)
+
+
+def test_coverage_accepts_an_empty_risk_class_list() -> None:
+    """No check could look, so the report must render all five as uncovered rather than refuse."""
+    assert coverage(3, [RULE_ID], risk_classes_checked=[])["risk_classes_checked"] == []
+
+
+def test_coverage_defaults_to_no_risk_classes_checked() -> None:
+    """Omitting the argument claims coverage of nothing, which is the safe default."""
+    assert coverage(3, [RULE_ID])["risk_classes_checked"] == []
 
 
 def test_a_disabled_model_names_none_and_ranks_nothing() -> None:

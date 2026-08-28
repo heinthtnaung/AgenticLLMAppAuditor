@@ -5,27 +5,61 @@ called afterwards. The taint trace is only as good as this half, so the cases
 here are the assignment forms a real file uses -- and, just as important, the
 ones that bind nothing at all, because a name bound by mistake would carry
 taint that was never there.
+
+The scope cases at the bottom are the same concern one level up: two functions,
+or two methods of one class, binding the same name are two bindings.
 """
 
 import ast
 
 from conftest import app_path, require_corpus
 from dependency_fixtures import SUPPORT_AGENT
-from parsing.bindings import Binding, argument_names, call_bindings, called_name
+from parsing.bindings import (
+    Binding,
+    argument_names,
+    called_name,
+    scoped_call_bindings,
+)
 from parsing.extractor_python import parse_file
 
 # What the vulnerable app's main.py really binds, read off the file by hand.
 CORPUS_BINDINGS = {"prompt": 60, "llm": 63, "chat_agent": 69, "executor": 71}
 
+# Two methods of one class binding the same name. A class body is not a scope
+# its methods share, so this is two bindings and never one.
+CLASS_METHODS = '''class Support:
+    def build(self):
+        agent = build_one()
+
+    def rebuild(self):
+        agent = build_other()
+'''
+
+BUILD_LINE = 3
+REBUILD_LINE = 6
+
+
+def merged_bindings(tree: ast.Module) -> dict[str, Binding]:
+    """Merge every scope's bindings, for the tests that only ask "was it bound at all"."""
+    merged: dict[str, Binding] = {}
+    for scope in scoped_call_bindings(tree):
+        merged.update(scope.bindings)
+    return merged
+
 
 def bindings_of(source: str) -> dict[str, Binding]:
     """Parse a snippet and return the names it binds from a call."""
-    return call_bindings(ast.parse(source))
+    return merged_bindings(ast.parse(source))
 
 
 def first_call(source: str) -> ast.Call:
     """Return the first call node in a snippet, for the two helpers that take one."""
     return next(n for n in ast.walk(ast.parse(source)) if isinstance(n, ast.Call))
+
+
+def scopes_of(source: str) -> list:
+    """Parse a snippet and return each scope with the names it binds."""
+    return scoped_call_bindings(ast.parse(source))
 
 
 def test_a_walrus_binds_the_name_to_the_call_line() -> None:
@@ -131,6 +165,18 @@ def test_called_name_is_empty_for_a_call_on_a_call_result() -> None:
 def test_the_corpus_app_binds_the_names_the_trace_depends_on() -> None:
     """Verified by hand against main.py: the walrus prompt, the model, the agent, the executor."""
     require_corpus(SUPPORT_AGENT)
-    bindings = call_bindings(parse_file(app_path(SUPPORT_AGENT) / "main.py"))
+    bindings = merged_bindings(parse_file(app_path(SUPPORT_AGENT) / "main.py"))
     found = {name: bindings[name].line for name in CORPUS_BINDINGS if name in bindings}
     assert found == CORPUS_BINDINGS
+
+
+def test_two_methods_binding_the_same_name_keep_one_binding_each() -> None:
+    """Merging them would read the second method's object as the first method's."""
+    lines = sorted(scope.bindings["agent"].line for scope in scopes_of(CLASS_METHODS))
+    assert lines == [BUILD_LINE, REBUILD_LINE]
+
+
+def test_a_class_body_does_not_sweep_its_methods_bindings_into_the_top_level() -> None:
+    """The class is excluded from the module's own statements, so it binds nothing there."""
+    scopes = scopes_of(CLASS_METHODS)
+    assert [sorted(scope.bindings) for scope in scopes] == [["agent"], ["agent"]]

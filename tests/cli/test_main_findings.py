@@ -11,6 +11,7 @@ from pathlib import Path
 
 from artifacts.finding import SCHEMA_VERSION
 from artifacts.findings_document import ADVISORY_NOT_INGESTED, MODEL_DISABLED
+from artifacts.mapping import UNRESOLVED
 from checks.permissions import CHECK_NAME as PERMISSION_CHECK
 from checks.run_checks import CHECK_NAMES
 from checks.supply_chain import CHECK_NAME as SUPPLY_CHAIN_CHECK
@@ -18,14 +19,23 @@ from checks.taint import CHECK_NAME as TAINT_CHECK
 from cli_helpers import EMPTY_SCAN, read_artifact, run_cli, stub_syft
 from dependency_fixtures import string_values
 from deps.requirements_parser import MANIFEST_NAME as PYPI_MANIFEST
-from main import FINDINGS_NAME, SURFACES_NAME
+from main import FINDINGS_NAME, MAPPING_NAME, SURFACES_NAME
 
 APP_NAME = "shell-tool-app"
 
-# One privileged tool surface, so the app has something for a check to find.
+# One privileged tool surface, so the app has something for a check to find,
+# beside two data sources that map to different outcomes: `cursor.execute` is a
+# call on an object whose package cannot be told (`unresolved`), and `open` is
+# the language's own (`stdlib`). The mapping therefore counts more unmapped
+# surfaces than unresolved ones, so a coverage block copying the wrong number
+# cannot pass the test below by coincidence.
 APP_SOURCE = """from langchain_community.tools import ShellTool
 
 tool = ShellTool()
+
+
+def load_notes(cursor):
+    return cursor.execute("SELECT 1"), open("notes.txt").read()
 """
 
 
@@ -44,6 +54,15 @@ def audit(monkeypatch, tmp_path: Path, with_manifest: bool = True) -> dict:
     stub_syft(monkeypatch, EMPTY_SCAN)
     assert run_cli(monkeypatch, write_app(tmp_path, with_manifest), tmp_path / "artifacts") == 0
     return read_artifact(tmp_path / "artifacts", APP_NAME, FINDINGS_NAME)
+
+
+def audit_findings_and_mapping(monkeypatch, tmp_path) -> tuple[dict, dict]:
+    """Run the CLI once and return the two artifacts that both state the unresolved count."""
+    stub_syft(monkeypatch, EMPTY_SCAN)
+    assert run_cli(monkeypatch, write_app(tmp_path, with_manifest=True),
+                   tmp_path / "artifacts") == 0
+    return (read_artifact(tmp_path / "artifacts", APP_NAME, FINDINGS_NAME),
+            read_artifact(tmp_path / "artifacts", APP_NAME, MAPPING_NAME))
 
 
 def test_the_findings_artifact_is_written_and_versioned(monkeypatch, tmp_path) -> None:
@@ -84,6 +103,21 @@ def test_the_coverage_agrees_with_the_surfaces_artifact(monkeypatch, tmp_path) -
     findings = read_artifact(tmp_path / "artifacts", APP_NAME, FINDINGS_NAME)
     surfaces = read_artifact(tmp_path / "artifacts", APP_NAME, SURFACES_NAME)
     assert findings["coverage"]["surfaces_considered"] == surfaces["surface_count"]
+
+
+def test_the_coverage_agrees_with_the_mapping_artifact(monkeypatch, tmp_path) -> None:
+    """The untraceable-surface count is a copy, and the copy must still match its source."""
+    findings, mapping = audit_findings_and_mapping(monkeypatch, tmp_path)
+    assert findings["coverage"]["unresolved_component_count"] == \
+        mapping["reason_counts"][UNRESOLVED]
+
+
+def test_the_coverage_copies_the_unresolved_reason_and_not_the_unmapped_count(
+        monkeypatch, tmp_path) -> None:
+    """`unmapped_count` also counts stdlib answers, so copying it would overstate the gap."""
+    findings, mapping = audit_findings_and_mapping(monkeypatch, tmp_path)
+    assert findings["coverage"]["unresolved_component_count"] == 1
+    assert mapping["unmapped_count"] == 2
 
 
 def test_the_run_records_that_no_model_was_used(monkeypatch, tmp_path) -> None:

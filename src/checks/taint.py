@@ -10,9 +10,9 @@ import ast
 from pathlib import Path
 
 from artifacts.finding import INCONCLUSIVE, STATIC, SURFACE_SUBJECT, Finding, Probe
-from artifacts.surface import AGENT_DEF, DATA_SOURCE, TOOL_CALL
+from artifacts.surface import AGENT_DEF, DATA_SOURCE, TOOL_CALL, Surface
 from artifacts.skipped_file import UnreadableSource
-from parsing.bindings import argument_names, call_bindings, called_name
+from parsing.bindings import argument_names, called_name, scoped_call_bindings
 from parsing.extractor_python import parse_file
 from parsing.languages import PYTHON, language_of
 from parsing.repo_loader import list_source_files
@@ -60,25 +60,44 @@ def _unfollowed(sources: dict, tainted: dict) -> list[Probe]:
     ]
 
 
+def _calls_in(body: list[ast.stmt]) -> list[ast.Call]:
+    """Every call written inside one scope's own statements, and no other scope's."""
+    return [node for statement in body
+            for node in ast.walk(statement) if isinstance(node, ast.Call)]
+
+
+def _findings_in_scope(body: list[ast.stmt], tainted: dict, reached: dict) -> list[Finding]:
+    """Report each untrusted name this scope hands to a sink bound in the same scope.
+
+    Both maps and the code are one scope's, so a source in one function can
+    never be matched to a sink in another that reuses the name.
+    """
+    found = []
+    for call in _calls_in(body):
+        if called_name(call) not in reached:
+            continue
+        found += [_finding_for(tainted[name])
+                  for name in sorted(argument_names(call) & set(tainted))]
+    return found
+
+
 def trace_file(tree: ast.AST, file: str, surfaces: list) -> tuple[list[Finding], list[Probe]]:
     """Report each untrusted value this file hands to a model or a model-driven tool."""
     sources = _surfaces_by_line(surfaces, file, (DATA_SOURCE,))
     sinks = _surfaces_by_line(surfaces, file, SINK_KINDS)
-    bindings = call_bindings(tree)
-    tainted = {n: sources[b.line] for n, b in bindings.items() if b.line in sources}
-    reached = {n: sinks[b.line] for n, b in bindings.items() if b.line in sinks}
 
     # One untrusted value is one finding however many sinks it reaches: the
     # finding is anchored on the source, so reporting per sink would emit the
     # same id twice and the document would refuse it as a duplicate.
     reported: dict[str, Finding] = {}
-    for node in ast.walk(tree):
-        if not isinstance(node, ast.Call) or called_name(node) not in reached:
-            continue
-        for name in sorted(argument_names(node) & set(tainted)):
-            finding = _finding_for(tainted[name])
+    tainted_anywhere: dict[str, Surface] = {}
+    for scope in scoped_call_bindings(tree):
+        tainted = {n: sources[b.line] for n, b in scope.bindings.items() if b.line in sources}
+        reached = {n: sinks[b.line] for n, b in scope.bindings.items() if b.line in sinks}
+        tainted_anywhere.update(tainted)
+        for finding in _findings_in_scope(scope.body, tainted, reached):
             reported.setdefault(finding.id, finding)
-    return list(reported.values()), _unfollowed(sources, tainted)
+    return list(reported.values()), _unfollowed(sources, tainted_anywhere)
 
 
 def python_files(repo_path: str) -> list[Path]:
@@ -111,5 +130,3 @@ def run_over_repo(repo_path: str, surfaces: list[Surface]) -> tuple[list[Finding
         findings += traced
         probes += unfollowed
     return findings, probes
-
-
