@@ -286,7 +286,13 @@ done-criteria.
       live systems)
 - [ ] Build evidence-backed reporting (JSON + Markdown/HTML; each finding =
       OWASP ID + code location + LLM-surface link + SBOM/AIBOM/advisory refs)
-- [ ] Confirm human-in-the-loop only (no auto-patch, no PR merge)
+- [x] Confirm human-in-the-loop only (no auto-patch, no PR merge), and that
+      the auditor never executes the audited app. Asserted, not promised:
+      `tests/test_no_mutation.py` hashes a corpus app before and after a full
+      audit, and `tests/test_no_write_commands.py` reads `src/` for any
+      mutating process or dynamic execution. The one module allowed to start a
+      process is `syft_runner`, and a tripwire module proves the difference
+      between reading a file and importing it
 
 ---
 

@@ -9,8 +9,10 @@ It reads **Python** (via the standard library's `ast`) and **JavaScript and
 TypeScript** (via tree-sitter). The design is language-agnostic: adding one
 starts in `src/parsing/languages.py`.
 
-It **reports only** — it never edits, patches, or merges the audited code — and
-it runs offline against a local model.
+It **reports only** — it never edits, patches, or merges the audited code, and
+it never runs it either: the auditor reads source and artifacts, so auditing an
+app cannot execute it. Both guarantees are asserted by tests rather than
+promised in prose. It runs offline against a local model.
 
 Master's degree project. Contributors: Hein Thet Naung, Neo Jia Wei,
 Tan Bing Hong.
