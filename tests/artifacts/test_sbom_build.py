@@ -6,6 +6,7 @@ and the generator only contributes versions.
 """
 
 from artifacts.sbom import LIBRARY, build_sbom
+from deps.package_names import PYPI
 from dependency_fixtures import (
     CORPUS_DECLARED,
     CORPUS_GENERATOR_OUTPUT,
@@ -115,7 +116,8 @@ def test_a_package_only_the_generator_found_is_listed_as_undeclared() -> None:
     generator_output = {"components": [{"type": LIBRARY, "name": "requests",
                                         "version": "2.32.3"}]}
     document = build_sbom(generator_output, {}, GENERATOR_NAME, GENERATOR_VERSION,
-                          [MANIFEST_NAME], True)
+                          [MANIFEST_NAME],
+                          version_guessing_enabled=True, ecosystem=PYPI)
     requests = component_named(document, "requests")
     assert requests["declared"] is False
     assert requests["declared_in"] is None
@@ -124,6 +126,7 @@ def test_a_package_only_the_generator_found_is_listed_as_undeclared() -> None:
 
 def test_an_empty_manifest_and_empty_generator_output_give_an_empty_sbom() -> None:
     """An app with no dependencies is an answer, not an error."""
-    document = build_sbom({}, {}, GENERATOR_NAME, GENERATOR_VERSION, [], True)
+    document = build_sbom({}, {}, GENERATOR_NAME, GENERATOR_VERSION, [],
+                          version_guessing_enabled=True, ecosystem=PYPI)
     assert document["component_count"] == 0
     assert document["components"] == []

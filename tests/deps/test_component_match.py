@@ -1,18 +1,28 @@
-"""Turning an import name into the distribution that ships it.
+"""Turning an import name into the distribution that ships it, in which ecosystem.
 
 `import yaml` comes from PyYAML, and getting that wrong produces a mapping that
-looks complete and is not.
+looks complete and is not. The ecosystem table at the bottom is the other half
+of the same job: a component in the wrong ecosystem is not a match however well
+the names line up.
 """
+
+import pytest
 
 from deps.component_match import (
     BY_ALIAS_TABLE,
     BY_NORMALISED_NAME,
+    ECOSYSTEM_BY_LANGUAGE,
     NOT_RESOLVED,
+    ecosystem_of_language,
     is_stdlib,
     package_root,
     resolve,
 )
-from parsing.languages import JAVASCRIPT, PYTHON, TYPESCRIPT
+from deps.package_names import NPM, PYPI
+from parsing.languages import JAVASCRIPT, LANGUAGES, PYTHON, TYPESCRIPT
+
+# A language nothing registers, used to show the refusal is not a default.
+UNKNOWN_LANGUAGE = "ruby"
 
 
 def test_package_root_of_a_dotted_python_module() -> None:
@@ -102,3 +112,36 @@ def test_node_builtin_is_not_stdlib_in_python() -> None:
     into a package the app had supposedly failed to declare.
     """
     assert is_stdlib("fs", PYTHON) is False
+
+
+@pytest.mark.parametrize("language,ecosystem", [
+    (PYTHON, PYPI),
+    (JAVASCRIPT, NPM),
+    (TYPESCRIPT, NPM),
+])
+def test_each_language_resolves_its_imports_in_one_ecosystem(language: str,
+                                                             ecosystem: str) -> None:
+    """The three registered languages resolve in the two ecosystems this project reads."""
+    assert ecosystem_of_language(language) == ecosystem
+
+
+def test_every_registered_language_has_an_ecosystem() -> None:
+    """The table covers `LANGUAGES` exactly, so registering a fourth cannot skip a row.
+
+    A missing row does not fall back: `ecosystem_of_language` raises, and it is
+    called from inside `build_mapping`, so the whole audit would abort part way.
+    """
+    assert set(ECOSYSTEM_BY_LANGUAGE) == set(LANGUAGES)
+
+
+def test_a_language_with_no_ecosystem_is_refused() -> None:
+    """An unregistered language must fail loudly rather than be given PyPI's packages."""
+    with pytest.raises(ValueError):
+        ecosystem_of_language(UNKNOWN_LANGUAGE)
+
+
+def test_the_refusal_names_the_language_it_could_not_place() -> None:
+    """The message says which language was asked about, so the missing row is findable."""
+    with pytest.raises(ValueError) as error:
+        ecosystem_of_language(UNKNOWN_LANGUAGE)
+    assert UNKNOWN_LANGUAGE in str(error.value)

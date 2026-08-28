@@ -33,14 +33,15 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done
 - [~] Select + verify 2–3 open-source LangGraph/LangChain apps (checklist and
       manifest template ready; live verification done by hand) — **two of the
       three are JavaScript/TypeScript**; the auditor now reads those too, and
-      one has been adopted as a fixture (see below)
+      one of them is a fixture on disk (see 1.10)
     - ~~https://github.com/langchain-ai/agent-chat-ui~~ — **dropped**: 56 source
       files yielding a single generic `fetch` surface. It is a frontend that
       talks to a server over `langgraph-sdk`, so it has no prompts, agents, or
       tools to audit. No parser could change that.
     - https://github.com/langchain-ai/langgraphjs-studio-starter — adopted as
-      `corpus/oss-app-langgraphjs-starter` (TypeScript, 5 surfaces, no planted
-      vulnerabilities, so it measures false positives on clean code)
+      `corpus/oss-app-langgraphjs-starter`, pinned to `cd9a02c6` (TypeScript,
+      5 surfaces, no planted vulnerabilities, so it measures false positives on
+      clean code). Removed when the corpus narrowed to one app, restored since
     - https://github.com/langchain-ai/open_deep_research
 - [~] Manually establish ground truth for the demo app — drafted as
       `corpus/evidence/vuln-app-1-support-agent.ground_truth.json`, 5 findings,
@@ -88,7 +89,12 @@ Phase 1 detail, per `docs/PHASE_1_PLAN.md`:
       to tree-sitter grammar, kept as two separate ideas
 - [x] 1.9 JavaScript/TypeScript backend (`src/detectors_js.py`,
       `src/extractor_js.py`, `src/ts_utils.py`) via tree-sitter
-- [x] 1.10 `oss-app-langgraphjs-starter` added as the clean-code fixture
+- [x] 1.10 A clean-code fixture — `oss-app-langgraphjs-starter`, restored and
+      pinned to `cd9a02c6`. It is the only fixture that can measure a
+      false-positive rate; every other one measures recall alone. Current
+      reading: **5 of 5 expected surfaces found, 0 false positives**, against a
+      grading key that claims `expected_surfaces_complete: true`, so an extra
+      surface would fail the test rather than go unnoticed
 - [x] Evidence split out of the audited code: `corpus/<app>/` is now a
       byte-identical upstream copy, and everything authored about it lives in
       `corpus/evidence/`, owned by `src/corpus_paths.py`
@@ -99,21 +105,80 @@ Phase 1 detail, per `docs/PHASE_1_PLAN.md`:
 See [`PHASE_2_PLAN.md`](./PHASE_2_PLAN.md) for the task breakdown and
 done-criteria.
 
-- [~] Generate an SBOM via Syft. **Not** CycloneDX or SPDX as produced: that
-      output carries a random id, a timestamp and absolute paths, so it cannot
-      be byte-identical across runs. `sbom.json` is a normalised shape keeping
-      CycloneDX field names and PURL identity. One Python app so far
+- [~] Generate an SBOM via Syft. Two files: `sbom.cyclonedx.json` is valid
+      CycloneDX, so the result can be fed to other supply-chain tooling and
+      checked independently; `sbom.json` is a normalised shape and is what the
+      later phases read. The standard format alone is not enough, because it
+      has no field for how much a version can be trusted -- one guessed from
+      `~=0.3.25` looks identical to an exact pin -- and it omits dependencies
+      the generator did not find (two on the Python app, two on the JS one).
+      Both corpus apps now produce both bills
 - [x] Define the AIBOM schema and build it (`src/aibom.py`), derived from
       `surfaces.json` so every entry traces to a surface. `datasets` is absent:
       no surface kind produces one
 - [x] Write the advisory data policy (`SCHEMAS.md`): fetched out-of-band as a
       documented manual step, read from disk, never at runtime
-- [ ] Read npm manifests, so a JavaScript app can be given an SBOM. Until
-      then `src/main.py` refuses one rather than reporting every real
-      import as an undeclared dependency
-- [ ] Build the advisory matcher — **deferred, not forgotten**: of five
-      components two have no version and three are inferred from a range, so
-      there is nothing an honest matcher could key on yet
+- [x] Read npm manifests, so a JavaScript app can be given an SBOM
+      (`src/deps/npm_manifest.py`). The JS fixture now produces all five
+      artifacts: **82 components, 80 of them `locked`** with an exact version
+      from `yarn.lock`, against the Python app's 1 pinned of 5. Mapping
+      coverage is 4 of 5 surfaces (80%) versus 6 of 19 (32%). The four problems
+      recorded here before are settled:
+      (a) duplicate names — a component's identity is now
+      `(ecosystem, name, version)`, so all three `langsmith` versions survive
+      where a name-keyed dict kept one;
+      (b) a scoped name is percent-encoded (`%40langchain`), verified equal to
+      the generator's own purl on all 80 components;
+      (c) the exact-pin rule is per ecosystem — `==1.2.3` for PyPI, a bare
+      `1.2.3` for npm — so `==4.19.2` is no longer read as an npm pin;
+      (d) name normalisation is PEP 503 for PyPI and lowercase-only for npm,
+      keeping `lodash.merge` and `lodash-merge` distinct.
+      The mapping join now also compares ecosystem to the surface's language
+- [x] A lockfile-resolved version is its own provenance, `locked`
+      (`sbom.json` `schema_version` 2). It earns a versioned purl because it is
+      what will actually be installed, while `inferred` stays structurally
+      barred. It is assigned from "a lockfile was read", never from the
+      ecosystem. Only npm reaches it through the CLI today, though:
+      `manifests_present` reports no Python lockfile, and it must not until
+      `from_lockfile` is per component — the flag is document-wide, and the
+      generator's Python range-guessing is on, so one `poetry.lock` would
+      relabel every guessed version as a fact at once
+- [x] An ambiguous join drops the version instead of picking one
+      (`mapping.json` `schema_version` 2). Where a name
+      holds several installed versions, `mapping.json` reports
+      `component_version_count` and a version-less purl. Caught on the fixture:
+      `@langchain/openai` is installed at 0.3.0 and 0.3.2, and the join key was
+      asserting 0.3.2 by sort order alone
+- [ ] A package declared bare loses a version the generator did resolve.
+      `version_source_of` tests "no constraint" before "the generator reported
+      something", so `streamlit` resolved to 1.40.0 reports `unconstrained`
+      with `version: null`, while `streamlit~=1.40` keeps 1.40.0 as `inferred`
+      — declaring *less* precisely discards more evidence. It predates the npm
+      work and touches no purl (neither source is exact), so it is a reporting
+      gap rather than a soundness one. Pinned by
+      `test_an_unconstrained_package_drops_a_version_the_generator_resolved`,
+      so the current behaviour is visible rather than accidental
+- [ ] Read Python lockfiles (`poetry.lock`, `Pipfile.lock`). Needs
+      `from_lockfile` derived per component from the generator's own evidence
+      first, for the reason on the `locked` line above
+- [ ] Attribute a constraint to the record it actually selected. Today
+      `declared_in` and `version_constraint` are facts about the name, so the
+      fixture's `langsmith` 0.1.48 record carries `^0.1.55` — a constraint its
+      own version fails. Fixing it needs a `yarn.lock` resolution-tree parser
+      and semver satisfaction, which is a bigger job than reading the manifest
+- [ ] Scan a repository declaring both a Python and an npm manifest. It is
+      refused with a message today rather than half-read, because one SBOM
+      holds one ecosystem and reporting only the Python half would understate
+      the tree while looking complete. No corpus fixture is mixed
+- [ ] Build the advisory matcher — **deferred, not forgotten.** An advisory
+      keys on a versioned PURL, and the corpus app yields exactly one: of five
+      components, `langchain-litellm` is pinned, `langchain` and `openai` have a
+      version inferred from a range, and `langchain-community` and `streamlit`
+      have none. Only the pinned one gets a version in its PURL — by design, so
+      a guess cannot reach a matcher — so four of five are unmatchable and a
+      matcher would report on 20% of the tree while looking complete.
+      Reading npm manifests is what unblocks this, not more matcher code: a
+      lockfile pins every version, so that path is where the evidence comes from
 - [x] Build surface-to-component mapping (`src/mapping.py`), joining on each
       surface's `module`. Five outcomes, all exercised on the corpus:
       third_party 6, stdlib 3, first_party 1, used_but_undeclared 1,
@@ -128,10 +193,14 @@ done-criteria.
       than a guess; a mode built at runtime says so instead of guessing.
       `+` counts as a write flag: `r+` and `rb+` open a read-write handle and
       were reported as reads until that was fixed and tested
-- [ ] Detector precision, deferred from Phase 1: drop `SystemMessage` /
-      `HumanMessage` / `MessagesPlaceholder` from `PROMPT_CLASSES` if they
-      prove noisy; the JS side has the same `load` / `query` / `execute`
-      breadth problem
+- [ ] ~~Drop `SystemMessage` / `HumanMessage` / `MessagesPlaceholder` from
+      `PROMPT_CLASSES`~~ — **considered and refused.** The first two *are*
+      prompt text, so reporting them is correct rather than noisy. A
+      `MessagesPlaceholder` is a history slot, which is exactly where indirect
+      injection lands, so dropping it would cost LLM01 recall. With one fixture
+      there is no evidence of noise either way, and a name in a table costs
+      nothing while a missed prompt is a recall failure
+- [ ] The JS side has the same `load` / `query` / `execute` breadth problem
 - [ ] Detector coverage gaps: no HTTP-route data source on the JS side, though
       Express and Next handlers are the main untrusted input in JS apps; and
       29 JS framework names no fixture exercises
@@ -152,7 +221,7 @@ done-criteria.
       rather than skipped, and an unopenable file still aborts the scan — are
       pinned by `tests/parsing/test_extractor_skip_limits.py`, so changing
       either is a conscious decision with a failing test attached
-- [x] ~~Make `src/` a real package~~ — **declined.** It is 24 modules in four
+- [x] ~~Make `src/` a real package~~ — **declined.** It is 27 modules in four
       folders with one entry point, and the folders are plain directories that
       Python imports without an `__init__.py`. `python src/main.py` works,
       `tests/conftest.py` handles the path, and converting would touch every
@@ -222,9 +291,9 @@ resolved; do not tick the task above until its blocker is gone.
 
 | # | Blocker | Who / what unblocks it |
 |---|---|---|
-| B3 | The demo app's grading key is **AI-drafted and unverified** (`verified: false`). Phase 4's precision/recall is graded against them, so no number is thesis-grade until a human confirms. | A human reads the app and flips `verified`, `verified_by`, `verified_date`. **Blocks Phase 4.** |
+| B3 | Both grading keys are **AI-drafted and unverified** (`verified: false`). Phase 4's precision/recall is graded against them, so no number is thesis-grade until a human confirms. | A human reads each app and flips `verified`, `verified_by`, `verified_date`. **Blocks Phase 4.** |
 | B4 | The Phase 1 line **"Stand up the LangGraph skeleton"** duplicates Phase 3's "agentic audit workflow (planner picks next probe over shared state)". Building it now would break rule 15. | Decide whether to move the line to Phase 3. Not implemented either way. |
-| B6 | **The subset is now decided but the corpus does not exercise all of it.** The project cites the 2025 OWASP list: LLM01, LLM03 (supply chain), LLM06, and auditability. The one corpus app has findings for LLM01, LLM02, LLM06 and AUDITABILITY -- **nothing for LLM03**, so the risk Phase 2 exists to report has no ground-truth finding to be graded against. | Add an LLM03 finding to the grading key once Phase 2 can produce evidence for one. The app has two used-but-undeclared dependencies (PyYAML, python-dotenv), which is a real candidate. |
+| B6 | **The subset is now decided but the corpus does not exercise all of it.** The project cites the 2025 OWASP list: LLM01, LLM03 (supply chain), LLM06, and auditability. The vulnerable corpus app has findings for LLM01, LLM02, LLM06 and AUDITABILITY -- **nothing for LLM03**, so the risk Phase 2 exists to report has no ground-truth finding to be graded against. | Add an LLM03 finding to the grading key once Phase 2 can produce evidence for one. The app has two used-but-undeclared dependencies (PyYAML, python-dotenv), which is a real candidate. |
 | B7 | **Phase owners are unassigned** across Hein / Bing Hong / JW. | Agree the split. |
 
 ---

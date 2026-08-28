@@ -2,7 +2,9 @@
 
 Every phase hands data to the next one through JSON files. These are contracts:
 a field is never renamed or removed without updating every reader in the same
-change. `schema_version` is bumped when that happens.
+change. `schema_version` is bumped when that happens — and also when a fixed
+vocabulary gains a value, or a documented invariant changes. Both alter what a
+reader is entitled to conclude, even though no field is renamed or removed.
 
 Two conventions apply to every file here:
 
@@ -26,16 +28,24 @@ artifact directory name, `ground_truth.app`, and `manifest.name`.
 | Provenance, fixture | `corpus/evidence/<app>.manifest.json` | hand-authored |
 | Regression snapshot | `corpus/evidence/<app>.baseline.json` | tool-derived |
 | Phase 1 output | `artifacts/<app>/surfaces.json` | `src/main.py` |
+| Phase 2 output | `artifacts/<app>/sbom.json` | `src/main.py` |
+| Phase 2 output | `artifacts/<app>/sbom.cyclonedx.json` | `src/main.py`, the same scan in the standard format |
+| Phase 2 output | `artifacts/<app>/aibom.json` | `src/main.py` |
+| Phase 2 output | `artifacts/<app>/mapping.json` | `src/main.py` |
 
 **`schema_version` is per file.** Each artifact versions independently; that
-`surfaces.json` is at 3 while a new file starts at 1 is not a mistake.
+`surfaces.json` is at 3, `sbom.json` and `mapping.json` at 2, while a new file
+starts at 1, is not a mistake.
 
 **External tools are normalised, never stored raw.** Syft's output carries a
-random UUID, a wall-clock timestamp, and absolute paths, so two runs differ. Any
-artifact derived from an external tool drops timestamps, UUIDs, absolute paths,
-tool-internal identifiers, and synthesised values the tool guessed. What is
-stored is this project's own shape, using the standard's field names where they
-fit so the lineage stays obvious.
+random UUID and a wall-clock timestamp, so two runs differ. Any artifact
+derived from an external tool drops those, along with absolute paths,
+tool-internal identifiers and values the tool guessed, so the result is
+byte-identical every run.
+
+All of those fields are *optional* in CycloneDX, so dropping them leaves a
+valid document. That is what `sbom.cyclonedx.json` is: the same scan in the
+standard format, reproducible, for feeding to other tooling.
 
 `src/corpus_paths.py` owns these paths. Import them from there rather than
 joining strings, so a later phase cannot guess wrong.
@@ -198,19 +208,22 @@ are the same surface even if `detail` differs, and are collapsed by
 What the app's dependency manifests and the SBOM generator say about its
 components.
 
-This is not CycloneDX or SPDX. Those describe what a scanner found; this also
-records **how much a version can be trusted**, which neither format has a field
-for: a version guessed from `~=0.3.25` looks exactly like an exact pin, and that
-distinction is what stops an advisory lookup claiming a vulnerability the app
-may not have.
+This is not CycloneDX, and the reason is not determinism -- a valid
+deterministic CycloneDX document sits beside it as
+`artifacts/<app>/sbom.cyclonedx.json`. It is that CycloneDX has no field for
+**how much a version can be trusted**: one guessed from `~=0.3.25` looks
+exactly like an exact pin, and that distinction is what stops an advisory
+lookup claiming a vulnerability the app may not have. CycloneDX also lists only
+what the generator found, omitting the two dependencies the app declares and
+Syft misses.
 
 | Field | Type | Required | Meaning |
 |---|---|---|---|
-| `schema_version` | int | yes | Currently `1`. |
+| `schema_version` | int | yes | Currently `2`. |
 | `generator_name` | str | yes | The external tool, e.g. `syft`. |
 | `generator_version` | str | yes | Pinned. If it changes, the artifact *should* change. |
-| `version_guessing_enabled` | bool | yes | Whether the generator was allowed to infer a version from a range constraint. |
-| `scanned_manifests` | list[str] | yes | The dependency manifests that exist and were read, sorted. Empty when the app declares none. This is what makes "streamlit is missing" a checkable claim rather than an accusation. |
+| `version_guessing_enabled` | bool | yes | Whether the generator was allowed to infer a version from a range constraint. **Scoped to PyPI** — it is the generator's Python-only setting, so on an npm document it reads `true` while nothing was guessed. |
+| `scanned_manifests` | list[str] | yes | The dependency manifests **and lockfiles** that exist and were read, sorted. Empty when the app declares none. This is what makes "streamlit is missing" a checkable claim rather than an accusation — and what makes `locked` falsifiable, since a component claiming it must have a lockfile named here. The manifest is read by this project; the lockfile is read by the generator. |
 | `component_count` | int | yes | `len(components)`. |
 | `components` | list | yes | Sorted by `(ecosystem, name, version or "")`. |
 
@@ -218,12 +231,12 @@ Each component:
 
 | Field | Type | Required | Meaning |
 |---|---|---|---|
-| `name` | str | yes | PEP 503-normalised distribution name — lowercase, runs of `-_.` collapsed to `-`. Never an import name. |
-| `ecosystem` | str | yes | `pypi` or `npm`. One ecosystem per document: only Python manifests are read today, and an npm app needs its own manifest reader before its components could be labelled correctly. |
+| `name` | str | yes | Normalised by the **ecosystem's own rule**: PEP 503 for `pypi` (lowercase, runs of `-_.` collapsed to `-`); lowercase only for `npm`, where `lodash.merge` and `lodash-merge` are two different real packages and collapsing them would rename one into the other. Never an import name. |
+| `ecosystem` | str | yes | `pypi` or `npm`. **One ecosystem per document**, and required — there is no default, because guessing PyPI for an npm component would break every join downstream. A repository declaring both is refused rather than half-read. |
 | `version` | str \| null | yes | Read **only** together with `version_source`. |
-| `version_source` | str | yes | `pinned`, `inferred`, `unconstrained`, or `unknown`. |
+| `version_source` | str | yes | `pinned`, `locked`, `inferred`, `unconstrained`, or `unknown`. `locked` means resolved by a lockfile the generator read: exact and reproducible, but not a version the author's manifest named. `unconstrained` means the manifest named no version — and its `version` is `null` **even where the generator resolved one**, so a bare declaration currently discards more evidence than a range does. That under-reports; it is on the roadmap and reaches no PURL. |
 | `version_constraint` | str \| null | yes | Exactly as the manifest wrote it, e.g. `~=0.3.25`. Without it, `inferred` is an unfalsifiable claim. |
-| `purl` | str | yes | The join key. **Carries a version only when `version_source` is `pinned`.** |
+| `purl` | str | yes | The join key. **Carries a version only when `version_source` is `pinned` or `locked`.** Percent-encoded per the PURL spec, so an npm scope appears as `pkg:npm/%40langchain/core@0.3.3` and is byte-comparable with `sbom.cyclonedx.json`. |
 | `declared` | bool | yes | Named in a dependency manifest. |
 | `tool_reported` | bool | yes | The generator emitted it. |
 | `declared_in` | str \| null | yes | Which manifest declared it. |
@@ -233,18 +246,62 @@ recording `pkg:pypi/langchain@0.3.25` would let any purl-keyed advisory lookup
 manufacture a false positive. Inferred versions live in `version` and
 `version_source` only, where a consumer has to look at them deliberately.
 
+**A lockfile-resolved version is a fact of the same kind.** It is the version
+that will actually be installed, so `locked` reaching an advisory matcher is
+sound. `inferred` remains structurally incapable of it: `~=0.3.25` and `^0.3.2`
+admit versions the app may never install. Both halves matter — the policy has
+been widened by one provenance, not relaxed.
+
+`locked` is assigned from **"a lockfile was read"**, never from the ecosystem
+and never from "the generator reported a version". Keying it on the ecosystem
+would mislabel a Python app shipping a `poetry.lock`, whose versions are just
+as resolved. Keying it on the generator having reported something would relabel
+every guessed version as a fact and put it straight into a PURL, which is the
+one outcome this vocabulary exists to prevent.
+
+The rule is ecosystem-neutral; the Python **path** does not exercise it yet.
+`requirements_parser.manifests_present` reports only `requirements.txt`, so
+`from_lockfile` is always false there and no Python component reaches `locked`
+through the CLI today. That is deliberate rather than pending: `from_lockfile`
+is currently a document-wide fact, and the generator's Python range-guessing is
+on, so a Python lockfile appearing in `scanned_manifests` would relabel every
+guessed version as `locked` at once. Reading Python lockfiles needs
+`from_lockfile` derived per component first.
+
 An exact pin is read from the **manifest**, not from the generator. The
 manifest is what the app declares; a generator reporting a different version is
 reporting a different fact, and preferring it would let the PURL assert a
-version the app never asked for.
+version the app never asked for. A lockfile is not a counter-example: it is
+also a file the app committed, which is why it ranks above the generator's own
+inference but below an explicit pin.
 
-The invariant is one-directional: a versioned PURL implies `pinned`, but
-`pinned` does not imply a versioned PURL — a pin the generator never saw and
-whose constraint could not be read yields a bare PURL rather than a guess.
+The invariant is one-directional: a versioned PURL implies `pinned` or
+`locked`, but neither implies a versioned PURL — a pin the generator never saw
+and whose constraint could not be read yields a bare PURL rather than a guess.
 
 The two booleans are more useful than one enum: `declared and not
 tool_reported` is a dependency the generator dropped, and `tool_reported and
-not declared` is an undeclared one. At least one must be true.
+not declared` is one the manifest never named. With a lockfile that second case
+is the **normal** one, not a finding: most of an npm tree is transitive, so
+`declared` distinguishes direct from transitive there, and "undeclared
+dependency" is only a finding where the generator's own evidence was the
+manifest. At least one must be true.
+
+### One record per installed version
+
+A component's identity is `(ecosystem, name, version)`, not the name. A lockfile
+legitimately holds one package several times — this project's JS fixture has
+`langsmith` at 0.1.48, 0.1.55 and 0.1.61 — and each installed copy is its own
+supply-chain fact. So `component_count` **counts records, not distinct
+packages**: 82 records for 75 distinct names on that fixture.
+
+When several records share a name, `declared`, `declared_in` and
+`version_constraint` are facts about the **name**, not about that record's
+version. The fixture shows why this has to be said out loud: `langsmith` is
+declared `^0.1.55`, which does not admit the 0.1.48 the lockfile also holds, so
+that record carries a constraint its own version fails. Deciding which record a
+constraint selected needs the lockfile's resolution tree and semver
+satisfaction, which this project does not do.
 
 ---
 
@@ -292,7 +349,7 @@ none. Exactly one entry per surface.
 
 | Field | Type | Required | Meaning |
 |---|---|---|---|
-| `schema_version` | int | yes | Currently `1`. |
+| `schema_version` | int | yes | Currently `2`. |
 | `surface_count` | int | yes | One entry per surface extracted in the same run. Phase 2 does not re-read `surfaces.json`, so this is an in-process invariant, asserted by tests rather than checkable from disk alone. |
 | `mapped_count` | int | yes | Entries with reason `third_party`. |
 | `unmapped_count` | int | yes | The rest. |
@@ -309,7 +366,8 @@ Each entry:
 | `package_root` | str \| null | yes | The package-root of `module`. Shows the working, so the join is checkable. |
 | `component_name` | str \| null | yes | Resolved distribution name. |
 | `ecosystem` | str \| null | yes | `pypi` or `npm`. |
-| `purl` | str \| null | yes | Copied from the matching component. **Non-null only when `third_party`**, so `purl != null` means exactly "joined". |
+| `purl` | str \| null | yes | The matching component's purl, or — when `component_version_count > 1` — a version-less purl built for the join. **Non-null only when `third_party`**, so `purl != null` means exactly "joined". |
+| `component_version_count` | int | yes | How many installed versions of that component the SBOM holds. `0` when unjoined, `1` normally, more when a lockfile holds several. |
 | `reason` | str | yes | One of the five below. |
 | `resolved_by` | str | yes | `normalised_name`, `alias_table`, or `none` — how the import name became a distribution name. |
 
@@ -317,15 +375,26 @@ The five reasons:
 
 | Reason | Meaning |
 |---|---|
-| `third_party` | Joined to a component in `sbom.json`. |
+| `third_party` | Joined to a component in `sbom.json` **in the same ecosystem**. |
 | `stdlib` | Part of the language runtime, or a builtin. No distribution exists. |
 | `first_party` | The app's own code. |
 | `used_but_undeclared` | Names something that is neither the language runtime, nor the app's own code, nor a component in the SBOM. **A supply-chain finding, not a mapping gap.** |
 | `unresolved` | The owning distribution could not be determined; needs the dataflow analysis in Phase 3. |
 
-An unmapped surface is the normal case, not a defect: on the corpus app, 6 of
-19 surfaces join to a component. The reason field exists so a reader never has
-to work out which kind of "no" they are looking at.
+An unmapped surface is the normal case, not a defect: 6 of 19 surfaces join on
+the Python corpus app, 4 of 5 on the JavaScript one. The reason field exists so
+a reader never has to work out which kind of "no" they are looking at.
+
+**The join must agree on ecosystem.** A surface's language decides which one it
+resolves in — `python` to `pypi`, `javascript` and `typescript` to `npm` — and
+a component in the other one is not a match however well the names line up,
+because a PyPI and an npm package can share a name and be unrelated software.
+
+**An ambiguous join drops the version rather than picking one.** When a name
+holds several installed versions, `component_version_count` says so and `purl`
+carries no version. A surface's import cannot say which copy it loads, so
+naming one by sort order would put a guess in the advisory join key — the same
+failure `version_source` guards, reached by another route.
 
 Three checks run before that conclusion is reached, and each exists because
 skipping it produced a false finding: the language's own runtime (Node's

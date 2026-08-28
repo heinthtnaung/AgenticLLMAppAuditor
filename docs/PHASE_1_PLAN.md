@@ -236,7 +236,11 @@ app. See `docs/TODO.md`.
       Every one is matched by a test, but the ground truth itself is AI-drafted
       and awaiting human sign-off (`TODO.md` B3).
 - [x] Tests pass; code follows the coding rules above.
-- [x] Language registry, and a JavaScript/TypeScript backend (tasks 1.8-1.10).
+- [x] Language registry, and a JavaScript/TypeScript backend (tasks 1.8-1.9).
+- [x] Task 1.10, a clean-code fixture: `oss-app-langgraphjs-starter`, pinned to
+      `cd9a02c6`. It is the only fixture that can measure a false-positive rate,
+      and it gives the JS detectors an end-to-end one. 5 of 5 expected surfaces
+      found, 0 false positives.
 
 The finished flow is walked through step by step in [`FLOW.md`](./FLOW.md).
 

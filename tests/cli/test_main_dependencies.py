@@ -1,23 +1,46 @@
-"""The Phase 2 CLI writes all three artifacts, or fails with a message and exit 1.
+"""The Phase 2 CLI writes all five artifacts, or fails with a message and exit 1.
 
 Syft is stubbed throughout, so this runs offline on a machine that has never
-installed it -- the CLI had no test at all before, which is how the defects
-below reached an artifact.
+installed it.
 """
 
-import json
 import subprocess
-import sys
 from pathlib import Path
 
+from cli_helpers import STUB_GENERATOR_VERSION, read_artifact, run_cli, stub_syft
 from deps import syft_runner
+from deps.package_names import PYPI
+from deps.requirements_parser import MANIFEST_NAME as PYPI_MANIFEST
 from parsing.languages import PYTHON
-from main import build_parser, main, report_coverage, run
+from main import (
+    AIBOM_NAME,
+    CYCLONEDX_NAME,
+    MAPPING_NAME,
+    SBOM_NAME,
+    SURFACES_NAME,
+    build_parser,
+    dependency_artifacts,
+    report_coverage,
+    run,
+)
 from artifacts.mapping import build_mapping
 from dependency_fixtures import corpus_sbom
 from artifacts.surface import DATA_SOURCE, PROMPT_TEMPLATE, Surface
 
-ARTIFACT_NAMES = ("sbom.json", "aibom.json", "mapping.json")
+# Each artifact versions independently, so a shared number would be a
+# coincidence rather than a contract. Two of the three went to 2 in the npm
+# change: sbom.json when `locked` joined the vocabulary, mapping.json when an
+# ambiguous join stopped copying the component's purl and started synthesising
+# a version-less one. aibom.json did not move.
+EXPECTED_SCHEMA_VERSIONS = {SBOM_NAME: 2, AIBOM_NAME: 1, MAPPING_NAME: 2}
+
+# The artifacts carrying this project's own schema_version. Derived from the
+# table above, so a future artifact cannot be listed here and left unchecked.
+ARTIFACT_NAMES = tuple(EXPECTED_SCHEMA_VERSIONS)
+
+# Everything a successful run leaves on disk, including the standard-format
+# bill, which carries CycloneDX's version rather than one of ours.
+ALL_ARTIFACT_NAMES = (SURFACES_NAME, CYCLONEDX_NAME) + ARTIFACT_NAMES
 APP_NAME = "tiny-app"
 
 # One agent surface importing langchain, so the mapping has something to join.
@@ -29,13 +52,6 @@ agent = AgentExecutor.from_agent_and_tools(agent=None, tools=[])
 STUB_GENERATOR_OUTPUT = {
     "components": [{"type": "library", "name": "langchain", "version": "0.3.25"}],
 }
-STUB_GENERATOR_VERSION = "1.51.0"
-
-
-def stub_syft(monkeypatch, scan_result: dict = STUB_GENERATOR_OUTPUT) -> None:
-    """Replace both Syft calls, so no subprocess runs and no tool is required."""
-    monkeypatch.setattr(syft_runner, "scan", lambda app_dir: scan_result)
-    monkeypatch.setattr(syft_runner, "generator_version", lambda: STUB_GENERATOR_VERSION)
 
 
 def write_app(tmp_path: Path) -> Path:
@@ -43,49 +59,64 @@ def write_app(tmp_path: Path) -> Path:
     repo = tmp_path / APP_NAME
     repo.mkdir()
     (repo / "main.py").write_text(APP_SOURCE, encoding="utf-8")
-    (repo / "requirements.txt").write_text("langchain==0.3.25\n", encoding="utf-8")
+    (repo / PYPI_MANIFEST).write_text("langchain==0.3.25\n", encoding="utf-8")
     return repo
 
 
-def run_cli(monkeypatch, repo_path: Path, artifacts_dir: Path) -> int:
-    """Run the Phase 2 CLI once with the given repo and artifacts directory."""
-    argv = ["main.py", str(repo_path), "--artifacts-dir", str(artifacts_dir)]
-    monkeypatch.setattr(sys, "argv", argv)
-    return main()
-
-
-def test_writes_all_three_artifacts_and_exits_zero(monkeypatch, tmp_path) -> None:
+def test_writes_the_sbom_aibom_and_mapping_and_exits_zero(monkeypatch, tmp_path) -> None:
     """A successful run exits 0 and leaves sbom, aibom and mapping under <app>/."""
-    stub_syft(monkeypatch)
+    stub_syft(monkeypatch, STUB_GENERATOR_OUTPUT)
     repo = write_app(tmp_path)
     assert run_cli(monkeypatch, repo, tmp_path / "artifacts") == 0
     for name in ARTIFACT_NAMES:
         assert (tmp_path / "artifacts" / APP_NAME / name).is_file(), name
 
 
+def test_writes_five_artifacts_and_says_so(monkeypatch, tmp_path, capsys) -> None:
+    """Both bills land beside the other three, and the printed count agrees."""
+    stub_syft(monkeypatch, STUB_GENERATOR_OUTPUT)
+    assert run_cli(monkeypatch, write_app(tmp_path), tmp_path / "artifacts") == 0
+    written = sorted(p.name for p in (tmp_path / "artifacts" / APP_NAME).iterdir())
+    assert written == sorted(ALL_ARTIFACT_NAMES)
+    assert "wrote 5 artifacts" in capsys.readouterr().out
+
+
+def test_the_standard_format_bill_is_written_beside_the_project_one(monkeypatch, tmp_path) -> None:
+    """sbom.cyclonedx.json is what a reader feeds to other supply-chain tooling."""
+    stub_syft(monkeypatch, STUB_GENERATOR_OUTPUT)
+    run_cli(monkeypatch, write_app(tmp_path), tmp_path / "artifacts")
+    document = read_artifact(tmp_path / "artifacts", APP_NAME, CYCLONEDX_NAME)
+    assert [c["name"] for c in document["components"]] == ["langchain"]
+
+
+def test_dependency_artifacts_returns_both_bills_and_the_mapping(monkeypatch, tmp_path) -> None:
+    """The unit that builds them names all three files, so nothing is written by accident."""
+    stub_syft(monkeypatch, STUB_GENERATOR_OUTPUT)
+    built, _ = dependency_artifacts(write_app(tmp_path), [], PYPI)
+    assert sorted(built) == sorted((SBOM_NAME, CYCLONEDX_NAME, MAPPING_NAME))
+
+
 def test_every_written_artifact_parses_and_states_its_schema_version(monkeypatch, tmp_path) -> None:
-    """Each file is JSON carrying a schema_version, which is what a reader keys on."""
-    stub_syft(monkeypatch)
+    """Each file is JSON carrying its own schema_version, which is what a reader keys on."""
+    stub_syft(monkeypatch, STUB_GENERATOR_OUTPUT)
     run_cli(monkeypatch, write_app(tmp_path), tmp_path / "artifacts")
     for name in ARTIFACT_NAMES:
-        text = (tmp_path / "artifacts" / APP_NAME / name).read_text(encoding="utf-8")
-        assert json.loads(text)["schema_version"] == 1, name
+        document = read_artifact(tmp_path / "artifacts", APP_NAME, name)
+        assert document["schema_version"] == EXPECTED_SCHEMA_VERSIONS[name], name
 
 
 def test_the_sbom_records_the_stubbed_generator(monkeypatch, tmp_path) -> None:
     """What the generator reported reaches the artifact, so the stub is really used."""
-    stub_syft(monkeypatch)
+    stub_syft(monkeypatch, STUB_GENERATOR_OUTPUT)
     run_cli(monkeypatch, write_app(tmp_path), tmp_path / "artifacts")
-    document = json.loads(
-        (tmp_path / "artifacts" / APP_NAME / "sbom.json").read_text(encoding="utf-8")
-    )
+    document = read_artifact(tmp_path / "artifacts", APP_NAME, SBOM_NAME)
     assert document["generator_version"] == STUB_GENERATOR_VERSION
     assert [c["name"] for c in document["components"]] == ["langchain"]
 
 
 def test_run_returns_zero_when_called_directly(monkeypatch, tmp_path) -> None:
     """`run` is the unit that does the work; it reports success with 0, not None."""
-    stub_syft(monkeypatch)
+    stub_syft(monkeypatch, STUB_GENERATOR_OUTPUT)
     repo = write_app(tmp_path)
     args = build_parser().parse_args([str(repo), "--artifacts-dir", str(tmp_path / "out")])
     assert run(args) == 0
@@ -93,27 +124,29 @@ def test_run_returns_zero_when_called_directly(monkeypatch, tmp_path) -> None:
 
 def test_no_subprocess_is_started(monkeypatch, tmp_path) -> None:
     """With Syft stubbed the run is pure Python, so it works with no tool installed."""
-    def boom(*args, **kwargs):
+    def boom(*args, **kwargs) -> None:
+        """Fail the test rather than let a real process start."""
         raise AssertionError(f"the auditor started a subprocess: {args}")
 
-    stub_syft(monkeypatch)
+    stub_syft(monkeypatch, STUB_GENERATOR_OUTPUT)
     monkeypatch.setattr(subprocess, "run", boom)
     assert run_cli(monkeypatch, write_app(tmp_path), tmp_path / "artifacts") == 0
 
 
 def test_missing_repo_path_returns_one_with_a_message(monkeypatch, tmp_path, capsys) -> None:
     """A path that does not exist exits 1 with a message, not a traceback."""
-    stub_syft(monkeypatch)
+    stub_syft(monkeypatch, STUB_GENERATOR_OUTPUT)
     assert run_cli(monkeypatch, tmp_path / "no-such-app", tmp_path / "artifacts") == 1
     assert "does not exist" in capsys.readouterr().err
 
 
 def test_a_failing_generator_is_reported_not_raised(monkeypatch, tmp_path, capsys) -> None:
     """Syft missing or failing is an expected failure: exit 1 naming what went wrong."""
-    def refuse(app_dir):
+    def refuse(app_dir: Path) -> dict:
+        """Fail the scan the way a missing or broken generator does."""
         raise RuntimeError("syft is not installed")
 
-    stub_syft(monkeypatch)
+    stub_syft(monkeypatch, STUB_GENERATOR_OUTPUT)
     monkeypatch.setattr(syft_runner, "scan", refuse)
     assert run_cli(monkeypatch, write_app(tmp_path), tmp_path / "artifacts") == 1
     assert "syft is not installed" in capsys.readouterr().err

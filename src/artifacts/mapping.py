@@ -10,9 +10,16 @@ import builtins
 import json
 
 from artifacts.surface import Surface
-from deps.component_match import NOT_RESOLVED, is_stdlib, package_root, resolve
+from deps.package_names import base_purl
+from deps.component_match import (
+    NOT_RESOLVED,
+    ecosystem_of_language,
+    is_stdlib,
+    package_root,
+    resolve,
+)
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 THIRD_PARTY = "third_party"
 STDLIB = "stdlib"
@@ -48,11 +55,13 @@ def _classify_named(surface: Surface, components: dict, local: frozenset) -> tup
     if is_stdlib(root, surface.language):
         return STDLIB, "", NOT_RESOLVED
     name, how = resolve(surface.module, surface.language)
-    if name in components:
+    if not name:
+        return UNRESOLVED, "", NOT_RESOLVED
+    # The ecosystem has to match: a PyPI and an npm package can share a name
+    # and be unrelated software, so a cross-ecosystem hit is not a join.
+    if _component_key(surface, name) in components:
         return THIRD_PARTY, name, how
-    if name:
-        return USED_BUT_UNDECLARED, name, how
-    return UNRESOLVED, "", NOT_RESOLVED
+    return USED_BUT_UNDECLARED, name, how
 
 
 def _classify_unnamed(surface: Surface) -> tuple[str, str, str]:
@@ -70,23 +79,58 @@ def _classify_unnamed(surface: Surface) -> tuple[str, str, str]:
     return FIRST_PARTY, "", NOT_RESOLVED
 
 
+def _component_key(surface: Surface, name: str) -> tuple[str, str]:
+    """Return the (ecosystem, name) a surface's import must match to be a join."""
+    return (ecosystem_of_language(surface.language), name)
+
+
+def _join_purl(matched: list[dict]) -> str | None:
+    """Return the purl an advisory may be looked up on, dropping the version if it is ambiguous.
+
+    A surface's import cannot say which installed copy it loads: that needs the
+    lockfile's resolution tree and semver satisfaction, which this project does
+    not do. Naming one of several versions by sort order would put a guess in
+    the advisory join key -- the same failure `version_source` exists to stop,
+    reached by another route.
+    """
+    if not matched:
+        return None
+    if len(matched) == 1:
+        return matched[0]["purl"]
+    first = matched[0]
+    return base_purl(first["name"], first["ecosystem"])
+
+
 def _entry(surface: Surface, components: dict, local: frozenset) -> dict:
     """Build one mapping entry for one surface."""
     if surface.module:
         reason, name, how = _classify_named(surface, components, local)
     else:
         reason, name, how = _classify_unnamed(surface)
-    component = components.get(name) if reason == THIRD_PARTY else None
+    matched = components.get(_component_key(surface, name), []) if reason == THIRD_PARTY else []
     return {
         "surface_id": surface.id,
         "module": surface.module,
         "package_root": package_root(surface.module, surface.language) or None,
         "component_name": name or None,
-        "ecosystem": component["ecosystem"] if component else None,
-        "purl": component["purl"] if component else None,
+        "ecosystem": matched[0]["ecosystem"] if matched else None,
+        "purl": _join_purl(matched),
+        "component_version_count": len(matched),
         "reason": reason,
         "resolved_by": how,
     }
+
+
+def _components_by_key(sbom_document: dict) -> dict[tuple[str, str], list[dict]]:
+    """Group the SBOM's components by (ecosystem, name).
+
+    A list per key, not one record: a lockfile can hold the same package at
+    several versions, and a name-keyed dict would keep one and drop the rest.
+    """
+    grouped: dict[tuple[str, str], list[dict]] = {}
+    for component in sbom_document.get("components", []):
+        grouped.setdefault((component["ecosystem"], component["name"]), []).append(component)
+    return grouped
 
 
 def build_mapping(surfaces: list[Surface], sbom_document: dict,
@@ -97,7 +141,7 @@ def build_mapping(surfaces: list[Surface], sbom_document: dict,
     import of the app's own code is indistinguishable from a dependency it
     forgot to declare, which would be a false supply-chain finding.
     """
-    components = {c["name"]: c for c in sbom_document.get("components", [])}
+    components = _components_by_key(sbom_document)
     entries = sorted((_entry(s, components, local_modules) for s in surfaces),
                      key=lambda e: e["surface_id"])
     counts = {reason: 0 for reason in MAPPING_REASONS}

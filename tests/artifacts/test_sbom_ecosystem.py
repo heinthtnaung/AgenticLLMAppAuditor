@@ -5,7 +5,8 @@ packages, so a document that mixes them cannot be joined against safely.
 """
 
 import pytest
-from artifacts.sbom import ECOSYSTEMS, NPM, PYPI, build_sbom
+from artifacts.sbom import build_sbom
+from deps.package_names import ECOSYSTEMS, NPM, PYPI
 from dependency_fixtures import GENERATOR_NAME, GENERATOR_VERSION
 from deps.requirements_parser import MANIFEST_NAME
 
@@ -15,7 +16,8 @@ def build_declared(constraint: str, ecosystem: str = PYPI,
     """Build the SBOM component for one declared package in the given ecosystem."""
     manifests = [MANIFEST_NAME] if scanned_manifests is None else scanned_manifests
     document = build_sbom({}, {"widget": constraint}, GENERATOR_NAME,
-                          GENERATOR_VERSION, manifests, True, ecosystem)
+                          GENERATOR_VERSION, manifests,
+                          version_guessing_enabled=True, ecosystem=ecosystem)
     return document["components"][0]
 
 
@@ -46,13 +48,15 @@ def test_a_scanned_manifest_is_recorded_against_each_declared_package() -> None:
 def test_an_unknown_ecosystem_is_rejected() -> None:
     """A misspelled ecosystem must fail loudly, not produce unjoinable purls."""
     with pytest.raises(ValueError):
-        build_sbom({}, {}, GENERATOR_NAME, GENERATOR_VERSION, [], True, "maven")
+        build_sbom({}, {}, GENERATOR_NAME, GENERATOR_VERSION, [],
+                   version_guessing_enabled=True, ecosystem="maven")
 
 
 def test_the_ecosystem_error_names_the_allowed_values() -> None:
     """The message tells the reader what to write instead."""
     with pytest.raises(ValueError) as error:
-        build_sbom({}, {}, GENERATOR_NAME, GENERATOR_VERSION, [], True, "maven")
+        build_sbom({}, {}, GENERATOR_NAME, GENERATOR_VERSION, [],
+                   version_guessing_enabled=True, ecosystem="maven")
     message = str(error.value)
     assert "maven" in message
     for ecosystem in ECOSYSTEMS:
@@ -70,5 +74,10 @@ def test_npm_reaches_the_ecosystem_field() -> None:
 
 
 def test_npm_reaches_the_purl() -> None:
-    """The purl carries the ecosystem too, since that is what a lookup keys on."""
-    assert build_declared("==4.19.2", NPM)["purl"] == "pkg:npm/widget@4.19.2"
+    """The purl carries the ecosystem too, since that is what a lookup keys on.
+
+    npm spells an exact pin as a bare version; `==4.19.2` is PyPI syntax and
+    means nothing there, so it must not be read as a pin.
+    """
+    assert build_declared("4.19.2", NPM)["purl"] == "pkg:npm/widget@4.19.2"
+    assert build_declared("==4.19.2", NPM)["purl"] == "pkg:npm/widget"

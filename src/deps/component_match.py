@@ -10,7 +10,8 @@ dependencies and must not, so it would answer from the wrong machine.
 
 import sys
 
-from deps.requirements_parser import normalise_name
+from parsing.languages import JAVASCRIPT, PYTHON, TYPESCRIPT
+from deps.package_names import NPM, NPM_SCOPE_PREFIX, PYPI as PYPI_ECOSYSTEM, normalise_name
 
 # PyPI imports whose package is not simply the normalised import name. Small
 # and hand-checked; each entry is a fact about that ecosystem, not a guess.
@@ -32,9 +33,12 @@ BY_NORMALISED_NAME = "normalised_name"
 BY_ALIAS_TABLE = "alias_table"
 NOT_RESOLVED = "none"
 
-NPM_SCOPE_PREFIX = "@"
 NODE_PREFIX = "node:"
-PYTHON = "python"
+
+
+# A component in the other ecosystem is not a match however well the names line
+# up: a PyPI and an npm package can share a name and be unrelated software.
+ECOSYSTEM_BY_LANGUAGE = {PYTHON: PYPI_ECOSYSTEM, JAVASCRIPT: NPM, TYPESCRIPT: NPM}
 
 # Node's built-in modules. There is no `sys.stdlib_module_names` for
 # JavaScript, so the list is written out; without it every `fs` or `path`
@@ -46,6 +50,18 @@ NODE_BUILTINS = frozenset({
     "string_decoder", "timers", "tls", "url", "util", "v8", "vm", "worker_threads",
     "zlib",
 })
+
+
+def ecosystem_of_language(language: str) -> str:
+    """Return the ecosystem a language's imports resolve in, refusing one it has no rule for.
+
+    Loud rather than defaulting: a wrong ecosystem makes every join miss, and
+    each miss is reported as `used_but_undeclared` -- a fabricated supply-chain
+    finding, which is the failure this module exists to prevent.
+    """
+    if language not in ECOSYSTEM_BY_LANGUAGE:
+        raise ValueError(f"no packaging ecosystem known for language {language!r}")
+    return ECOSYSTEM_BY_LANGUAGE[language]
 
 
 def package_root(module: str, language: str) -> str:
@@ -79,4 +95,4 @@ def resolve(module: str, language: str) -> tuple[str, str]:
         return root, BY_NORMALISED_NAME
     if root in PYPI_IMPORT_NAME_EXCEPTIONS:
         return PYPI_IMPORT_NAME_EXCEPTIONS[root], BY_ALIAS_TABLE
-    return normalise_name(root), BY_NORMALISED_NAME
+    return normalise_name(root, PYPI_ECOSYSTEM), BY_NORMALISED_NAME

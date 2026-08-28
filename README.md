@@ -105,29 +105,38 @@ AUDITOR_MODEL=llama3.1:8b python src/main.py corpus/vuln-app-1-support-agent
 
 ## Usage
 
-### Downloading the app
+### Downloading the apps
 
-The audited app is a third-party project, so its source is **not** committed
-here — only what this project authored about it, in `corpus/evidence/`.
-Download it once:
+The audited apps are third-party projects, so their source is **not** committed
+here — only what this project authored about them, in `corpus/evidence/`.
+Download them once:
 
 ```sh
 git clone https://github.com/ReversecLabs/damn-vulnerable-llm-agent \
     corpus/vuln-app-1-support-agent
 git -C corpus/vuln-app-1-support-agent checkout -q c0cf9a14adad76e9d6a53c41741f625334bd9971
+
+git clone https://github.com/langchain-ai/langgraphjs-studio-starter \
+    corpus/oss-app-langgraphjs-starter
+git -C corpus/oss-app-langgraphjs-starter checkout -q cd9a02c64afd97fe008199665ebb0aac803451da
 ```
+
+The first app carries planted vulnerabilities and measures **recall**. The
+second is an official starter template with nothing planted in it, so it is the
+only fixture that can measure **false positives** — a detector that flags
+something here is wrong by construction.
 
 **Both lines matter.** Every line number in the grading key is recorded against
 commit `c0cf9a14`, which happens to be the default branch today — but the
 moment upstream commits anything, a plain `git clone` lands on different code.
 That drift is caught (the `code_anchor` test fails, naming the findings), but
-it is far easier to pin the commit than to debug the failure later. The same
-commit is recorded in
-`corpus/evidence/vuln-app-1-support-agent.manifest.json`.
+it is far easier to pin the commit than to debug the failure later. Each
+commit is recorded in that app's
+`corpus/evidence/<app>.manifest.json`.
 
-Optionally, `rm -rf corpus/vuln-app-1-support-agent/.git` afterwards. It saves
-1.5 MB and stops a later `git pull` silently moving you off the pin. Nothing
-depends on it: the auditor skips `.git` directories anyway.
+Optionally, `rm -rf corpus/*/.git` afterwards. It saves a few MB and stops a
+later `git pull` silently moving you off the pin. Nothing depends on it: the
+auditor skips `.git` directories anyway.
 
 Until you run this, the tests that need the app skip and say so; everything
 else runs.
@@ -147,6 +156,7 @@ It writes everything it can into `artifacts/<app>/` and makes no network call:
 | `surfaces.json` | nothing but the source |
 | `aibom.json` | the same — it is derived from the surfaces |
 | `sbom.json` | Syft, and a dependency manifest this project can read |
+| `sbom.cyclonedx.json` | the same scan, re-emitted in the standard format |
 | `mapping.json` | the SBOM, to join surfaces to components |
 
 Without Syft it writes the first two and says why the others were skipped,
@@ -170,12 +180,12 @@ docs/        plans, roadmap, and the artifact schemas
 artifacts/   generated JSON output (gitignored)
 ```
 
-The app under `corpus/` is a deliberately vulnerable third-party fixture,
-pinned to an upstream commit in `corpus/evidence/`. It is audited input, not a
-dependency: never install its requirements, and never "fix" its code. Its
-source is downloaded rather than committed, so this repository contains no
-other project's code. Phase 1 audits one app; more are added when the
-evaluation needs them.
+The apps under `corpus/` are third-party fixtures, one of them deliberately
+vulnerable, each pinned to an upstream commit in `corpus/evidence/`. They are
+audited input, not dependencies: never install their requirements, and never
+"fix" their code. Their source is downloaded rather than committed, so this
+repository contains no other project's code. One measures recall against
+planted findings; the other measures false positives on clean code.
 
 ### Adding an app to the corpus
 

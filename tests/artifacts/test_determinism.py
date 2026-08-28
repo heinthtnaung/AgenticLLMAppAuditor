@@ -9,9 +9,11 @@ import json
 
 from artifacts.aibom import aibom_to_json, build_aibom
 from artifacts.mapping import build_mapping, mapping_to_json
+from artifacts.cyclonedx import to_cyclonedx
 from artifacts.sbom import sbom_to_json
 from conftest import CORPUS_DIR, scan_to_json
 from dependency_fixtures import (
+    CORPUS_GENERATOR_OUTPUT,
     SUPPORT_AGENT,
     corpus_sbom,
     corpus_surfaces,
@@ -99,3 +101,15 @@ def test_every_artifact_ends_with_exactly_one_newline() -> None:
     """A stable trailing newline keeps the files diff-friendly."""
     for name, text in artifact_texts().items():
         assert text.endswith("\n") and not text.endswith("\n\n"), name
+
+
+def test_the_standard_bill_names_no_absolute_path() -> None:
+    """It must describe the app, not the machine that scanned it.
+
+    The generator emits a component for the manifest it read, named by its
+    absolute path. Left in, the file would only ever reproduce on one machine,
+    which defeats the point of publishing a standard format.
+    """
+    text = sbom_to_json(to_cyclonedx(dict(CORPUS_GENERATOR_OUTPUT)))
+    assert "/home/" not in text
+    assert not any(c in text for c in ("serialNumber", "timestamp"))

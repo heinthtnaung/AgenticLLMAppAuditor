@@ -10,13 +10,14 @@ from artifacts.sbom import (
     PINNED,
     UNCONSTRAINED,
     build_sbom,
-    pinned_version,
     purl_for,
 )
+from deps.package_names import PYPI, exact_version
 from dependency_fixtures import (
     CORPUS_DECLARED,
     GENERATOR_NAME,
     GENERATOR_VERSION,
+    PYPI_MANIFEST,
     corpus_sbom,
 )
 
@@ -30,7 +31,8 @@ def build_one(constraint: str, reported_version: str | None = None) -> dict:
     if reported_version is not None:
         components = [{"type": "library", "name": "widget", "version": reported_version}]
     document = build_sbom({"components": components}, {"widget": constraint},
-                          GENERATOR_NAME, GENERATOR_VERSION, ["requirements.txt"], True)
+                          GENERATOR_NAME, GENERATOR_VERSION, [PYPI_MANIFEST],
+                          version_guessing_enabled=True, ecosystem=PYPI)
     return document["components"][0]
 
 
@@ -77,24 +79,24 @@ def test_an_inferred_version_is_still_recorded_outside_the_purl() -> None:
     assert (langchain["version"], langchain["version_source"]) == ("0.3.25", INFERRED)
 
 
-def test_pinned_version_reads_an_exact_pin() -> None:
+def test_exact_version_reads_an_exact_pin() -> None:
     """`==1.2.3` names exactly one version, so that version is returned."""
-    assert pinned_version("==1.2.3") == "1.2.3"
+    assert exact_version("==1.2.3", PYPI) == "1.2.3"
 
 
-def test_pinned_version_refuses_a_wildcard_pin() -> None:
+def test_exact_version_refuses_a_wildcard_pin() -> None:
     """`==1.4.*` looks pinned but admits 1.4.99, so it names no version."""
-    assert pinned_version("==1.4.*") == ""
+    assert exact_version("==1.4.*", PYPI) == ""
 
 
-def test_pinned_version_refuses_several_constraints_at_once() -> None:
+def test_exact_version_refuses_several_constraints_at_once() -> None:
     """`==1.2.3,!=1.2.4` is a set of constraints, not a single version."""
-    assert pinned_version("==1.2.3,!=1.2.4") == ""
+    assert exact_version("==1.2.3,!=1.2.4", PYPI) == ""
 
 
-def test_pinned_version_refuses_an_empty_pin() -> None:
+def test_exact_version_refuses_an_empty_pin() -> None:
     """`==` with nothing after it names no version, and must not return `==`."""
-    assert pinned_version("==") == ""
+    assert exact_version("==", PYPI) == ""
 
 
 def test_a_wildcard_pin_alone_reaches_no_purl_version() -> None:
@@ -108,7 +110,7 @@ def test_a_wildcard_pin_never_reaches_a_purl_version() -> None:
     """A wildcard pin stays a range even when the generator reports a version.
 
     `==1.4.*` admits 1.4.99, so labelling it `pinned` and keying a purl on one
-    version contradicts `pinned_version`, which refuses the same string.
+    version contradicts `exact_version`, which refuses the same string.
     """
     component = build_one("==1.4.*", "1.4.99")
     assert component["version_source"] != PINNED

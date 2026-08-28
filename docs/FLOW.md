@@ -218,15 +218,15 @@ model is set up here so Phase 3 can start immediately.
 ## 5. Where the later phases attach
 
 Phase 2 is built. `python src/main.py <repo>` produces `sbom.json`,
-`aibom.json` and `mapping.json` beside the surfaces, joining each surface to
-the dependency it came from on the `module` field. Phases 3 and 4 are not
-built.
+`sbom.cyclonedx.json`, `aibom.json` and `mapping.json` beside the surfaces,
+joining each surface to the dependency it came from on the `module` field.
+Phases 3 and 4 are not built.
 
 ```mermaid
 flowchart TD
     P1[Phase 1<br/>surface extractor] --> SJ[(surfaces.json)]
     SJ --> P2[Phase 2<br/>SBOM / AIBOM + mapping]
-    P2 --> MJ[(sbom.json, aibom.json,<br/>mapping.json)]
+    P2 --> MJ[(sbom.json, sbom.cyclonedx.json,<br/>aibom.json, mapping.json)]
     SJ --> P3[Phase 3<br/>agentic auditor + probes]
     MJ --> P3
     P3 --> FJ[(findings.json)]
@@ -282,8 +282,11 @@ would notice.
 | `config.py` | settings, from the environment |
 | `model_client.py` | talk to the local model (Phase 3) |
 | `syft_runner.py` | run the SBOM generator: the only outside process |
-| `requirements_parser.py` | what the app says it depends on |
+| `requirements_parser.py` | what a Python app says it depends on |
+| `npm_manifest.py` | what a JavaScript app says it depends on |
+| `package_names.py` | each ecosystem's rules for names, pins and purls |
 | `sbom.py` | normalise that into a deterministic bill of materials |
+| `cyclonedx.py` | re-emit the same scan in the standard CycloneDX format |
 | `component_match.py` | which package an import came from |
 | `mapping.py` | join each surface to its component, or say why not |
 | `aibom.py` | the models, tools and agents, from the surfaces |

@@ -8,10 +8,10 @@ from pathlib import Path
 
 from conftest import app_path, require_corpus
 from dependency_fixtures import CORPUS_DECLARED, SUPPORT_AGENT
+from deps.package_names import PYPI, normalise_name
 from deps.requirements_parser import (
     MANIFEST_NAME,
     manifests_present,
-    normalise_name,
     parse_line,
     read_requirements,
 )
@@ -71,13 +71,13 @@ def test_direct_url_requirement_is_skipped() -> None:
 
 def test_normalise_name_lowercases() -> None:
     """PEP 503 names are lowercase, so `PyYAML` and `pyyaml` are one package."""
-    assert normalise_name("PyYAML") == "pyyaml"
+    assert normalise_name("PyYAML", PYPI) == "pyyaml"
 
 
 def test_normalise_name_collapses_separators() -> None:
     """Underscores and dots become hyphens, so the import name joins the manifest name."""
-    assert normalise_name("langchain_litellm") == "langchain-litellm"
-    assert normalise_name("ruamel.yaml") == "ruamel-yaml"
+    assert normalise_name("langchain_litellm", PYPI) == "langchain-litellm"
+    assert normalise_name("ruamel.yaml", PYPI) == "ruamel-yaml"
 
 
 def test_parsed_names_are_normalised() -> None:

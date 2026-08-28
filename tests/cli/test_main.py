@@ -2,12 +2,12 @@
 
 import json
 import subprocess
-import sys
 
 import pytest
 
+from cli_helpers import run_cli
 from conftest import CORPUS_DIR, require_corpus
-from main import SURFACES_NAME, main
+from main import SURFACES_NAME
 from artifacts.surface import SCHEMA_VERSION, SURFACE_KINDS
 from artifacts.skipped_file import UNPARSEABLE_SYNTAX
 from unreadable_fixtures import (
@@ -21,12 +21,6 @@ from unreadable_fixtures import (
 )
 
 APP = "vuln-app-1-support-agent"
-
-def run_cli(monkeypatch: pytest.MonkeyPatch, repo_path, artifacts_dir) -> int:
-    """Run the CLI once with the given repo and artifacts directory."""
-    monkeypatch.setattr(sys, "argv", ["main.py", str(repo_path), "--artifacts-dir", str(artifacts_dir)])
-    return main()
-
 
 # The synthetic apps: one whose files cannot all be read, one that reads cleanly.
 MIXED_APP = "mixed-app"

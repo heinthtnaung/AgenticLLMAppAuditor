@@ -13,9 +13,10 @@ from conftest import (
     discover_corpus_apps,
 )
 
-# The fixture that must be present under corpus/. Phase 1 audits one app
-# offline; more are added when the evaluation needs them.
-EXPECTED_CORPUS_APPS = ("vuln-app-1-support-agent",)
+# The fixtures that must be present under corpus/, in discovery order. One
+# carries planted vulnerabilities and measures recall; the other is a clean
+# upstream starter and is the only one that can measure false positives.
+EXPECTED_CORPUS_APPS = ("oss-app-langgraphjs-starter", "vuln-app-1-support-agent")
 
 
 def make_app(corpus_dir: Path, name: str) -> Path:
@@ -30,7 +31,7 @@ def make_app(corpus_dir: Path, name: str) -> Path:
 
 
 def test_finds_every_real_corpus_app() -> None:
-    """Against the real corpus, discovery returns exactly the three audited fixtures."""
+    """Against the real corpus, discovery returns exactly the audited fixtures."""
     assert discover_corpus_apps() == EXPECTED_CORPUS_APPS
 
 

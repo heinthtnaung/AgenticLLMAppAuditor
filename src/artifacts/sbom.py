@@ -7,51 +7,48 @@ random identifier, a timestamp and absolute paths, so two runs would differ.
 
 import json
 
-from deps.requirements_parser import normalise_name
+from deps.package_names import (
+    LOCKFILE_NAMES,
+    base_purl,
+    check_ecosystem,
+    exact_version,
+    normalise_name,
+)
 
-SCHEMA_VERSION = 1
-
-PYPI = "pypi"
-NPM = "npm"
-ECOSYSTEMS = (PYPI, NPM)
+SCHEMA_VERSION = 2
 
 # How a component's version was arrived at. Never read `version` without it.
 PINNED = "pinned"
+LOCKED = "locked"
 INFERRED = "inferred"
 UNCONSTRAINED = "unconstrained"
 UNKNOWN = "unknown"
-VERSION_SOURCES = (PINNED, INFERRED, UNCONSTRAINED, UNKNOWN)
+VERSION_SOURCES = (PINNED, LOCKED, INFERRED, UNCONSTRAINED, UNKNOWN)
 
-EXACT_PIN = "=="
+# The two sources whose version is a fact rather than a guess, so only these
+# may reach a purl. See docs/SCHEMAS.md for why the distinction is structural.
+EXACT_SOURCES = (PINNED, LOCKED)
+
 LIBRARY = "library"
 
-# A pin containing either of these is a range, not a version: `==1.4.*` admits
-# 1.4.99, and a comma joins several constraints.
-RANGE_MARKERS = ("*", ",")
 
-
-def pinned_version(constraint: str) -> str:
-    """Return the version an exact pin names, or "" if the pin is really a range.
-
-    `==1.4.*` looks pinned but admits 1.4.99, so treating it as a version would
-    put a range in the purl and let an advisory lookup claim a vulnerability the
-    app may not have.
-    """
-    text = constraint[len(EXACT_PIN):].strip()
-    if not text or any(marker in text for marker in RANGE_MARKERS):
-        return ""
-    return text
-
-
-def version_source_of(constraint: str, version: str | None) -> str:
+def version_source_of(constraint: str, version: str | None, ecosystem: str,
+                      from_lockfile: bool = False) -> str:
     """Say how much a version can be trusted, given the constraint that produced it.
 
-    An `==` that pinned_version refuses -- `==1.4.*`, `==1.2.3,!=1.2.4` -- is a
-    range wearing a pin's syntax, so it must not report as pinned here either.
-    The two functions have to agree, or a range reaches the purl.
+    A constraint wearing a pin's syntax without pinning -- `==1.4.*`,
+    `==1.2.3,!=1.2.4` -- must not report as pinned here either, or a range
+    reaches the purl. `exact_version` owns that judgement for both ecosystems.
+
+    `from_lockfile` is what the caller read, never which ecosystem it is. Keying
+    it on the ecosystem would mislabel a Python app shipping a poetry.lock;
+    keying it on "the generator reported something" would relabel every guessed
+    version as a fact, which is the one outcome this vocabulary exists to stop.
     """
-    if constraint.startswith(EXACT_PIN) and pinned_version(constraint):
+    if exact_version(constraint, ecosystem):
         return PINNED
+    if from_lockfile and version:
+        return LOCKED
     if not constraint:
         return UNCONSTRAINED
     return INFERRED if version else UNKNOWN
@@ -63,12 +60,13 @@ def purl_for(name: str, ecosystem: str, version: str | None, source: str) -> str
     A range like ~=0.3.25 admits 0.3.99, so a purl built from a guess would let
     any purl-keyed advisory lookup claim a vulnerability the app may not have.
     """
-    base = f"pkg:{ecosystem}/{name}"
-    return f"{base}@{version}" if source == PINNED and version else base
+    base = base_purl(name, ecosystem)
+    return f"{base}@{version}" if source in EXACT_SOURCES and version else base
 
 
 def _component(name: str, constraint: str | None, declared: bool, version: str | None,
-               declared_in: str | None, tool_reported: bool, ecosystem: str = PYPI) -> dict:
+               declared_in: str | None, tool_reported: bool, ecosystem: str,
+               from_lockfile: bool = False) -> dict:
     """Build one component record.
 
     An exact pin is taken from the manifest, not from the generator. The
@@ -81,16 +79,15 @@ def _component(name: str, constraint: str | None, declared: bool, version: str |
     manifest whose path was not recorded, and reporting that as undeclared
     would invent a supply-chain finding.
     """
+    check_ecosystem(ecosystem)
     text = constraint or ""
-    exact = pinned_version(text) if text.startswith(EXACT_PIN) else ""
+    exact = exact_version(text, ecosystem)
     version = exact or version
-    source = PINNED if exact else version_source_of(text, version)
-    if source == PINNED and not version:
-        source = UNKNOWN
+    source = version_source_of(text, version, ecosystem, from_lockfile)
     return {
         "name": name,
         "ecosystem": ecosystem,
-        "version": version if source in (PINNED, INFERRED) else None,
+        "version": version if source in (*EXACT_SOURCES, INFERRED) else None,
         "version_source": source,
         "version_constraint": constraint or None,
         "purl": purl_for(name, ecosystem, version, source),
@@ -100,34 +97,56 @@ def _component(name: str, constraint: str | None, declared: bool, version: str |
     }
 
 
-def _reported_versions(generator_output: dict) -> dict[str, str]:
-    """Map each library the generator reported to the version it gave it."""
-    return {
-        normalise_name(c["name"]): c.get("version")
-        for c in generator_output.get("components", [])
-        if c.get("type") == LIBRARY and c.get("name")
-    }
+def _reported_versions(generator_output: dict, ecosystem: str) -> dict[str, list[str | None]]:
+    """Map each library the generator reported to every version it reported for it.
+
+    A list, not one version: a lockfile legitimately holds one package at
+    several versions -- this project's own JS fixture has `langsmith` at three
+    -- and keying by name alone would keep the last and silently drop the rest.
+    """
+    found: dict[str, list[str | None]] = {}
+    for component in generator_output.get("components", []):
+        if component.get("type") != LIBRARY or not component.get("name"):
+            continue
+        found.setdefault(normalise_name(component["name"], ecosystem), []).append(
+            component.get("version"))
+    return {name: sorted(versions, key=lambda v: v or "") for name, versions in found.items()}
+
+
+def _declaring_manifest(scanned_manifests: list[str]) -> str | None:
+    """Return the manifest that declares dependencies, as opposed to a lockfile that pins them.
+
+    Derived rather than passed in, so it can never disagree with
+    `scanned_manifests`. One document holds one ecosystem, so at most one
+    manifest declares; more than one is not supported yet.
+    """
+    declaring = sorted(m for m in scanned_manifests if m not in LOCKFILE_NAMES)
+    if len(declaring) > 1:
+        raise ValueError(f"expected one declaring manifest, got {declaring}")
+    return declaring[0] if declaring else None
 
 
 def build_sbom(generator_output: dict, declared: dict[str, str],
                generator_name: str, generator_version: str,
                scanned_manifests: list[str], version_guessing_enabled: bool,
-               ecosystem: str = PYPI) -> dict:
+               ecosystem: str) -> dict:
     """Return the SBOM: every declared package, plus anything the generator found.
 
-    One ecosystem per call. Only Python manifests are read today; an npm app
-    needs its own manifest reader before its components could be labelled
-    correctly, and mislabelling them would break every join downstream.
+    One ecosystem per call, and one record per (name, version) rather than per
+    name -- a lockfile can hold the same package at several versions, and each
+    installed copy is its own supply-chain fact.
     """
-    if ecosystem not in ECOSYSTEMS:
-        raise ValueError(f"unknown ecosystem {ecosystem!r}; expected one of {ECOSYSTEMS}")
-    reported = _reported_versions(generator_output)
-    manifest = scanned_manifests[0] if scanned_manifests else None
+    check_ecosystem(ecosystem)
+    reported = _reported_versions(generator_output, ecosystem)
+    manifest = _declaring_manifest(scanned_manifests)
+    from_lockfile = any(name in LOCKFILE_NAMES for name in scanned_manifests)
     components = [
-        _component(name, declared.get(name), name in declared, reported.get(name),
-                   manifest if name in declared else None,
-                   name in reported, ecosystem)
+        _component(name, declared.get(name), declared=name in declared, version=version,
+                   declared_in=manifest if name in declared else None,
+                   tool_reported=name in reported, ecosystem=ecosystem,
+                   from_lockfile=from_lockfile)
         for name in sorted(set(declared) | set(reported))
+        for version in reported.get(name) or [None]
     ]
     return {
         "schema_version": SCHEMA_VERSION,

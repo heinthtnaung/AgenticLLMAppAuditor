@@ -12,14 +12,15 @@ import sys
 from pathlib import Path
 
 from artifacts.aibom import aibom_to_json, build_aibom
+from artifacts.cyclonedx import to_cyclonedx
 from artifacts.mapping import build_mapping, mapping_to_json
 from artifacts.sbom import build_sbom, sbom_to_json
 from artifacts.skipped_file import SkippedFile
-from artifacts.surface import surfaces_to_json
-from deps import syft_runner
+from artifacts.surface import Surface, surfaces_to_json
+from deps import npm_manifest, syft_runner
+from deps.package_names import NPM, PYPI
 from deps.requirements_parser import (
-    NPM_MANIFEST_NAME,
-    has_npm_manifest,
+    MANIFEST_NAME as PYPI_MANIFEST_NAME,
     manifests_present,
     read_requirements,
 )
@@ -31,7 +32,16 @@ DEFAULT_ARTIFACTS_DIR = Path("artifacts")
 SURFACES_NAME = "surfaces.json"
 AIBOM_NAME = "aibom.json"
 SBOM_NAME = "sbom.json"
+CYCLONEDX_NAME = "sbom.cyclonedx.json"
 MAPPING_NAME = "mapping.json"
+
+# Naming both files, not just both ecosystems: the reader has to know which two
+# manifests to look at to understand why no bill was produced.
+MIXED_MANIFEST_REASON = (
+    f"both a Python ({PYPI_MANIFEST_NAME}) and an npm ({npm_manifest.MANIFEST_NAME}) "
+    "manifest are present, which is not read yet"
+)
+
 
 # Conditions the user can fix, reported as a message rather than a traceback.
 EXPECTED_FAILURES = (FileNotFoundError, NotADirectoryError, ValueError, RuntimeError)
@@ -48,26 +58,57 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def declared_ecosystems(app_dir: Path) -> list[str]:
+    """Return every packaging ecosystem this app declares, in a stable order."""
+    found = [PYPI] if manifests_present(app_dir) else []
+    return found + ([NPM] if npm_manifest.has_manifest(app_dir) else [])
+
+
 def dependencies_readable(app_dir: Path) -> tuple[bool, str]:
-    """Say whether this repository's dependencies can be read, and why not if they cannot."""
+    """Say whether this repository's dependencies can be read, and why not if they cannot.
+
+    A repository declaring two is refused rather than half-read. One SBOM holds
+    one ecosystem, so reporting only the Python half would understate the tree
+    while looking complete.
+    """
     if not syft_runner.is_available():
         return False, f"{syft_runner.GENERATOR_NAME} is not installed"
-    if manifests_present(app_dir):
-        return True, ""
-    if has_npm_manifest(app_dir):
-        return False, f"dependencies are declared in {NPM_MANIFEST_NAME}, which is not read yet"
-    return False, "no dependency manifest found"
+    ecosystems = declared_ecosystems(app_dir)
+    if len(ecosystems) > 1:
+        return False, MIXED_MANIFEST_REASON
+    if not ecosystems:
+        return False, "no dependency manifest found"
+    return True, ""
 
 
-def dependency_artifacts(app_dir: Path, surfaces: list) -> tuple[dict[str, str], dict]:
-    """Build the bill of materials and the surface-to-component mapping."""
+def _declarations(app_dir: Path, ecosystem: str) -> tuple[dict[str, str], list[str]]:
+    """Return what the app declares and which manifests said so, for one ecosystem."""
+    if ecosystem == PYPI:
+        return read_requirements(app_dir), manifests_present(app_dir)
+    return npm_manifest.read_manifest(app_dir), npm_manifest.manifests_present(app_dir)
+
+
+def dependency_artifacts(app_dir: Path, surfaces: list[Surface],
+                         ecosystem: str) -> tuple[dict[str, str], dict]:
+    """Build the bill of materials and the surface-to-component mapping.
+
+    Two bills are written. sbom.json is the contract the later phases read;
+    sbom.cyclonedx.json is the same scan in a standard format, so the result
+    can be fed to other supply-chain tooling and checked independently.
+    """
+    scanned = syft_runner.scan(app_dir)
+    declared, present = _declarations(app_dir, ecosystem)
     document = build_sbom(
-        syft_runner.scan(app_dir), read_requirements(app_dir),
+        scanned, declared,
         syft_runner.GENERATOR_NAME, syft_runner.generator_version(),
-        manifests_present(app_dir), syft_runner.GUESS_UNPINNED,
+        present, syft_runner.GUESS_UNPINNED, ecosystem,
     )
     mapped = build_mapping(surfaces, document, local_module_names(str(app_dir)))
-    return {SBOM_NAME: sbom_to_json(document), MAPPING_NAME: mapping_to_json(mapped)}, mapped
+    return {
+        SBOM_NAME: sbom_to_json(document),
+        CYCLONEDX_NAME: sbom_to_json(to_cyclonedx(scanned)),
+        MAPPING_NAME: mapping_to_json(mapped),
+    }, mapped
 
 
 def report_skipped_files(skipped: list[SkippedFile]) -> None:
@@ -106,7 +147,8 @@ def run(args: argparse.Namespace) -> int:
     readable, no_bill_reason = dependencies_readable(app_dir)
     mapping_document = None
     if readable:
-        built, mapping_document = dependency_artifacts(app_dir, scan.surfaces)
+        built, mapping_document = dependency_artifacts(
+            app_dir, scan.surfaces, declared_ecosystems(app_dir)[0])
         documents.update(built)
 
     out = args.artifacts_dir / app_dir.resolve().name
