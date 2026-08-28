@@ -19,9 +19,16 @@ Tan Bing Hong.
 
 ## Status
 
-**Phase 2: SBOM/AIBOM and surface-to-component mapping.** Static analysis only.
-LLM-driven detection and sandboxed probing are Phase 3, and the local model
-client is set up but not yet used to detect anything.
+**Phase 4: evaluation.** Static analysis only, and the auditor never runs the
+app it audits.
+
+Phase 3 is committed: three checks run over one app under a bounded LangGraph
+planner, writing `findings.json` and a `report.md` that gives what was *not*
+examined the same billing as what was found. The local model client is set up
+but still writes nothing -- every run records `model_run.status: "disabled"`.
+Phase 4's scorer grades those findings against the hand-written keys and
+produces counts, never rates; what is open there is a command to run it from
+and the two baselines to compare against.
 
 Phase 1 is complete: the extractor finds prompt templates, agent definitions,
 tool definitions and data-source sites, and records where each one lives.
@@ -186,10 +193,12 @@ It writes everything it can into `artifacts/<app>/` and makes no network call:
 | `sbom.json` | Syft, plus a `requirements.txt` (Python) or a `package.json` (npm) |
 | `sbom.cyclonedx.json` | the same scan, re-emitted in the standard format |
 | `mapping.json` | the SBOM, to join each surface to the package it came from |
+| `findings.json` | the surfaces, and the mapping for the supply-chain check. Records which risk classes were examined, so silence is never read as a clean result |
+| `report.md` | the two files above, rendered for a person. Not a contract: nothing consumes it |
 
 Producing less is a normal outcome, not a failure. Without Syft, or with no
-manifest it knows how to read, it writes the first two and says on stderr why
-the rest were skipped. A repository declaring **both** a Python and an npm
+manifest it knows how to read, it writes what it can and says on stderr why the
+rest were skipped. A repository declaring **both** a Python and an npm
 manifest is refused a bill rather than given half of one.
 
 Run the tests with:
@@ -206,7 +215,10 @@ src/         the auditor's source code, one responsibility per module
   detectors/ find the four kinds of LLM surface in a tree
   artifacts/ the JSON documents each run produces, and their shapes
   deps/      read an app's dependencies, and match imports to packages
-  main.py    the single entry point; model_client.py talks to Ollama
+  checks/    the security checks, and the LangGraph planner that runs them
+  evaluation/ score the findings against a grading key; the one join rule
+  main.py    the single entry point; report.py renders the human report
+  model_client.py talks to Ollama
   config.py  settings from the environment; corpus_paths.py locates fixtures
 corpus/
   <app>/     the audited app, downloaded not committed (see Usage)
@@ -253,6 +265,7 @@ leaves the app **silently ungraded**, so the layout matters.
 - [`docs/TODO.md`](docs/TODO.md) — roadmap, current progress, open blockers
 - [`docs/PHASE_1_PLAN.md`](docs/PHASE_1_PLAN.md) — Phase 1 task breakdown
 - [`docs/PHASE_2_PLAN.md`](docs/PHASE_2_PLAN.md) — Phase 2 task breakdown
+- [`docs/PHASE_3_PLAN.md`](docs/PHASE_3_PLAN.md) — Phase 3 task breakdown
 - [`docs/SCHEMAS.md`](docs/SCHEMAS.md) — the JSON contracts between phases
 
 ## Licence

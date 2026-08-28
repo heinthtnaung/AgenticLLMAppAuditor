@@ -2,22 +2,20 @@
 
 `SCHEMAS.md` states the rule, so no scorer ever has to parse an id: `file` and
 `owasp_id` equal, `line` inside `[line, (line_end or line) + LINE_TOLERANCE]`,
-and `surface_kind` / `surface_name` equal where the key names them. This is the
-test that shows the phase is gradeable at all -- without it, "one finding" is a
-number with nothing on the other side of it.
+and `surface_kind` / `surface_name` equal where the key names them. The rule
+itself lives in `evaluation/grading.py` and is imported here, so this file
+certifies the join the Phase 4 scorer really runs rather than a copy of it.
+This is the test that shows the phase is gradeable at all -- without it, "one
+finding" is a number with nothing on the other side of it.
 """
 
 from artifacts.finding import DETECTIONS
+from evaluation.grading import LINE_TOLERANCE, matches_key
 from checks.supply_chain import CHECK_NAME as SUPPLY_CHAIN_CHECK
 from checks.taint import CHECK_NAME as TAINT_CHECK
 from conftest import ground_truth
 from dependency_fixtures import LANGGRAPHJS_STARTER, SUPPORT_AGENT, corpus_sbom, js_sbom
 from findings_fixtures import corpus_findings
-
-# A key entry's line may point at any line of a multi-line construct, and a
-# detector may legitimately anchor a few lines below it. Same value as the
-# surface rule in tests/corpus/test_extractor_expected.py.
-LINE_TOLERANCE = 3
 
 # The two key entries this phase answers today: the undeclared dependency the
 # mapping found, and the untrusted input the trace followed to the agent.
@@ -30,28 +28,9 @@ GRADED_LLM01 = "VULN1-03"
 UNANSWERED = {"VULN1-01", "VULN1-02", "VULN1-04", "VULN1-05"}
 
 
-def line_window(key_entry: dict) -> tuple[int, int]:
-    """Return the line range a produced finding must fall in to match a key entry."""
-    last_line = key_entry.get("line_end") or key_entry["line"]
-    return key_entry["line"], last_line + LINE_TOLERANCE
-
-
-def matches(finding: dict, key_entry: dict) -> bool:
-    """Say whether one produced finding answers one grading-key entry."""
-    low, high = line_window(key_entry)
-    if (finding["file"], finding["owasp_id"]) != (key_entry["file"], key_entry["owasp_id"]):
-        return False
-    if finding["line"] is None or not low <= finding["line"] <= high:
-        return False
-    if key_entry["llm_surface"] and finding["surface_kind"] != key_entry["llm_surface"]:
-        return False
-    return not key_entry.get("surface_name") or (
-        finding["surface_name"] == key_entry["surface_name"])
-
-
 def matched_key_ids(finding: dict, app: str) -> set[str]:
     """Return the ids of every key entry a produced finding matches."""
-    return {entry["id"] for entry in ground_truth(app)["findings"] if matches(finding, entry)}
+    return {entry["id"] for entry in ground_truth(app)["findings"] if matches_key(finding, entry)}
 
 
 def support_agent_findings() -> list[dict]:

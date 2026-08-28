@@ -378,9 +378,36 @@ done-criteria.
 
 ## Phase 4 — Evaluation & write-up
 
-- [ ] Build the evaluation harness/scorer (reads `ground_truth.json`, computes
-      TP/FP/FN → precision/recall/F1 per app + aggregated)
-- [ ] Implement baselines: simple static rules and SBOM-only scan
+See `docs/PHASE_4_PLAN.md` for the task breakdown -- **not yet written**, see
+the first item below.
+
+- [ ] Write `docs/PHASE_4_PLAN.md`. Every earlier phase got its plan before its
+      code and this one did not: the scorer was built first. Writing it now
+      would be a retrofit of what already exists, so the honest gate is the
+      baselines -- plan them before building them, and record in the plan that
+      the scorer preceded it
+- [x] Build the evaluation harness/scorer (`src/evaluation/`). Reads each
+      app's `ground_truth.json`, `findings.json` and `surfaces.json`, joins
+      them on the one rule in `src/evaluation/grading.py`, and builds
+      `artifacts/evaluation.json`: TP/FN per app and pooled, with every miss
+      attributed to a reason rather than left as a bare count. The join rule
+      lives in source because three test files had grown three different line
+      windows for it, and a scorer built on a fourth would measure something
+      the suite does not certify
+- [x] **No rate is a field, and F1 is refused outright.** `precision`,
+      `recall` and `f1` appear nowhere in `evaluation.json`; a reader cannot
+      copy a percentage out of it without dividing, and to divide they must
+      hold the denominator. `false_positives` is `null` -- never `0` -- when
+      the key's `findings_complete` is false, because the count is undefined
+      there. Neither corpus app supports both precision and recall today, so
+      no single app yields an unqualified pair
+- [ ] Give the harness a command to run from. `write_evaluation` exists and is
+      tested, but nothing invokes it: `main.py` audits one app, while
+      `evaluation.json` covers a whole run, so it needs its own entry point
+      rather than a hook in the per-app CLI. Until then the artifact is
+      produced only from tests
+- [ ] Implement baselines: simple static rules and SBOM-only scan, and score
+      them through the same harness
 - [ ] Report which framework names the corpus actually exercises. **Moved out
       of Phase 2:** the fix is fixtures, not detector code, and the number is
       an evaluation result. Measured today: the JS tables hold **57** names
@@ -434,3 +461,14 @@ resolved; do not tick the task above until its blocker is gone.
       `CODING_RULES.md` (the binding standard, tracked so the whole team and
       an examiner get it), `FLOW.md` (how the system works), `SCHEMAS.md`
       (the JSON contracts between phases)
+- [ ] **`docs/report.docx` is stale and it is the tracked one.** Built
+      2026-08-23, it still says Phases 2 to 4 are unimplemented, the grading
+      key is unverified, and the suite is 236 tests -- none of which is true
+      at this commit. Its source, `docs/REPORT.md`, is **gitignored**, so an
+      examiner reads only the binary and no correction to the Markdown reaches
+      the repository. Two things to decide: rebuild the docx from a corrected
+      `REPORT.md` (needs `python-docx` in a throwaway env, see
+      `docs/build_report.py`), and settle whether the Markdown should be
+      tracked and the binary dropped -- a diffable source is worth more to a
+      reviewer than a Word file, which is the reason `build_report.py` gives
+      for the split in the first place

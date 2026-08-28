@@ -37,6 +37,7 @@ artifact directory name, `ground_truth.app`, and `manifest.name`.
 | Phase 2 output | `artifacts/<app>/mapping.json` | `src/main.py` |
 | Phase 3 output | `artifacts/<app>/findings.json` | `src/main.py` |
 | Phase 3 output | `artifacts/<app>/report.md` | `src/report.py` — **not JSON and not a contract.** A rendering of the two files above for a person to read; nothing consumes it, and nothing may join on it. It is listed here so a reader of this file does not find an artifact it never mentions. |
+| Phase 4 output | `artifacts/evaluation.json` | `src/evaluation/harness.py` — one file for the whole run, not one per app. **No command produces it yet**: `write_evaluation` is written and tested, but `main.py` audits a single app and this artifact spans a run, so it needs its own entry point. |
 
 **`schema_version` is per file.** Each artifact versions independently; that
 `surfaces.json` and `sbom.json` are at 3 and `mapping.json` at 2, while a new
@@ -481,8 +482,11 @@ Each entry in `findings`:
 **Matching rule for Task 1.7 and the Phase 4 scorer:** a finding matches a
 surface when the `file` is equal, the `llm_surface` kind is equal, and the
 surface's line falls within `[line, (line_end or line) + LINE_TOLERANCE]` with
-`LINE_TOLERANCE = 3`. Exact line equality is wrong here: a detector may
-legitimately report a decorator line where a human noted the `def`.
+`LINE_TOLERANCE = 3`. Exact line equality is wrong here: a human anchors the construct's first line, while a detector may report a few lines into it --
+the call inside a multi-line expression, or the `def` under a decorator the
+human anchored. Note the window is **not symmetric**: it opens at the key's
+line and runs downward, so a finding above the anchor is a different construct
+and is never credited to that entry.
 
 The same rule states the **`findings.json` join**, so Phase 4 never has to guess
 or parse an id: a produced finding matches a key entry when `file` and
@@ -653,7 +657,83 @@ copy-paste from crossing the no-auto-fixing boundary.
 
 ---
 
+## `artifacts/evaluation.json` — Phase 4 output
+
+What the tool scored against the grading keys. One file for the whole run, not
+one per app: a comparison across apps is not a per-app fact, and separating the
+scorecards from the aggregate is how a per-app number gets quoted without the
+aggregate's caveats.
+
+**No field in this file is a float.** Precision, recall and F1 are absent as
+fields, and that is the point: a reader cannot copy a percentage out of it. They
+have to divide, and to divide they must hold the denominator. The rates are for
+a reader to compute from these counts, beside the `qualifications` that bound
+them; nothing in the tool prints a rate.
+
+| Field | Type | Required | Meaning |
+|---|---|---|---|
+| `schema_version` | int | yes | Currently `1`. |
+| `system` | str | yes | `agentic_auditor`, `baseline_static_rules` or `baseline_sbom_only`. Inside the record, not only in the filename, so a table row copied into a write-up carries its own label. |
+| `app_count` | int | yes | `len(apps)`. |
+| `apps` | list | yes | Sorted by `app`. |
+| `totals` | object | yes | Pooled counts, never a mean. |
+
+Each `apps` entry:
+
+| Field | Type | Required | Meaning |
+|---|---|---|---|
+| `app` | str | yes | The directory name, which is the join key. |
+| `upstream_commit` | str | yes | Copied from the key. The join is line-based, and every line is valid only against this commit. |
+| `key_source`, `key_verified`, `key_verified_by`, `key_verified_date` | | yes | Copied from the key. A score whose provenance is not in the same file is a score quoted without it. |
+| `ground_truth_schema_version`, `findings_schema_version` | int | yes | The versions actually read — what invalidates the score, in place of a timestamp that would break byte-identity. |
+| `key_finding_count`, `produced_finding_count` | int | yes | The denominators. |
+| `findings_complete`, `expected_surfaces_complete` | bool | yes | Copied from the key, so the gating below is checkable from this file alone. |
+| `graded_files_skipped` | list[str] | yes | Skipped files that intersect the key's files, sorted. `[]` is a falsifiable claim; absence would not be. |
+| `true_positives`, `false_negatives` | int | yes | Key entries matched, and not. |
+| `false_positives` | int \| null | yes | **`null` when `findings_complete` is false** — the count is undefined there, and `0` would be a lie. |
+| `matched_key_ids` | list[str] | yes | Sorted. |
+| `unmatched_finding_ids` | list[str] | yes | Sorted. Deliberately not called false positives: the name must not assert what `findings_complete: false` forbids. |
+| `misses` | list | yes | One per unmatched key entry: `key_id`, `owasp_id`, `reason`, and `probe_reason` when a probe gave up on it. |
+| `recall_reportable`, `precision_reportable` | bool | yes | Gated by the completeness flags, not qualified by them. |
+| `qualifications` | list[str] | yes | Sorted, fixed vocabulary, listed in full below. `unresolved_components` is present when `findings.json`'s `coverage.unresolved_component_count` is non-zero: surfaces the supply-chain check had no component to examine bound an LLM03 number the same way `advisory_data_not_ingested` does. |
+
+The ten `qualifications`, each of which bounds a number rather than describing
+a fault: `advisory_data_not_ingested`, `expected_surfaces_not_complete`,
+`findings_not_complete`, `key_ai_drafted`, `key_unverified`, `model_disabled`,
+`no_key_findings`, `scan_partial`, `small_sample`, `unresolved_components`.
+A number quoted without the ones attached to it is quoted too widely.
+
+A miss `reason` is one of `no_check_for_risk_class`, `checked_and_silent`,
+`probe_unresolved`, `surface_not_extracted`, `file_skipped` — every one derived
+from the artifacts, never from a list of app-specific exceptions. That is what
+stops the scorer becoming a place to tune the tool against its own answer key.
+
+### What the scorer refuses
+
+It never reads a `baseline.json`, never matches on `detection`, never widens the
+line window when a match fails, never falls back to title or narrative text, and
+never asks a model to adjudicate. A missing `findings.json` is an error, not
+zero findings. And `evaluation.json` is never an input to anything under
+`src/checks/`, `src/detectors/` or `src/artifacts/` — the scorer is the first
+component allowed to read the key's ids, and that permission must not flow back
+into the tool being scored.
+
+### Why F1 is refused today
+
+The completeness flags decide what is reportable, and on this corpus they do not
+overlap: the vulnerable app has `findings_complete: false`, so precision is
+undefined there; the clean app has no key findings, so recall is `n/a` there.
+No app supports both, so an F1 would be a harmonic mean of two disjoint
+measurements — a number about no system. `totals` records
+`f1_reportable: false` with the reason, rather than omitting the field, because
+an absent field reads as unimplemented rather than as declined.
+
+`totals` carries a recall block and a precision block, each with
+`apps_included` and raw counts, so the sample size cannot be hidden: each metric
+currently rests on one app.
+
+---
+
 ## Later phases
 
-Phase 4's scorer reads `findings.json` and the grading key. It defines no
-artifact of its own yet.
+Phase 4's baselines reuse this shape, distinguished by `system`.

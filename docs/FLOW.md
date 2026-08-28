@@ -396,12 +396,16 @@ audit.
 
 ## 8. Where the later phases attach
 
-Phases 1 and 2 are built and tagged. Phase 3 is substantially built: a planner
-runs three checks over one app and writes `findings.json`, which currently
-reaches two of the six findings in the vulnerable fixture's grading key and
-none of the five surfaces in the clean one -- no false positives. What is left
-in Phase 3 is the report, the corpus restore, and using the model for prose:
-every run so far records `model_run.status: "disabled"`. Phase 4 is not built.
+Phases 1 and 2 are built and tagged. Phase 3 is built: a planner runs three
+checks over one app, writes `findings.json`, and renders `report.md`, which
+gives what was *not* examined the same billing as what was found. It reaches
+two of the six findings in the vulnerable fixture's grading key and none of the
+five surfaces in the clean one -- no false positives. What is left in Phase 3
+is using the model for prose: every run so far records
+`model_run.status: "disabled"`.
+
+Phase 4's scorer is built and produces `evaluation.json`; what is open there is
+a command to run it from, and the two baselines to compare against.
 
 ```mermaid
 flowchart TD
@@ -411,21 +415,26 @@ flowchart TD
     SJ --> P3[Phase 3<br/>agentic auditor + probes]
     MJ --> P3
     P3 --> FJ[(findings.json)]
+    P3 --> RM[(report.md)]
     FJ --> P4[Phase 4<br/>scoring vs ground truth]
     GT[(ground_truth.json)] --> P4
-    P4 --> RES([precision / recall / F1])
+    P4 --> RES[(evaluation.json<br/>counts, never rates)]
+    P4 --> BL[baselines to compare against]
 
     classDef built fill:#e6f4ea,stroke:#34a853,stroke-width:2px
     classDef partial fill:#e6f4ea,stroke:#34a853,stroke-dasharray:5 3
     classDef planned fill:#f1f3f4,stroke:#9aa0a6,stroke-dasharray:4 3
-    class P1,SJ,P2,MJ,FJ built
-    class P3 partial
-    class P4,RES planned
+    class P1,SJ,P2,MJ,FJ,RM,P3,RES built
+    class P4 partial
+    class BL planned
     style GT fill:#fef7e0,stroke:#f9ab00
 ```
 
-Solid green is built; the dashed green box is Phase 3, which produces findings
-today but has its reporting still to come. Grey is not built.
+Solid green is built; the dashed green box is Phase 4, whose scorer works but
+has no command to run it from yet. Grey is not built.
+
+`evaluation.json` holds counts and never a rate: precision, recall and F1 are
+absent as fields so that no number can be quoted without its denominator.
 
 Each phase reads the previous phase's JSON, which is why those files are
 treated as contracts. The field lists are in [`SCHEMAS.md`](./SCHEMAS.md).
