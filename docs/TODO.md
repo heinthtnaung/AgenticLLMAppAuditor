@@ -147,16 +147,16 @@ done-criteria.
       `component_version_count` and a version-less purl. Caught on the fixture:
       `@langchain/openai` is installed at 0.3.0 and 0.3.2, and the join key was
       asserting 0.3.2 by sort order alone
-- [ ] A package declared bare loses a version the generator did resolve.
-      `version_source_of` tests "no constraint" before "the generator reported
-      something", so a bare name the generator *did* resolve reports
-      `unconstrained` with `version: null`, while the same name with a range
-      keeps the resolved version as `inferred` — declaring *less* precisely
-      discards more evidence. It predates the npm work and touches no purl
-      (neither source is exact), so it is a reporting gap rather than a
-      soundness one. Pinned by
-      `test_an_unconstrained_package_drops_a_version_the_generator_resolved`,
-      so the current behaviour is visible rather than accidental
+- [x] A package declared bare now keeps the version the generator resolved
+      (`sbom.json` `schema_version` 3). `unconstrained` keeps its meaning --
+      the manifest named no version -- and the resolved version travels in
+      `version` as evidence, never in the PURL: what a resolver found is not
+      what the app asked for. Neither corpus bill changed a byte beyond the
+      version number, because both of their unconstrained records are
+      `tool_reported: false` with nothing to keep; the synthetic case in
+      `tests/artifacts/test_sbom_vocabulary.py` is the only one that exercises
+      it. The retention rule became one-directional in the process: a version
+      implies one of the four sources, not the reverse
 - [ ] Read Python lockfiles (`poetry.lock`, `Pipfile.lock`). Needs
       `from_lockfile` derived per component from the generator's own evidence
       first, for the reason on the `locked` line above
@@ -200,13 +200,19 @@ done-criteria.
       injection lands, so dropping it would cost LLM01 recall. With one fixture
       there is no evidence of noise either way, and a name in a table costs
       nothing while a missed prompt is a recall failure
-- [ ] No HTTP-route data source on the JS side, though Express and Next
-      handlers are the main untrusted input in JS apps. Buildable with static
-      analysis alone, so it belongs here: guard on a literal path starting `/`
-      **and** a function as the last argument, or `app.get('port')` reports as
-      a route. It forces a split of `detectors_js.py` (194 lines) in the same
-      change, and no fixture runs a server, so it would be synthetic-tested
-      only — as the Python route detector already is
+- [x] HTTP-route data source on the JS side (`src/detectors/data_sources_js.py`).
+      Express and Next handlers are the main untrusted input in JS apps, and
+      the detector reports the registration site: `app.get('/x', h)`,
+      `router.post`, `app.use('/api', r)` and the chained `app.route('/x')`.
+      The guard is **two arguments and a literal path starting `/`**, not "a
+      callback as the last argument" as first planned -- that would have missed
+      `router.post('/x', handler)`, where the handler is a bare identifier.
+      `app.get('port')`, Express's config getter, stays quiet on the leading
+      slash. Route surfaces carry no `module`: `app` is a local bound to
+      `express()`, so naming its package needs Phase 3's dataflow.
+      **Synthetic-tested, not corpus-measured** -- neither fixture runs a
+      server, so no false-positive rate is claimed
+      (`tests/detectors/test_data_sources_js.py`)
 - [x] Robustness: a malformed `.ts` or a non-UTF-8 Python file no longer
       aborts the scan, and an oversized file — already skipped, but only ever
       warned about — is now recorded too. The walk records the file in
@@ -291,9 +297,12 @@ done-criteria.
 - [ ] Implement baselines: simple static rules and SBOM-only scan
 - [ ] Report which framework names the corpus actually exercises. **Moved out
       of Phase 2:** the fix is fixtures, not detector code, and the number is
-      an evaluation result. Measured today: the JS tables hold **47** names
-      across 10 tables and the one JS fixture exercises **5**, so 42 are
-      carried untested. (An earlier note said 29; that was never sourced.)
+      an evaluation result. Measured today: the JS tables hold **57** names
+      across 12 tables -- 47 plus the 10 the route detector added -- and the
+      one JS fixture exercises **5**, so 52 are carried untested. Counting
+      excludes `HTTP_METHODS` and `ROUTE_DECORATOR_ROOTS`, which are the Python
+      tables the route tables are built from rather than tables of their own.
+      (An earlier note said 29; that was never sourced.)
 - [ ] Run experiments: agentic auditor vs baselines on the full corpus
 - [ ] (Optional, if RQ3 is kept) Compare model families (Gemma / Llama / Qwen)
 - [ ] Analyse results (does agentic probing improve detection + explanation?)

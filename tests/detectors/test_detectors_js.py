@@ -2,9 +2,9 @@
 
 import pytest
 from detector_helpers_js import FILE, only, other_detectors, run
+from detectors.data_sources_js import find_data_sources
 from detectors.detectors_js import (
     find_agent_defs,
-    find_data_sources,
     find_prompt_templates,
     find_tool_calls,
 )

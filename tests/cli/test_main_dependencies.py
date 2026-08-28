@@ -32,7 +32,7 @@ from artifacts.surface import DATA_SOURCE, PROMPT_TEMPLATE, Surface
 # change: sbom.json when `locked` joined the vocabulary, mapping.json when an
 # ambiguous join stopped copying the component's purl and started synthesising
 # a version-less one. aibom.json did not move.
-EXPECTED_SCHEMA_VERSIONS = {SBOM_NAME: 2, AIBOM_NAME: 1, MAPPING_NAME: 2}
+EXPECTED_SCHEMA_VERSIONS = {SBOM_NAME: 3, AIBOM_NAME: 1, MAPPING_NAME: 2}
 
 # The artifacts carrying this project's own schema_version. Derived from the
 # table above, so a future artifact cannot be listed here and left unchecked.

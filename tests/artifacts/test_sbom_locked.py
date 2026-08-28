@@ -46,7 +46,7 @@ PYTHON_CORPUS_COMPONENTS = [
 ]
 
 # The version the schema went to when `locked` joined the vocabulary.
-EXPECTED_SCHEMA_VERSION = 2
+EXPECTED_SCHEMA_VERSION = 3
 
 
 def build_widget(constraint: str, version: str | None, manifests: list[str],
@@ -153,7 +153,8 @@ def test_a_js_package_missing_from_the_lockfile_is_unknown_not_locked() -> None:
 
 
 def test_the_python_corpus_sbom_states_the_new_schema_version() -> None:
-    """The one thing that did change: `locked` joining the vocabulary bumped it to 2."""
+    """The version tracks what a reader may conclude: `locked` took it to 2, and a
+    bare declaration keeping its resolved version took it to 3."""
     assert corpus_sbom()["schema_version"] == EXPECTED_SCHEMA_VERSION
 
 

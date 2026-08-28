@@ -15,7 +15,7 @@ from deps.package_names import (
     normalise_name,
 )
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 # How a component's version was arrived at. Never read `version` without it.
 PINNED = "pinned"
@@ -28,6 +28,13 @@ VERSION_SOURCES = (PINNED, LOCKED, INFERRED, UNCONSTRAINED, UNKNOWN)
 # The two sources whose version is a fact rather than a guess, so only these
 # may reach a purl. See docs/SCHEMAS.md for why the distinction is structural.
 EXACT_SOURCES = (PINNED, LOCKED)
+
+# The sources that carry a version at all. `unconstrained` is in here because a
+# bare declaration the generator did resolve has evidence worth reporting -- it
+# just is not a fact about what the app asked for, so it stays out of the purl.
+# `unknown` is the one source meaning a constraint was present and no version
+# was ever established.
+VERSIONED_SOURCES = (*EXACT_SOURCES, INFERRED, UNCONSTRAINED)
 
 LIBRARY = "library"
 
@@ -87,7 +94,7 @@ def _component(name: str, constraint: str | None, declared: bool, version: str |
     return {
         "name": name,
         "ecosystem": ecosystem,
-        "version": version if source in (*EXACT_SOURCES, INFERRED) else None,
+        "version": version if source in VERSIONED_SOURCES else None,
         "version_source": source,
         "version_constraint": constraint or None,
         "purl": purl_for(name, ecosystem, version, source),

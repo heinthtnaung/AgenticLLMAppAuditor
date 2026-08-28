@@ -6,7 +6,11 @@ can speak for; the rest are there so a real app is not missed, and are listed
 as an untested-coverage gap in docs/TODO.md.
 """
 
-from detectors.detector_names import PROMPT_NAME_HINTS  # noqa: F401  (language-neutral, shared)
+from detectors.detector_names import (  # noqa: F401  (language-neutral, shared)
+    HTTP_METHODS,
+    PROMPT_NAME_HINTS,
+    ROUTE_DECORATOR_ROOTS,
+)
 
 # --- Prompt surfaces -------------------------------------------------------
 # Object keys that carry prompt text in a chat message: {role, content}.
@@ -59,6 +63,16 @@ DATA_SOURCE_CALLS = {
 DATA_SOURCE_MEMBERS = {
     "process.env": "environment variable read",
 }
+
+# Express-style HTTP routes. Both tables come from the Python side so the two
+# languages cannot drift apart on what counts as a router or a verb; `all` and
+# `use` are Express's own, and mount a handler on a path just as `get` does.
+ROUTE_OBJECTS = ROUTE_DECORATOR_ROOTS
+ROUTE_METHODS = HTTP_METHODS | frozenset({"all", "use"})
+
+# A route's path is a literal starting here. Without this, `app.get('port')` --
+# Express's config getter -- would report as an HTTP entry point.
+ROUTE_PATH_PREFIX = "/"
 
 # Note: `invoke` is deliberately absent. In LangChain.js it is the universal
 # call for models, chains and retrievers alike, so matching it reports every

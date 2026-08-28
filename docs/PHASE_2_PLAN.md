@@ -217,17 +217,19 @@ what the app actually declares.
 
 ## Phase 2 exit checklist
 
-- [ ] OWASP subset signed off, so supply-chain findings carry the right id.
-- [ ] SBOM generated offline, deterministic, PURL-identified.
-- [ ] Import-to-package resolution correct for the renamed cases.
-- [ ] AIBOM derived from `surfaces.json`, every entry traceable to a surface.
-- [ ] `mapping.json` covers every surface, with a stated reason where no
+- [x] OWASP subset signed off, so supply-chain findings carry the right id.
+- [x] SBOM generated offline, deterministic, PURL-identified.
+- [x] Import-to-package resolution correct for the renamed cases.
+- [x] AIBOM derived from `surfaces.json`, every entry traceable to a surface.
+- [x] `mapping.json` covers every surface, with a stated reason where no
       component applies.
-- [ ] Coverage reported, not implied.
+- [x] Coverage reported, not implied.
 - [ ] Advisories read from a pinned local snapshot; no runtime network call.
-- [ ] All three schemas defined by `schema-keeper` before their writers.
-- [ ] Tests pass; `project-guard` clean on the finished code.
-- [ ] `TODO.md` ticked in the same change as the work.
+      **The one item outstanding.** The reader and matcher are unbuilt, and the
+      snapshot itself is a hand-fetched input nobody has fetched yet.
+- [x] All three schemas defined by `schema-keeper` before their writers.
+- [x] Tests pass; `project-guard` clean on the finished code.
+- [x] `TODO.md` ticked in the same change as the work.
 
 **Artifacts produced this phase:** `artifacts/<app>/sbom.json`,
 `aibom.json`, `mapping.json` — consumed by Phase 3's findings and Phase 4's

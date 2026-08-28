@@ -34,8 +34,8 @@ artifact directory name, `ground_truth.app`, and `manifest.name`.
 | Phase 2 output | `artifacts/<app>/mapping.json` | `src/main.py` |
 
 **`schema_version` is per file.** Each artifact versions independently; that
-`surfaces.json` is at 3, `sbom.json` and `mapping.json` at 2, while a new file
-starts at 1, is not a mistake.
+`surfaces.json` and `sbom.json` are at 3 and `mapping.json` at 2, while a new
+file starts at 1, is not a mistake.
 
 **External tools are normalised, never stored raw.** Syft's output carries a
 random UUID and a wall-clock timestamp, so two runs differ. Any artifact
@@ -219,7 +219,7 @@ Syft misses.
 
 | Field | Type | Required | Meaning |
 |---|---|---|---|
-| `schema_version` | int | yes | Currently `2`. |
+| `schema_version` | int | yes | Currently `3`. |
 | `generator_name` | str | yes | The external tool, e.g. `syft`. |
 | `generator_version` | str | yes | Pinned. If it changes, the artifact *should* change. |
 | `version_guessing_enabled` | bool | yes | Whether the generator was allowed to infer a version from a range constraint. **Scoped to PyPI** — it is the generator's Python-only setting, so on an npm document it reads `true` while nothing was guessed. |
@@ -233,8 +233,8 @@ Each component:
 |---|---|---|---|
 | `name` | str | yes | Normalised by the **ecosystem's own rule**: PEP 503 for `pypi` (lowercase, runs of `-_.` collapsed to `-`); lowercase only for `npm`, where `lodash.merge` and `lodash-merge` are two different real packages and collapsing them would rename one into the other. Never an import name. |
 | `ecosystem` | str | yes | `pypi` or `npm`. **One ecosystem per document**, and required — there is no default, because guessing PyPI for an npm component would break every join downstream. A repository declaring both is refused rather than half-read. |
-| `version` | str \| null | yes | Read **only** together with `version_source`. |
-| `version_source` | str | yes | `pinned`, `locked`, `inferred`, `unconstrained`, or `unknown`. `locked` means resolved by a lockfile the generator read: exact and reproducible, but not a version the author's manifest named. `unconstrained` means the manifest named no version — and its `version` is `null` **even where the generator resolved one**, so a bare declaration currently discards more evidence than a range does. That under-reports; it is on the roadmap and reaches no PURL. |
+| `version` | str \| null | yes | Read **only** together with `version_source`. Non-null for `pinned`, `locked`, `inferred` and `unconstrained`; always `null` for `unknown`, the one source meaning a constraint was present and no version was ever established. |
+| `version_source` | str | yes | `pinned`, `locked`, `inferred`, `unconstrained`, or `unknown`. `locked` means resolved by a lockfile the generator read: exact and reproducible, but not a version the author's manifest named. `unconstrained` means the manifest named no version; its `version` carries whatever the generator resolved, if anything. Like `inferred`, that version is evidence and not an assertion, so it never reaches the PURL. |
 | `version_constraint` | str \| null | yes | Exactly as the manifest wrote it, e.g. `~=0.3.25`. Without it, `inferred` is an unfalsifiable claim. |
 | `purl` | str | yes | The join key. **Carries a version only when `version_source` is `pinned` or `locked`.** Percent-encoded per the PURL spec, so an npm scope appears as `pkg:npm/%40langchain/core@0.3.3` and is byte-comparable with `sbom.cyclonedx.json`. |
 | `declared` | bool | yes | Named in a dependency manifest. |
