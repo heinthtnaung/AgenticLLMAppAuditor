@@ -12,7 +12,10 @@ Two conventions apply to every file here:
   absolute and never with backslashes. This is what makes an artifact
   byte-identical on a different machine. `artifacts/repo_path.py` defines the
   rule; `Surface` and `SkippedFile` both enforce it.
-- **Output is deterministic.** Records are sorted, keys are sorted, and no
+- **Output is deterministic**, with one named exception: `findings.json`'s
+  model-authored blocks, defined in its own section below. Everything else,
+  including every other field of that file, obeys this rule. Records are sorted,
+  keys are sorted, and no
   timestamps or absolute paths are written. The same input always produces the
   same bytes.
 
@@ -479,6 +482,14 @@ surface's line falls within `[line, (line_end or line) + LINE_TOLERANCE]` with
 `LINE_TOLERANCE = 3`. Exact line equality is wrong here: a detector may
 legitimately report a decorator line where a human noted the `def`.
 
+The same rule states the **`findings.json` join**, so Phase 4 never has to guess
+or parse an id: a produced finding matches a key entry when `file` and
+`owasp_id` are equal, `line` falls in that window, and — where the key names
+them — `surface_kind` equals the key's `llm_surface` and `surface_name` equals
+the key's `surface_name`. **`detection` is recorded, not matched on**: the key's
+`either` describes what could in principle reach a finding, while the produced
+value says what did this run, so neither constrains the other.
+
 Each `expected_surfaces` record mirrors a `Surface`: `id` (`SURF-01`, never
 renumbered), `kind`, `name`, `file`, `line`, `line_end`, `code_anchor`, and
 `module`. It deliberately carries **no** `owasp_id` or `description` — a
@@ -532,7 +543,106 @@ that, and a test asserts the marker is present.
 
 ---
 
+## `artifacts/<app>/findings.json` — Phase 3 output
+
+What the auditor concluded, and what it could not reach. Read by Phase 4's
+scorer, which grades it against `corpus/evidence/<app>.ground_truth.json`.
+
+**This is the one artifact a language model writes part of.** The determinism
+rule at the top of this file still governs everything else in it. Exactly two
+fields are exempt: `model_run.ranking` and each finding's `narrative`. Those are
+the model's actual output; the rest of `model_run` — its status, the model
+identifier, the settings sent — is byte-identical by construction and stays
+under the comparison. Drawing the exception around the whole block would be
+self-undermining, since the case for reproducible prose rests on recording the
+very settings that would then be free to vary.
+
+| Field | Type | Required | Meaning |
+|---|---|---|---|
+| `schema_version` | int | yes | Currently `1`. |
+| `coverage` | object | yes | What the search covered, so a short list is not read as a clean bill. |
+| `model_run` | object | yes | What produced the prose. Model-authored content is confined to here and to `narrative`. |
+| `probe_count` | int | yes | `len(probes)`. |
+| `probes` | list | yes | Every check that ran **or was planned and did not**. Sorted by `probe_id`. May be empty. |
+| `finding_count` | int | yes | `len(findings)`. |
+| `findings` | list | yes | Sorted by `(file or "", line or -1, owasp_id, rule_id, surface_id or "", purl or "")`. Four of those are nullable on a component-anchored finding, so the key substitutes rather than comparing `None`. May be empty. |
+
+`finding_count: 0` with the file present means "audited, nothing found" — the
+same distinction `surfaces.json` makes, and the clean fixture depends on it.
+
+`coverage`:
+
+| Field | Type | Required | Meaning |
+|---|---|---|---|
+| `surfaces_considered` | int | yes | How many `surfaces.json` records the checks ran over. |
+| `checks_run` | list[str] | yes | The checks that had something to examine on this app, sorted. Not derivable from `probes`: a check that examined subjects and concluded nothing about any of them leaves no probe record, and that silence is the dangerous one. A check **absent** here could not look at all — no mapping to read, or no file in a language it understands — so its absence is never a clean result. The taint trace reads `ast`, so it is absent on a JavaScript-only app. |
+| `advisory_data` | str | yes | `not_ingested` or `snapshot`. **Today always `not_ingested`** — advisory ingestion is Phase 2's one unfinished item, so an LLM03 finding here cites the SBOM and mapping but nothing about what is known to be wrong with a component. |
+
+There is deliberately no `skipped_file_count`: that is `surfaces.json`'s fact,
+and a second copy is a second place for it to disagree. A reader opens both.
+
+`model_run`:
+
+| Field | Type | Required | Meaning |
+|---|---|---|---|
+| `status` | str | yes | `used`, `unavailable`, or `disabled`. |
+| `model_identifier` | str \| null | yes | Which model wrote the prose. `null` unless `used`. |
+| `model_settings` | object | yes | Only settings that change the output distribution — temperature, seed, and so on. What was actually sent, not what `.env` holds. |
+| `ranking` | list[str] \| null | yes | The model's ordering, as a permutation of every `finding_id`. `findings` itself is never reordered by it. |
+
+The server URL and timeout are **excluded**: they are transport, they describe
+this machine, and an artifact does not carry machine layout.
+
+Each `probes` entry:
+
+| Field | Type | Required | Meaning |
+|---|---|---|---|
+| `probe_id` | str | yes | `"{probe_name}:{subject_id}"`. An opaque handle; never parsed. |
+| `probe_name` | str | yes | Fixed vocabulary. |
+| `subject_kind` | str | yes | `SURFACE` or `COMPONENT`. |
+| `subject_id` | str | yes | A surface id, or a purl or component name. |
+| `outcome` | str | yes | `confirmed`, `refuted`, `inconclusive`, `not_run`. |
+| `reason` | str \| null | yes | Required when `inconclusive` or `not_run`; `null` otherwise. Fixed vocabulary. |
+| `detail` | str | yes | Short human note. **Descriptive only — never a join key.** |
+
+Each `findings` entry:
+
+| Field | Type | Required | Meaning |
+|---|---|---|---|
+| `finding_id` | str | yes | `"{surface_id or component_name or purl or probe_id}:{rule_id}"` — derived from what the finding is, never a counter, and **unique within the document**, which `model_run.ranking` depends on. The anchor is already unique (a surface id is `file:line:kind:name`), so the rule is all that need be added; two findings sharing both are the same finding twice. Opaque to a reader: every part of it is also its own field. |
+| `owasp_id` | str | yes | `LLM01`, `LLM02`, `LLM03`, `LLM06` or `AUDITABILITY`, from the **2025** list. Constant on the rule — never model-chosen, because classification is what Phase 4 scores. |
+| `rule_id` | str | yes | Which check produced it. Fixed vocabulary. |
+| `title` | str | yes | Constant on the rule. Not model-authored: a title that varies per run makes two runs undiffable. |
+| `detection` | str | yes | `static` or `probe` — how it was reached this run. The key's `either` is a property of the finding class; the tool never emits it. |
+| `surface_id` | str \| null | yes | The `surfaces.json` record. `null` only for a component-anchored finding. |
+| `surface_kind`, `surface_name` | str \| null | yes | Copied from the surface, so Phase 4 never parses `surface_id`. |
+| `file` | str \| null | yes | Repo-relative POSIX, copied from the surface. Never derived by the model. |
+| `line` | int \| null | yes | Copied from the surface. |
+| `purl`, `component_name` | str \| null | yes | The SBOM component, where one is evidence. `component_name` without `purl` is the undeclared case. |
+| `mapping_reason` | str \| null | yes | The `mapping.json` reason, where the mapping is evidence — e.g. `used_but_undeclared`. |
+| `probe_id` | str \| null | yes | Non-null exactly when `detection` is `probe`. |
+| `narrative` | str \| null | yes | The model's explanation of this finding. **The only model-authored field on a record.** `null` unless `model_run.status` is `used`. A plain string rather than a wrapper object: there is no second field planned, and the obvious shape wins until there is. |
+
+**A finding with no evidence is not representable**, and that is enforced in the
+constructor rather than reviewed for. At least one of `surface_id`, `purl`,
+`component_name` or `probe_id` must be present. `detection: "probe"` requires a
+`probe_id` naming a `probes` entry whose outcome is `confirmed`, so a probe
+finding cannot exist without the record saying the probe ran and confirmed.
+
+**The tool never emits the grading key's `id`.** `VULN1-06` and its siblings are
+hand-authored labels; a tool that emits them hands Phase 4 the answer, and every
+precision number after that is worthless.
+
+### What the model may not write
+
+`owasp_id`, `file`, `line`, `severity`, `confidence`, and any suggested fix. The
+first three are copied from evidence; severity and confidence have no field in
+the grading key, so nothing could check them; and a model-written patch is one
+copy-paste from crossing the no-auto-fixing boundary.
+
+---
+
 ## Later phases
 
-`findings.json` (Phase 3) is not defined yet. Define it here **before** writing
-the code that produces it.
+Phase 4's scorer reads `findings.json` and the grading key. It defines no
+artifact of its own yet.

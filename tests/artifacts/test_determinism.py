@@ -8,9 +8,11 @@ show change where nothing changed, and a real change would be lost in it.
 import json
 
 from artifacts.aibom import aibom_to_json, build_aibom
+from artifacts.findings_document import findings_to_json
 from artifacts.mapping import build_mapping, mapping_to_json
 from artifacts.cyclonedx import to_cyclonedx
 from artifacts.sbom import sbom_to_json
+from checks.run_checks import build_findings
 from conftest import CORPUS_DIR, scan_to_json
 from dependency_fixtures import (
     CORPUS_GENERATOR_OUTPUT,
@@ -31,11 +33,19 @@ def corpus_mapping() -> dict:
     return build_mapping(corpus_surfaces(), corpus_sbom(), local)
 
 
+def corpus_findings() -> dict:
+    """Run the static checks over the corpus app's surfaces and its mapping."""
+    return build_findings(str(CORPUS_DIR / SUPPORT_AGENT), corpus_surfaces(), corpus_mapping())
+
+
 def artifact_texts() -> dict[str, str]:
     """Serialise every artifact once, keyed by file name.
 
     surfaces.json is included because it now carries parser output, which is
-    where an absolute path would leak in from.
+    where an absolute path would leak in from. findings.json joins on the
+    strongest terms available: today's runs record `model_run.status:
+    disabled`, so neither exempt field carries anything and the whole file is
+    under the comparison like every other artifact.
     """
     surfaces = corpus_surfaces()
     return {
@@ -43,6 +53,7 @@ def artifact_texts() -> dict[str, str]:
         "sbom.json": sbom_to_json(corpus_sbom()),
         "aibom.json": aibom_to_json(build_aibom(surfaces)),
         "mapping.json": mapping_to_json(corpus_mapping()),
+        "findings.json": findings_to_json(corpus_findings()),
     }
 
 
@@ -60,6 +71,11 @@ def test_the_aibom_is_byte_identical_across_two_builds() -> None:
 def test_the_mapping_is_byte_identical_across_two_builds() -> None:
     """Same surfaces and same SBOM, same bytes."""
     assert mapping_to_json(corpus_mapping()) == mapping_to_json(corpus_mapping())
+
+
+def test_the_findings_are_byte_identical_across_two_builds() -> None:
+    """Same surfaces and same mapping, same bytes: no model wrote any of this run."""
+    assert findings_to_json(corpus_findings()) == findings_to_json(corpus_findings())
 
 
 def test_the_aibom_does_not_depend_on_the_order_surfaces_arrive_in() -> None:

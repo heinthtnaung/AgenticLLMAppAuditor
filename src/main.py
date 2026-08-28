@@ -12,11 +12,13 @@ import sys
 from pathlib import Path
 
 from artifacts.aibom import aibom_to_json, build_aibom
+from artifacts.findings_document import findings_to_json
 from artifacts.cyclonedx import to_cyclonedx
 from artifacts.mapping import build_mapping, mapping_to_json
 from artifacts.sbom import build_sbom, sbom_to_json
 from artifacts.skipped_file import SkippedFile
 from artifacts.surface import Surface, surfaces_to_json
+from checks.run_checks import build_findings
 from deps import npm_manifest, syft_runner
 from deps.package_names import NPM, PYPI
 from deps.requirements_parser import (
@@ -34,6 +36,7 @@ AIBOM_NAME = "aibom.json"
 SBOM_NAME = "sbom.json"
 CYCLONEDX_NAME = "sbom.cyclonedx.json"
 MAPPING_NAME = "mapping.json"
+FINDINGS_NAME = "findings.json"
 
 # Naming both files, not just both ecosystems: the reader has to know which two
 # manifests to look at to understand why no bill was produced.
@@ -150,6 +153,9 @@ def run(args: argparse.Namespace) -> int:
         built, mapping_document = dependency_artifacts(
             app_dir, scan.surfaces, declared_ecosystems(app_dir)[0])
         documents.update(built)
+
+    documents[FINDINGS_NAME] = findings_to_json(
+        build_findings(args.repo_path, scan.surfaces, mapping_document))
 
     out = args.artifacts_dir / app_dir.resolve().name
     out.mkdir(parents=True, exist_ok=True)

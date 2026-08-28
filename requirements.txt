@@ -17,5 +17,17 @@ tree-sitter-typescript==0.23.2
 # it over urllib:
 #   ollama pull qwen2.5-coder:7b-instruct
 
+# --- Phase 3: the agentic audit workflow ---
+# LangGraph is a deliberate exception to the stdlib-first rule, and not because
+# a bounded loop needs a framework -- that is about sixty lines of plain Python.
+# It is here because the thesis argues an agentic LLM app should be audited by
+# one, so the auditor is built the way the apps it audits are built.
+#
+# It brings a large tree with it, including langsmith, whose tracing would send
+# data off the machine. src/checks/workflow.py disables that explicitly rather
+# than relying on it being off by default; tests/parsing/test_offline.py holds
+# the guarantee.
+langgraph==1.2.11
+
 # Testing
 pytest>=8.0.0

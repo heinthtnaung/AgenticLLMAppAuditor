@@ -230,7 +230,7 @@ done-criteria.
       rather than skipped, and an unopenable file still aborts the scan — are
       pinned by `tests/parsing/test_extractor_skip_limits.py`, so changing
       either is a conscious decision with a failing test attached
-- [x] ~~Make `src/` a real package~~ — **declined.** It is 27 modules in four
+- [x] ~~Make `src/` a real package~~ — **declined.** It is 37 modules in five
       folders with one entry point, and the folders are plain directories that
       Python imports without an `__init__.py`. `python src/main.py` works,
       `tests/conftest.py` handles the path, and converting would touch every
@@ -240,7 +240,13 @@ done-criteria.
 
 ## Phase 3 — LangGraph auditor, probes & reporting
 
-- [ ] Audit a repository straight from a URL, and restore corpus fixtures from
+- [ ] Restore corpus fixtures from their pinned manifests (Task 3.8a), and
+      separately audit a repository straight from a URL (Task 3.8b). Split
+      because 3.8a protects the grading keys' line numbers and 3.8b only
+      enlarges the corpus, which is a Phase 4 need. Both were built during
+      Phase 1 and removed again; the code is on the `phase3/url-fetcher`
+      tag. Original note follows.
+      Audit a repository straight from a URL, and restore corpus fixtures from
       their pinned manifests. Both were built during Phase 1 and removed again
       to keep it offline and simple. Bringing them back means bringing back the
       safety work an untrusted input needs: an https/git@ allow-list, a
@@ -264,26 +270,60 @@ done-criteria.
       HEAD` equals the pinned commit, then delete `.git`. That verification is
       the load-bearing part — without it a moved upstream silently invalidates
       every line number in the grading key.
+- [ ] Make `call_bindings` scope-aware. It is module-wide "last binding wins"
+      today, so in the corpus app `cursor` reads as bound at line 75 while it is
+      used at lines 14 through 79 -- it is bound separately inside several
+      functions. Harmless for the taint trace, which over-approximates within a
+      file, but it is why `DATA_SOURCE_METHODS` could not be narrowed by the
+      receiver's type: that would drop real detections on evidence from an
+      unrelated scope
 - [ ] Implement the agentic audit workflow: the LangGraph skeleton (shared
       state, planner node, bounded loop with a step cap) and the planner that
       picks the next probe over that state. Moved here from Phase 1, which had
       it as its own line — the two described the same work, and nothing was
       built under either, so only the line moved
-- [ ] Implement probe: taint-style dataflow tracing (untrusted source →
-      prompt/tool)
-- [ ] Narrow the bare method names in `DATA_SOURCE_METHODS` on both language
-      sides — `load`, `query`, `execute` and friends match on any receiver, so
-      `anything.load()` reports as a document loader read. **Moved out of Phase
-      2:** deciding correctly needs the receiver's type, which is what the
-      dataflow probe above provides. Narrowing them blind either drops real
-      detections or keeps noise, and there is no evidence either way while the
-      only clean fixture makes no database or loader call
-- [ ] Implement probe: benign injection tests in sandbox (direct + indirect
-      via documents)
-- [ ] Implement probe: static permission checks (over-privileged file/network
-      tools)
-- [ ] Enforce sandbox boundary (isolated instance, benign payloads only, no
-      live systems)
+- [x] Taint-style dataflow tracing (`src/checks/taint.py`, built on the new
+      `src/parsing/bindings.py`). Traces an untrusted value to a model or a
+      model-driven tool **within one file**, which is a hard limit rather than a
+      starting point. It reaches `VULN1-03`: `prompt := st.chat_input()` at
+      `main.py:60` is handed to `executor(prompt)` at line 82, where `executor`
+      was bound from an `AgentExecutor` surface at line 71. The missing half was
+      the binding -- a surface says a call happened at a line, never what the
+      result was called afterwards. Nine sources it could **not** follow are
+      recorded as `inconclusive` / `trace_left_static_analysis` rather than
+      dropped, so nine unfollowable traces sit beside two findings instead of
+      reading as a clean bill. Python only: the JS side would need the same
+      analysis rebuilt on tree-sitter, and `coverage.checks_run` omits the check
+      entirely on a JS app rather than claiming it looked
+- [x] Narrowed the bare method names on both language sides, by **measuring
+      first rather than guessing**. The safe cut turned out to be whether the
+      receiver can be named at all: `resp.json().load()` and
+      `registry[key].load()` produce a surface named bare `load`, matching any
+      object whatsoever, so they are dropped; `cursor.execute(...)` and
+      `self.cache.load()` point at something and are kept. Both corpus apps
+      produce byte-identical surfaces, so the noise class went and no real
+      detection did.
+      Not done, and worth knowing why: narrowing by the receiver's **type** is
+      what the line originally imagined, and the binding analysis cannot support
+      it yet -- see the scope limit below
+- [x] Static permission checks (`src/checks/permissions.py`): a tool surface is
+      over-privileged when its class grants a shell, an interpreter or outbound
+      HTTP. **It finds nothing on this corpus**, which is the honest result --
+      neither fixture uses `ShellTool`, `PythonREPLTool` or the Requests tools,
+      so the rule is stated and exercised but not demonstrated. The graded LLM06
+      finding is not of this kind: `VULN1-02` is a tool accepting any userId,
+      which is a missing authorisation check and needs the dataflow of 3.4
+- [x] `findings.json` and its two first producers (`src/artifacts/finding.py`,
+      `findings_document.py`, `src/checks/`). A finding cites its evidence or
+      cannot be constructed, and `src/checks/supply_chain.py` produces the
+      graded LLM03 finding from `mapping.json`'s `used_but_undeclared`. Verified
+      against the key with the documented `LINE_TOLERANCE` join: 1 produced
+      finding, matching `VULN1-06`, and **0 findings on the clean fixture**
+- [x] ~~Enforce sandbox boundary (isolated instance, benign payloads only, no
+      live systems)~~ — **superseded.** Phase 3 does not execute the audited
+      app at all, so there is no sandbox to enforce. Refusing to run someone
+      else's program is a stronger guarantee than running it carefully, and
+      `tests/test_no_mutation.py` asserts it
 - [ ] Build evidence-backed reporting (JSON + Markdown/HTML; each finding =
       OWASP ID + code location + LLM-surface link + SBOM/AIBOM/advisory refs)
 - [x] Confirm human-in-the-loop only (no auto-patch, no PR merge), and that
@@ -311,6 +351,16 @@ done-criteria.
       (An earlier note said 29; that was never sourced.)
 - [ ] Run experiments: agentic auditor vs baselines on the full corpus
 - [ ] (Optional, if RQ3 is kept) Compare model families (Gemma / Llama / Qwen)
+- [ ] Implement probe: benign injection tests in a sandbox (direct + indirect
+      via documents). **Moved out of Phase 3**, where it could not earn its
+      place: every finding in both grading keys carries `detection` of `static`
+      or `either` and not one is `probe`, so it would add no recall the static
+      path cannot reach; the vulnerable fixture defaults to
+      `gpt-4-1106-preview` through LiteLLM, so running it breaks the offline
+      guarantee; and aimed at Ollama instead, an observed injection becomes a
+      fact about `qwen2.5-coder:7b-instruct` rather than about the audited app.
+      Revisit only with a fixture carrying `detection: "probe"` findings and a
+      locally servable model
 - [ ] Analyse results (does agentic probing improve detection + explanation?)
 - [ ] Write the thesis report
 - [ ] Release the open-source prototype

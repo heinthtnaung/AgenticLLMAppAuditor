@@ -11,6 +11,9 @@ application, then writes what it found to a JSON file.
 
 ## 1. The whole picture
 
+**Green means built and tested today.** Anything not green is planned and does
+not run yet, so a reader can tell the tool from the roadmap at a glance.
+
 ```mermaid
 flowchart TD
     U([You run:<br/>python src/main.py corpus/my-app]) --> M[main.py<br/>read the arguments]
@@ -21,10 +24,23 @@ flowchart TD
     D --> S[surface.py<br/>tidy up and serialise]
     S --> A[(artifacts/my-app/<br/>surfaces.json)]
 
+    M --> DEP[deps/<br/>read the manifests, run Syft]
+    DEP --> B[(sbom.json + cyclonedx<br/>aibom.json, mapping.json)]
+    A --> B
+
+    A --> W[workflow.py<br/>planner, bounded loop]
+    B --> W
+    W --> CK[checks/<br/>permissions, supply chain, taint]
+    CK --> F[(artifacts/my-app/<br/>findings.json)]
+    F -.-> REP[report<br/>Markdown / HTML]
+
     GT[(corpus/evidence/<br/>my-app.ground_truth.json<br/>the known answers)] -.->|tests compare| A
 
+    classDef built fill:#e6f4ea,stroke:#34a853,stroke-width:2px
+    classDef planned fill:#f1f3f4,stroke:#9aa0a6,stroke-dasharray:4 3
+    class M,X,L,D,S,A,DEP,B,W,CK,F built
+    class REP planned
     style U fill:#e8f0fe,stroke:#4285f4
-    style A fill:#e6f4ea,stroke:#34a853
     style GT fill:#fef7e0,stroke:#f9ab00
 ```
 
@@ -217,10 +233,12 @@ model is set up here so Phase 3 can start immediately.
 
 ## 5. Where the later phases attach
 
-Phase 2 is built. `python src/main.py <repo>` produces `sbom.json`,
-`sbom.cyclonedx.json`, `aibom.json` and `mapping.json` beside the surfaces,
-joining each surface to the dependency it came from on the `module` field.
-Phases 3 and 4 are not built.
+Phases 1 and 2 are built and tagged. Phase 3 is substantially built: a planner
+runs three checks over one app and writes `findings.json`, which currently
+reaches two of the six findings in the vulnerable fixture's grading key and
+none of the five surfaces in the clean one -- no false positives. What is left
+in Phase 3 is the report, the corpus restore, and using the model for prose:
+every run so far records `model_run.status: "disabled"`. Phase 4 is not built.
 
 ```mermaid
 flowchart TD
@@ -234,9 +252,17 @@ flowchart TD
     GT[(ground_truth.json)] --> P4
     P4 --> RES([precision / recall / F1])
 
-    style P1 fill:#e6f4ea,stroke:#34a853
-    style SJ fill:#e6f4ea,stroke:#34a853
+    classDef built fill:#e6f4ea,stroke:#34a853,stroke-width:2px
+    classDef partial fill:#e6f4ea,stroke:#34a853,stroke-dasharray:5 3
+    classDef planned fill:#f1f3f4,stroke:#9aa0a6,stroke-dasharray:4 3
+    class P1,SJ,P2,MJ,FJ built
+    class P3 partial
+    class P4,RES planned
+    style GT fill:#fef7e0,stroke:#f9ab00
 ```
+
+Solid green is built; the dashed green box is Phase 3, which produces findings
+today but has its reporting still to come. Grey is not built.
 
 Each phase reads the previous phase's JSON, which is why those files are
 treated as contracts. The field lists are in [`SCHEMAS.md`](./SCHEMAS.md).
@@ -260,6 +286,7 @@ would notice.
 | `detectors/` | finding the four kinds of LLM surface in a tree |
 | `artifacts/` | the JSON documents each run produces, and their shapes |
 | `deps/` | reading an app's dependencies, and matching imports to packages |
+| `checks/` | deciding what to look for, and planning which check runs next |
 
 | File | Its one job |
 |---|---|
@@ -271,7 +298,9 @@ would notice.
 | `extractor_python.py` | parse Python with `ast`, run the Python detectors |
 | `extractor_js.py` | parse JS/TS with tree-sitter, run the JS detectors |
 | `detectors.py` | the four detectors, Python |
-| `detectors_js.py` | the four detectors, JavaScript and TypeScript |
+| `detectors_js.py` | the prompt, agent and tool detectors, JavaScript |
+| `data_sources_js.py` | where outside data enters, JavaScript |
+| `surface_builder_js.py` | build a Surface from a tree-sitter node |
 | `detector_names.py` | the framework names, Python |
 | `detector_names_js.py` | the framework names, JavaScript and TypeScript |
 | `ast_utils.py` | shared `ast` helpers |
@@ -279,6 +308,14 @@ would notice.
 | `surface.py` | the data model and stable JSON output |
 | `skipped_file.py` | the record for a file the scan could not read |
 | `repo_path.py` | the path rule every artifact path field obeys |
+| `finding.py` | one conclusion and the evidence it cites; one probe result |
+| `findings_document.py` | assemble findings.json, and strip what a model wrote |
+| `bindings.py` | which name a call's result was bound to, within one file |
+| `workflow.py` | the planner and its bounded loop, on LangGraph |
+| `run_checks.py` | which checks have something to examine on this app |
+| `permissions.py` | tools granting shell, interpreter or network access |
+| `supply_chain.py` | packages used but never declared |
+| `taint.py` | untrusted values reaching a model or a model-driven tool |
 | `config.py` | settings, from the environment |
 | `model_client.py` | talk to the local model (Phase 3) |
 | `syft_runner.py` | run the SBOM generator: the only outside process |

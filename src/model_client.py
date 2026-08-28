@@ -13,6 +13,13 @@ import urllib.request
 
 import config
 
+# What the model is asked to do here is explain evidence this project already
+# gathered, so a sampled answer is noise rather than variety. Greedy decoding
+# with a fixed seed is what lets findings.json record settings a later run can
+# repeat -- without these, "reproducible prose" is a claim with nothing behind
+# it. Recorded verbatim in the artifact's model_run block.
+DECODE_SETTINGS = {"temperature": 0, "seed": 0}
+
 MODEL = config.get("AUDITOR_MODEL")
 SERVER_URL = config.get("AUDITOR_SERVER_URL")
 TIMEOUT_SECONDS = config.get_int("AUDITOR_TIMEOUT_SECONDS")
@@ -26,7 +33,9 @@ def ask(prompt: str) -> str:
     if not prompt.strip():
         raise ValueError("prompt must not be empty")
 
-    payload = json.dumps({"model": MODEL, "prompt": prompt, "stream": False}).encode()
+    payload = json.dumps({
+        "model": MODEL, "prompt": prompt, "stream": False, "options": DECODE_SETTINGS,
+    }).encode()
     request = urllib.request.Request(
         SERVER_URL, data=payload, headers={"Content-Type": "application/json"}
     )

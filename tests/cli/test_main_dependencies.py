@@ -1,4 +1,4 @@
-"""The Phase 2 CLI writes all five artifacts, or fails with a message and exit 1.
+"""The CLI writes all six artifacts, or fails with a message and exit 1.
 
 Syft is stubbed throughout, so this runs offline on a machine that has never
 installed it.
@@ -13,6 +13,7 @@ from deps.package_names import PYPI
 from deps.requirements_parser import MANIFEST_NAME as PYPI_MANIFEST
 from parsing.languages import PYTHON
 from main import (
+    FINDINGS_NAME,
     AIBOM_NAME,
     CYCLONEDX_NAME,
     MAPPING_NAME,
@@ -40,7 +41,7 @@ ARTIFACT_NAMES = tuple(EXPECTED_SCHEMA_VERSIONS)
 
 # Everything a successful run leaves on disk, including the standard-format
 # bill, which carries CycloneDX's version rather than one of ours.
-ALL_ARTIFACT_NAMES = (SURFACES_NAME, CYCLONEDX_NAME) + ARTIFACT_NAMES
+ALL_ARTIFACT_NAMES = (SURFACES_NAME, CYCLONEDX_NAME, FINDINGS_NAME) + ARTIFACT_NAMES
 APP_NAME = "tiny-app"
 
 # One agent surface importing langchain, so the mapping has something to join.
@@ -72,13 +73,13 @@ def test_writes_the_sbom_aibom_and_mapping_and_exits_zero(monkeypatch, tmp_path)
         assert (tmp_path / "artifacts" / APP_NAME / name).is_file(), name
 
 
-def test_writes_five_artifacts_and_says_so(monkeypatch, tmp_path, capsys) -> None:
-    """Both bills land beside the other three, and the printed count agrees."""
+def test_writes_six_artifacts_and_says_so(monkeypatch, tmp_path, capsys) -> None:
+    """Both bills and the findings land beside the other three, and the count agrees."""
     stub_syft(monkeypatch, STUB_GENERATOR_OUTPUT)
     assert run_cli(monkeypatch, write_app(tmp_path), tmp_path / "artifacts") == 0
     written = sorted(p.name for p in (tmp_path / "artifacts" / APP_NAME).iterdir())
     assert written == sorted(ALL_ARTIFACT_NAMES)
-    assert "wrote 5 artifacts" in capsys.readouterr().out
+    assert "wrote 6 artifacts" in capsys.readouterr().out
 
 
 def test_the_standard_format_bill_is_written_beside_the_project_one(monkeypatch, tmp_path) -> None:
