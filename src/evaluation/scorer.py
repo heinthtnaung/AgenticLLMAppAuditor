@@ -2,9 +2,11 @@
 
 Counts only, never rates. Precision, recall and F1 are absent as fields on
 purpose: a reader cannot copy a percentage out of this file, so they have to
-divide, and to divide they must hold the denominator. Nothing in the tool
-prints a rate either -- the counts travel with the `qualifications` that bound
-them, and the division is the reader's.
+divide, and to divide they must hold the denominator. No *score* is printed as
+a rate either -- the counts travel with the `qualifications` that bound them,
+and the division is the reader's. (`main.py` does print a mapping-coverage
+percentage, which is a scan statistic and not a score against a key; the
+distinction is the point, not an exception to it.)
 
 Every classification here is derived from the artifacts. There is no list of
 known misses and no per-app tolerance, because either would turn the scorer

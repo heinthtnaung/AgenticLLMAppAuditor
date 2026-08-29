@@ -5,7 +5,7 @@ This answers "what may be said across the corpus", and the two have different
 readers: a per-app row can be quoted, a pooled total cannot be quoted without
 the apps it rests on.
 
-Pooled counts, never a mean: with two apps an average hides which one carried
+Pooled counts, never a mean: an average hides which app carried
 the number. F1 is refused rather than omitted, because an absent field reads as
 unimplemented and this is a decision.
 """

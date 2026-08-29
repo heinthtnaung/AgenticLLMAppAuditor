@@ -25,7 +25,7 @@ from test_no_write_commands import (
 )
 
 # The trees that make up the tool being scored. The scorer sits outside them.
-SCORED_TREES = ("checks", "detectors", "artifacts")
+SCORED_TREES = ("checks", "detectors", "artifacts", "baselines")
 
 # What none of them may read: the scorecard, and the module that writes it.
 EVALUATION_NAME = "evaluation.json"
@@ -119,3 +119,14 @@ def test_the_matcher_catches_a_planted_import_of_the_scorer(tmp_path) -> None:
     """The same for the import route, which no string check would see."""
     planted = plant_tree(tmp_path, PLANTED_IMPORT)
     assert modules_importing(SCORER_PACKAGE, planted) == {PLANTED_FILE}
+
+
+def test_no_scored_module_imports_corpus_paths() -> None:
+    """A scored tree may not reach the corpus, and naming the tree is not enough.
+
+    The string check above catches a module that writes "ground_truth.json".
+    `corpus_paths` exposes `evidence_path` and `GROUND_TRUTH_SUFFIX`, so a
+    module importing it reaches every grading key without ever writing that
+    string -- which is exactly how a baseline could quietly score itself.
+    """
+    assert scored_modules_importing("corpus_paths") == set()
