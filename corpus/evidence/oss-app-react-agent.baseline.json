@@ -1,0 +1,32 @@
+{
+  "app": "oss-app-react-agent",
+  "note": "TOOL-DERIVED SNAPSHOT, NOT GROUND TRUTH. This records what the extractor produces today so a change that silently drops or adds surfaces fails a test. It is generated from the tool's own output, so it can never measure the tool's accuracy. The Phase 4 scorer must never read this file -- it reads ground_truth.json.",
+  "source": "tool_derived",
+  "surface_count": 4,
+  "surfaces": [
+    {
+      "file": "src/react_agent/context.py",
+      "kind": "DATA_SOURCE",
+      "line": 46,
+      "name": "os.environ.get"
+    },
+    {
+      "file": "src/react_agent/graph.py",
+      "kind": "PROMPT_TEMPLATE",
+      "line": 40,
+      "name": "system_message"
+    },
+    {
+      "file": "src/react_agent/graph.py",
+      "kind": "AGENT_DEF",
+      "line": 69,
+      "name": "StateGraph"
+    },
+    {
+      "file": "src/react_agent/prompts.py",
+      "kind": "PROMPT_TEMPLATE",
+      "line": 3,
+      "name": "SYSTEM_PROMPT"
+    }
+  ]
+}

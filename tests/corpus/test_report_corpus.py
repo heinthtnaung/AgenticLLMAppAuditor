@@ -1,4 +1,4 @@
-"""The report rendered from the two corpus fixtures, findings and gaps alike.
+"""The report rendered from the two fixtures rendered here, findings and gaps alike.
 
 Every other report test builds its own document. These two are the real thing:
 the surfaces the extractor found and the findings the checks produced, rendered

@@ -86,6 +86,18 @@ def corpus_findings(app: str, sbom: dict) -> dict:
     return build_findings(*corpus_inputs(app, sbom))
 
 
+def corpus_findings_without_mapping(app: str) -> dict:
+    """Build one corpus app's findings with no mapping at all.
+
+    For a fixture whose dependencies this tool cannot read: no manifest means no
+    bill of materials, so the supply-chain check has nothing to examine and must
+    be absent from `checks_run` rather than present and silent.
+    """
+    require_corpus(app)
+    path = str(app_path(app))
+    return build_findings(path, extract_repo(path).surfaces, None)
+
+
 def corpus_static_check_findings(app: str, sbom: dict) -> list[Finding]:
     """Run only the two checks Tasks 3.2 and 3.3 built, so a later check cannot mask them."""
     _, surfaces, mapping = corpus_inputs(app, sbom)

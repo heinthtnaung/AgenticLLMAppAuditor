@@ -14,9 +14,15 @@ from conftest import (
 )
 
 # The fixtures that must be present under corpus/, in discovery order. One
-# carries planted vulnerabilities and measures recall; the other is a clean
-# upstream starter and is the only one that can measure false positives.
-EXPECTED_CORPUS_APPS = ("oss-app-langgraphjs-starter", "vuln-app-1-support-agent")
+# carries planted vulnerabilities and measures recall; the other two are clean
+# upstream starters, which are what can measure false positives -- one
+# TypeScript, one Python, because the taint trace only reads Python and a
+# false-positive number from a language it cannot parse says little.
+EXPECTED_CORPUS_APPS = (
+    "oss-app-langgraphjs-starter",
+    "oss-app-react-agent",
+    "vuln-app-1-support-agent",
+)
 
 
 def make_app(corpus_dir: Path, name: str) -> Path:

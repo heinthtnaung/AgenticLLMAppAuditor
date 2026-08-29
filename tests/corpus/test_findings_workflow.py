@@ -1,4 +1,4 @@
-"""What the audit loop really plans and runs over the two corpus fixtures.
+"""What the audit loop really plans and runs over the two fixtures covered here.
 
 The document-level results are asserted in test_findings_produced.py and
 test_findings_traced.py. What is asserted here is the loop that now produces

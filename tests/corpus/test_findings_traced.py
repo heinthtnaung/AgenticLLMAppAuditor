@@ -1,18 +1,28 @@
-"""What the LLM01 trace really produces on the vulnerable corpus app.
+"""What the LLM01 trace really produces on the two corpus apps it can read.
 
 One value is followed all the way: `prompt := st.chat_input(...)` on line 60,
 handed to the `AgentExecutor` bound on line 71. Nine more data sources are not,
 because the file never binds their value to a name -- and those are recorded as
 inconclusive probes rather than dropped, so the two findings this app yields
 cannot be read as the whole story.
+
+The clean Python fixture is the other app the trace can read, and it is the
+only place a Python false positive could appear. What it produces there --
+one probe that concluded nothing -- is asserted at the bottom of this file.
 """
 
 from artifacts.finding import INCONCLUSIVE, STATIC
 from artifacts.surface import DATA_SOURCE
 from checks.taint import CHECK_NAME as TAINT_CHECK
 from checks.taint import LEFT_THE_FILE, OWASP_ID
-from dependency_fixtures import LANGGRAPHJS_STARTER, SUPPORT_AGENT, corpus_sbom, js_sbom
-from findings_fixtures import corpus_findings
+from dependency_fixtures import (
+    LANGGRAPHJS_STARTER,
+    REACT_AGENT,
+    SUPPORT_AGENT,
+    corpus_sbom,
+    js_sbom,
+)
+from findings_fixtures import corpus_findings, corpus_findings_without_mapping
 
 # The one trace that completes: the walrus-bound prompt reaching the executor.
 TRACED_SURFACE_ID = "main.py:60:DATA_SOURCE:st.chat_input"
@@ -34,6 +44,10 @@ UNFOLLOWED_SOURCES = (
 UNFOLLOWED_SURFACE_IDS = {
     f"{file}:{line}:{DATA_SOURCE}:{name}" for file, line, name in UNFOLLOWED_SOURCES
 }
+
+# The clean Python app's only data source, and the trace stops at it too: the
+# value is read from the environment and never bound to a name in that file.
+REACT_AGENT_UNFOLLOWED_ID = f"src/react_agent/context.py:46:{DATA_SOURCE}:os.environ.get"
 
 
 def support_agent_document() -> dict:
@@ -97,3 +111,29 @@ def test_the_javascript_fixture_is_not_traced_at_all() -> None:
     document = corpus_findings(LANGGRAPHJS_STARTER, js_sbom())
     assert document["probes"] == []
     assert [f for f in document["findings"] if f["rule_id"] == TAINT_CHECK] == []
+
+
+def react_agent_document() -> dict:
+    """Build the clean Python fixture's document; it ships no manifest this tool reads."""
+    return corpus_findings_without_mapping(REACT_AGENT)
+
+
+def test_the_clean_python_fixture_is_traced_and_the_trace_reports_nothing() -> None:
+    """The check ran on real Python here, so its silence is a measured false-positive result."""
+    document = react_agent_document()
+    assert TAINT_CHECK in document["coverage"]["checks_run"]
+    assert [f for f in document["findings"] if f["rule_id"] == TAINT_CHECK] == []
+
+
+def test_the_clean_python_trace_stops_at_its_one_data_source() -> None:
+    """One probe, not zero: the single source it found was never bound to a name."""
+    document = react_agent_document()
+    assert document["probe_count"] == 1
+    assert [probe["subject_id"] for probe in document["probes"]] == [REACT_AGENT_UNFOLLOWED_ID]
+
+
+def test_the_clean_python_trace_concluded_nothing_rather_than_finding_nothing() -> None:
+    """Inconclusive with a reason, so the Python false-positive evidence reads as thin."""
+    probe = react_agent_document()["probes"][0]
+    assert (probe["outcome"], probe["reason"]) == (INCONCLUSIVE, LEFT_THE_FILE)
+    assert probe["probe_name"] == TAINT_CHECK

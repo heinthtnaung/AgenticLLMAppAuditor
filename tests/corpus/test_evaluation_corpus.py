@@ -1,6 +1,6 @@
 """What the auditor really scores on the corpus, asserted as measured numbers.
 
-Every figure here was read off a real run over the two fixtures and their real
+Every figure here was read off a real run over the three fixtures and their real
 grading keys. They are written down rather than recomputed in the test, so a
 check that starts finding one more thing -- or one thing less -- fails this
 file instead of quietly moving the result the write-up quotes.
@@ -12,11 +12,17 @@ import pytest
 
 from artifacts.surface import surfaces_to_json
 from conftest import app_path, ground_truth, require_corpus
-from dependency_fixtures import LANGGRAPHJS_STARTER, SUPPORT_AGENT, corpus_sbom, js_sbom
+from dependency_fixtures import (
+    LANGGRAPHJS_STARTER,
+    REACT_AGENT,
+    SUPPORT_AGENT,
+    corpus_sbom,
+    js_sbom,
+)
 from evaluation.document import build_evaluation
 from evaluation.scorer import score_app
 from evaluation_fixtures import every_value
-from findings_fixtures import corpus_findings
+from findings_fixtures import corpus_findings, corpus_findings_without_mapping
 from parsing.extractor import extract_repo
 
 # What the two checks answer today, and what the other four misses are for.
@@ -66,9 +72,18 @@ def langgraphjs_starter() -> dict:
 
 
 @pytest.fixture(scope="module")
-def evaluation(support_agent: dict, langgraphjs_starter: dict) -> dict:
+def react_agent() -> dict:
+    """Score the clean Python fixture, the one where the taint trace can actually run."""
+    require_corpus(REACT_AGENT)
+    # No manifest this tool reads, so no SBOM and no mapping: None, not an empty one.
+    return score_app(REACT_AGENT, ground_truth(REACT_AGENT),
+                     corpus_findings_without_mapping(REACT_AGENT), scan_document(REACT_AGENT))
+
+
+@pytest.fixture(scope="module")
+def evaluation(support_agent: dict, langgraphjs_starter: dict, react_agent: dict) -> dict:
     """The whole evaluation document for the corpus, which is what Phase 4 publishes."""
-    return build_evaluation([support_agent, langgraphjs_starter])
+    return build_evaluation([support_agent, langgraphjs_starter, react_agent])
 
 
 def test_the_vulnerable_app_scores_two_of_its_six_graded_findings(support_agent: dict) -> None:
@@ -155,10 +170,10 @@ def test_recall_rests_on_the_vulnerable_app_alone(evaluation: dict) -> None:
     assert recall["key_finding_count"] == 6
 
 
-def test_precision_rests_on_the_clean_app_alone(evaluation: dict) -> None:
+def test_precision_rests_on_the_clean_apps_alone(evaluation: dict) -> None:
     """The other half of the split that makes an F1 meaningless on this corpus."""
     precision = evaluation["totals"]["precision"]
-    assert precision["apps_included"] == [LANGGRAPHJS_STARTER]
+    assert precision["apps_included"] == [LANGGRAPHJS_STARTER, REACT_AGENT]
     assert (precision["true_positives"], precision["false_positives"]) == (0, 0)
     assert precision["produced_finding_count"] == 0
 

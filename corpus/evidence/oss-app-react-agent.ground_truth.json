@@ -1,0 +1,56 @@
+{
+  "app": "oss-app-react-agent",
+  "expected_surface_count": 4,
+  "expected_surfaces": [
+    {
+      "code_anchor": "setattr(self, f.name, os.environ.get(f.name.upper(), f.defau",
+      "file": "src/react_agent/context.py",
+      "id": "SURF-01",
+      "kind": "DATA_SOURCE",
+      "line": 46,
+      "line_end": null,
+      "module": "os",
+      "name": "os.environ.get"
+    },
+    {
+      "code_anchor": "system_message = runtime.context.system_prompt.format(",
+      "file": "src/react_agent/graph.py",
+      "id": "SURF-02",
+      "kind": "PROMPT_TEMPLATE",
+      "line": 40,
+      "line_end": 42,
+      "module": "",
+      "name": "system_message"
+    },
+    {
+      "code_anchor": "builder = StateGraph(State, input_schema=InputState, context",
+      "file": "src/react_agent/graph.py",
+      "id": "SURF-03",
+      "kind": "AGENT_DEF",
+      "line": 69,
+      "line_end": null,
+      "module": "langgraph.graph",
+      "name": "StateGraph"
+    },
+    {
+      "code_anchor": "SYSTEM_PROMPT = \"\"\"You are a helpful AI assistant.",
+      "file": "src/react_agent/prompts.py",
+      "id": "SURF-04",
+      "kind": "PROMPT_TEMPLATE",
+      "line": 3,
+      "line_end": 5,
+      "module": "",
+      "name": "SYSTEM_PROMPT"
+    }
+  ],
+  "expected_surfaces_complete": false,
+  "finding_count": 0,
+  "findings": [],
+  "findings_complete": true,
+  "schema_version": 2,
+  "source": "ai_drafted",
+  "upstream_commit": "9bbd82d84905acc37f527b1f372dae841016f3b4",
+  "verified": true,
+  "verified_by": "Hein Thet Naung",
+  "verified_date": "2026-08-28"
+}

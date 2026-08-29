@@ -17,6 +17,7 @@ from artifacts.surface import Surface
 
 SUPPORT_AGENT = "vuln-app-1-support-agent"
 LANGGRAPHJS_STARTER = "oss-app-langgraphjs-starter"
+REACT_AGENT = "oss-app-react-agent"
 
 # The two lockfile names the tests name individually, spelled once here rather
 # than in each file. test_sbom_duplicates.py checks package_names still lists

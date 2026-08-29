@@ -1,0 +1,10 @@
+{
+  "framework": "langgraph",
+  "language": "python",
+  "name": "oss-app-react-agent",
+  "note": "Audited fixture. Not deliberately vulnerable: it is LangChain's official ReAct agent template, added so false positives could be measured on Python, where the taint trace runs at all - the clean TypeScript fixture cannot exercise it. Read the result carefully: on this app the trace runs but concludes nothing (one source, unfollowed), and the extractor finds no tool surface, so the permission check had nothing to judge either. Its zero false positives is 0 of 0 opportunities, not a check demonstrated right. It declares its dependencies in pyproject.toml and pins them in uv.lock, and this tool reads neither - PYPI_LOCKFILES names only Pipfile.lock and poetry.lock - so it produces no SBOM, no mapping, and unresolved_component_count null, the first fixture to reach that path on real data. A reading of the source also identifies TavilySearch (tools.py:25), ToolNode (graph.py:73) and init_chat_model (utils.py:27) as real LLM surfaces that the Python detector vocabulary does not name; they are deliberately absent from expected_surfaces, which is why expected_surfaces_complete is false. That also skips test_no_unexpected_surface_when_complete for this fixture, so a newly invented surface is caught by the baseline snapshot instead, not by the completeness test. It builds ToolNode(TOOLS) and compiles with no checkpointer, callback or logging, which is deliberately NOT graded AUDITABILITY: that class turns on an app capturing a record of what the agent did and then discarding it, which this app never does. See the rule beside the ground_truth spec in docs/SCHEMAS.md. Do not modify the application code.",
+  "role": "open_source_reference",
+  "upstream_commit": "9bbd82d84905acc37f527b1f372dae841016f3b4",
+  "upstream_commit_date": "2026-08-28T14:40:29-07:00",
+  "upstream_url": "https://github.com/langchain-ai/react-agent"
+}
