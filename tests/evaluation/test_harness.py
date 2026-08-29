@@ -118,7 +118,7 @@ def test_the_missing_artifact_message_says_what_to_do_about_it(tmp_path, monkeyp
     (artifacts_dir / APP / FINDINGS_NAME).unlink()
     with pytest.raises(FileNotFoundError) as raised:
         load_app(APP, artifacts_dir)
-    assert "Run the auditor over this app first." in str(raised.value)
+    assert "Run agentic_auditor over this app first." in str(raised.value)
 
 
 def test_malformed_json_is_refused_with_the_path_that_holds_it(tmp_path, monkeypatch) -> None:

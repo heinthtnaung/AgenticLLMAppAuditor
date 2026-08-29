@@ -31,7 +31,13 @@ from parsing.repo_loader import local_module_names
 
 import report
 
-DEFAULT_ARTIFACTS_DIR = Path("artifacts")
+# The auditor is one of three scored systems, so its artifacts live under its
+# own name: a baseline's findings.json must not overwrite the auditor's. The
+# literal is deliberately not imported from `evaluation.document` -- that keeps
+# the evaluation package out of the auditor's imports, since the tool being
+# scored should not reach into the thing scoring it. A test asserts the two
+# agree, so the copy cannot drift.
+DEFAULT_ARTIFACTS_DIR = Path("artifacts") / "agentic_auditor"
 
 SURFACES_NAME = "surfaces.json"
 AIBOM_NAME = "aibom.json"
