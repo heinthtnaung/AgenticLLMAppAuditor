@@ -22,7 +22,7 @@ flowchart TD
     L --> X
     X --> D[detectors.py<br/>find the four surface kinds]
     D --> S[surface.py<br/>tidy up and serialise]
-    S --> A[(artifacts/my-app/<br/>surfaces.json)]
+    S --> A[(artifacts/agentic_auditor/<br/>my-app/surfaces.json)]
 
     M --> DEP[deps/<br/>read the manifests, run Syft]
     DEP --> B[(sbom.json + cyclonedx<br/>aibom.json, mapping.json)]
@@ -31,7 +31,7 @@ flowchart TD
     A --> W[workflow.py<br/>planner, bounded loop]
     B --> W
     W --> CK[checks/<br/>permissions, supply chain, taint]
-    CK --> F[(artifacts/my-app/<br/>findings.json)]
+    CK --> F[(artifacts/agentic_auditor/<br/>my-app/findings.json)]
     F -.-> REP[report<br/>Markdown / HTML]
 
     GT[(corpus/evidence/<br/>my-app.ground_truth.json<br/>the known answers)] -.->|tests compare| A
@@ -170,7 +170,8 @@ serialises. Two runs on the same repository produce **byte-identical** output.
 Each record gets an `id` built from its own content, `file:line:kind:name`, so
 later phases can point at a surface without repeating four fields.
 
-`main.py` writes the result to `artifacts/<app>/surfaces.json`. A repository
+`main.py` writes the result to `artifacts/<system>/<app>/surfaces.json`, where
+`<system>` is `agentic_auditor` for the tool's own run. A repository
 with no surfaces is a valid answer, not an error: the file is still written
 with `surface_count: 0`, so "audited, found nothing" is distinguishable from
 "never audited".
@@ -400,12 +401,15 @@ Phases 1 and 2 are built and tagged. Phase 3 is built: a planner runs three
 checks over one app, writes `findings.json`, and renders `report.md`, which
 gives what was *not* examined the same billing as what was found. It reaches
 two of the six findings in the vulnerable fixture's grading key and none of the
-five surfaces in the clean one -- no false positives. What is left in Phase 3
+five surfaces in the clean TypeScript one -- no false positives. What is left in Phase 3
 is using the model for prose: every run so far records
 `model_run.status: "disabled"`.
 
-Phase 4's scorer is built and produces `evaluation.json`; what is open there is
-a command to run it from, and the two baselines to compare against.
+Phase 4 is built: `src/evaluate.py` scores the corpus and both baselines exist
+(`src/baselines/`, run by `src/run_baseline.py`). The comparison is done, and
+the grep baseline reaches more of the grading key than the auditor does -- 5 of
+6 against 2 of 6. What the auditor reaches alone is the supply-chain finding,
+which needs a surface-to-component join neither baseline has.
 
 ```mermaid
 flowchart TD
@@ -419,19 +423,20 @@ flowchart TD
     FJ --> P4[Phase 4<br/>scoring vs ground truth]
     GT[(ground_truth.json)] --> P4
     P4 --> RES[(evaluation.json<br/>counts, never rates)]
-    P4 --> BL[baselines to compare against]
+    P4 --> BL[(baseline_static_rules,<br/>baseline_sbom_only)]
 
     classDef built fill:#e6f4ea,stroke:#34a853,stroke-width:2px
-    classDef partial fill:#e6f4ea,stroke:#34a853,stroke-dasharray:5 3
-    classDef planned fill:#f1f3f4,stroke:#9aa0a6,stroke-dasharray:4 3
-    class P1,SJ,P2,MJ,FJ,RM,P3,RES built
-    class P4 partial
-    class BL planned
+    class P1,SJ,P2,MJ,FJ,RM,P3,P4,RES,BL built
     style GT fill:#fef7e0,stroke:#f9ab00
 ```
 
-Solid green is built; the dashed green box is Phase 4, whose scorer works but
-has no command to run it from yet. Grey is not built.
+Every box is green: all four phases produce their artifacts today. Amber is the
+hand-written grading key, which is this project's own evidence rather than
+something the tool generates.
+
+What is *not* built is inside the boxes rather than beside them — the model
+writes nothing in any run, no advisory data is ingested, and the auditor covers
+three of the five risk classes it names.
 
 `evaluation.json` holds counts and never a rate: precision, recall and F1 are
 absent as fields so that no number can be quoted without its denominator.
@@ -462,7 +467,8 @@ would notice.
 
 | File | Its one job |
 |---|---|
-| `main.py` | command line entry point |
+| `main.py` | command line entry point: audit one app |
+| `evaluate.py` | command line entry point: score the corpus against its keys |
 | `languages.py` | which extension is which language, and which grammar reads it |
 | `corpus_paths.py` | where the corpus keeps code, and where it keeps evidence |
 | `repo_loader.py` | which files to analyse |

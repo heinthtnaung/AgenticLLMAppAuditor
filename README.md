@@ -19,29 +19,49 @@ Tan Bing Hong.
 
 ## Status
 
-**Phase 4: evaluation.** Static analysis only, and the auditor never runs the
-app it audits.
+**All four phases produce their artifacts.** Static analysis only, and the
+auditor never runs the app it audits.
 
-Phase 3 is committed: three checks run over one app under a bounded LangGraph
-planner, writing `findings.json` and a `report.md` that gives what was *not*
-examined the same billing as what was found. The local model client is set up
-but still writes nothing -- every run records `model_run.status: "disabled"`.
-Phase 4's scorer grades those findings against the hand-written keys and
-produces counts, never rates; what is open there is a command to run it from
-and the two baselines to compare against.
+- **Phase 1** extracts LLM surfaces — prompt templates, agent definitions, tool
+  definitions and data-source sites — and records where each one lives.
+- **Phase 2** builds a bill of materials for Python and npm dependencies, an
+  inventory of the models, tools and agents, and a join from each surface to the
+  package it came from.
+- **Phase 3** runs three checks under a bounded LangGraph planner, writing
+  `findings.json` and a `report.md` that gives what was *not* examined the same
+  billing as what was found.
+- **Phase 4** scores those findings against hand-written grading keys and against
+  two baselines, in counts and never rates.
 
-Phase 1 is complete: the extractor finds prompt templates, agent definitions,
-tool definitions and data-source sites, and records where each one lives.
-Phase 2 adds a bill of materials for Python and npm dependencies, an inventory
-of the models, tools and agents, and a join from each surface to the package it
-came from.
+**What is not built is inside those phases, not after them.** The local model
+writes nothing — every run records `model_run.status: "disabled"`. No advisory
+data is ingested, so a supply-chain finding names a package but not what is
+known to be wrong with it. The auditor covers three of the five risk classes it
+names.
 
-What that produces on the two fixtures today:
+### The headline result
+
+**On this corpus a five-rule regex baseline reaches more of the grading key than
+the auditor does — 5 of 6 against 2 of 6.** That is reported first because a
+comparison that only shows wins is not evidence.
+
+The two are near-complementary rather than competing: their union is all six,
+and they share only one. The auditor reaches `VULN1-06` alone — the
+supply-chain finding — because reaching it means joining a *surface* to a
+*component*, which no baseline has. Where the auditor loses, it loses ground it
+never entered: LLM02 and AUDITABILITY are absent from its coverage entirely.
+
+Both systems were authored with this corpus visible, so neither figure
+generalises. See [`docs/PHASE_4_PLAN.md`](docs/PHASE_4_PLAN.md) for the full
+table and its caveats.
+
+What that produces on the three fixtures today:
 
 | Fixture | surfaces | components | surfaces joined to a package |
 |---|---|---|---|
 | `vuln-app-1-support-agent` (Python) | 19 | 5 | 6 of 19 |
 | `oss-app-langgraphjs-starter` (TypeScript) | 5 | 82 | 4 of 5 |
+| `oss-app-react-agent` (Python) | 4 | — | — |
 
 Most unjoined surfaces are not defects: a language builtin, the app's own code,
 or a call on a local variable whose type static analysis cannot follow.
@@ -52,9 +72,44 @@ risk — one surface in the Python fixture hits it, importing PyYAML.
 package exists" is never confused with "we could not tell", and neither is
 confused with a finding.
 
-The second app has no planted vulnerabilities, so it is the fixture that
-measures **false positives**: it currently reports 5 of 5 expected surfaces and
-nothing else.
+The last two have no planted vulnerabilities, so a finding in either is wrong by
+construction. Only the TypeScript one currently carries real **false-positive**
+evidence: its supply-chain check ran against an 82-component SBOM and its one
+tool surface was judged, so a check could have been wrong and was not. The
+Python one reports no findings either, but no check there had a subject to be
+wrong about — it has no tool surface, its taint trace ran and reached no
+conclusion, and it has no bill of materials at all. Its zero is **0 out of 0
+opportunities**, which is worth having and is not the same claim.
+
+`oss-app-react-agent` declares its dependencies in `pyproject.toml` and pins
+them in `uv.lock`, and this tool reads neither, so it produces no bill of
+materials and no mapping — the dashes above. That is a real gap, not a bad fixture: it is the only fixture that
+exercises what the tool does when it cannot see an app's dependencies at all.
+
+### What it scores against the grading keys
+
+| Fixture | key findings | matched | missed | false positives |
+|---|---|---|---|---|
+| `vuln-app-1-support-agent` | 6 | 2 | 4 | **not measurable** — its key does not claim to list every finding, so the count is `null` rather than `0` |
+| `oss-app-langgraphjs-starter` | 0 | — | 0 | 0 |
+| `oss-app-react-agent` | 0 | — | 0 | 0 |
+
+**Counts, never rates.** `evaluation.json` holds no float and no percentage:
+precision, recall and F1 are absent as fields, so a number cannot be quoted
+without the denominator beside it. F1 is refused outright, with the reason
+recorded in the file — no fixture supports both a precision and a recall number,
+so there is nothing to combine.
+
+Each miss carries the reason it was missed rather than a bare count. Of the
+four: two are checks that ran and stayed silent, and two are risk classes no
+check covers yet. That breakdown is more useful than the total, and it is why
+a short findings list is never reported as a clean bill.
+
+Three applications is still a demonstration, not a measurement, and the artifact
+says so: all three trip the `small_sample` qualification. All three keys are now
+human-verified, so none trips `key_unverified` — but they remain
+`source: ai_drafted`, because who drafted a key and who checked it are different
+facts and the artifact records both.
 
 Progress and blockers: [`docs/TODO.md`](docs/TODO.md).
 
@@ -153,16 +208,22 @@ git -C corpus/vuln-app-1-support-agent checkout -q c0cf9a14adad76e9d6a53c41741f6
 git clone https://github.com/langchain-ai/langgraphjs-studio-starter \
     corpus/oss-app-langgraphjs-starter
 git -C corpus/oss-app-langgraphjs-starter checkout -q cd9a02c64afd97fe008199665ebb0aac803451da
+
+git clone https://github.com/langchain-ai/react-agent \
+    corpus/oss-app-react-agent
+git -C corpus/oss-app-react-agent checkout -q 9bbd82d84905acc37f527b1f372dae841016f3b4
 ```
 
-The first app carries planted vulnerabilities and measures **recall**. The
-second is an official starter template with nothing planted in it, so it is the
-only fixture that can measure **false positives** — a detector that flags
-something here is wrong by construction.
+The first app carries planted vulnerabilities and measures **recall**. The other
+two are official starter templates with nothing planted in them, so they are
+what measures **false positives** — a detector that flags something in either is
+wrong by construction. They are deliberately one TypeScript and one Python: the
+taint trace only reads Python, so a false-positive number taken solely from a
+language it cannot parse would say very little.
 
 **The checkout line matters as much as the clone.** Every line number in a
-grading key is recorded against that app's pinned commit. Both happen to be on
-the default branch today, but the moment upstream commits anything a plain
+grading key is recorded against that app's pinned commit. All three happen to be
+on the default branch today, but the moment upstream commits anything a plain
 `git clone` lands on different code. The drift is caught — the `code_anchor`
 test fails and names the findings — but pinning is far cheaper than debugging
 that later. Each commit is recorded in its
@@ -184,7 +245,9 @@ Audit a repository:
 python src/main.py corpus/vuln-app-1-support-agent
 ```
 
-It writes everything it can into `artifacts/<app>/` and makes no network call:
+It writes everything it can into `artifacts/agentic_auditor/<app>/` and makes no
+network call. The `agentic_auditor` segment names which system produced the
+files, so a Phase 4 baseline's output cannot overwrite the auditor's:
 
 | Artifact | Needs |
 |---|---|
@@ -200,6 +263,64 @@ Producing less is a normal outcome, not a failure. Without Syft, or with no
 manifest it knows how to read, it writes what it can and says on stderr why the
 rest were skipped. A repository declaring **both** a Python and an npm
 manifest is refused a bill rather than given half of one.
+
+### Scoring the corpus
+
+Once every fixture has been audited, score what was found against their
+grading keys:
+
+```sh
+python src/evaluate.py
+```
+
+It writes `artifacts/<system>/evaluation.json` — one file per system per run,
+not one per app, because a comparison across apps is not a per-app fact. The
+system defaults to `agentic_auditor`; `--system` takes one of the three names
+in `SCORED_SYSTEMS`, and that name is also the directory the artifacts are read
+from, so three systems can be scored without overwriting each other.
+
+It prints counts and what bounds them, and **never a rate**. The vulnerable
+fixture's block — a real run also lists the two clean fixtures first (apps are
+sorted) and adds a `precision pool` line, omitted here:
+
+```
+scored 3 apps as agentic_auditor, wrote artifacts/agentic_auditor/evaluation.json
+  vuln-app-1-support-agent: 2 of 6 matched, 4 missed, false positives not measurable
+    bounded by: advisory_data_not_ingested, expected_surfaces_not_complete, findings_not_complete, key_ai_drafted, model_disabled, small_sample, unresolved_components
+  recall pool: 2 of 6 over vuln-app-1-support-agent
+  f1: no app supports both precision and recall
+```
+
+Precision, recall and F1 are absent from the artifact as fields. A reader who
+wants a rate divides for themselves, which means holding the denominator and
+the qualifications printed beside it. "False positives not measurable" is not
+a bug: that fixture's key does not claim to list every finding, so the count is
+undefined and recorded as `null` rather than `0`.
+
+### Comparing against the baselines
+
+The auditor is scored against two simpler systems: a five-rule regex scan, and
+an SBOM-only scan. Each writes into its own directory, so no system can
+overwrite another's output and the same scorer grades all three unchanged:
+
+```sh
+python src/run_baseline.py baseline_static_rules
+python src/run_baseline.py baseline_sbom_only
+python src/evaluate.py --system baseline_static_rules
+```
+
+| System | Reaches, of 6 graded findings | False positives on the clean apps |
+|---|---|---|
+| `agentic_auditor` | 2 | 0 |
+| `baseline_static_rules` | 5 | 1 |
+| `baseline_sbom_only` | 0 | 187 |
+
+Read the last column with care. Every one of the SBOM baseline's 187 is a *true*
+statement — the component is present and unreviewed. They count as false
+positives because the key grades vulnerabilities while the finding reports
+inventory, which is a category mismatch rather than a tool being wrong. What is
+missing is advisory data, and that is this project's own unfinished Phase 2
+work.
 
 Run the tests with:
 
@@ -217,7 +338,10 @@ src/         the auditor's source code, one responsibility per module
   deps/      read an app's dependencies, and match imports to packages
   checks/    the security checks, and the LangGraph planner that runs them
   evaluation/ score the findings against a grading key; the one join rule
-  main.py    the single entry point; report.py renders the human report
+  baselines/ the two simpler systems the auditor is compared against
+  main.py    audits one app; evaluate.py scores the corpus against its keys
+  run_baseline.py runs one baseline over the corpus
+  report.py  renders the human-readable report
   model_client.py talks to Ollama
   config.py  settings from the environment; corpus_paths.py locates fixtures
 corpus/
@@ -266,6 +390,8 @@ leaves the app **silently ungraded**, so the layout matters.
 - [`docs/PHASE_1_PLAN.md`](docs/PHASE_1_PLAN.md) — Phase 1 task breakdown
 - [`docs/PHASE_2_PLAN.md`](docs/PHASE_2_PLAN.md) — Phase 2 task breakdown
 - [`docs/PHASE_3_PLAN.md`](docs/PHASE_3_PLAN.md) — Phase 3 task breakdown
+- [`docs/PHASE_4_PLAN.md`](docs/PHASE_4_PLAN.md) — Phase 4 task breakdown, and
+  what the evaluation may and may not claim
 - [`docs/SCHEMAS.md`](docs/SCHEMAS.md) — the JSON contracts between phases
 
 ## Licence

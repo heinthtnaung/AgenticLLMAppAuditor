@@ -28,13 +28,15 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done
 
 - [x] Collect deliberately-vulnerable demo apps (2 apps). The one on disk
       carries 6 drafted findings; the second app is not downloaded, so the
-      corpus-wide count cannot be stated here — see B3
+      corpus-wide count cannot be stated here — the keys are per-app
     - https://github.com/ReversecLabs/damn-vulnerable-llm-agent
     - https://github.com/13o-bbr-bbq/Broken_LLM_Integration_App
-- [~] Select + verify 2–3 open-source LangGraph/LangChain apps (checklist and
-      manifest template ready; live verification done by hand) — **two of the
-      three are JavaScript/TypeScript**; the auditor now reads those too, and
-      one of them is a fixture on disk (see 1.10)
+- [x] Select + verify 2–3 open-source LangGraph/LangChain apps (checklist and
+      manifest template ready; live verification done by hand). **Two are
+      fixtures on disk**: `oss-app-langgraphjs-starter` (TypeScript, see 1.10)
+      and `oss-app-react-agent` (Python), one per language the auditor reads,
+      so a false-positive number is not taken solely from the language its
+      taint trace cannot parse
     - ~~https://github.com/langchain-ai/agent-chat-ui~~ — **dropped**: 56 source
       files yielding a single generic `fetch` surface. It is a frontend that
       talks to a server over `langgraph-sdk`, so it has no prompts, agents, or
@@ -43,12 +45,28 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done
       `corpus/oss-app-langgraphjs-starter`, pinned to `cd9a02c6` (TypeScript,
       5 surfaces, no planted vulnerabilities, so it measures false positives on
       clean code). Removed when the corpus narrowed to one app, restored since
+    - https://github.com/langchain-ai/react-agent — adopted as
+      `corpus/oss-app-react-agent`, pinned to `9bbd82d8` (Python, 4 surfaces,
+      no planted vulnerabilities). Added so false positives could be measured
+      on **Python**, where the taint trace runs at all -- the clean TypeScript
+      fixture cannot exercise it. **The result is thinner than the intent:**
+      the trace runs here but concludes nothing (one source, unfollowed), and
+      the extractor finds no tool surface, so the permission check had no
+      subject either. Its zero false positives is 0 of 0 opportunities --
+      stated and exercised, but not demonstrated. It declares dependencies in `pyproject.toml`, which
+      the tool does not read, so it is also the only fixture reaching the
+      no-manifest path end to end -- no SBOM, no mapping, and
+      `unresolved_component_count: null` on real data for the first time
     - https://github.com/langchain-ai/open_deep_research
-- [~] Manually establish ground truth for the demo app — drafted as
+- [x] Manually establish ground truth for the demo app —
       `corpus/evidence/vuln-app-1-support-agent.ground_truth.json`, 6 findings,
-      `verified: false`. Needs the human second-person check. See B3.
-- [ ] Manually establish ground truth for the open-source apps (read code,
-      list surfaces/issues, second-person check)
+      now `verified: true` with a named human and date. It stays
+      `source: ai_drafted`: who wrote it and who checked it are different
+      facts, and collapsing them would overstate the key's provenance
+- [x] Manually establish ground truth for the open-source apps —
+      `corpus/evidence/oss-app-langgraphjs-starter.ground_truth.json`, 5
+      expected surfaces and no findings, also read and verified. B3 cleared on
+      both
 
 ---
 
@@ -79,7 +97,7 @@ Phase 1 detail, per `docs/PHASE_1_PLAN.md`:
 - [~] 1.7 Validation — the suite is green and every code-linked ground-truth
       surface is found *in the files the scan could read*; a scorer has to read
       `skipped_files` before treating that as recall (see `docs/SCHEMAS.md`).
-      The by-hand cross-check of each grading key is a human task. See B3.
+      The by-hand cross-check of each grading key is a human task; all three keys now carry one.
 - [x] Settings read from the environment (`src/config.py` + `.env.example`);
       the test corpus is discovered on disk instead of listed in code
 - [x] System flow documented step by step in `docs/FLOW.md`
@@ -88,11 +106,15 @@ Phase 1 detail, per `docs/PHASE_1_PLAN.md`:
 - [x] 1.9 JavaScript/TypeScript backend (`src/detectors/detectors_js.py`,
       `src/parsing/extractor_js.py`, `src/parsing/ts_utils.py`) via tree-sitter
 - [x] 1.10 A clean-code fixture — `oss-app-langgraphjs-starter`, restored and
-      pinned to `cd9a02c6`. It is the only fixture that can measure a
-      false-positive rate; every other one measures recall alone. Current
-      reading: **5 of 5 expected surfaces found, 0 false positives**, against a
-      grading key that claims `expected_surfaces_complete: true`, so an extra
-      surface would fail the test rather than go unnoticed
+      pinned to `cd9a02c6`. Current reading: **5 of 5 expected surfaces found,
+      0 false positives**, against a grading key that claims
+      `expected_surfaces_complete: true`, so an extra surface would fail the
+      test rather than go unnoticed. It is still the fixture carrying real
+      false-positive evidence: its supply-chain check ran against an
+      82-component SBOM and its one tool surface was judged.
+      `oss-app-react-agent` joined it later as a second clean fixture, in
+      Python, but no check there had a subject to be wrong about -- 0 of 0
+      opportunities. The vulnerable fixture still measures recall alone
 - [x] Evidence split out of the audited code: `corpus/<app>/` is now a
       byte-identical upstream copy, and everything authored about it lives in
       `corpus/evidence/`, owned by `src/corpus_paths.py`
@@ -157,7 +179,9 @@ done-criteria.
       `tests/artifacts/test_sbom_vocabulary.py` is the only one that exercises
       it. The retention rule became one-directional in the process: a version
       implies one of the four sources, not the reverse
-- [ ] Read Python lockfiles (`poetry.lock`, `Pipfile.lock`). Needs
+- [ ] Read Python lockfiles (`poetry.lock`, `Pipfile.lock`, and `uv.lock`,
+      which `oss-app-react-agent` ships and which is why that fixture produces
+      no bill of materials at all). Needs
       `from_lockfile` derived per component from the generator's own evidence
       first, for the reason on the `locked` line above
 - [ ] Attribute a constraint to the record it actually selected. Today
@@ -366,6 +390,29 @@ done-criteria.
       -- the second counts only mapping's `unresolved` reason, since `stdlib`
       and `first_party` are answers and `used_but_undeclared` is already a
       finding
+- [ ] Name `TavilySearch`, `ToolNode` and `init_chat_model` in the Python
+      detector vocabulary. Reading `oss-app-react-agent` identifies all three
+      as real LLM surfaces -- a tool call, a tool node and a model loader --
+      and the Python tables name none of them, so the extractor finds 4 of the
+      ~7 surfaces a reader sees. The JS tables already carry
+      `TavilySearchResults`, so the two languages disagree about the same
+      library. They are deliberately **absent** from that fixture's
+      `expected_surfaces`, which is why its `expected_surfaces_complete` is
+      `false`: listing them would fail the suite, and quietly omitting them
+      without saying so would fit the key to the tool
+- [ ] Close the four known misses on the vulnerable app. Phase 4's scoring
+      found them, but the work is Phase 3's: it changes what the auditor
+      detects, and a detector must never be changed during a measurement.
+      Two are checks that ran and stayed silent -- **VULN1-01** (LLM01, the
+      system prompt at `main.py:21`) and **VULN1-02** (LLM06, the
+      `GetUserTransactions` tool at `tools.py:40`). Two are risk classes no
+      check covers at all -- **VULN1-04** (LLM02, insecure output handling,
+      `transaction_db.py:62`) and **VULN1-05** (AUDITABILITY, the
+      `AgentExecutor` at `main.py:71`), so `risk_classes_checked` names neither
+      LLM02 nor AUDITABILITY today and their misses are attributed
+      `no_check_for_risk_class` rather than to silence. Do it knowingly, in its
+      own change, and re-score afterwards -- the before-and-after is itself a
+      result worth reporting
 - [x] Confirm human-in-the-loop only (no auto-patch, no PR merge), and that
       the auditor never executes the audited app. Asserted, not promised:
       `tests/test_no_mutation.py` hashes a corpus app before and after a full
@@ -378,18 +425,18 @@ done-criteria.
 
 ## Phase 4 — Evaluation & write-up
 
-See `docs/PHASE_4_PLAN.md` for the task breakdown -- **not yet written**, see
-the first item below.
+See [`PHASE_4_PLAN.md`](./PHASE_4_PLAN.md) for the task breakdown.
 
-- [ ] Write `docs/PHASE_4_PLAN.md`. Every earlier phase got its plan before its
-      code and this one did not: the scorer was built first. Writing it now
-      would be a retrofit of what already exists, so the honest gate is the
-      baselines -- plan them before building them, and record in the plan that
-      the scorer preceded it
+- [x] Write `docs/PHASE_4_PLAN.md`. Every earlier phase got its plan before its
+      code and this one did not: the scorer was built first, and the plan says
+      so in its own section rather than papering over it. It gates what has not
+      been built -- the entry point, the two baselines and the comparison --
+      and writes each baseline's brief down *before* its code, so a baseline
+      cannot be quietly weakened once the numbers come out close
 - [x] Build the evaluation harness/scorer (`src/evaluation/`). Reads each
       app's `ground_truth.json`, `findings.json` and `surfaces.json`, joins
       them on the one rule in `src/evaluation/grading.py`, and builds
-      `artifacts/evaluation.json`: TP/FN per app and pooled, with every miss
+      `artifacts/<system>/evaluation.json`: TP/FN per app and pooled, with every miss
       attributed to a reason rather than left as a bare count. The join rule
       lives in source because three test files had grown three different line
       windows for it, and a scorer built on a fourth would measure something
@@ -399,25 +446,53 @@ the first item below.
       copy a percentage out of it without dividing, and to divide they must
       hold the denominator. `false_positives` is `null` -- never `0` -- when
       the key's `findings_complete` is false, because the count is undefined
-      there. Neither corpus app supports both precision and recall today, so
+      there. No corpus app supports both precision and recall today, so
       no single app yields an unqualified pair
-- [ ] Give the harness a command to run from. `write_evaluation` exists and is
-      tested, but nothing invokes it: `main.py` audits one app, while
-      `evaluation.json` covers a whole run, so it needs its own entry point
-      rather than a hook in the per-app CLI. Until then the artifact is
-      produced only from tests
-- [ ] Implement baselines: simple static rules and SBOM-only scan, and score
-      them through the same harness
-- [ ] Report which framework names the corpus actually exercises. **Moved out
+- [x] Give the harness a command to run from -- `src/evaluate.py`, its own
+      entry point rather than a hook in the per-app CLI, because a whole-run
+      artifact written by a per-app command is how a partial run silently
+      produces a complete-looking score. `--system` is a closed vocabulary
+      (`SCORED_SYSTEMS`), since the value becomes a directory name, and the
+      artifacts moved to `artifacts/<system>/<app>/` so three systems can
+      coexist -- which is also what lets the harness score every one of them
+      unmodified. It prints counts and their qualifications, never a rate
+- [x] Implement baselines: simple static rules (`src/baselines/static_rules.py`,
+      rules in `rules.py`) and SBOM-only scan (`src/baselines/sbom_only.py`),
+      run by `src/run_baseline.py` and scored through the **unmodified**
+      harness. Ceilings were computed before the code and both held exactly:
+      Baseline A reached 5 of 6, Baseline B 0 of 6. Neither reads a grading
+      key -- `test_scorer_boundary.py` now guards `src/baselines/` too
+- [x] Report which framework names the corpus actually exercises. **Moved out
       of Phase 2:** the fix is fixtures, not detector code, and the number is
-      an evaluation result. Measured today: the JS tables hold **57** names
-      across 12 tables -- 47 plus the 10 the route detector added -- and the
-      one JS fixture exercises **5**, so 52 are carried untested. Counting
-      excludes `HTTP_METHODS` and `ROUTE_DECORATOR_ROOTS`, which are the Python
-      tables the route tables are built from rather than tables of their own.
-      (An earlier note said 29; that was never sourced.)
-- [ ] Run experiments: agentic auditor vs baselines on the full corpus
-- [ ] (Optional, if RQ3 is kept) Compare model families (Gemma / Llama / Qwen)
+      an evaluation result. The counting rule now lives in
+      `src/evaluation/vocabulary.py` rather than in prose, because the figure
+      that stood here -- "57 names across 12 tables" -- reproduced under no
+      reading of the source, exactly like the unsourced "29" before it. A
+      framework name is an identifier the detectors look for that a framework
+      or library published; HTTP verbs, object-name roots like `app`, chat
+      message dict keys and author-chosen name substrings are excluded, and the
+      count is deduplicated because `HIGH_PRIVILEGE_TOOLS` and `TOOL_CLASSES`
+      deliberately overlap, and a name counts as reached when a surface names
+      it or names it as a dot segment -- a detector matches a root and records
+      the whole chain, so `cursor.execute` reaches `execute`. **Measured:
+      Python exercises 12 of 76 registered names, JavaScript 4 of 42** -- so
+      102 of 118 are carried untested. A test
+      carries the numbers so the write-up cannot quote a stale one
+- [x] Run experiments: agentic auditor vs baselines on the full corpus.
+      **The grep baseline beats the auditor on recall, 5 of 6 against 2 of 6**,
+      with 1 false positive against 0. SBOM-only reaches 0 of 6 and produces
+      187 false positives. Reported headline-first because a comparison that
+      only shows wins is not evidence. Full table and caveats in
+      `PHASE_4_PLAN.md` Task 4.4
+- [ ] (Optional, if RQ3 is kept) Compare model families. **A second model is
+      now available** -- `gemma4:latest` beside `qwen2.5-coder:7b-instruct`,
+      both answering through `model_client` -- so that precondition is met.
+      What still blocks it is not a model: nothing in a scored path calls one.
+      Audited under each in turn, the vulnerable fixture's artifacts are
+      **byte-identical**, `model_run.status: "disabled"`. A comparison today
+      would report a difference of zero between any two models, which measures
+      the wiring rather than the models. Needs Phase 3's unticked exit item
+      first: give the model a bounded job whose result is recorded
 - [ ] Implement probe: benign injection tests in a sandbox (direct + indirect
       via documents). **Moved out of Phase 3**, where it could not earn its
       place: every finding in both grading keys carries `detection` of `static`
@@ -428,9 +503,26 @@ the first item below.
       fact about `qwen2.5-coder:7b-instruct` rather than about the audited app.
       Revisit only with a fixture carrying `detection: "probe"` findings and a
       locally servable model
-- [ ] Analyse results (does agentic probing improve detection + explanation?)
+- [x] Analyse results. **The counts do not tell the useful story; the sets do.**
+      The auditor matches `{VULN1-03, VULN1-06}`, the grep baseline
+      `{VULN1-01..05}` -- near-complementary, union all six, and only
+      `VULN1-03` shared. **`VULN1-06` is reached by the auditor alone**: it is
+      the supply-chain finding, and reaching it means joining a surface to a
+      component, which is what `mapping.json` is for. A regex fires on
+      `import yaml` at `utils.py:3` while the key anchors at the use site
+      `utils.py:75`; the SBOM baseline knows the package and not the line.
+      Where the auditor loses it loses ground it never entered -- LLM02 and
+      AUDITABILITY are absent from its `risk_classes_checked`. The probing
+      question stays **unanswerable**: every scored run carries
+      `model_disabled`, so no scored output depends on the model. Full analysis
+      in `PHASE_4_PLAN.md` Task 4.7
 - [ ] Write the thesis report
-- [ ] Release the open-source prototype
+- [~] Release the open-source prototype. **Hygiene checked against a clean
+      clone**: MIT licence present, no audited app source tracked (`corpus/`
+      holds only `evidence/`), no artifact tracked, no `.env` or credential.
+      **Blocked on the write-up**: `docs/report.docx` is tracked and stale
+      while its source is gitignored, so a release today would ship a document
+      contradicting the code beside it
 
 ---
 
@@ -441,7 +533,8 @@ resolved; do not tick the task above until its blocker is gone.
 
 | # | Blocker | Who / what unblocks it |
 |---|---|---|
-| ~~B3~~ | ~~Both grading keys are AI-drafted and unverified.~~ **Cleared.** Both now carry `verified: true` with `verified_by: "Hein Thet Naung"` and `verified_date: "2026-08-28"`, so a Phase 4 number has a human behind it. The keys stay `source: ai_drafted` -- that records who wrote them, which is a different fact from who checked them. | Cleared. |
+| ~~B8~~ | ~~`oss-app-react-agent`'s grading key is unverified.~~ **Cleared.** It now carries `verified: true` with `verified_by: "Hein Thet Naung"` and `verified_date: "2026-08-28"`, so `key_unverified` no longer fires on it and its false-positive count has a human behind it. It stays `source: ai_drafted`, like the other two: who drafted a key and who checked it are different facts. | Cleared. |
+| ~~B3~~ | ~~The two grading keys of the time were AI-drafted and unverified.~~ **Cleared**, and B8 later cleared the third. All three now carry `verified: true` with `verified_by: "Hein Thet Naung"` and `verified_date: "2026-08-28"`, so a Phase 4 number has a human behind it. The keys stay `source: ai_drafted` -- that records who wrote them, which is a different fact from who checked them. | Cleared. |
 | ~~B6~~ | ~~The corpus exercised no LLM03 finding.~~ **Cleared with B3.** `VULN1-06` records PyYAML used but never declared, with `SURF-06` as its expected surface, and the human read it covers. | Cleared. |
 | B7 | **Phase owners are unassigned** across Hein / Bing Hong / JW. | Agree the split. |
 

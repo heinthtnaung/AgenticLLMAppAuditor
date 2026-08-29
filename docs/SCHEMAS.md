@@ -30,14 +30,50 @@ artifact directory name, `ground_truth.app`, and `manifest.name`.
 | Grading key | `corpus/evidence/<app>.ground_truth.json` | hand-authored |
 | Provenance, fixture | `corpus/evidence/<app>.manifest.json` | hand-authored |
 | Regression snapshot | `corpus/evidence/<app>.baseline.json` | tool-derived |
-| Phase 1 output | `artifacts/<app>/surfaces.json` | `src/main.py` |
-| Phase 2 output | `artifacts/<app>/sbom.json` | `src/main.py` |
-| Phase 2 output | `artifacts/<app>/sbom.cyclonedx.json` | `src/main.py`, the same scan in the standard format |
-| Phase 2 output | `artifacts/<app>/aibom.json` | `src/main.py` |
-| Phase 2 output | `artifacts/<app>/mapping.json` | `src/main.py` |
-| Phase 3 output | `artifacts/<app>/findings.json` | `src/main.py` |
-| Phase 3 output | `artifacts/<app>/report.md` | `src/report.py` — **not JSON and not a contract.** A rendering of the two files above for a person to read; nothing consumes it, and nothing may join on it. It is listed here so a reader of this file does not find an artifact it never mentions. |
-| Phase 4 output | `artifacts/evaluation.json` | `src/evaluation/harness.py` — one file for the whole run, not one per app. **No command produces it yet**: `write_evaluation` is written and tested, but `main.py` audits a single app and this artifact spans a run, so it needs its own entry point. |
+| Phase 1 output | `artifacts/<system>/<app>/surfaces.json` | `src/main.py`, and each baseline for its own run |
+| Phase 2 output | `artifacts/<system>/<app>/sbom.json` | `src/main.py` |
+| Phase 2 output | `artifacts/<system>/<app>/sbom.cyclonedx.json` | `src/main.py`, the same scan in the standard format |
+| Phase 2 output | `artifacts/<system>/<app>/aibom.json` | `src/main.py` |
+| Phase 2 output | `artifacts/<system>/<app>/mapping.json` | `src/main.py` |
+| Phase 3 output | `artifacts/<system>/<app>/findings.json` | `src/main.py`, and each baseline |
+| Phase 3 output | `artifacts/<system>/<app>/report.md` | `src/report.py` — **not JSON and not a contract.** A rendering of the two files above for a person to read; nothing consumes it, and nothing may join on it. It is listed here so a reader of this file does not find an artifact it never mentions. |
+| Phase 4 output | `artifacts/<system>/evaluation.json` | `src/evaluate.py`, via `src/evaluation/harness.py` — one file per system per run, never one per app |
+
+`<system>` is the second join key, added in Phase 4: which of the three scored
+systems produced the file. Its vocabulary is `evaluation.json`'s `system` field
+— `agentic_auditor`, `baseline_static_rules`, `baseline_sbom_only` — and
+deliberately not a second list, so the directory a file sits in and the label
+inside its scorecard cannot disagree. Rows written by `src/main.py` are the
+auditor's, so `<system>` there is always `agentic_auditor`; a baseline writes
+`findings.json` and `surfaces.json`, and nothing else.
+
+**The system comes before the app, and the reason is `evaluation.json`.** That
+artifact spans every app for one system, so it needs a directory of that exact
+scope, and only this order has one. It is also what keeps the harness
+unmodified: `load_app` and `write_evaluation` join `<app>` and the filename onto
+the directory they are handed, so the system segment is a directory the caller
+names rather than a rule the loader has to learn.
+
+**A system's `surfaces.json` is its own, never shared.** The scorer reads it
+only to attribute misses — `surface_not_extracted`, `file_skipped` — so pointing
+a baseline at the auditor's copy would not move a single count, but it would
+make the baseline's miss reasons change whenever the auditor's extractor
+changes, and it would attribute one system's misses to another system's
+behaviour. Absent is still an error: the file is how "no inventory" is told
+from "never run".
+
+**What a baseline's `surfaces.json` contains depends on whether it names any
+surface.** `surface_count: 0` is not a neutral absence -- it is the falsifiable
+claim "audited, nothing found" -- so a system may only make it if it is true.
+A baseline that matches raw text and names what it matched (a `DATA_SOURCE`
+called `st.chat_input` at `main.py:60`, say) *did* identify that surface, and
+its findings say so; an empty `surfaces.json` beside those findings is a
+self-contradiction a reader meets by opening both files. Such a baseline writes
+exactly the distinct surface tuples its own findings name, deduplicated and
+sorted -- derived findings-first, never by inventorying the repository, because
+it still performs no inventory. A baseline that names no surface at all, such
+as one reporting whole components with no file or line, writes `surface_count:
+0` truthfully.
 
 **`schema_version` is per file.** Each artifact versions independently; that
 `surfaces.json` and `sbom.json` are at 3 and `mapping.json` at 2, while a new
@@ -74,7 +110,7 @@ the wrong file.
 
 ---
 
-## `artifacts/<app>/surfaces.json` — Phase 1 output
+## `artifacts/<system>/<app>/surfaces.json` — Phase 1 output
 
 Produced by `src/main.py` via `surface.surfaces_to_json`. Read by Phase 2
 mapping and Phase 3 auditing. `<app>` is the audited directory's name — see the table above for how
@@ -209,14 +245,14 @@ are the same surface even if `detail` differs, and are collapsed by
 
 ---
 
-## `artifacts/<app>/sbom.json` — Phase 2 output
+## `artifacts/<system>/<app>/sbom.json` — Phase 2 output
 
 What the app's dependency manifests and the SBOM generator say about its
 components.
 
 This is not CycloneDX, and the reason is not determinism -- a valid
 deterministic CycloneDX document sits beside it as
-`artifacts/<app>/sbom.cyclonedx.json`. It is that CycloneDX has no field for
+`artifacts/<system>/<app>/sbom.cyclonedx.json`. It is that CycloneDX has no field for
 **how much a version can be trusted**: one guessed from `~=0.3.25` looks
 exactly like an exact pin, and that distinction is what stops an advisory
 lookup claiming a vulnerability the app may not have. CycloneDX also lists only
@@ -311,7 +347,7 @@ satisfaction, which this project does not do.
 
 ---
 
-## `artifacts/<app>/aibom.json` — Phase 2 output
+## `artifacts/<system>/<app>/aibom.json` — Phase 2 output
 
 The AI-specific pieces: which models, tools and agents the app defines. Derived
 from `surfaces.json`, never by re-parsing source, so every entry is traceable.
@@ -348,7 +384,7 @@ descriptive only, so parsing it would make a reworded string break this file.
 
 ---
 
-## `artifacts/<app>/mapping.json` — Phase 2 output
+## `artifacts/<system>/<app>/mapping.json` — Phase 2 output
 
 Joins each surface to the component it comes from, or records why there is
 none. Exactly one entry per surface.
@@ -508,10 +544,38 @@ would poison the grading key.
 false positive. This is the only place the write-up can honestly claim a
 false-positive rate.
 
+**When AUDITABILITY is graded, and when it is not.** The class is not "the app
+keeps no audit log" -- almost no template does, and a rule that broad would
+grade every fixture and measure nothing. It is graded when the app **captures**
+a record of what the agent did and then **discards it**, because that is a
+decision the app made rather than a facility it never reached for.
+`vuln-app-1-support-agent`'s `VULN1-05` qualifies: `AgentExecutor` is built with
+`return_intermediate_steps=True`, so the tool trace exists, and it is then put
+only in Streamlit session state and lost with the session.
+`oss-app-react-agent` does not, and the reason is stronger than "it configures
+no logging": **this repository never runs the graph.** `langgraph.json` exports
+`./src/react_agent/graph.py:graph` for a deployment to invoke, and `src/`
+contains no `invoke` or `stream` of it, so there is no point at which the app
+could retain or discard a record of anything. (Its `State.messages` is
+append-only and does accumulate tool calls during a run, so "it captures
+nothing" would be falsifiable from `state.py`. What is true is that no run
+happens here, and what a deployment does with that state is not a property of
+this repository.) The distinction
+is recorded here because the two keys would otherwise read as contradicting
+each other on the same construct.
+
 **Known limitation, to be stated in the write-up:** exhaustiveness is only
-claimed where `expected_surfaces_complete` is `true`. The one committed
-fixture is recall-only: an exhaustive list derived from the tool's own output
-would make precision trivially 100% and the metric worthless (`TODO.md` B3).
+claimed where `expected_surfaces_complete` is `true`, and an exhaustive list
+derived from the tool's own output would make precision trivially 100% and the
+metric worthless. Of the three keys, `oss-app-langgraphjs-starter` claims a
+complete surface list; the other two do not. `vuln-app-1-support-agent` is
+recall-only on both counts, so its `false_positives` is `null` rather than `0`.
+`oss-app-react-agent` claims complete *findings* -- it is a clean upstream
+template, so a reported finding there is a false positive -- but **not** a
+complete surface list, because a reading of that app finds LLM surfaces the
+Python detector vocabulary does not name. Claiming completeness there would
+assert the extractor saw everything when it did not; the gap is an open task in
+`TODO.md`.
 
 ---
 
@@ -549,7 +613,7 @@ that, and a test asserts the marker is present.
 
 ---
 
-## `artifacts/<app>/findings.json` — Phase 3 output
+## `artifacts/<system>/<app>/findings.json` — Phase 3 output
 
 What the auditor concluded, and what it could not reach. Read by Phase 4's
 scorer, which grades it against `corpus/evidence/<app>.ground_truth.json`.
@@ -657,18 +721,21 @@ copy-paste from crossing the no-auto-fixing boundary.
 
 ---
 
-## `artifacts/evaluation.json` — Phase 4 output
+## `artifacts/<system>/evaluation.json` — Phase 4 output
 
-What the tool scored against the grading keys. One file for the whole run, not
-one per app: a comparison across apps is not a per-app fact, and separating the
-scorecards from the aggregate is how a per-app number gets quoted without the
-aggregate's caveats.
+What the tool scored against the grading keys. One file per system per run, and
+never one per app: a comparison across apps is not a per-app fact, and
+separating the scorecards from the aggregate is how a per-app number gets quoted
+without the aggregate's caveats.
 
 **No field in this file is a float.** Precision, recall and F1 are absent as
 fields, and that is the point: a reader cannot copy a percentage out of it. They
 have to divide, and to divide they must hold the denominator. The rates are for
 a reader to compute from these counts, beside the `qualifications` that bound
-them; nothing in the tool prints a rate.
+them; no score is printed as a rate anywhere in the tool. (`main.py` prints a
+mapping-coverage percentage during a scan. That is a statistic about what the
+scan reached, not a result measured against a grading key, and nothing in this
+file is derived from it.)
 
 | Field | Type | Required | Meaning |
 |---|---|---|---|
