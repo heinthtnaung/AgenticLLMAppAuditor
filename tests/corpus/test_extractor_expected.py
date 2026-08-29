@@ -3,10 +3,8 @@
 import pytest
 from conftest import CORPUS_APPS, app_is_present, CORPUS_DIR, ground_truth, require_corpus
 from parsing.extractor import extract_repo
+from evaluation.grading import line_window
 from artifacts.surface import Surface
-
-# An expected surface's line may point at any line of a multi-line construct.
-LINE_TOLERANCE = 3
 
 
 def _expected_surface_cases() -> list:
@@ -54,9 +52,10 @@ def test_expected_surface_is_extracted(extracted: dict, app: str, record: dict) 
         f"{record['id']}: no {record['kind']} named {record['name']!r} extracted from "
         f"{app}/{record['file']} (expected around line {record['line']})"
     )
-    assert any(abs(line - record["line"]) <= LINE_TOLERANCE for line in lines), (
+    low, high = line_window(record)
+    assert any(low <= line <= high for line in lines), (
         f"{record['id']}: {record['name']!r} extracted at lines {lines}, "
-        f"expected within {LINE_TOLERANCE} of line {record['line']}"
+        f"expected within lines {low}-{high}"
     )
 
 

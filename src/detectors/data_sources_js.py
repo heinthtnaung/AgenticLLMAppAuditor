@@ -28,6 +28,22 @@ from parsing.ts_utils import (
 
 MEMBER_NODE = "member_expression"
 
+# What separates a receiver from the method called on it, as on the Python side.
+RECEIVER_SEPARATOR = "."
+
+
+def _method_detail(name: str) -> str | None:
+    """Describe a method match, but only when the receiver can be named.
+
+    `load`, `query` and `execute` match any object at all, so a call whose
+    receiver the tree cannot name -- `resp.json().load()` -- says nothing about
+    outside data being read.
+    """
+    receiver, separator, method = name.rpartition(RECEIVER_SEPARATOR)
+    if not separator or not receiver:
+        return None
+    return DATA_SOURCE_METHODS.get(method)
+
 # A route path is written as a plain or template literal.
 PATH_NODES = ("string", "template_string")
 
@@ -97,7 +113,9 @@ def find_data_sources(tree: Node, file: str, source: bytes) -> list[Surface]:
         if node.type not in CALL_NODES:
             continue
         name = call_name(node, source)
-        detail = DATA_SOURCE_CALLS.get(name) or DATA_SOURCE_METHODS.get(name.split(".")[-1])
+        detail = DATA_SOURCE_CALLS.get(name)
+        if detail is None:
+            detail = _method_detail(name)
         if detail is None:
             continue
         found.append(surface_from_node(DATA_SOURCE, name, file, node, detail,

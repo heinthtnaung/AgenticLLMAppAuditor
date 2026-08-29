@@ -33,6 +33,10 @@ from artifacts.surface import AGENT_DEF, DATA_SOURCE, PROMPT_TEMPLATE, TOOL_CALL
 
 FUNCTION_NODES = (ast.FunctionDef, ast.AsyncFunctionDef)
 
+# What separates a receiver from the method called on it. A name without one
+# is a method matched on an expression this analysis cannot identify.
+RECEIVER_SEPARATOR = "."
+
 
 # --- Prompt templates ------------------------------------------------------
 def _prompt_from_call(node: ast.AST, file: str, imports: dict[str, str]) -> Surface | None:
@@ -163,6 +167,12 @@ def _source_from_call(node: ast.AST, file: str, imports: dict[str, str]) -> Surf
         return Surface(DATA_SOURCE, name, file, node.lineno, PYTHON, detail=DATA_SOURCE_CALLS[name], module=module)
     leaf = call_leaf(node)
     if leaf not in DATA_SOURCE_METHODS:
+        return None
+    if RECEIVER_SEPARATOR not in name:
+        # A bare leaf means the receiver is an expression the tree cannot name --
+        # `resp.json().load()`, `registry[key].load()`. These names match on any
+        # object at all, so without a receiver to point at there is nothing to
+        # say the call reads outside data rather than doing something unrelated.
         return None
     return Surface(DATA_SOURCE, name, file, node.lineno, PYTHON, detail=DATA_SOURCE_METHODS[leaf], module=module)
 

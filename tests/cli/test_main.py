@@ -1,9 +1,6 @@
 """The CLI writes a valid surfaces.json artifact, including the empty result."""
 
 import json
-import subprocess
-
-import pytest
 
 from cli_helpers import run_cli
 from conftest import CORPUS_DIR, require_corpus
@@ -69,16 +66,6 @@ def test_missing_repo_path_fails_loudly(monkeypatch, tmp_path, capsys) -> None:
     """A path that does not exist exits non-zero with a message, not a traceback."""
     assert run_cli(monkeypatch, tmp_path / "does-not-exist", tmp_path / "artifacts") == 1
     assert "does not exist" in capsys.readouterr().err
-
-
-def forbid_subprocesses(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Make any attempt to start a process fail the test."""
-    def boom(*args, **kwargs) -> None:
-        """Fail the test rather than let a real process start."""
-        raise AssertionError(f"the auditor started a subprocess: {args}")
-
-    monkeypatch.setattr(subprocess, "run", boom)
-    monkeypatch.setattr(subprocess, "Popen", boom)
 
 
 def run_on_mixed_repo(monkeypatch, tmp_path) -> tuple[int, dict]:

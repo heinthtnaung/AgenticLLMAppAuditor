@@ -1,0 +1,43 @@
+"""The rule for matching a produced finding to a grading-key entry.
+
+One definition, in source, because three test files had grown three different
+windows for the same documented rule -- one symmetric, one wider below the
+anchor, one ignoring `line_end` entirely. A scorer built on a fourth would
+measure something the suite does not certify.
+
+Exact line equality is wrong because a human anchors the construct's first
+line while a detector may report a few lines into it -- the call inside a
+multi-line expression, or the `def` under a decorator the human anchored. The
+window therefore opens *at* the key's line and runs downward; it is not
+symmetric, and a finding above the anchor is a different construct.
+"""
+
+LINE_TOLERANCE = 3
+
+
+def line_window(key_entry: dict) -> tuple[int, int]:
+    """Return the line range a finding may sit in to match this key entry."""
+    first = key_entry["line"]
+    last = key_entry.get("line_end") or first
+    return first, last + LINE_TOLERANCE
+
+
+def matches_key(finding: dict, key_entry: dict) -> bool:
+    """Say whether a produced finding answers this key entry.
+
+    `detection` is never compared: the key's `either` says what could in
+    principle reach the finding, while the produced value says what did this
+    run, so neither constrains the other.
+    """
+    if finding.get("file") != key_entry["file"]:
+        return False
+    if finding.get("owasp_id") != key_entry["owasp_id"]:
+        return False
+    first, last = line_window(key_entry)
+    if not first <= (finding.get("line") or -1) <= last:
+        return False
+    if key_entry.get("llm_surface") and finding.get("surface_kind") != key_entry["llm_surface"]:
+        return False
+    if key_entry.get("surface_name") and finding.get("surface_name") != key_entry["surface_name"]:
+        return False
+    return True

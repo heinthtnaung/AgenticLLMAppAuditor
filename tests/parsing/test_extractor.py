@@ -5,14 +5,12 @@ from conftest import CORPUS_APPS, app_is_present, CORPUS_DIR, ground_truth, requ
 from parsing.extractor import extract_file, extract_repo
 from parsing.extractor_js import parse_source
 from parsing.extractor_python import parse_file
+from evaluation.grading import line_window
 from artifacts.skipped_file import UnreadableSource
-from artifacts.surface import SURFACE_KINDS, surfaces_to_json
+from artifacts.surface import SURFACE_KINDS
 
 # Named explicitly: CORPUS_APPS is discovered on disk, so its order is not a contract.
 SUPPORT_AGENT_APP = "vuln-app-1-support-agent"
-
-# A finding's line may point at any line of the construct, so allow a small window.
-LINE_TOLERANCE = 3
 
 
 def _surface_findings(app: str) -> list[dict]:
@@ -32,12 +30,6 @@ def _expected_cases() -> list:
 EXPECTED_SURFACE_CASES = _expected_cases()
 
 
-def _line_window(finding: dict) -> tuple[int, int]:
-    """Return the accepted line range for a finding, widened by the tolerance."""
-    last_line = finding["line_end"] or finding["line"]
-    return finding["line"] - LINE_TOLERANCE, last_line + LINE_TOLERANCE
-
-
 @pytest.fixture(scope="module")
 def extracted() -> dict:
     """Extract every corpus app once and share the result across the tests."""
@@ -52,7 +44,7 @@ def extracted() -> dict:
 def test_ground_truth_surface_is_extracted(extracted: dict, app: str, finding: dict) -> None:
     """The extractor finds each ground-truth surface at the right file, kind and line."""
     require_corpus(app)
-    low, high = _line_window(finding)
+    low, high = line_window(finding)
     matches = [
         surface
         for surface in extracted[app]
@@ -73,7 +65,7 @@ def test_ground_truth_surface_name_matches(extracted: dict, app: str, finding: d
     require_corpus(app)
     if finding["surface_name"] is None:
         pytest.skip("finding records no surface name")
-    low, high = _line_window(finding)
+    low, high = line_window(finding)
     names = [
         surface.name
         for surface in extracted[app]

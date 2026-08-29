@@ -12,11 +12,13 @@ import sys
 from pathlib import Path
 
 from artifacts.aibom import aibom_to_json, build_aibom
+from artifacts.findings_document import findings_to_json
 from artifacts.cyclonedx import to_cyclonedx
 from artifacts.mapping import build_mapping, mapping_to_json
 from artifacts.sbom import build_sbom, sbom_to_json
 from artifacts.skipped_file import SkippedFile
 from artifacts.surface import Surface, surfaces_to_json
+from checks.run_checks import build_findings
 from deps import npm_manifest, syft_runner
 from deps.package_names import NPM, PYPI
 from deps.requirements_parser import (
@@ -27,6 +29,8 @@ from deps.requirements_parser import (
 from parsing.extractor import extract_repo
 from parsing.repo_loader import local_module_names
 
+import report
+
 DEFAULT_ARTIFACTS_DIR = Path("artifacts")
 
 SURFACES_NAME = "surfaces.json"
@@ -34,6 +38,8 @@ AIBOM_NAME = "aibom.json"
 SBOM_NAME = "sbom.json"
 CYCLONEDX_NAME = "sbom.cyclonedx.json"
 MAPPING_NAME = "mapping.json"
+FINDINGS_NAME = "findings.json"
+REPORT_NAME = "report.md"
 
 # Naming both files, not just both ecosystems: the reader has to know which two
 # manifests to look at to understand why no bill was produced.
@@ -151,11 +157,21 @@ def run(args: argparse.Namespace) -> int:
             app_dir, scan.surfaces, declared_ecosystems(app_dir)[0])
         documents.update(built)
 
+    documents[FINDINGS_NAME] = findings_to_json(
+        build_findings(args.repo_path, scan.surfaces, mapping_document))
+
     out = args.artifacts_dir / app_dir.resolve().name
     out.mkdir(parents=True, exist_ok=True)
     for name, text in sorted(documents.items()):
         (out / name).write_text(text, encoding="utf-8")
-    print(f"wrote {len(documents)} artifacts to {out}")
+
+    # Rendered from the two files just written, not from what is still in
+    # memory: the report is a reading of the artifacts, and reading them back
+    # is what keeps it one.
+    (out / REPORT_NAME).write_text(
+        report.render_from_files(app_dir.resolve().name, out / FINDINGS_NAME, out / SURFACES_NAME),
+        encoding="utf-8")
+    print(f"wrote {len(documents) + 1} artifacts to {out}")
 
     if no_bill_reason:
         print(f"  no bill of materials: {no_bill_reason}", file=sys.stderr)
