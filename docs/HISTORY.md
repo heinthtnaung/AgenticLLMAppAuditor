@@ -13,6 +13,9 @@ commit `8c3f9f6`.
 | 6 | Remediation advice grounded in a pinned OWASP knowledge base (ChromaDB). `remediation.json`. |
 | 7 | LLM planner and the semantic prompt-injection probe. `planner.json`. |
 | — | Advisory ingestion (Trivy) folded into Phase 2/3. |
+| — | One grading key ships, AI-drafted and unverified; eight entries after review. |
+| — | Objective 5: `experiments/` compares the local model against hosted ones. |
+| — | `reproduce.sh` regenerates every published figure in one command. |
 
 ## Decisions that still bind
 

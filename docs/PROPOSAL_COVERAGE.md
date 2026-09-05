@@ -208,10 +208,10 @@ Six of the seven actions this file has listed were taken on 2026-09-05. Two
 commitments are now at zero, down from four. What is left:
 
 1. **Verify the shipped grading key.** It exists and it measures — see
-   `docs/REPORT.md`, where the auditor scores 4 of 6 against 5 of 6 for the grep
-   baseline and 0 of 6 for SBOM-only. But it
+   `docs/REPORT.md`, where the auditor scores 3 of 8 against 4 of 8 for the grep
+   baseline and 0 of 8 for SBOM-only. But it
    is AI-drafted and `verified: false`, so every one of those figures carries
-   `key_ai_drafted` and `key_unverified`. A human reading its six entries
+   `key_ai_drafted` and `key_unverified`. A human reading its eight entries
    against `c0cf9a14` is what turns an indication into a result, and it is the
    cheapest remaining upgrade in the whole document.
 2. **Widen Objective 5 further.** It now covers four models over two
@@ -230,4 +230,4 @@ caveat in item 3. **Audit execution time** is instrumented and published in `doc
 **The semantic probe's rationale is fixed**: a template with no interpolation
 point is refuted statically, without a model call, so the false positive the
 Objective 5 study found is unreachable. That lowered this project's own headline
-from 5 of 6 to 4 of 6.
+from 5 of 6 to 4 of 6, and widening the key then took it to 3 of 8.

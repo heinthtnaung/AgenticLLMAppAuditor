@@ -42,14 +42,10 @@ Ticked history is in git before commit `a78482c`; what shipped is in
 - Five tests import a private helper where a public path exists.
 - Three test files sit just over the ~200-line rule.
 
-- **Objective 5 — local vs cloud comparison.** Reinstated 2026-09-05.
-  - `experiments/cloud_client.py` — OpenRouter transport, injected, outside
-    `src/` so the audit path's offline guarantee is untouched.
-  - `experiments/compare_models.py` — runs the probe with each model over the
-    same app and compares per-template outcomes.
-  - `experiments/exposure.py` — what bytes and which fields left the machine.
-  - Write-up, including what cannot be measured: provider retention, training
-    use, and which upstream provider actually received the data.
+- **Objective 5 needs repeating.** `experiments/` shipped and the comparison is
+  in `docs/REPORT.md`, but it is **one run of four models on one app**. Hosted
+  models take no `seed`, and `glm-5.2` gave different verdicts on the same
+  template across runs. Repeat before any figure from it is quoted as a result.
 
 ## Blocked on a decision
 
@@ -58,10 +54,11 @@ Ticked history is in git before commit `a78482c`; what shipped is in
   denominators and `apps_included`. To overrule: six documents and two guards
   change, and the guard is weaker permanently.
 - **Objective 5 was dropped, then reinstated 2026-09-05** when API access was
-  supplied. The original refusal stands in `docs/REPORT.md` and is not deleted;
-  what changed is access, not the reasoning. See the open tasks above.
+  supplied, and is now measured. The original refusal stands in
+  `docs/REPORT.md` and is not deleted: what changed is access, not the
+  reasoning.
 - **The sandbox for `probe_injection` was refused.** Reasons in
   `docs/REPORT.md`; two are about coherence, not cost.
 - **The grading key is AI-drafted and unverified.** Every figure carries
-  `key_ai_drafted` and `key_unverified` until a human checks its six entries
+  `key_ai_drafted` and `key_unverified` until a human checks its eight entries
   against commit `c0cf9a14`. Cheapest remaining upgrade in the project.

