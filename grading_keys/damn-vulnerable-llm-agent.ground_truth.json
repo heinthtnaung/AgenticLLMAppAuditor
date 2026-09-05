@@ -47,7 +47,7 @@
       "component": null,
       "detection": "static",
       "title": "The agent's trace is captured and then thrown away",
-      "description": "main.py:75 sets return_intermediate_steps=True, so the full ReAct trace exists, and main.py:84 writes it into st.session_state -- per-session UI state that ends with the browser tab. The only other record is unstructured stdout from verbose=True (main.py:69, main.py:77), which carries no identity, ordering or retention. Anchored at the discard rather than at the AgentExecutor constructor, so the entry does not grade the same five fields auditability.py emits and can therefore falsify it.",
+      "description": "main.py:75 sets return_intermediate_steps=True, so the full ReAct trace exists, and main.py:84 writes it into st.session_state -- per-session UI state that ends with the browser tab. The only other record is unstructured stdout from verbose=True (main.py:69, main.py:77), which carries no session identity and no retention policy, and which StreamlitCallbackHandler (main.py:81) also renders live to whoever is looking. Anchored at the discard rather than at the AgentExecutor constructor, so the entry does not grade the same five fields auditability.py emits and can therefore falsify it.",
       "code_anchor": "st.session_state.steps[str(len(msgs.messages) - 1)] = respon"
     },
     {
@@ -60,7 +60,7 @@
       "component": null,
       "detection": "static",
       "title": "Stored transaction rows reach the model as observations, unvalidated",
-      "description": "db.get_user_transactions returns database rows into the tool, and get_transactions hands them to the agent, where they become observations the model reasons over. Any text an attacker can get stored -- a recipient or reference field -- is read as part of the model's own transcript. This is the indirect half of LLM01, and the app seeds it deliberately: transaction_db.py:50 stores 'FLAG:plutonium-256' in a recipient column. Anchored where the rows arrive rather than at the return, so its line window stays disjoint from DVLA-08's at tools.py:37 -- overlapping windows would let one finding score as two true positives.",
+      "description": "db.get_user_transactions returns database rows into the tool at this line, and get_transactions hands them to the agent, where they become observations the model reasons over. Nothing inspects or delimits them between arrival here and the return at tools.py:34. Anchored where the untrusted rows enter the process. Two vectors the app actually offers: the interpolated query at transaction_db.py:62 lets a UNION place attacker-chosen text into the returned rows, and any userId reads another user's rows across a trust boundary. The app seeds transaction_db.py:50 with 'FLAG:plutonium-256' in a recipient column to make the second one visible. There is no ordinary write path -- rows come from seed_data() -- so a claim that an attacker can simply store text would overstate it.",
       "code_anchor": "transactions = db.get_user_transactions(userId)"
     },
     {
@@ -73,7 +73,7 @@
       "component": null,
       "detection": "static",
       "title": "Raw database exception text is returned to the agent",
-      "description": "`except Exception as e: return f\"Error: {e}'\"` hands the database's own error text back as a tool observation. Two defects in one line: it is the oracle that makes the SQL injection at transaction_db.py:62 practical, leaking schema and query structure; and the text is untrusted content entering the model's reasoning stream.",
+      "description": "`except Exception as e: return f\"Error: {e}'\"` hands the database's own error text back as a tool observation, so untrusted content enters the model's reasoning stream on the exception path -- the counterpart to DVLA-09 on the success path. It is also the oracle that makes the injection at transaction_db.py:62 practical to iterate against; that is context rather than the finding, and it adds less than it appears to, since utils.py:45 publishes the schema in the sidebar anyway.",
       "code_anchor": "return f\"Error: {e}'\""
     },
     {
