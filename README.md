@@ -130,8 +130,10 @@ vulnerable?".
 - **Never executes the audited app.** `test_no_mutation.py` hashes the tree
   before and after; `test_no_write_commands.py` refuses write-capable
   subprocesses.
-- **Opens no socket** except to local Ollama. `model_client.py` is the only
-  module that connects.
+- **The audit path opens no socket** except to local Ollama. `model_client.py`
+  is the only module under `src/` that connects, asserted as an exact set. The
+  one exception is `experiments/`, the local-vs-cloud study, which is not part
+  of the tool and which nothing under `src/` may import.
 - **The model never decides what counts as a finding.** It writes advice, may
   order and narrow the plan, and judges prompt templates behind an opt-in flag.
 - **Artifacts are byte-identical** run to run, except model-authored prose,

@@ -19,7 +19,8 @@ commit `8c3f9f6`.
 - **The auditor never executes the audited app.** Enforced by
   `test_no_mutation.py` and `test_no_write_commands.py`.
 - **The audit opens no socket** except to local Ollama. `model_client.py` is the
-  only module that connects.
+  only module in `src/` that connects. `experiments/` is the study, not the
+  tool, and is barred from `src/` in both directions.
 - **The model never decides what counts as a finding.** It writes advice, may
   order and narrow the plan, and judges prompt templates behind an opt-in flag.
 - **No rate is a field in `evaluation.json`.** Counts and denominators only.

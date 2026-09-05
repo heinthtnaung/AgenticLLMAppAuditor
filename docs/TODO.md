@@ -42,15 +42,24 @@ Ticked history is in git before commit `a78482c`; what shipped is in
 - Five tests import a private helper where a public path exists.
 - Three test files sit just over the ~200-line rule.
 
+- **Objective 5 — local vs cloud comparison.** Reinstated 2026-09-05.
+  - `experiments/cloud_client.py` — OpenRouter transport, injected, outside
+    `src/` so the audit path's offline guarantee is untouched.
+  - `experiments/compare_models.py` — runs the probe with each model over the
+    same app and compares per-template outcomes.
+  - `experiments/exposure.py` — what bytes and which fields left the machine.
+  - Write-up, including what cannot be measured: provider retention, training
+    use, and which upstream provider actually received the data.
+
 ## Blocked on a decision
 
 - **The `pct_*` fields were requested and refused.** `evaluation.json` forbids
   float fields and two tests pin "no rate in stdout". Shipped instead: counts,
   denominators and `apps_included`. To overrule: six documents and two guards
   change, and the guard is weaker permanently.
-- **Objective 5 was dropped** — no funded API access, and running it means
-  transmitting audited source to a provider, which is the exposure this project
-  argues against. Stated in `docs/REPORT.md`.
+- **Objective 5 was dropped, then reinstated 2026-09-05** when API access was
+  supplied. The original refusal stands in `docs/REPORT.md` and is not deleted;
+  what changed is access, not the reasoning. See the open tasks above.
 - **The sandbox for `probe_injection` was refused.** Reasons in
   `docs/REPORT.md`; two are about coherence, not cost.
 - **The grading key is AI-drafted and unverified.** Every figure carries

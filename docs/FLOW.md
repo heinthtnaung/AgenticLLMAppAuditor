@@ -53,6 +53,9 @@ no socket, counting attempts rather than successes.
 
 - **Four modules start a process**: `syft_runner`, `trivy_runner`, `fetch_repo`,
   and the vexctl launcher. Nothing else shells out.
-- **One module opens a connection**: `model_client.py`, to local Ollama.
+- **One module in `src/` opens a connection**: `model_client.py`, to local
+  Ollama, asserted as an exact set. `experiments/` reaches a hosted model for
+  the Objective 5 study; it is outside the audit path and `src/` may not
+  import it.
 - **The audited tree is never written to.** `test_no_mutation.py` hashes it
   before and after.

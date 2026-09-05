@@ -52,3 +52,6 @@ knowledge/*
 # AI / agent tooling (local only — not part of the submitted project)
 .claude/
 CLAUDE.md
+
+# Study outputs: contain audited source and transmitted payloads.
+experiments/results/

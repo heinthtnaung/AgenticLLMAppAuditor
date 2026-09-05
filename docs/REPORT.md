@@ -28,9 +28,14 @@ with no authorisation check. That is a real gap, not an artefact —
 network reach, and what makes it a finding is an *absent* comparison rather than
 a present capability.
 
-**The probe's contribution is one entry.** DVLA-01 is where the taint trace runs
-and stays silent: `argument_names` collects `ast.Name` only, so an f-string
-system prompt yields nothing to follow.
+**The probe's contribution is one entry, and the cloud study below shows it is
+right for the wrong reason.** DVLA-01 is where the taint trace runs and stays
+silent. The probe flags it — but the template at `main.py:21` is a *static
+string with no interpolation at all*, so the check's own criterion ("interpolates
+a value into instruction text without delimiters") is not met. The local model
+described the application's behaviour rather than the template's structure. The
+5-of-6 is therefore a true positive produced by a false rationale, and should
+not be quoted without that sentence.
 
 **Limits.** One application. The key is AI-drafted and `verified: false`, so
 every figure carries `key_ai_drafted` and `key_unverified`.
@@ -56,6 +61,77 @@ advice. The probe adds 2.7 s, scaling with prompt-template count, not repo size.
 
 Supports statements about *where the time goes*, not absolute throughput. No
 cloud configuration was measured.
+
+## Objective 5 — local versus hosted model
+
+Reinstated 2026-09-05 when API access was supplied. The original refusal, and
+why it stood, is in the deviations section below; what changed is access, not
+the reasoning.
+
+**Design.** The static checks use no model, so the only model-dependent
+detection is the semantic probe. The comparison is therefore *per prompt
+template*: which templates each model calls injectable, and on what grounds.
+`experiments/` drives the auditor through the `model_ask_fn` seam, so no module
+under `src/` changes and the audit path stays offline.
+
+Local: `qwen2.5-coder:7b-instruct`, Ollama, `temperature 0, seed 0`.
+Hosted: `z-ai/glm-5.2` via OpenRouter, `temperature 0` — **no seed equivalent**,
+so the hosted arm was sampled three times to check stability.
+
+### Result
+
+| | Verdict on `main.py:21` | Latency | Stable over 3 runs |
+|---|---|---|---|
+| `qwen2.5-coder:7b-instruct` | VULNERABLE | 0.6–0.9 s | yes |
+| `z-ai/glm-5.2` | SAFE | 1.8–2.2 s | yes |
+
+Both are reproducible and they disagree. The template:
+
+```python
+system_msg = """Assistant helps the current user retrieve the list of their
+recent bank transactions ... Assistant will ONLY operate on the userId returned
+by the GetCurrentUser() tool, and REFUSE to operate on any other userId..."""
+```
+
+**The hosted model is correct.** It answered: *"The template contains no
+variables or placeholders injecting user-controlled data into the instruction
+text."* That is literally true — the string is static, with no interpolation.
+The local model answered that the template *"directly includes the `userId`
+returned by the `GetCurrentUser()` tool into the instruction text"*, which is
+false; it described what the application does, which the template narrates in
+prose, rather than what the template is.
+
+**What this costs the headline.** The probe's single contribution to detection —
+DVLA-01, the entry taking the auditor from 4 of 6 to 5 of 6 — is a true positive
+resting on a false rationale. The grading key anchors DVLA-01 at that line
+because the system prompt is the only control on which user's data is read; the
+probe flagged the same line for a reason that does not hold. Two different
+claims sharing a line number.
+
+**Answering the objective, on this evidence.** One application, one template,
+one hosted model. On the single case where the two could be compared, the
+open-weight model was **less** accurate, and its error was the kind that inflates
+a security tool's apparent recall — a false rationale landing on a true finding.
+That is one data point and is stated as one: it does not establish that hosted
+models are generally better at this task, and the sample cannot support a rate.
+
+### Data exposure, measured and unmeasurable
+
+**Measured**: 2671 bytes per arm, one request per prompt template. Transmitted:
+the prompt template's source text, surface file paths and line numbers, surface
+kinds and names.
+
+**Not measurable from here**, and stated rather than dressed up: provider
+retention, whether the data trains a model, sub-processors and jurisdiction, and
+— specific to OpenRouter — **which upstream provider actually served the
+request**, unless routing is pinned. The observed run was served by Baidu. That
+last point is worth more than the byte count: the operator chose "GLM-5.2", not
+a company.
+
+**Operationally**, this is why the tool is not built this way. The study sent
+one public, deliberately vulnerable file. An audit of a private repository would
+send its prompts, paths and component inventory, and the four unmeasurable items
+would apply to all of it.
 
 ## Why this tool rather than a scanner
 
@@ -91,7 +167,11 @@ rather than cost:
 1. The app reaches `gpt-4-1106-preview` through LiteLLM, so executing it either
    transmits its prompts to an external provider — the exposure this project
    argues against — or, pointed at Ollama, measures `qwen2.5-coder` instead of
-   the app.
+   the app. **This is not contradicted by the Objective 5 study below.** That
+   objection is about the *audit path*, on an arbitrary URL, on every run. The
+   study is a one-off measurement on a named public app, with every byte
+   transmitted enumerated. A tool that phones home by default and a study that
+   does so once, deliberately, on published code are different things.
 2. It would trade away the never-executes guarantee that makes auditing an
    unknown URL safe, on every audit.
 3. A general sandbox must synthesise a container for an app it has never seen,
