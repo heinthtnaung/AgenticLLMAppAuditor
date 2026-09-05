@@ -33,22 +33,48 @@
       "surface_name": "st.chat_input",
       "component": null,
       "detection": "static",
-      "title": "Untrusted chat input reaches the agent unvalidated",
-      "description": "st.chat_input is the entry point for attacker-controlled text, passed to executor() at main.py:82 with no validation or delimiting between it and the system instructions.",
+      "title": "Chat input reaches a ReAct agent that parses its own transcript",
+      "description": "st.chat_input feeds executor(prompt) at main.py:82 with no validation or delimiting. What makes that a vulnerability here rather than a description of every chatbot is the ReAct loop: the agent re-reads its own transcript, so text containing a forged 'Observation:' or 'Thought:' line is parsed as the agent's own reasoning and can drive GetUserTransactions with an attacker's userId. That is the Thought/Action/Observation injection this app was written to demonstrate.",
       "code_anchor": "if prompt := st.chat_input(placeholder=\"Show my recent trans"
     },
     {
       "id": "DVLA-05",
       "file": "main.py",
-      "line": 71,
+      "line": 84,
       "owasp_id": "AUDITABILITY",
-      "llm_surface": "AGENT_DEF",
-      "surface_name": "AgentExecutor.from_agent_and_tools",
+      "llm_surface": null,
+      "surface_name": null,
       "component": null,
       "detection": "static",
-      "title": "The agent's own trace is captured and then discarded",
-      "description": "The executor is built with return_intermediate_steps=True (main.py:75), so the trace exists, and main.py:84 writes it into st.session_state -- per-session UI state that ends with the browser tab. Nothing durable records what the agent did. Graded on the capture-and-discard, not on the absence of a callback argument, so the entry can falsify a check that looks only at the constructor.",
-      "code_anchor": "executor = AgentExecutor.from_agent_and_tools("
+      "title": "The agent's trace is captured and then thrown away",
+      "description": "main.py:75 sets return_intermediate_steps=True, so the full ReAct trace exists, and main.py:84 writes it into st.session_state -- per-session UI state that ends with the browser tab. The only other record is unstructured stdout from verbose=True (main.py:69, main.py:77), which carries no identity, ordering or retention. Anchored at the discard rather than at the AgentExecutor constructor, so the entry does not grade the same five fields auditability.py emits and can therefore falsify it.",
+      "code_anchor": "st.session_state.steps[str(len(msgs.messages) - 1)] = respon"
+    },
+    {
+      "id": "DVLA-09",
+      "file": "tools.py",
+      "line": 34,
+      "owasp_id": "LLM01",
+      "llm_surface": null,
+      "surface_name": null,
+      "component": null,
+      "detection": "static",
+      "title": "Stored transaction rows reach the model as observations, unvalidated",
+      "description": "get_transactions returns database rows straight to the agent, where they become observations the model reasons over. Any text an attacker can get stored -- a recipient or reference field -- is read by the model as part of its own transcript. This is the indirect half of LLM01, and the app seeds it deliberately: transaction_db.py:50 stores 'FLAG:plutonium-256' in a recipient field.",
+      "code_anchor": "return transactions"
+    },
+    {
+      "id": "DVLA-08",
+      "file": "tools.py",
+      "line": 37,
+      "owasp_id": "LLM01",
+      "llm_surface": null,
+      "surface_name": null,
+      "component": null,
+      "detection": "static",
+      "title": "Raw database exception text is returned to the agent",
+      "description": "`except Exception as e: return f\"Error: {e}'\"` hands the database's own error text back as a tool observation. Two defects in one line: it is the oracle that makes the SQL injection at transaction_db.py:62 practical, leaking schema and query structure; and the text is untrusted content entering the model's reasoning stream.",
+      "code_anchor": "return f\"Error: {e}'\""
     },
     {
       "id": "DVLA-02",
@@ -90,5 +116,5 @@
       "code_anchor": "yaml_data = yaml.load(f, Loader=yaml.SafeLoader)"
     }
   ],
-  "finding_count": 6
+  "finding_count": 8
 }

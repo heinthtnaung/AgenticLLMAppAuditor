@@ -5,45 +5,58 @@ long-form discussion is in git before commit `c10daa0`.
 
 ## Detection
 
-Scored against `grading_keys/damn-vulnerable-llm-agent.ground_truth.json`, six
+Scored against `grading_keys/damn-vulnerable-llm-agent.ground_truth.json`, eight
 entries.
 
 | System | Matched | Missed |
 |---|---|---|
-| This auditor, static | **4 of 6** | DVLA-01, DVLA-02 |
-| This auditor, `--semantic-probe` | **4 of 6** | DVLA-01, DVLA-02 |
-| Baseline A, grep/AST rules | **5 of 6** | DVLA-07 |
-| Baseline B, SBOM-only | **0 of 6** | all |
+| This auditor | **3 of 8** | DVLA-01, 02, 05, 08, 09 |
+| Baseline A, grep/AST rules | **4 of 8** | DVLA-05, 07, 08, 09 |
+| Baseline B, SBOM-only | **0 of 8** | all |
 
 ```
-auditor  {DVLA-03, 05, 06, 07}
-baseline {DVLA-01, 02, 03, 05, 06}    shared 3, union all six
+auditor only   DVLA-07
+baseline only  DVLA-01, DVLA-02
+both           DVLA-03, DVLA-06
+neither        DVLA-05, DVLA-08, DVLA-09
 ```
 
-**The sets matter more than the counts.** The auditor alone reaches DVLA-07, the
-supply-chain entry — that needs joining an LLM surface to a component, which no
-grep rule has. Baseline A alone reaches DVLA-02: a tool taking a bare identifier
-with no authorisation check. That is a real gap, not an artefact —
-`permissions.py` is silent because the tool grants no shell, interpreter or
-network reach, and what makes it a finding is an *absent* comparison rather than
-a present capability.
+**The auditor reaches DVLA-07 alone** — the supply-chain entry — because that
+means joining an LLM surface to a component in a bill of materials, which no
+grep rule has. **Baseline A reaches DVLA-01 and DVLA-02 alone**: a system prompt
+that is the sole access control, and a tool taking a bare identifier. Both are
+absences — a missing check rather than a present capability — and a regex over
+tool definitions catches them where this auditor's dataflow does not.
 
-**The probe contributes nothing on this application, and that is a correction.**
-An earlier version of this report published 5 of 6 for the probe row: it flagged
-DVLA-01 at `main.py:21`. The Objective 5 study showed that template is a *static
-string with no interpolation at all*, so the check's own criterion — "interpolates
-a value into instruction text without delimiters" — cannot be met there. The
-local model had described the application's behaviour rather than the template's
-text. `semantic_probe` now refutes a non-interpolating template **without asking
-a model**, the finding is gone, and the honest figure is 4 of 6 in both
-configurations. The published number went down because a false positive was
-removed.
+### This key was revised downward, twice, on review
 
-**Limits.** One application. The key is AI-drafted and `verified: false`, so
-every figure carries `key_ai_drafted` and `key_unverified`.
-`findings_complete: false`, so precision is not measurable and none of these are
-false-positive rates. The probe row drops `model_disabled` because a model ran —
-provenance, not detection.
+The figures above are lower than earlier drafts of this report, and both
+revisions removed something that flattered the tool.
+
+**First**, the semantic probe's only contributing finding was withdrawn: it had
+flagged a wholly static template by describing what the application does rather
+than what the template says. See Objective 5.
+
+**Second**, an independent review found two entries grading the detector's own
+coordinates rather than the defect. DVLA-05 anchored at `main.py:71`, character
+for character the finding `auditability.py` emits, so it could not falsify the
+check that produced it; it now anchors at `main.py:84`, where the trace is
+actually discarded, and the check no longer reaches it. DVLA-06 described
+untrusted input reaching a model, which is true of every chat application ever
+built; it now names the ReAct transcript-forgery mechanism that makes it a
+defect here.
+
+Three entries were added that sit at **no extracted surface at all** — the raw
+database exception returned to the agent, stored rows re-entering as
+observations, and the discarded trace. That matters structurally: every entry in
+the first draft landed exactly on a surface the extractor emits, so recall was
+being measured over a denominator drawn from the tool's own inventory. It no
+longer is, and the score fell from 4 of 6 to 3 of 8 as a result.
+
+**A defect the reviewer proposed and I did not add**: model output reaching an
+HTML renderer. `unsafe_allow_html=True` appears once, at `main.py:36`, on a
+static style block — never on model output. `st.write(response["output"])`
+escapes HTML. The entry would have been false.
 
 ### A measurement that had to be redone
 

@@ -63,6 +63,20 @@ python src/model_client.py                # check the local model answers
 `report.ai.html` is a presentation of `report.md`, not an authority: it is
 model-written, non-deterministic, and refused whole if it invents an advisory.
 
+## Reproduce everything
+
+```bash
+./reproduce.sh
+```
+
+Clones the app at its pinned commit, audits it with the probe, runs both
+baselines, scores all three, and — if `OPENROUTER_API_KEY` is set — runs the
+local-versus-hosted comparison. Regenerates every figure in `docs/REPORT.md`.
+
+Without a key it completes anyway and says which step it skipped. A placeholder
+key would be worse than none: it fails authentication and, under `set -e`, would
+abort before the summary.
+
 ## Worked example
 
 `damn-vulnerable-llm-agent` is a deliberately vulnerable LangChain ReAct agent,
@@ -87,7 +101,7 @@ python src/run_baseline.py baseline_static_rules fetched/damn-vulnerable-llm-age
 python src/evaluate.py --system baseline_static_rules
 ```
 
-Expect 6 findings and **4 of 6** matched. `--semantic-probe` adds a model's
+Expect 6 findings and **3 of 8** matched. `--semantic-probe` adds a model's
 opinion on prompt templates; on this app it adds no finding.
 Read `artifacts/agentic_auditor/damn-vulnerable-llm-agent/report.md`.
 
@@ -107,10 +121,9 @@ On `damn-vulnerable-llm-agent` at commit `c0cf9a14`, scored against
 
 | System | Matched |
 |---|---|
-| This auditor, static | 4 of 6 |
-| This auditor, `--semantic-probe` | 4 of 6 |
-| grep/AST baseline | 5 of 6 |
-| SBOM-only baseline | 0 of 6 |
+| This auditor | 3 of 8 |
+| grep/AST baseline | 4 of 8 |
+| SBOM-only baseline | 0 of 8 |
 
 The key is **AI-drafted and unverified**, so every figure carries
 `key_ai_drafted` and `key_unverified`.
