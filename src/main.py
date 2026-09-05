@@ -22,6 +22,7 @@ from deps.inputs import (
 from deps import trivy_runner
 from parsing.extractor import extract_repo
 from parsing.repo_loader import local_module_names
+import fetch_repo
 import model_client
 import pipeline
 
@@ -115,6 +116,9 @@ def run(args: argparse.Namespace) -> int:
     """
     started = time.monotonic()
     app_dir = pipeline.resolve_repo(args.repo_path)
+    unchecked = fetch_repo.check_tree_matches_pin(app_dir)
+    if unchecked:
+        print(f"  {unchecked}", file=sys.stderr)
     scan = extract_repo(str(app_dir))
     outputs.report_skipped_files(scan.skipped)
     documents = {

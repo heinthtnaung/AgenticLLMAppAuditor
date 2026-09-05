@@ -6,7 +6,7 @@ audited application — the answer `src/evaluate.py` scores a run against.
 **One key ships, added 2026-09-05: `damn-vulnerable-llm-agent`.** It is
 `source: "ai_drafted"` and `verified: false`, so every score it produces carries
 `key_ai_drafted` and `key_unverified` — indicative, not thesis-grade, and the
-scorer says so on every line. A human reading its five entries against upstream
+scorer says so on every line. A human reading its six entries against upstream
 commit `c0cf9a14` is what removes those two qualifications, at which point
 `verified`, `verified_by` and `verified_date` get filled in.
 

@@ -127,6 +127,58 @@ def write_manifest(root: Path, document: dict) -> Path:
     return path
 
 
+def _pin_for(app_dir: Path) -> Path | None:
+    """The file that says which commit this tree should be, or None if nothing does.
+
+    The fetch manifest first, because the tool wrote it. Then the grading key's,
+    because a key is the stronger claim: it says which commit its line numbers
+    were read at, and a hand-cloned tree has no fetch manifest at all -- which
+    is exactly the case that went unchecked.
+    """
+    fetched = manifest_path(app_dir.parent, app_dir.name)
+    if fetched.is_file():
+        return fetched
+    graded = key_path(app_dir.name, MANIFEST_SUFFIX)
+    return graded if graded.is_file() else None
+
+
+def check_tree_matches_pin(app_dir: Path) -> str:
+    """Refuse an audit of a tree that no longer matches the commit its manifest pins.
+
+    A manifest beside a fetched tree says which commit the audit -- and any
+    grading key written against it -- is valid at. Nothing checked that the tree
+    still *is* that commit, and a hand-edited `requirements.txt` once turned an
+    undeclared dependency into a declared, exactly-pinned one: the supply-chain
+    finding changed check, the advisory join fired on the injected pin, and the
+    emitted OpenVEX document asserted a CVE against a third party's named commit
+    that was not true of it. `test_no_mutation.py` could not catch that -- it
+    proves the *tool* writes nothing, and a person had done the editing.
+
+    Returns a note when the tree cannot be checked, which is the common case:
+    `_fetch_into` deletes `.git` after pinning, so a tool-fetched tree has no
+    history to compare against. Silence would read as a passed check.
+    """
+    pin = _pin_for(app_dir)
+    if pin is None:
+        return ""
+    wanted = json.loads(pin.read_text()).get("upstream_commit", "")
+    if not (app_dir / HISTORY_DIR).is_dir():
+        return (f"{app_dir.name} is pinned to {wanted[:12]} and carries no history, "
+                "so the tree cannot be checked against it")
+    head, _date = read_pin(app_dir)
+    if head != wanted:
+        raise ValueError(
+            f"{app_dir.name} is at {head[:12]} but {pin.name} pins {wanted[:12]}. "
+            "A grading key's line numbers mean nothing against a different commit")
+    dirty = _run(["status", "--porcelain"], cwd=app_dir).strip()
+    if dirty:
+        raise ValueError(
+            f"{app_dir.name} is modified against its pinned commit:\n{dirty}\n"
+            "An audited repository is input. Restore it before auditing, or the "
+            "findings describe a tree nobody else has")
+    return ""
+
+
 def manifest_path(root: Path, name: str) -> Path:
     """Where one fetched tree's pin goes: beside the tree, never inside it."""
     return root / f"{name}{MANIFEST_SUFFIX}"

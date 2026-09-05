@@ -45,6 +45,32 @@ every figure carries `key_ai_drafted` and `key_unverified`.
 false-positive rates. The probe row drops `model_disabled` because a model ran —
 provenance, not detection.
 
+### A measurement that had to be redone
+
+The figures above were first taken against a tree that was **not** at
+`c0cf9a14`: a `PyYAML==5.3.1` line had been appended to the audited app's
+`requirements.txt` by hand and not reverted. That single line turned an
+undeclared dependency into a declared, exactly-pinned one, which changed which
+check reported DVLA-07 — an advisory lookup on the injected pin rather than the
+surface-to-component join the set-difference argument credits — and caused the
+emitted OpenVEX document to assert CVE-2020-14343 against a third party's named
+commit that is not true of it.
+
+`tests/test_no_mutation.py` could not catch this. It proves the *tool* writes
+nothing to an audited tree, and a person had done the editing.
+
+Re-measured on a restored tree: **the totals are unchanged** (4 / 5 / 0 of 6),
+DVLA-07 now matches via `undeclared_dependency` with `mapping_reason:
+used_but_undeclared` and no purl, and no OpenVEX document is written because
+there are no advisory findings. One published figure did move —
+`with_vex_evidence` was **1 and is 0**; that evidence was entirely the injected
+pin.
+
+`src/fetch_repo.check_tree_matches_pin` now refuses to audit a tree that does
+not match the commit its manifest or grading key pins, or that is modified
+against it. Verified: it rejects exactly the run that produced the contaminated
+figures.
+
 ## Latency
 
 Three runs each, one machine, `qwen2.5-coder:7b-instruct` on local Ollama.
