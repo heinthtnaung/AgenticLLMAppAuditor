@@ -194,6 +194,11 @@ than into the prompt — it holds whichever model is configured.
 the prompt template's source text, surface file paths and line numbers, surface
 kinds and names.
 
+**Observed, not merely predicted:** `glm-5.2` returned different verdicts for
+the same template on `test_rag.py:4` across runs — flagging it once and refuting
+it once, with identical input. The hosted arm has no `seed`, so a single run is
+a single sample, and any figure taken from one is quoted as such.
+
 **Not measurable from here**, and stated rather than dressed up: provider
 retention, whether the data trains a model, sub-processors and jurisdiction, and
 — specific to OpenRouter — **which upstream provider actually served the

@@ -115,7 +115,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("repo_path")
     parser.add_argument("--cloud-model", action="append", dest="cloud_models",
-                        help="repeatable; defaults to " + cloud_client.DEFAULT_MODEL)
+                        help="repeatable; defaults to OPENROUTER_MODEL from the environment "
+                             "or .env, else " + cloud_client.FALLBACK_MODEL)
     parser.add_argument("--out", type=Path, help="write the full comparison as JSON")
     parser.add_argument(
         "--html", type=Path,
@@ -125,7 +126,7 @@ def main() -> int:
     args = parser.parse_args()
     try:
         result = compare(args.repo_path,
-                         args.cloud_models or [cloud_client.DEFAULT_MODEL])
+                         args.cloud_models or [cloud_client.default_model()])
     except RuntimeError as error:
         print(f"error: {error}", file=sys.stderr)
         return 1

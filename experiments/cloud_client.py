@@ -13,12 +13,21 @@ name the variable, never its value, and never echo headers or the request body.
 
 import json
 import os
+import sys
 import urllib.error
 import urllib.request
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+
+from config import ENV_FILE, read_env_file  # noqa: E402
 
 API_URL = "https://openrouter.ai/api/v1/chat/completions"
 KEY_VARIABLE = "OPENROUTER_API_KEY"
-DEFAULT_MODEL = "z-ai/glm-5.2"
+MODEL_VARIABLE = "OPENROUTER_MODEL"
+
+# Used when neither the environment, `.env`, nor --cloud-model names one.
+FALLBACK_MODEL = "z-ai/glm-5.2"
 
 # Generous, because GLM-5.2 is a reasoning model: it spends tokens on a
 # `reasoning` field first and returns `content: null` if the budget runs out
@@ -50,23 +59,49 @@ def _post(payload: dict, key: str, timeout: int) -> dict:
         raise RuntimeError(f"cannot reach {API_URL}: {error}") from error
 
 
-def api_key() -> str:
-    """The key from the environment, or a refusal naming the variable and not its value."""
+def api_key(env_file: Path = ENV_FILE) -> str:
+    """The key, from the environment or `.env`, refusing by name and never by value.
+
+    A real environment variable wins, the way `config` treats every other
+    setting. `.env` is gitignored, so a key there is not a key in the repository
+    -- but it is a key on disk, which an exported shell variable is not.
+
+    Deliberately not routed through `config.get`: that validates against
+    `DEFAULTS` and would have to learn a cloud setting, which belongs to the
+    study and not to the auditor. `config` ignores any name without the
+    `AUDITOR_` prefix, so this one passes through its checks untouched.
+    """
     key = os.environ.get(KEY_VARIABLE, "").strip()
+    if not key and env_file.is_file():
+        key = read_env_file(env_file).get(KEY_VARIABLE, "").strip()
     if not key:
         raise RuntimeError(
-            f"{KEY_VARIABLE} is not set. Export it for this shell only; it must not "
-            "be written to .env, an artifact, or a commit.")
+            f"{KEY_VARIABLE} is set neither in the environment nor in {env_file.name}. "
+            "It is needed only by the local-versus-hosted study, never by an audit.")
     return key
 
 
-def ask(prompt: str, model: str = DEFAULT_MODEL, post_fn=None, timeout: int = 180) -> str:
+def default_model(env_file: Path = ENV_FILE) -> str:
+    """The hosted model to use when none is named on the command line.
+
+    Same precedence as the key: a real environment variable, then `.env`,
+    then a fallback -- so a study can be re-run with one setting changed and
+    no code edited.
+    """
+    named = os.environ.get(MODEL_VARIABLE, "").strip()
+    if not named and env_file.is_file():
+        named = read_env_file(env_file).get(MODEL_VARIABLE, "").strip()
+    return named or FALLBACK_MODEL
+
+
+def ask(prompt: str, model: str | None = None, post_fn=None, timeout: int = 180) -> str:
     """Ask the hosted model one question and return its text.
 
     Same contract as `model_client.ask`: text out, `RuntimeError` on any failure,
     so every degradation path already built for the local model works unchanged.
     `post_fn` is injected so a test can drive this without a socket or a key.
     """
+    model = model or default_model()
     send = post_fn or (lambda payload: _post(payload, api_key(), timeout))
     body = send({"model": model, "temperature": 0, "max_tokens": MAX_TOKENS,
                  "messages": [{"role": "user", "content": prompt}]})

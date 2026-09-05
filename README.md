@@ -128,23 +128,69 @@ vulnerable?".
 
 ## Optional: compare a local and a hosted model
 
-Off unless you ask for it. **With no API key, nothing changes** — `report.html`
-holds local-model output only, as it always does.
+Answers the proposal's Objective 5 — can an open-weight model run locally do
+this job as well as a hosted one. **Entirely optional.** With no API key nothing
+changes: `report.html` holds local-model output only, as it always does, and no
+audit ever reads the key.
+
+### Setup
+
+Put both settings in `.env` (gitignored). A real environment variable wins over
+either.
+
+```
+OPENROUTER_API_KEY=sk-or-v1-...
+OPENROUTER_MODEL=z-ai/glm-5.2
+```
+
+### Run
 
 ```bash
-export OPENROUTER_API_KEY=...          # this shell only; never commit it
+python experiments/compare_models.py fetched/<app>
+```
+
+Compares the local model against `OPENROUTER_MODEL`. To compare several at once,
+`--cloud-model` repeats and overrides the default:
+
+```bash
 python experiments/compare_models.py fetched/<app> \
+  --cloud-model qwen/qwen-2.5-coder-32b-instruct \
+  --cloud-model z-ai/glm-5.2 \
+  --out comparison.json \
   --html artifacts/agentic_auditor/<app>/comparison.html
 ```
 
-Writes `comparison.html` **beside** `report.html`, not inside it: the audit
-report is byte-identical run to run, and a hosted model's answer is neither
-reproducible nor available without a key. The page shows each model's verdict
-per prompt template **and its reasoning**, so you can judge which is right
-rather than trusting a count.
+`--html` writes a readable page **beside** `report.html`, never inside it: the
+audit report is byte-identical run to run, and a hosted model's answer is
+neither reproducible nor available without a key.
 
-`experiments/` is outside `src/` and nothing under `src/` may import it — the
-audit path stays offline, and a test asserts it in both directions.
+### Reading the output
+
+```
+  qwen2.5-coder:7b-instruct     2 flagged,  2.5s, 2970 bytes sent
+  z-ai/glm-5.2                  2 flagged, 58.6s, 2970 bytes sent
+
+  agree on 5 of 5, disagree on 0
+```
+
+The page shows each model's verdict **per prompt template with its reasoning**,
+because a count alone hides which model is right. In the measured run the local
+model flagged a template that interpolates nothing, by describing what the
+application does rather than what the template says — the hosted one did not.
+See `docs/REPORT.md`.
+
+Three things worth knowing before quoting a result:
+
+- **Only the semantic probe is model-dependent.** Every other check uses no
+  model, so this compares the one place a model can change a finding.
+- **Hosted models have no `seed`.** `glm-5.2` gave different verdicts on the
+  same template across runs here. One run is one sample; repeat before
+  concluding.
+- **Latency is not a quality signal** — it is confounded by network, provider
+  queue and routing.
+
+`experiments/` lives outside `src/`, and nothing under `src/` may import it, so
+the audit path stays offline. A test asserts both directions.
 
 ## Guarantees
 
