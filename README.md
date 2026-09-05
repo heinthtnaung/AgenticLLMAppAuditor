@@ -87,7 +87,8 @@ python src/run_baseline.py baseline_static_rules fetched/damn-vulnerable-llm-age
 python src/evaluate.py --system baseline_static_rules
 ```
 
-Expect 6 findings and **4 of 6** matched; add `--semantic-probe` for 5 of 6.
+Expect 6 findings and **4 of 6** matched. `--semantic-probe` adds a model's
+opinion on prompt templates; on this app it adds no finding.
 Read `artifacts/agentic_auditor/damn-vulnerable-llm-agent/report.md`.
 
 Two things that will silently spoil it: **editing the app's
@@ -107,7 +108,7 @@ On `damn-vulnerable-llm-agent` at commit `c0cf9a14`, scored against
 | System | Matched |
 |---|---|
 | This auditor, static | 4 of 6 |
-| This auditor, `--semantic-probe` | 5 of 6 |
+| This auditor, `--semantic-probe` | 4 of 6 |
 | grep/AST baseline | 5 of 6 |
 | SBOM-only baseline | 0 of 6 |
 

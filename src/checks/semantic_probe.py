@@ -63,6 +63,10 @@ NO_ANSWER = NO_MODEL
 VULNERABLE = "VULNERABLE"
 SAFE = "SAFE"
 
+# An interpolation point, as `_render` writes them. A template holding none
+# cannot meet this check's criterion, whatever a model says about it.
+PLACEHOLDER = re.compile(r"\{[^{}]+\}")
+
 # `NOT VULNERABLE` contains the token and means its opposite.
 NEGATORS = frozenset({"NOT", "NON", "NO", "ISNT", "NEITHER"})
 
@@ -82,13 +86,15 @@ Template:
 {template}
 ---
 
-Decide one structural question: does this template place a value that a user or \
-an external document controls directly into instruction text, with no \
-delimiter, quoting, or system/data separation around it?
+The template's interpolation points are written as {{name}}. These are the only \
+values that vary at runtime; everything else is fixed text the author wrote.
+
+Decide one structural question about THIS TEXT, not about what the application \
+does: is one of those interpolation points placed inside instruction text with \
+no delimiter, quoting, or system/data separation around it?
 
 Answer on the first line with exactly one word: VULNERABLE or SAFE.
-On the second line give one sentence of reasoning, naming the variable if there \
-is one."""
+On the second line, one sentence, naming the interpolation point you mean."""
 
 
 def _render(node: ast.expr) -> str:
@@ -184,6 +190,11 @@ def read_verdict(reply: object) -> tuple[str | None, str]:
     return _verdict_in(said[0]), rationale[:MAX_RATIONALE]
 
 
+def interpolates_anything(text: str) -> bool:
+    """Say whether the template has any runtime value in it at all."""
+    return bool(PLACEHOLDER.search(text))
+
+
 def _probe(surface: Surface, outcome: str, detail: str, reason: str | None = None) -> Probe:
     """Record what the model was asked about this surface and what came back."""
     return Probe(CHECK_NAME, SURFACE_SUBJECT, surface.id, outcome, detail, reason)
@@ -208,6 +219,17 @@ def judge(surface: Surface, text: str, ask: Ask) -> tuple[Finding | None, Probe]
     if not text:
         return None, _probe(surface, INCONCLUSIVE,
                             "the template's text is not written literally at this line", NO_TEXT)
+    if not interpolates_anything(text):
+        # Decided here, without asking. This check's claim is that a runtime
+        # value sits in instruction text undelimited; a template with no runtime
+        # value in it cannot meet that, so a model saying otherwise is
+        # describing the application rather than the text. Measured: on
+        # `damn-vulnerable-llm-agent` the local model called a wholly static
+        # system prompt injectable, and the hosted one correctly did not --
+        # see `docs/REPORT.md`, Objective 5.
+        return None, _probe(surface, REFUTED,
+                            "the template interpolates nothing: every character of it is "
+                            "fixed text, so no runtime value sits in its instructions")
     try:
         reply = ask(RED_TEAM_PROMPT.format(template=text))
     except RuntimeError as error:

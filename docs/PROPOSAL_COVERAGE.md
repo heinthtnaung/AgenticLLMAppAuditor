@@ -208,27 +208,24 @@ Six of the seven actions this file has listed were taken on 2026-09-05. Two
 commitments are now at zero, down from four. What is left:
 
 1. **Verify the shipped grading key.** It exists and it measures — see
-   `docs/REPORT.md`, where the auditor scores 4 of 6 static and 5 of 6 with the
-   probe, against 5 of 6 for the grep baseline and 0 of 6 for SBOM-only. But it
+   `docs/REPORT.md`, where the auditor scores 4 of 6 against 5 of 6 for the grep
+   baseline and 0 of 6 for SBOM-only. But it
    is AI-drafted and `verified: false`, so every one of those figures carries
    `key_ai_drafted` and `key_unverified`. A human reading its six entries
    against `c0cf9a14` is what turns an indication into a result, and it is the
    cheapest remaining upgrade in the whole document.
-2. **Publish an execution-time figure.** The run is timed and prints its
-   duration; no number appears in `docs/REPORT.md`.
-3. **Decide whether the planner should be consequential.** It chooses the order
-   and records it, and the order changes no artifact unless `MAX_STEPS` binds.
-   Either accept that and keep the record as provenance, or let it choose what
-   to probe -- which reopens the rule that it must never subtract.
-4. **Fix the semantic probe's rationale, or narrow its title.** The Objective 5
-   study showed the local model flags a static template by describing the
-   application rather than the template. The check's own criterion is not met on
-   the one case it contributes. Either the prompt asks a sharper question, or the
-   title stops claiming interpolation.
-5. **Repeat Objective 5 across more templates and a second hosted model**, if it
-   is to be a comparison rather than a data point.
+2. **Repeat Objective 5 across more templates and a second hosted model**, if it
+   is to be a comparison rather than a data point. One template is one template.
+3. **The planner's *order* is still inconsequential**, though its *narrowing* is
+   not: narrowing changes `checks_narrowed` and what each check examines. Decide
+   whether the order record is worth keeping as provenance, or whether the
+   planner should also choose what to probe.
 
 Done, and where: **Objective 5** and the **RAG/AUDITABILITY substitution** are
 both now stated in `docs/REPORT.md`'s "Addendum: Methodology Deviations from
 Proposal", so neither reads as an oversight. **Task 7.2** is wired, with the
-caveat in item 3. **Audit execution time** is instrumented.
+caveat in item 3. **Audit execution time** is instrumented and published in `docs/REPORT.md`.
+**The semantic probe's rationale is fixed**: a template with no interpolation
+point is refuted statically, without a model call, so the false positive the
+Objective 5 study found is unreachable. That lowered this project's own headline
+from 5 of 6 to 4 of 6.

@@ -11,13 +11,13 @@ entries.
 | System | Matched | Missed |
 |---|---|---|
 | This auditor, static | **4 of 6** | DVLA-01, DVLA-02 |
-| This auditor, `--semantic-probe` | **5 of 6** | DVLA-02 |
+| This auditor, `--semantic-probe` | **4 of 6** | DVLA-01, DVLA-02 |
 | Baseline A, grep/AST rules | **5 of 6** | DVLA-07 |
 | Baseline B, SBOM-only | **0 of 6** | all |
 
 ```
-auditor  {DVLA-01, 03, 05, 06, 07}
-baseline {DVLA-01, 02, 03, 05, 06}    shared 4, union all six
+auditor  {DVLA-03, 05, 06, 07}
+baseline {DVLA-01, 02, 03, 05, 06}    shared 3, union all six
 ```
 
 **The sets matter more than the counts.** The auditor alone reaches DVLA-07, the
@@ -28,14 +28,16 @@ with no authorisation check. That is a real gap, not an artefact —
 network reach, and what makes it a finding is an *absent* comparison rather than
 a present capability.
 
-**The probe's contribution is one entry, and the cloud study below shows it is
-right for the wrong reason.** DVLA-01 is where the taint trace runs and stays
-silent. The probe flags it — but the template at `main.py:21` is a *static
-string with no interpolation at all*, so the check's own criterion ("interpolates
-a value into instruction text without delimiters") is not met. The local model
-described the application's behaviour rather than the template's structure. The
-5-of-6 is therefore a true positive produced by a false rationale, and should
-not be quoted without that sentence.
+**The probe contributes nothing on this application, and that is a correction.**
+An earlier version of this report published 5 of 6 for the probe row: it flagged
+DVLA-01 at `main.py:21`. The Objective 5 study showed that template is a *static
+string with no interpolation at all*, so the check's own criterion — "interpolates
+a value into instruction text without delimiters" — cannot be met there. The
+local model had described the application's behaviour rather than the template's
+text. `semantic_probe` now refutes a non-interpolating template **without asking
+a model**, the finding is gone, and the honest figure is 4 of 6 in both
+configurations. The published number went down because a false positive was
+removed.
 
 **Limits.** One application. The key is AI-drafted and `verified: false`, so
 every figure carries `key_ai_drafted` and `key_unverified`.
@@ -101,12 +103,20 @@ returned by the `GetCurrentUser()` tool into the instruction text"*, which is
 false; it described what the application does, which the template narrates in
 prose, rather than what the template is.
 
-**What this costs the headline.** The probe's single contribution to detection —
-DVLA-01, the entry taking the auditor from 4 of 6 to 5 of 6 — is a true positive
-resting on a false rationale. The grading key anchors DVLA-01 at that line
-because the system prompt is the only control on which user's data is read; the
-probe flagged the same line for a reason that does not hold. Two different
-claims sharing a line number.
+**What this cost the headline, and what was done about it.** The probe's single
+contribution to detection — DVLA-01, the entry that took the auditor from 4 of 6
+to 5 of 6 — was a true positive resting on a false rationale. The grading key
+anchors DVLA-01 at that line because the system prompt is the only control on
+which user's data is read; the probe flagged the same line for a reason that
+does not hold. Two different claims sharing a line number.
+
+`semantic_probe` was then changed: a template whose text contains no
+interpolation point is refuted **statically, without a model call**, because
+this check's claim is that a runtime value sits undelimited in instruction text
+and such a template has no runtime value in it. The false positive is now
+unreachable rather than unlikely. The auditor's published score fell from 5 of 6
+to 4 of 6 as a result — **the study's main effect was to lower this project's own
+headline**, which is the outcome a comparison is for.
 
 **Answering the objective, on this evidence.** One application, one template,
 one hosted model. On the single case where the two could be compared, the
