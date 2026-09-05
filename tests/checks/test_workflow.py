@@ -18,6 +18,7 @@ from artifacts.finding import INCONCLUSIVE
 from artifacts.mapping import USED_BUT_UNDECLARED
 from artifacts.surface import DATA_SOURCE, TOOL_CALL, Surface
 from checks import workflow
+from checks.output_handling import CHECK_NAME as QUERY_CHECK
 from checks.permissions import CHECK_NAME as PERMISSION_CHECK
 from checks.supply_chain import CHECK_NAME as SUPPLY_CHAIN_CHECK
 from checks.taint import CHECK_NAME as TAINT_CHECK
@@ -45,6 +46,16 @@ UNBOUND_SURFACE = Surface(DATA_SOURCE, "st.chat_input", UNBOUND_FILE, 1, PYTHON,
 
 BOTH_STATIC_CHECKS = [PERMISSION_CHECK, SUPPLY_CHAIN_CHECK]
 
+# One query built by interpolation, with the surface the Python detector reports
+# for it: the subject the query check is dispatched over below.
+QUERY_FILE = "db.py"
+QUERY_LINE = 2
+QUERY_SOURCE = '''def read(cursor, user_id):
+    cursor.execute(f"SELECT * FROM t WHERE id = '{user_id}'")
+'''
+QUERY_SURFACE = Surface(DATA_SOURCE, "cursor.execute", QUERY_FILE, QUERY_LINE,
+                        PYTHON, "database query")
+
 
 def run_audit(repo: Path, plan_order: list[str], surfaces: tuple = (TOOL_SURFACE, DATA_SURFACE),
               mapping: dict | None = MAPPING) -> dict:
@@ -55,6 +66,12 @@ def run_audit(repo: Path, plan_order: list[str], surfaces: tuple = (TOOL_SURFACE
 def repo_with_unbound_source(tmp_path: Path) -> Path:
     """Write the one Python file the taint check can read, holding a source it cannot follow."""
     (tmp_path / UNBOUND_FILE).write_text(UNBOUND_SOURCE, encoding="utf-8")
+    return tmp_path
+
+
+def repo_with_interpolated_query(tmp_path: Path) -> Path:
+    """Write the one Python file the query check has something to report in."""
+    (tmp_path / QUERY_FILE).write_text(QUERY_SOURCE, encoding="utf-8")
     return tmp_path
 
 
@@ -146,3 +163,22 @@ def test_a_check_name_the_workflow_does_not_know_is_refused(tmp_path) -> None:
     """
     with pytest.raises(ValueError, match="not_a_real_check"):
         workflow.audit(str(tmp_path), [], None, ["not_a_real_check"])
+
+
+def test_the_query_check_is_one_the_planner_knows() -> None:
+    """A name outside `KNOWN_CHECKS` is refused, so a check must be listed to be plannable."""
+    assert QUERY_CHECK in workflow.KNOWN_CHECKS
+
+
+def test_the_planner_dispatches_the_query_check(tmp_path) -> None:
+    """It has its own branch: without one the name falls through to the refusal below it.
+
+    Both halves are asserted -- the finding is the query check's, and it is
+    recorded under that name rather than another check's results being
+    attributed to it.
+    """
+    repo = repo_with_interpolated_query(tmp_path)
+    state = run_audit(repo, [QUERY_CHECK], surfaces=(QUERY_SURFACE,), mapping=None)
+    assert state["checks_run"] == [QUERY_CHECK]
+    assert [(f.rule_id, f.file, f.line) for f in state["findings"]] == [
+        (QUERY_CHECK, QUERY_FILE, QUERY_LINE)]

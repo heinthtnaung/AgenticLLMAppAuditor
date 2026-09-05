@@ -23,7 +23,7 @@ from artifacts.findings_document import (
 from baseline_fixtures import EMPTY_SYFT_DOCUMENT, NAMELESS_SYFT_DOCUMENT, stub_syft
 from baselines.sbom_only import CHECK_NAME, OWASP_ID, component_names, scan_repo
 from dependency_fixtures import (
-    CORPUS_GENERATOR_OUTPUT,
+    PYPI_GENERATOR_OUTPUT,
     JS_GENERATOR_SAMPLE,
     TINY_PACKAGE_JSON,
 )
@@ -89,7 +89,7 @@ def test_component_names_returns_distinct_names_in_a_stable_order() -> None:
 
 def test_a_component_that_is_not_a_library_is_not_reported() -> None:
     """Syft lists the manifest file as a component; it is not a dependency."""
-    assert component_names(CORPUS_GENERATOR_OUTPUT) == PYTHON_LIBRARY_NAMES
+    assert component_names(PYPI_GENERATOR_OUTPUT) == PYTHON_LIBRARY_NAMES
 
 
 def test_a_component_with_no_name_is_ignored_rather_than_reported_blank() -> None:
@@ -104,26 +104,26 @@ def test_a_document_with_no_components_produces_no_finding(monkeypatch, tmp_path
 
 def test_every_finding_carries_no_file_and_no_line(monkeypatch, tmp_path: Path) -> None:
     """The whole ceiling result rests on this: a component sits nowhere in the code."""
-    findings = scan_with(monkeypatch, CORPUS_GENERATOR_OUTPUT, tmp_path)
+    findings = scan_with(monkeypatch, PYPI_GENERATOR_OUTPUT, tmp_path)
     assert [(f.file, f.line) for f in findings] == [(None, None)] * len(findings)
 
 
 def test_every_finding_carries_no_surface_either(monkeypatch, tmp_path: Path) -> None:
     """No surface model at all, so there is nothing for `matches_key` to compare."""
-    findings = scan_with(monkeypatch, CORPUS_GENERATOR_OUTPUT, tmp_path)
+    findings = scan_with(monkeypatch, PYPI_GENERATOR_OUTPUT, tmp_path)
     assert {(f.surface_id, f.surface_kind, f.surface_name) for f in findings} == {(None,) * 3}
 
 
 def test_every_finding_is_reported_under_the_supply_chain_class(
         monkeypatch, tmp_path: Path) -> None:
     """LLM03 in the 2025 numbering, and this system reports nothing else."""
-    findings = scan_with(monkeypatch, CORPUS_GENERATOR_OUTPUT, tmp_path)
+    findings = scan_with(monkeypatch, PYPI_GENERATOR_OUTPUT, tmp_path)
     assert {f.owasp_id for f in findings} == {"LLM03"}
 
 
 def test_the_purl_carries_no_version(monkeypatch, tmp_path: Path) -> None:
     """This baseline makes no claim about which version is installed."""
-    findings = scan_with(monkeypatch, CORPUS_GENERATOR_OUTPUT, tmp_path)
+    findings = scan_with(monkeypatch, PYPI_GENERATOR_OUTPUT, tmp_path)
     assert [f.purl for f in findings] == [f"pkg:pypi/{name}" for name in PYTHON_LIBRARY_NAMES]
 
 

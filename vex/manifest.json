@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "document_count": 0,
+  "documents": [],
+  "note": "Empty on purpose, and the emptiness is the recorded result rather than an oversight. No upstream VEX document exists for any dependency of any fixture: langchain, langchain-community, langchain-litellm, openai, streamlit and pyyaml were each checked at conventional locations and in PyPI metadata, and none publishes one or declares a security or VEX URL. Separately, the Python fixture has almost nothing to key on -- a VEX statement identifies its product by versioned PURL, and of its five components exactly one carries an exact version (langchain-litellm 0.2.0 pinned); two are inferred from a range and two are unconstrained with no version at all. The npm fixture is not blocked by that second reason: 80 of its 82 components are locked. See vex/README.md and the section in docs/SCHEMAS.md. Nothing under src/ reads this folder, and a test asserts it."
+}

@@ -44,12 +44,28 @@ def surfaces_document(skipped: tuple = ()) -> dict:
 
 def document_with_coverage(findings: tuple = (), probes=(), risk_classes: tuple = (),
                            advisory: str = ADVISORY_NOT_INGESTED,
-                           unresolved: int | None = None) -> dict:
-    """Build a findings document whose coverage block the test controls."""
+                           unresolved: int | None = None,
+                           advisory_unreached: int | None = None,
+                           advisory_unreached_components: list | None = None) -> dict:
+    """Build a findings document whose coverage block the test controls.
+
+    The unreached list and its count are paired in the builder, so when a test
+    gives only the count synthesise a matching list of that many components.
+    """
+    from artifacts.findings_document import ADVISORY_SNAPSHOT
+    from cli_helpers import STUB_ADVISORY_PIN
+    pin = STUB_ADVISORY_PIN if advisory == ADVISORY_SNAPSHOT else {}
+    items = advisory_unreached_components
+    if items is None and advisory_unreached is not None:
+        items = [{"purl": f"pkg:npm/dep-{i}@1",
+                  "advisories": [{"id": f"CVE-{i}", "severity": "HIGH"}]}
+                 for i in range(advisory_unreached)]
     return build_findings_document(
         list(findings), list(probes),
         coverage(SURFACES_CONSIDERED, [RULE_ID], advisory, list(risk_classes),
-                 unresolved_component_count=unresolved),
+                 unresolved_component_count=unresolved,
+                 advisory_unreached_component_count=advisory_unreached,
+                 advisory_unreached_components=items, **pin),
         model_run(MODEL_DISABLED),
     )
 

@@ -97,7 +97,7 @@ def fastapi_handler(): pass
 ALL_DETECTORS = (find_prompt_templates, find_agent_defs, find_tool_calls, find_data_sources)
 
 
-def parse(source: str) -> ast.AST:
+def parse_snippet(source: str) -> ast.AST:
     """Parse a snippet, keeping its line numbers as written after the leading newline."""
     return ast.parse(textwrap.dedent(source).lstrip("\n"))
 

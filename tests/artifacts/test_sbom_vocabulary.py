@@ -17,7 +17,7 @@ from dependency_fixtures import (
     GENERATOR_NAME,
     GENERATOR_VERSION,
     PYPI_MANIFEST,
-    corpus_sbom,
+    pypi_sbom,
     js_sbom,
 )
 from deps.package_names import PYPI
@@ -33,7 +33,7 @@ EXPECTED_EXACT_SOURCES = ("pinned", "locked")
 EXPECTED_VERSIONED_SOURCES = ("pinned", "locked", "inferred", "unconstrained")
 
 # A package declared with no constraint that the generator still resolved.
-# Neither corpus app has one, and without it the retention rule below is never
+# Neither recorded scan has one, and without it the retention rule below is never
 # exercised: everywhere else an unversioned source had no version to drop.
 UNCONSTRAINED_BUT_RESOLVED = build_sbom(
     {"components": [{"type": "library", "name": "widget", "version": "1.2.3"}]},
@@ -42,7 +42,7 @@ UNCONSTRAINED_BUT_RESOLVED = build_sbom(
 )
 
 # Every component the three documents emit, so the checks cover both ecosystems.
-ALL_COMPONENTS = (corpus_sbom()["components"] + js_sbom()["components"]
+ALL_COMPONENTS = (pypi_sbom()["components"] + js_sbom()["components"]
                   + UNCONSTRAINED_BUT_RESOLVED["components"])
 
 

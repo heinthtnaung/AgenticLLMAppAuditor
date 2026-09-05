@@ -6,8 +6,9 @@ exists so three scored systems can coexist -- without it the second system's
 stops being true. So these tests assert the path and assert that two systems do
 not collide, not merely that a file appeared.
 
-Everything is staged under `tmp_path` by `evaluate_helpers`; nothing here reads
-the real `corpus/`.
+Everything is staged under `tmp_path` by `evaluate_helpers`, which writes its
+own grading key and passes `--keys-dir`; nothing here reads the real
+`grading_keys/`.
 """
 
 import pytest
@@ -20,7 +21,7 @@ from evaluate_helpers import (
     read_evaluation,
     run_evaluate,
     stage_artifacts,
-    stage_corpus,
+    stage_keys,
 )
 from evaluation.document import AGENTIC_AUDITOR, SCORED_SYSTEMS
 from evaluation.harness import EVALUATION_NAME
@@ -32,58 +33,58 @@ UNKNOWN_SYSTEM = "../etc"
 
 def test_the_evaluation_is_written_under_the_system_directory(tmp_path, monkeypatch) -> None:
     """The layout is `<artifacts-dir>/<system>/evaluation.json`, not the bare directory."""
-    stage_corpus(tmp_path, monkeypatch)
+    keys_dir = stage_keys(tmp_path)
     artifacts_dir = stage_artifacts(tmp_path)
-    assert run_evaluate(monkeypatch, artifacts_dir) == 0
+    assert run_evaluate(monkeypatch, artifacts_dir, keys_dir=keys_dir) == 0
     assert (artifacts_dir / AGENTIC_AUDITOR / EVALUATION_NAME).is_file()
 
 
 def test_nothing_is_written_beside_the_system_directory(tmp_path, monkeypatch) -> None:
     """A file at `<artifacts-dir>/evaluation.json` is the path three systems would share."""
-    stage_corpus(tmp_path, monkeypatch)
+    keys_dir = stage_keys(tmp_path)
     artifacts_dir = stage_artifacts(tmp_path)
-    run_evaluate(monkeypatch, artifacts_dir)
+    run_evaluate(monkeypatch, artifacts_dir, keys_dir=keys_dir)
     assert not (artifacts_dir / EVALUATION_NAME).exists()
 
 
 def test_two_systems_write_two_separate_evaluation_files(tmp_path, monkeypatch) -> None:
     """Both files survive the other run: the whole point of the system segment."""
-    stage_corpus(tmp_path, monkeypatch)
+    keys_dir = stage_keys(tmp_path)
     stage_artifacts(tmp_path, AGENTIC_AUDITOR)
     artifacts_dir = stage_artifacts(tmp_path, OTHER_SYSTEM, findings=findings_document())
-    assert run_evaluate(monkeypatch, artifacts_dir) == 0
-    assert run_evaluate(monkeypatch, artifacts_dir, OTHER_SYSTEM) == 0
+    assert run_evaluate(monkeypatch, artifacts_dir, keys_dir=keys_dir) == 0
+    assert run_evaluate(monkeypatch, artifacts_dir, OTHER_SYSTEM, keys_dir) == 0
     assert (artifacts_dir / AGENTIC_AUDITOR / EVALUATION_NAME).is_file()
     assert (artifacts_dir / OTHER_SYSTEM / EVALUATION_NAME).is_file()
 
 
 def test_each_system_scores_its_own_findings_and_not_the_others(tmp_path, monkeypatch) -> None:
     """Distinct app directories, so one system's findings cannot be credited to another."""
-    stage_corpus(tmp_path, monkeypatch)
+    keys_dir = stage_keys(tmp_path)
     stage_artifacts(tmp_path, AGENTIC_AUDITOR)
     artifacts_dir = stage_artifacts(tmp_path, OTHER_SYSTEM, findings=findings_document())
-    run_evaluate(monkeypatch, artifacts_dir)
-    run_evaluate(monkeypatch, artifacts_dir, OTHER_SYSTEM)
+    run_evaluate(monkeypatch, artifacts_dir, keys_dir=keys_dir)
+    run_evaluate(monkeypatch, artifacts_dir, OTHER_SYSTEM, keys_dir)
     assert read_evaluation(artifacts_dir)["apps"][0]["true_positives"] == 1
     assert read_evaluation(artifacts_dir, OTHER_SYSTEM)["apps"][0]["true_positives"] == 0
 
 
 def test_each_evaluation_records_the_system_it_scored(tmp_path, monkeypatch) -> None:
     """The label travels inside the record, so a row copied out of it keeps its system."""
-    stage_corpus(tmp_path, monkeypatch)
+    keys_dir = stage_keys(tmp_path)
     artifacts_dir = stage_artifacts(tmp_path, OTHER_SYSTEM, findings=findings_document())
-    run_evaluate(monkeypatch, artifacts_dir, OTHER_SYSTEM)
+    run_evaluate(monkeypatch, artifacts_dir, OTHER_SYSTEM, keys_dir)
     assert read_evaluation(artifacts_dir, OTHER_SYSTEM)["system"] == OTHER_SYSTEM
 
 
 def test_two_runs_write_byte_identical_evaluations(tmp_path, monkeypatch) -> None:
     """A diff in `evaluation.json` must mean the score changed, never that it was rerun."""
-    stage_corpus(tmp_path, monkeypatch)
+    keys_dir = stage_keys(tmp_path)
     artifacts_dir = stage_artifacts(tmp_path)
     written = artifacts_dir / AGENTIC_AUDITOR / EVALUATION_NAME
-    run_evaluate(monkeypatch, artifacts_dir)
+    run_evaluate(monkeypatch, artifacts_dir, keys_dir=keys_dir)
     first = written.read_bytes()
-    run_evaluate(monkeypatch, artifacts_dir)
+    run_evaluate(monkeypatch, artifacts_dir, keys_dir=keys_dir)
     assert written.read_bytes() == first
 
 

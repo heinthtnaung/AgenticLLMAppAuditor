@@ -1,9 +1,14 @@
-"""Runs one baseline system over the corpus and writes the artifacts a score needs.
+"""Runs one baseline system over one repository and writes the artifacts a score needs.
 
 Separate from `main.py`, which runs the auditor, and from `evaluate.py`, which
 reads what either produced. A baseline writes exactly the two files the scorer
 opens -- `findings.json` and `surfaces.json` -- into its own system directory, so
 the harness scores it unmodified and no system can overwrite another's output.
+
+**It takes a repository path, the way `main.py` does.** It used to walk a
+pinned corpus; with the corpus removed nothing owns the audited source, so the
+caller names it, and the artifact directory takes the tree's own name -- which
+is the key `evaluate.py` joins a grading key on.
 """
 
 import argparse
@@ -21,7 +26,8 @@ from artifacts.findings_document import (
 from artifacts.surface import surfaces_to_json
 from baselines import sbom_only, static_rules
 from baselines.rules import RULES
-from corpus_paths import DOWNLOAD_HINT, app_is_present, app_path, discover_corpus_apps
+from grading_keys import GROUND_TRUTH_SUFFIX, KEYS_DIR
+from repo_url import SAFE_NAME
 
 DEFAULT_ARTIFACTS_DIR = Path("artifacts")
 FINDINGS_NAME = "findings.json"
@@ -37,8 +43,9 @@ EXPECTED_FAILURES = (FileNotFoundError, NotADirectoryError, ValueError, RuntimeE
 def build_parser() -> argparse.ArgumentParser:
     """Describe the command line arguments."""
     parser = argparse.ArgumentParser(
-        description="Run one baseline system over the corpus, for comparison against the auditor.")
+        description="Run one baseline system over one repository, to compare against the auditor.")
     parser.add_argument("system", choices=BASELINES, help="which baseline to run")
+    parser.add_argument("repo_path", type=Path, help="the repository to run the baseline over")
     parser.add_argument(
         "--artifacts-dir", type=Path, default=DEFAULT_ARTIFACTS_DIR,
         help=f"root the system directory is written under (default: {DEFAULT_ARTIFACTS_DIR})",
@@ -97,28 +104,39 @@ def build_documents(system: str, repo_path: str) -> tuple[str, str]:
     return findings_to_json(document), surfaces_to_json(surfaces, skipped)
 
 
-def write_app(system: str, app: str, artifacts_dir: Path) -> Path:
+def app_name(repo_path: Path) -> str:
+    """The artifact directory name for a tree, refusing one that is not a plain segment.
+
+    The same rule `fetch_repo` applies to a URL's last segment, and reused
+    rather than rewritten: this name becomes a directory under `artifacts/` and
+    the join key a grading key is looked up by, so `.` or `..` must not reach it.
+    """
+    name = repo_path.resolve().name
+    if not SAFE_NAME.match(name):
+        raise ValueError(
+            f"cannot derive a safe app name from {str(repo_path)!r}: got {name!r}, "
+            "which is not a single plain path segment")
+    return name
+
+
+def write_app(system: str, repo_path: Path, artifacts_dir: Path) -> Path:
     """Write one app's two artifacts under the baseline's own system directory."""
-    out = artifacts_dir / system / app
+    out = artifacts_dir / system / app_name(repo_path)
     out.mkdir(parents=True, exist_ok=True)
-    findings_json, surfaces_json = build_documents(system, str(app_path(app)))
+    findings_json, surfaces_json = build_documents(system, str(repo_path))
     (out / FINDINGS_NAME).write_text(findings_json, encoding="utf-8")
     (out / SURFACES_NAME).write_text(surfaces_json, encoding="utf-8")
     return out
 
 
 def run(args: argparse.Namespace) -> int:
-    """Run one baseline over every downloaded fixture. Returns the process exit code."""
-    apps = discover_corpus_apps()
-    absent = [app for app in apps if not app_is_present(app)]
-    if absent:
-        raise FileNotFoundError(f"cannot run {args.system} over {', '.join(absent)}: {DOWNLOAD_HINT}")
-
-    for app in apps:
-        out = write_app(args.system, app, args.artifacts_dir)
-        print(f"{args.system}: wrote {out}")
-    print(f"ran {args.system} over {len(apps)} apps; score it with "
-          f"`python src/evaluate.py --system {args.system}`")
+    """Run one baseline over one repository. Returns the process exit code."""
+    if not args.repo_path.is_dir():
+        raise NotADirectoryError(f"cannot read {args.repo_path}: not a directory")
+    out = write_app(args.system, args.repo_path, args.artifacts_dir)
+    print(f"{args.system}: wrote {out}")
+    print(f"score it with `python src/evaluate.py --system {args.system}`, once "
+          f"{out.name}{GROUND_TRUTH_SUFFIX} exists under {KEYS_DIR.name}/")
     return 0
 
 

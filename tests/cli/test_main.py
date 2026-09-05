@@ -1,10 +1,19 @@
-"""The CLI writes a valid surfaces.json artifact, including the empty result."""
+"""The CLI writes a valid surfaces.json artifact, including the empty result.
+
+Every repository here is written by the test: the mixed Python/TypeScript app
+from `mixed_app_fixtures` for the populated case, and the deliberately
+unreadable tree from `unreadable_fixtures` -- which does carry a non-UTF-8
+file, a malformed `.ts` and broken Python -- for the partial one. The pinned
+app that used to stand in for a real repository is gone, so what is missing is
+only the unforeseen: no code shape here was chosen by anyone but this
+project's authors.
+"""
 
 import json
 
 from cli_helpers import run_cli
-from conftest import CORPUS_DIR, require_corpus
-from main import SURFACES_NAME
+from mixed_app_fixtures import APP_NAME, MIXED_APP_SURFACES, write_mixed_app
+from outputs import SURFACES_NAME
 from artifacts.surface import SCHEMA_VERSION, SURFACE_KINDS
 from artifacts.skipped_file import UNPARSEABLE_SYNTAX
 from unreadable_fixtures import (
@@ -17,37 +26,39 @@ from unreadable_fixtures import (
     write_unreadable_repo,
 )
 
-APP = "vuln-app-1-support-agent"
-
-# The synthetic apps: one whose files cannot all be read, one that reads cleanly.
-MIXED_APP = "mixed-app"
+# The two written apps: one whose files cannot all be read, one that reads cleanly.
+UNREADABLE_APP = "unreadable-app"
 CLEAN_APP = "clean-app"
 
 
-def test_writes_surfaces_json_for_a_demo_app(monkeypatch, tmp_path) -> None:
-    """Running the CLI on demo app 1 writes <app>/surfaces.json and exits 0."""
-    require_corpus("vuln-app-1-support-agent")
-    exit_code = run_cli(monkeypatch, CORPUS_DIR / APP, tmp_path)
-    assert exit_code == 0
-    assert (tmp_path / APP / SURFACES_NAME).is_file()
+def audit_the_mixed_app(monkeypatch, tmp_path) -> dict:
+    """Run the CLI over the written mixed-language app and read back its artifact."""
+    repo = write_mixed_app(tmp_path)
+    artifacts = tmp_path / "artifacts"
+    assert run_cli(monkeypatch, repo, artifacts) == 0
+    return json.loads((artifacts / APP_NAME / SURFACES_NAME).read_text(encoding="utf-8"))
+
+
+def test_writes_surfaces_json_named_for_the_audited_app(monkeypatch, tmp_path) -> None:
+    """Running the CLI writes <app>/surfaces.json under the artifacts root and exits 0."""
+    repo = write_mixed_app(tmp_path)
+    artifacts = tmp_path / "artifacts"
+    assert run_cli(monkeypatch, repo, artifacts) == 0
+    assert (artifacts / APP_NAME / SURFACES_NAME).is_file()
 
 
 def test_written_artifact_matches_the_schema(monkeypatch, tmp_path) -> None:
     """The artifact parses and reports the schema version and the real surface count."""
-    require_corpus("vuln-app-1-support-agent")
-    run_cli(monkeypatch, CORPUS_DIR / APP, tmp_path)
-    document = json.loads((tmp_path / APP / SURFACES_NAME).read_text(encoding="utf-8"))
+    document = audit_the_mixed_app(monkeypatch, tmp_path)
     assert document["schema_version"] == SCHEMA_VERSION
-    assert document["surface_count"] == len(document["surfaces"])
-    assert document["surfaces"]
+    assert document["surface_count"] == len(document["surfaces"]) == MIXED_APP_SURFACES
 
 
 def test_written_surfaces_carry_known_kinds(monkeypatch, tmp_path) -> None:
     """Every record in the artifact uses one of the four declared surface kinds."""
-    require_corpus("vuln-app-1-support-agent")
-    run_cli(monkeypatch, CORPUS_DIR / APP, tmp_path)
-    document = json.loads((tmp_path / APP / SURFACES_NAME).read_text(encoding="utf-8"))
-    assert {record["kind"] for record in document["surfaces"]} <= set(SURFACE_KINDS)
+    document = audit_the_mixed_app(monkeypatch, tmp_path)
+    kinds = {record["kind"] for record in document["surfaces"]}
+    assert kinds and kinds <= set(SURFACE_KINDS)
 
 
 def test_repo_without_surfaces_succeeds_and_writes_empty_artifact(monkeypatch, tmp_path) -> None:
@@ -70,11 +81,11 @@ def test_missing_repo_path_fails_loudly(monkeypatch, tmp_path, capsys) -> None:
 
 def run_on_mixed_repo(monkeypatch, tmp_path) -> tuple[int, dict]:
     """Audit a repo whose files cannot all be read; return the exit code and the artifact."""
-    repo = tmp_path / MIXED_APP
+    repo = tmp_path / UNREADABLE_APP
     repo.mkdir()
     write_unreadable_repo(repo)
     exit_code = run_cli(monkeypatch, repo, tmp_path / "artifacts")
-    artifact = tmp_path / "artifacts" / MIXED_APP / SURFACES_NAME
+    artifact = tmp_path / "artifacts" / UNREADABLE_APP / SURFACES_NAME
     return exit_code, json.loads(artifact.read_text(encoding="utf-8"))
 
 

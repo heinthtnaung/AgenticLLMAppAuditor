@@ -13,7 +13,7 @@ import copy
 
 from artifacts.cyclonedx import GENERATOR_PROPERTY_PREFIX, to_cyclonedx
 from artifacts.sbom import sbom_to_json
-from dependency_fixtures import CORPUS_GENERATOR_OUTPUT, corpus_sbom
+from dependency_fixtures import PYPI_GENERATOR_OUTPUT, pypi_sbom
 
 # The two fields that differ between two runs of the same scan.
 SERIAL_NUMBER = "urn:uuid:00000000-0000-4000-8000-000000000001"
@@ -60,7 +60,7 @@ def _syft_component(component: dict) -> dict:
 
 def syft_document(serial_number: str = SERIAL_NUMBER, timestamp: str = TIMESTAMP) -> dict:
     """Return the recorded scan as Syft emits it, for the given serial and timestamp."""
-    document = copy.deepcopy(CORPUS_GENERATOR_OUTPUT)
+    document = copy.deepcopy(PYPI_GENERATOR_OUTPUT)
     document["bomFormat"] = "CycloneDX"
     document["specVersion"] = SPEC_VERSION
     document["version"] = DOCUMENT_VERSION
@@ -186,7 +186,7 @@ def test_the_scan_it_was_given_is_left_untouched() -> None:
 
 def test_the_project_bill_lists_more_components_than_the_standard_one() -> None:
     """Why both files exist: sbom.json adds what the manifest declares and the scan missed."""
-    project = corpus_sbom()
+    project = pypi_sbom()
     standard = to_cyclonedx(syft_document())
     assert len(project["components"]) == 5
     assert len(standard["components"]) == 3

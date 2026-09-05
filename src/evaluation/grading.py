@@ -14,6 +14,16 @@ symmetric, and a finding above the anchor is a different construct.
 
 LINE_TOLERANCE = 3
 
+# The entry fields this module subscripts **only after a `.get()` test**, so a
+# key without them matches rather than crashing. Not "the optional fields":
+# `SCHEMAS.md` marks `llm_surface` required-but-nullable, and `line_end` is
+# genuinely optional yet absent here because nothing subscripts it -- the
+# criterion is the guard, not the schema. It has no production reader: it is
+# here so a test can tell a guarded read from a crashable one, which an AST
+# scan cannot. See `tests/evaluation/test_entry_field_cover.py`, which refuses
+# a name added here without its guard.
+GUARDED_ENTRY_FIELDS = ("llm_surface", "surface_name", "component")
+
 
 def line_window(key_entry: dict) -> tuple[int, int]:
     """Return the line range a finding may sit in to match this key entry."""
@@ -39,5 +49,7 @@ def matches_key(finding: dict, key_entry: dict) -> bool:
     if key_entry.get("llm_surface") and finding.get("surface_kind") != key_entry["llm_surface"]:
         return False
     if key_entry.get("surface_name") and finding.get("surface_name") != key_entry["surface_name"]:
+        return False
+    if key_entry.get("component") and finding.get("purl") != key_entry["component"]:
         return False
     return True

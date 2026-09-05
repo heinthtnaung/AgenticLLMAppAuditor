@@ -1,6 +1,6 @@
 """The evaluation document: what it states, what it pools, and what it refuses.
 
-The two apps built here are the shape of the real corpus -- one whose key is
+The two apps built here are the shape a real pair takes -- one whose key is
 incomplete, one whose key grades nothing -- because that is the case in which
 an F1 would be a number about no system.
 """
@@ -46,7 +46,7 @@ def precision_only() -> dict:
 
 
 def both_apps() -> list[dict]:
-    """The corpus shape: the two scorecards, in the order that is not sorted."""
+    """The usual shape: the two scorecards, in the order that is not sorted."""
     return [precision_only(), recall_only()]
 
 
@@ -62,7 +62,7 @@ def test_no_value_anywhere_in_the_document_is_a_float() -> None:
 
 def test_the_document_states_its_schema_version() -> None:
     """A reader keys on the version, so it is in the file and not only in the code."""
-    assert build_evaluation(both_apps())["schema_version"] == SCHEMA_VERSION == 1
+    assert build_evaluation(both_apps())["schema_version"] == SCHEMA_VERSION == 3
 
 
 def test_the_system_is_carried_inside_the_record() -> None:
@@ -117,7 +117,18 @@ def test_the_precision_block_carries_only_counts_and_a_denominator() -> None:
     """Same rule on the other side: counts and the number of findings produced."""
     totals = build_evaluation(both_apps())["totals"]
     assert set(totals["precision"]) == {"apps_included", "true_positives",
+                                        "answered_finding_count",
                                         "false_positives", "produced_finding_count"}
+
+
+def test_the_totals_hold_exactly_the_five_blocks_the_schema_names() -> None:
+    """A closed set, so a sixth block cannot appear in the artifact unnoticed.
+
+    The `evidence` block is one of the five as of schema 3; `f1` is not, and is
+    two fields saying it is refused rather than a number.
+    """
+    assert set(build_evaluation(both_apps())["totals"]) == {
+        "recall", "precision", "evidence", "f1_reportable", "f1_blocked_reason"}
 
 
 def test_the_counts_are_pooled_from_the_included_apps_only() -> None:
@@ -142,7 +153,7 @@ def test_f1_is_refused_with_a_stated_reason() -> None:
 
 
 def test_f1_becomes_reportable_when_one_app_supports_both() -> None:
-    """The refusal is derived from the corpus, not written into the scorer."""
+    """The refusal is derived from the scored apps, not written into the scorer."""
     complete = score_app("both-app", grading_key([key_entry()]),
                          findings_document([static_finding()]), surfaces_document())
     totals = build_evaluation([complete])["totals"]

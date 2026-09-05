@@ -1,4 +1,10 @@
-"""Shared test setup: puts the flat modules in `src/` on the import path."""
+"""Shared test setup: puts the flat modules in `src/` on the import path.
+
+There is no fixture-locating helper here any more. The pinned corpus was
+removed on 2026-09-04, so no test reads a third-party tree from a
+project-owned path: every test that needs source code writes it into
+`tmp_path` itself. What that costs is stated in each re-anchored file.
+"""
 
 import json
 import sys
@@ -17,21 +23,6 @@ for directory in (SRC_DIR, TESTS_DIR):
     if str(directory) not in sys.path:
         sys.path.insert(0, str(directory))
 
-import pytest  # noqa: E402
-
-from corpus_paths import (  # noqa: E402  (import must follow the sys.path line)
-    BASELINE_SUFFIX,
-    DOWNLOAD_HINT,
-    app_is_present,
-    CORPUS_DIR,
-    EVIDENCE_DIR,
-    GROUND_TRUTH_SUFFIX,
-    MANIFEST_SUFFIX,
-    app_path,
-    discover_corpus_apps,
-    evidence_path,
-)
-
 from parsing.extractor import extract_repo  # noqa: E402
 from artifacts.surface import surfaces_to_json  # noqa: E402
 
@@ -42,34 +33,6 @@ def scan_to_json(repo_path: str) -> str:
     return surfaces_to_json(scan.surfaces, scan.skipped)
 
 
-# The ground_truth.json schema this suite knows how to read.
-GROUND_TRUTH_SCHEMA_VERSION = 2
-
-# The fixtures, found on disk rather than listed here.
-CORPUS_APPS = discover_corpus_apps()
-
-
 def read_json(path: Path) -> dict:
     """Read one UTF-8 JSON file and return its object."""
     return json.loads(path.read_text(encoding="utf-8"))
-
-
-def ground_truth(app: str) -> dict:
-    """Return a corpus app's grading key."""
-    return read_json(evidence_path(app, GROUND_TRUTH_SUFFIX))
-
-
-def manifest(app: str) -> dict:
-    """Return a corpus app's manifest, which records its upstream provenance."""
-    return read_json(evidence_path(app, MANIFEST_SUFFIX))
-
-
-def require_corpus(app: str) -> None:
-    """Skip a test when the audited app has not been downloaded.
-
-    The source is third-party and is not committed, so its absence is normal.
-    The skip is visible in the summary and names where to look, so a run with
-    no app can never be mistaken for a passing one.
-    """
-    if not app_is_present(app):
-        pytest.skip(f"{app}: {DOWNLOAD_HINT}")

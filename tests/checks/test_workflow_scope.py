@@ -5,6 +5,10 @@ second detector sitting beside the checks, with its own opinion and no module
 owning it. It is asserted two ways -- over the workflow's source, which names no
 OWASP risk and builds no record of its own, and over its output, which is
 exactly what the check returns when called directly.
+
+The `ast` scanners come from ast_scan.py. This file kept its own pair until
+2026-09-04, and one of them -- a `called_names` that read bare names only --
+answered differently from the shared scanner of the same name.
 """
 
 import ast
@@ -12,6 +16,7 @@ import re
 from pathlib import Path
 
 from artifacts.surface import TOOL_CALL, Surface
+from ast_scan import called_names, parse, string_literals
 from checks import permissions, supply_chain, taint, workflow
 from conftest import SRC_DIR
 from parsing.languages import PYTHON
@@ -35,20 +40,8 @@ TOOL_SURFACE = Surface(TOOL_CALL, "ShellTool", "agent.py", 12, PYTHON, "tool", "
 
 
 def parse_module(relative: Path) -> ast.Module:
-    """Parse one module under src/ into a syntax tree."""
-    return ast.parse((SRC_DIR / relative).read_text(encoding="utf-8"))
-
-
-def called_names(tree: ast.Module) -> set[str]:
-    """Return the bare name of everything the module calls."""
-    return {node.func.id for node in ast.walk(tree)
-            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)}
-
-
-def string_literals(tree: ast.Module) -> list[str]:
-    """Return every string written in the module, docstrings included."""
-    return [node.value for node in ast.walk(tree)
-            if isinstance(node, ast.Constant) and isinstance(node.value, str)]
+    """Parse one module named relative to src/, since ast_scan.parse takes a full path."""
+    return parse(SRC_DIR / relative)
 
 
 def test_the_workflow_names_no_owasp_risk() -> None:

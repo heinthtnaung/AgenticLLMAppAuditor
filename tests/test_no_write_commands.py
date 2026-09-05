@@ -2,22 +2,44 @@
 
 "It never commits" is a negative, and running the tool cannot prove one: a code
 path that was not taken looks identical to one that does not exist. So it is
-asserted over the source instead. One module is allowed to start a process --
-`deps/syft_runner.py`, which runs Syft to build the bill of materials -- and the
-test names it rather than exempting subprocess use in general.
+asserted over the source instead. Four modules are allowed to start a process
+-- `deps/syft_runner.py` (Syft, the inventory), `deps/trivy_runner.py` (Trivy,
+the advisories), `fetch_repo.py` (cloning a repository to be audited) and
+`emit_vex.py` (vexctl, authoring this project's own VEX statements) -- and the
+test names them rather than exempting subprocess use in general. Each also has
+its own test pinning the one program it may launch, so a named module cannot
+quietly start launching something else: Syft's is below, and the other three
+are in test_fetch_launch.py, test_advisory_launch.py and test_vexctl_launch.py.
+
+What this file holds is that rule and only that rule: the banned command lists,
+the four named modules, the tests that check them, and the two planted-violation
+tests that prove the matcher still fires. The `ast` scanners it walks the source
+with live in `ast_scan.py`, shared with every other guard that reads this
+project's own source. What is still written here is coupled to this file's own
+rule -- `modules_mentioning` reads `MUTATING_COMMANDS` and `EXECUTION_COMMANDS`
+-- which is why it did not move.
 
 Limit: the two command checks match substrings of string *literals*, so a command
 assembled at runtime -- `f"git {verb}"`, or a program name read from config --
 is not seen. The process, import and call checks are structural and have no such
 gap: they match the call itself, whatever its arguments say.
 
-The behavioural half, that a real audit leaves `corpus/` byte-identical, is in
-test_no_mutation.py.
+The behavioural half, that a real audit leaves the audited tree
+byte-identical, is in test_no_mutation.py.
 """
 
 import ast
 from pathlib import Path
 
+from ast_scan import (
+    called_names,
+    dotted_name,
+    imported_modules,
+    module_name,
+    parse,
+    source_files,
+    string_literals,
+)
 from conftest import SRC_DIR
 from deps.syft_runner import GENERATOR_NAME
 
@@ -29,22 +51,28 @@ PROCESS_LAUNCHERS = frozenset({
     "os.system", "os.popen", "os.execv", "os.execvp", "os.spawnv", "os.spawnvp",
 })
 
-# The single module allowed to start one, and the single program it may start.
+# The four modules allowed to start one, and the single program each may start.
 GENERATOR_MODULE = "deps/syft_runner.py"
+ADVISORY_MODULE = "deps/trivy_runner.py"
+FETCHER_MODULE = "fetch_repo.py"
+EMITTER_MODULE = "emit_vex.py"
+PROCESS_MODULES = frozenset({GENERATOR_MODULE, ADVISORY_MODULE,
+                             FETCHER_MODULE, EMITTER_MODULE})
 
 # The exemption is by module, not by command: the process test asserts set
-# equality with GENERATOR_MODULE, so no other module may start a process at all,
-# and `git checkout` is banned outright below. Task 3.8a needs both -- it runs
-# `git rev-parse` to check a fixture's pin and `git checkout` to restore it --
-# so it must add its own named module here, deliberately, rather than discover
-# the collision.
+# equality with PROCESS_MODULES, so no other module may start a process at all,
+# and the mutating spellings below are banned outright whoever writes them.
+# The fetcher stays inside that ban by using a clone rather than a checkout,
+# which does the same job without the banned word; a module that needs one of
+# these spellings must add itself here deliberately rather than discover the
+# collision.
 MUTATING_COMMANDS = (
     "git commit", "git push", "git merge", "git apply", "git am",
     "git checkout", "git reset", "git rebase", "gh pr", "pull request",
 )
 
 # Fetching the audited app's dependencies, or starting the app itself. Phase 3
-# reads the corpus; it does not run it, and it does not install into .venv.
+# reads the audited tree; it does not run it, and it does not install into .venv.
 EXECUTION_COMMANDS = (
     "pip install", "npm install", "npm ci", "yarn install", "poetry install",
     "streamlit run", "uvicorn", "npm run",
@@ -58,50 +86,6 @@ EXECUTION_CALLS = frozenset({"exec", "eval", "__import__", "compile"})
 PLANTED_FILE = "planted.py"
 PLANTED_COMMIT = 'subprocess.run(["git", "commit", "-m", "audited"])\n'
 PLANTED_INSTALL = 'subprocess.run(["pip", "install", "-r", "requirements.txt"])\n'
-
-
-def source_files(root: Path = SRC_DIR) -> list[Path]:
-    """Return every Python module under a tree, src/ unless a test plants its own."""
-    return sorted(root.rglob("*.py"))
-
-
-def module_name(path: Path, root: Path = SRC_DIR) -> str:
-    """Name one source file the way this test reports it: relative to its tree."""
-    return path.relative_to(root).as_posix()
-
-
-def parse(path: Path) -> ast.Module:
-    """Parse one source file into a syntax tree."""
-    return ast.parse(path.read_text(encoding="utf-8"))
-
-
-def dotted_name(node: ast.expr) -> str:
-    """Return `os.system` for an attribute chain, `exec` for a bare name, else ''."""
-    if isinstance(node, ast.Name):
-        return node.id
-    if isinstance(node, ast.Attribute):
-        prefix = dotted_name(node.value)
-        return f"{prefix}.{node.attr}" if prefix else ""
-    return ""
-
-
-def called_names(tree: ast.Module) -> set[str]:
-    """Return the dotted name of everything the module calls."""
-    return {dotted_name(node.func) for node in ast.walk(tree) if isinstance(node, ast.Call)}
-
-
-def imported_modules(tree: ast.Module) -> set[str]:
-    """Return every module name the file imports, however it imports it."""
-    names = {alias.name for node in ast.walk(tree)
-             if isinstance(node, ast.Import) for alias in node.names}
-    return names | {node.module for node in ast.walk(tree)
-                    if isinstance(node, ast.ImportFrom) and node.module}
-
-
-def string_literals(tree: ast.Module) -> list[str]:
-    """Return every string written in the module, docstrings included."""
-    return [node.value for node in ast.walk(tree)
-            if isinstance(node, ast.Constant) and isinstance(node.value, str)]
 
 
 def modules_containing(names: frozenset[str]) -> set[str]:
@@ -121,6 +105,14 @@ def modules_mentioning(commands: tuple[str, ...], root: Path = SRC_DIR) -> dict[
     return found
 
 
+def plant_module(tmp_path: Path, source: str) -> Path:
+    """Write a throwaway source tree holding one offending module, and return its root."""
+    root = tmp_path / "planted_src"
+    root.mkdir()
+    (root / PLANTED_FILE).write_text(source, encoding="utf-8")
+    return root
+
+
 def test_the_source_tree_was_actually_scanned() -> None:
     """Guard: the checks below say nothing if the file list came back empty."""
     assert len(source_files()) > 10
@@ -133,13 +125,13 @@ def test_no_module_names_a_command_that_rewrites_a_repository() -> None:
 
 
 def test_no_module_names_a_command_that_installs_or_starts_the_audited_app() -> None:
-    """Phase 3 reads the corpus app; it never installs its packages or runs it."""
+    """Phase 3 reads the audited app; it never installs its packages or runs it."""
     assert modules_mentioning(EXECUTION_COMMANDS) == {}
 
 
-def test_only_the_sbom_generator_module_starts_a_process() -> None:
-    """Exactly one module may launch anything, and it is the one that runs Syft."""
-    assert modules_containing(PROCESS_LAUNCHERS) == {GENERATOR_MODULE}
+def test_only_the_named_modules_start_a_process() -> None:
+    """Exactly four modules may launch anything, and each is named here."""
+    assert modules_containing(PROCESS_LAUNCHERS) == set(PROCESS_MODULES)
 
 
 def test_the_generator_module_launches_syft_and_nothing_else() -> None:
@@ -164,14 +156,6 @@ def test_no_module_imports_the_machinery_for_running_another_program() -> None:
 def test_no_module_calls_exec_eval_or_import() -> None:
     """The auditor parses the audited source into a tree; it never evaluates it."""
     assert modules_containing(EXECUTION_CALLS) == set()
-
-
-def plant_module(tmp_path: Path, source: str) -> Path:
-    """Write a throwaway source tree holding one offending module, and return its root."""
-    root = tmp_path / "planted_src"
-    root.mkdir()
-    (root / PLANTED_FILE).write_text(source, encoding="utf-8")
-    return root
 
 
 def test_the_command_matcher_catches_a_planted_git_commit(tmp_path) -> None:

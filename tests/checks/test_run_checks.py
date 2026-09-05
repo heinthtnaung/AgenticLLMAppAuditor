@@ -8,28 +8,41 @@ from it could not look at all, so its absence is never a clean result.
 
 Most tests here pass an empty directory, which is one half of that rule by
 itself: with no Python file to read, the taint trace never had a subject. The
-risk-class tests at the bottom write one file, so every check has a subject and
-the agreement between `checks_run` and `risk_classes_checked` is checked on all
-three rather than two.
+risk-class tests write one file, so every check has a subject and the agreement
+between `checks_run` and `risk_classes_checked` is checked over the whole map
+rather than over the checks that happen to need no source.
+
+What is *not* here: which app shapes each check is planned for at all. Those
+gates -- the query check needing a model, the auditability check needing an
+agent -- live in `test_check_scope.py`, because they are about the plan rather
+than about the document this file assembles from it.
 """
 
 from pathlib import Path
 
 from artifacts.findings_document import ADVISORY_NOT_INGESTED, MODEL_DISABLED
 from artifacts.mapping import MAPPING_REASONS, STDLIB, UNRESOLVED, USED_BUT_UNDECLARED
-from artifacts.surface import DATA_SOURCE, TOOL_CALL, Surface
+from artifacts.surface import AGENT_DEF, DATA_SOURCE, TOOL_CALL, Surface
 from checks import permissions, supply_chain, workflow
-from checks.run_checks import RISK_CLASS_BY_CHECK, build_findings, run_static_checks
+from checks.run_checks import (
+    EDGE_CHECKS, GRAPH_CHECKS, RISK_CLASS_BY_CHECK, build_findings)
 from parsing.languages import PYTHON
 
 TOOL_SURFACE = Surface(TOOL_CALL, "ShellTool", "agent.py", 12, PYTHON, "tool", "langchain.tools")
 DATA_SURFACE = Surface(DATA_SOURCE, "yaml.load", "utils.py", 75, PYTHON, "yaml read", "yaml")
 
+# An agent built by a factory the auditability check will look at. It is only
+# there to make that check plannable: no source line matches it, so the check
+# looks and stays silent, which is exactly the state the risk-class tests below
+# are about.
+AGENT_SURFACE = Surface(AGENT_DEF, "AgentExecutor", "app.py", 1, PYTHON, "agent",
+                        "langchain.agents")
+
 # The two checks under test here, whatever else runs beside them.
 STATIC_CHECKS = (supply_chain.CHECK_NAME, permissions.CHECK_NAME)
 
 # Python the taint trace can read and clear, so a test can hand every check a
-# subject and the risk-class invariant is checked against all three, not two.
+# subject and the risk-class invariant is checked against every check, not most.
 CLEAN_PYTHON = "greeting = 'hello'\n"
 
 # Shaped like a real mapping.json: all five reasons present, including zeros.
@@ -51,9 +64,19 @@ UNRESOLVED_MAPPING = {
 }
 
 
-def findings_for(repo: Path, surfaces: list, mapping: dict | None) -> dict:
-    """Assemble the findings document for the given repository."""
-    return build_findings(str(repo), surfaces, mapping)
+def findings_for(repo: Path, surfaces: list, mapping: dict | None,
+                 advisories: dict | None = None) -> dict:
+    """Assemble the findings document for the given repository.
+
+    The planner document `build_findings` returns beside it is dropped: this
+    file is about the findings, and `tests/checks/test_planner_wiring.py` owns
+    the other one.
+    """
+    from cli_helpers import STUB_ADVISORY_PIN
+    pin = STUB_ADVISORY_PIN if advisories is not None else None
+    document, _planner_document = build_findings(
+        str(repo), surfaces, mapping, advisories, pin)
+    return document
 
 
 def test_a_check_that_examined_its_subjects_is_named_even_when_silent(tmp_path) -> None:
@@ -101,10 +124,10 @@ def test_both_static_checks_contribute_their_findings(tmp_path) -> None:
     assert sorted(f["rule_id"] for f in document["findings"]) == sorted(STATIC_CHECKS)
 
 
-def test_a_missing_mapping_silences_the_check_that_needs_one() -> None:
+def test_a_missing_mapping_silences_the_check_that_needs_one(tmp_path) -> None:
     """Without an SBOM there is no mapping, and the supply-chain check reports nothing."""
-    findings = run_static_checks([TOOL_SURFACE, DATA_SURFACE], None)
-    assert [finding.rule_id for finding in findings] == [permissions.CHECK_NAME]
+    document = findings_for(tmp_path, [TOOL_SURFACE, DATA_SURFACE], None)
+    assert [f["rule_id"] for f in document["findings"]] == [permissions.CHECK_NAME]
 
 
 def test_a_missing_mapping_leaves_its_check_out_of_coverage(tmp_path) -> None:
@@ -141,17 +164,45 @@ def test_an_app_with_no_surfaces_produces_an_empty_document(tmp_path) -> None:
 # --- risk_classes_checked agrees with checks_run ----------------------------
 
 def document_where_every_check_had_a_subject(tmp_path: Path) -> dict:
-    """Assemble a document from a repository with a mapping to read and Python to trace."""
+    """Assemble a document from a repository every check has something to look at in.
+
+    Four things are load-bearing and none may be dropped: a mapping for the
+    supply-chain check, a Python file for the three that read source,
+    `TOOL_SURFACE` -- the query check is planned only on an app that drives a
+    model, so without an LLM surface it would be absent and the plan short --
+    and `AGENT_SURFACE`, which is what makes the auditability check plannable.
+    Drop either surface and `checks_run` comes up one name short, so the
+    equality against the whole risk-class map stops meaning anything.
+    """
     (tmp_path / "app.py").write_text(CLEAN_PYTHON, encoding="utf-8")
-    return findings_for(tmp_path, [TOOL_SURFACE, DATA_SURFACE], MAPPING)
+    # An empty index is still a subject: the advisory check looked and matched
+    # nothing, which is not the same as having had nothing to look at.
+    return findings_for(tmp_path, [TOOL_SURFACE, DATA_SURFACE, AGENT_SURFACE],
+                        MAPPING, advisories={})
 
 
 def test_every_check_that_ran_has_its_risk_class_named(tmp_path) -> None:
-    """A check that looked and stayed silent still covered its class, or silence reads as a gap."""
+    """A check that looked and stayed silent still covered its class, or silence reads as a gap.
+
+    Every check in the map *except* the edge ones, which is what `GRAPH_CHECKS`
+    names. `findings_for` hands `build_findings` no `model_ask_fn`, so the
+    semantic probe was never offered a model and produced no probe at all -- it
+    had nothing to look at, which is the same absence rule the rest of this file
+    is about. Expecting the whole map here would claim a model-backed verdict
+    from a run with no model in it; the check is exercised in
+    `test_semantic_probe.py`, where one is passed.
+    """
     coverage = document_where_every_check_had_a_subject(tmp_path)["coverage"]
-    assert coverage["checks_run"] == sorted(RISK_CLASS_BY_CHECK)
+    assert coverage["checks_run"] == sorted(GRAPH_CHECKS)
     assert all(RISK_CLASS_BY_CHECK[check] in coverage["risk_classes_checked"]
                for check in coverage["checks_run"])
+
+
+def test_an_edge_check_is_absent_from_a_run_that_was_offered_no_model(tmp_path) -> None:
+    """Guard: without this the subtraction above would pass on an edge check that always ran."""
+    coverage = document_where_every_check_had_a_subject(tmp_path)["coverage"]
+    assert EDGE_CHECKS
+    assert set(coverage["checks_run"]) & set(EDGE_CHECKS) == set()
 
 
 def test_every_risk_class_named_is_one_a_check_that_ran_can_report(tmp_path) -> None:

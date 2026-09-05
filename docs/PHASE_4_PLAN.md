@@ -29,6 +29,25 @@ already attributed. Fixing them is Phase 3 work, done knowingly, in its own
 change, and re-scored afterwards — never folded into the measurement that
 found them.
 
+> **Note added 2026-09-04.** The pinned corpus this plan is written around was
+> **removed** (user decision; see `docs/TODO.md`, "Corpus removal"). The plan is
+> left as the record of what was decided and built, not rewritten. Two things a
+> reader should carry into it: `run_baseline.py` now takes a **repository path**
+> rather than walking the corpus, and Task 4.4's ceiling predictions were
+> checked by `tests/baselines/test_baseline_ceilings.py`, which was deleted with
+> the fixtures — so those ceilings are a recorded prediction whose check no
+> longer runs. Every measured figure below keeps its run label, and the three
+> apps and commits it was taken against are in `docs/REPORT.md` Appendix A.
+>
+> Read every `corpus_paths` below as **`src/grading_keys.py`** (renamed in the
+> same change, `evidence_path` → `key_path`, `discover_corpus_apps` →
+> `discover_graded_apps`). Two specifics, cited by text rather than line number
+> because this note shifted every line below it: the bullet "Tell 'not
+> downloaded' from 'not audited'" describes a state that no longer exists,
+> since nothing owns an audited tree's path any more; and the requirement to
+> extend the scorer-boundary import assertion still stands, now naming
+> `grading_keys`, with the mutation check it originally lacked.
+
 ## An honest note on order
 
 **The scorer was built before this plan, and that is a departure.** Phases 1,
@@ -289,7 +308,28 @@ ceiling is recorded with its reason.
 Both baselines built (`src/baselines/`), run by `src/run_baseline.py`, and
 scored through the **unmodified** harness on the same join rule.
 
-| System | Recall, `vuln-app-1-support-agent` | False positives, the two clean apps | Produced |
+**This table describes the pre-advisory run** — the measurement this phase
+took, before the `known_advisory` check existed. The re-measured figures
+(recall unchanged, the auditor's clean-app false positives 0 → 2, both true
+CVE findings the key does not grade yet) are in the README's headline section
+until A4's write-up lands.
+
+**The one join rule changed once since, and the change is re-justified here
+because it changes what scoring means.** `matches_key` now honours a key
+entry's `component` field — where the key names one, the finding's `purl` must
+equal it byte-for-byte — mirroring the existing optional-when-named
+`llm_surface`/`surface_name` clauses. It is a *tightening* constraint on
+entries that opt in, not the component-anchored join branch the advisory plan
+rejected: an entry still needs a real file, line and OWASP id, so nothing
+un-anchored became scorable. It exists so a key can grade the **reachability
+claim** (this surface reaches this vulnerable component) instead of a CVE
+identity that would rot with the advisory database. One consequence to read
+correctly: several produced findings — one per advisory on the reached
+component — may answer a single such entry; `true_positives` counts entries,
+`answered_finding_count` (added with it) counts the findings, so "1 entry
+matched by 2 findings, 0 false positives" is one credit, not two.
+
+| System | Recall, `vuln-app-1-support-agent` | False positives, the two OSS apps (clean until the starter's key gained STARTER-01) | Produced |
 |---|---|---|---|
 | `agentic_auditor` | **2 of 6** | 0 | 2 |
 | `baseline_static_rules` | **5 of 6** | 1 | 6 |
@@ -305,6 +345,17 @@ classes it does not cover at all -- LLM02 and AUDITABILITY are absent from its
 `risk_classes_checked`, while the baseline has a crude rule for each. The
 auditor is not being out-detected on ground it contests; it is losing ground it
 never entered.
+
+> Recorded 2026-09-05, after this comparison was measured: LLM02 is now covered
+> by `src/checks/output_handling.py`, which reports `VULN1-04`'s line. The
+> comparison above is **not** re-measured — the corpus was removed first — so it
+> is left exactly as taken. Read it as a measurement of the tool as it was.
+>
+> Two further changes land the same day, both of which move what the tool
+> detects: `src/checks/auditability.py` covers AUDITABILITY (`VULN1-05`'s line),
+> and the Python detector vocabulary gained `init_chat_model`, `ToolNode`,
+> `TavilySearch` and `TavilySearchResults`. The surface counts behind 2-of-6 and
+> 5-of-6 are therefore pre-change and, with the corpus gone, not re-measurable.
 
 **Why the win is worth less than 5-to-2 suggests.**
 
@@ -327,10 +378,11 @@ never entered.
   *true* statement — the component is present and unreviewed. They score as
   false positives because the key grades vulnerabilities while the finding
   reports inventory: a category mismatch, not a tool being wrong. What is
-  missing is the advisory match, and that is **this project's own unticked
-  Phase 2 task**, not a limit of SBOM tooling. Reporting 187 beside the
-  auditor's 0 flatters the auditor on the one axis it is not actually winning.
-- **The auditor's 0 false positives is 0 out of very few opportunities.** On the
+  missing was the advisory match — since built (`known_advisory`, see
+  `ADVISORY_PLAN.md`), which is exactly why the auditor's own re-measured
+  count moved. Reporting 187 beside the auditor's pre-advisory 0 flattered the
+  auditor on the one axis it was not actually winning.
+- **The auditor's 0 false positives was 0 out of very few opportunities.** On the
   Python clean app no check had a subject at all; only the TypeScript app gave
   one a real chance to be wrong.
 
@@ -441,6 +493,13 @@ either a check that ran and stayed silent (`VULN1-01`, `VULN1-02`) or a class it
 does not cover (`VULN1-04` LLM02, `VULN1-05` AUDITABILITY). Two crude regexes
 would close the second pair. That is a real gap and it is filed as Phase 3 work.
 
+> Recorded 2026-09-05: half of it is now closed. `output_handling.py` reaches
+> `VULN1-04`, and it is an AST-shaped, surface-anchored, LLM-scoped form of the
+> rule Baseline A held that entry with (`baselines/rules.py`,
+> `grep_sql_string_building`). Saying so plainly: **the auditor closed this gap
+> by generalising the baseline's own rule.** `VULN1-05` (AUDITABILITY) is still
+> uncovered.
+
 **What each research question can honestly be answered with:**
 
 - *Does the agentic approach detect more?* **No, not on this corpus** -- 2
@@ -472,13 +531,12 @@ working tree, because the working tree is not what anyone receives:
 - **No artifact is tracked.** `artifacts/` is gitignored and empty on clone.
 - **No `.env`, secret or credential is tracked.**
 
-**Not yet done, and it gates an actual release:** `docs/report.docx` is the
-tracked write-up and is stale, while its source `docs/REPORT.md` is gitignored,
-so a reader of the repository gets the binary and none of the corrections made
-to the Markdown. That is Task 4.9, and releasing before it is settled would ship
-a document contradicting the code beside it.
+**Since done:** Task 4.9 was decided the way this paragraph argues -- the
+Markdown is tracked, the stale binary dropped -- so a reader of the repository
+now gets the diffable write-up and its history. The paragraph below is kept as
+the record of the problem as it stood.
 
-## Task 4.9 — The write-up, and the stale artifact under it
+## Task 4.9 — The write-up, and the stale artifact under it — **decided: track the Markdown**
 
 `docs/report.docx` is tracked and was built 2026-08-23; it still says Phases 2
 to 4 are unimplemented and the suite is 236 tests. Its source, `REPORT.md`, is
@@ -510,7 +568,8 @@ authored into a file nobody receives.
       can prove this on its own.
 - [ ] Each baseline's achievable ceiling is reported beside its score.
 - [ ] The write-up states that the model contributed nothing to any scored run.
-- [ ] Tests pass; `project-guard` clean on the finished code.
+- [x] Tests pass; `project-guard` clean on the finished code, over three
+      passes on the baselines and one on the scorer.
 - [ ] `TODO.md` ticked in the same change as the work.
 
 **Artifacts produced this phase:** one evaluation document per system; its path

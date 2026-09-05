@@ -46,8 +46,10 @@ any file and understand it in a minute:
     live in separate modules.
 12. **Constants, not magic values.** Named constants for skip-lists, size
     limits, extensions — defined once at the top of a module.
-13. **Write a test as you go.** Validate each task against the demo apps in
-    `corpus/` before marking it done.
+13. **Write a test as you go.** Every code change lands with its test in the
+    same change; a task with no test is not done. Build whatever tree or
+    artifact the test needs inside the test (`tmp_path`), so the suite passes
+    on a clean checkout with nothing downloaded.
 14. **No dead code / no leftover TODOs.** Remove commented-out code before
     completing a task.
 15. **Do not widen scope.** Build what the current phase's plan asks for.

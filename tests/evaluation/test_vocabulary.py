@@ -7,9 +7,11 @@ object-name root or a substring the app author chose. Those exclusions are what
 keeps the total honest, so each one is asserted here rather than trusted to the
 docstring that explains it.
 
-The corpus-wide totals live in tests/corpus/test_vocabulary_corpus.py, which is
-where a measured figure belongs.
+The measured totals over a whole pinned application went with the corpus that
+held it. What is left is the rule, one exclusion at a time.
 """
+
+from collections import Counter
 
 import pytest
 
@@ -29,14 +31,44 @@ from parsing.languages import JAVASCRIPT, PYTHON
 OVERLAPPING_PYTHON_TOOL = "ShellTool"
 OVERLAPPING_JAVASCRIPT_TOOL = "WebBrowser"
 
-# Registered for JavaScript, absent from the Python tables. docs/TODO.md carries
-# closing this as an open task; the assertions below say so when it closes.
-CROSS_LANGUAGE_GAP = ("ToolNode", "TavilySearchResults")
+# Every counted name more than one table of its language holds, written out
+# rather than derived. Deriving it would make the union-versus-sum assertion
+# below an identity that holds for any tables at all; as literals it says
+# *which* names are doubled, and firing means a seventh appeared.
+#
+# Two Python table *pairs* overlap, on seven names between them, for two
+# different reasons -- and both are deliberate: the five high-privilege tools
+# are in TOOL_CLASSES for what they are and in HIGH_PRIVILEGE_TOOLS for what
+# they reach, and both dataset loaders are in DATA_SOURCE_CALLS and
+# DATA_SOURCE_METHODS because those match different call *shapes* -- the bare
+# call needs the full-name table, any receiver form needs the leaf table.
+# Either way it is one name a framework published once.
+DOUBLED_PYTHON_NAMES = frozenset({
+    "ShellTool", "PythonREPLTool", "PythonAstREPLTool",
+    "RequestsGetTool", "RequestsPostTool",
+    "load_dataset", "load_from_disk",
+})
+DOUBLED_JAVASCRIPT_NAMES = frozenset({
+    "ShellTool", "WebBrowser", "JavaScriptInterpreter"})
 
-GAP_CLOSED_MESSAGE = (
-    "is now registered for Python. That is the known cross-language gap in "
-    "docs/TODO.md being closed, which is good news: tick the task, and update "
-    "this test and the pinned Python totals in tests/corpus/test_vocabulary_corpus.py."
+DOUBLED_NAMES_MESSAGE = (
+    "a name moved into or out of a second counted table. The counting rule is "
+    "unchanged -- a name a framework published once is counted once -- but the "
+    "list of names it applies to is pinned, so update it here."
+)
+
+# Registered for both languages since the Python tables gained them. What is
+# left of the docs/TODO.md gap is below: the same three names are spread across
+# the two languages differently, so the disagreement moved rather than closing.
+NOW_IN_BOTH_LANGUAGES = ("ToolNode", "TavilySearchResults")
+
+# Python-only, because the JavaScript tables carry the older spelling alone.
+PYTHON_ONLY_TAVILY = "TavilySearch"
+
+GAP_MOVED_MESSAGE = (
+    "the two languages now agree about this name. That is the rest of the "
+    "docs/TODO.md cross-language gap closing, which is good news: tick the "
+    "task, and update this test."
 )
 
 UNKNOWN_LANGUAGE = "cobol"
@@ -56,6 +88,12 @@ def table_of(module, table: str) -> set[str]:
 def sum_of_table_sizes(module) -> int:
     """Add up the counted tables without deduplicating, so the union can be compared to it."""
     return sum(len(getattr(module, table, ())) for table in API_NAME_TABLES)
+
+
+def names_held_by_two_tables(module) -> set[str]:
+    """Every counted name that more than one of a module's tables holds."""
+    held = Counter(name for table in API_NAME_TABLES for name in set(getattr(module, table, ())))
+    return {name for name, tables in held.items() if tables > 1}
 
 
 # --- What is counted -------------------------------------------------------
@@ -107,20 +145,43 @@ def test_route_object_roots_are_not_registered() -> None:
 # --- Deduplication ---------------------------------------------------------
 
 def test_a_python_name_in_two_tables_is_counted_once() -> None:
-    """The Python total is the union of the tables: the sum, less the tools named twice."""
-    counted_twice = detector_names.TOOL_CLASSES & detector_names.HIGH_PRIVILEGE_TOOLS
-    assert OVERLAPPING_PYTHON_TOOL in counted_twice
-    assert OVERLAPPING_PYTHON_TOOL in registered_names(PYTHON)
-    assert len(registered_names(PYTHON)) == sum_of_table_sizes(detector_names) - len(counted_twice)
+    """The Python total is the union of the tables: the sum, less each name held twice.
+
+    It used to subtract one table pair, `TOOL_CLASSES & HIGH_PRIVILEGE_TOOLS`,
+    because that was the only overlap there could be. `load_from_disk` in both
+    data-source tables is the second, so the rule is stated over every doubled
+    name instead of over one pair of tables.
+    """
+    assert names_held_by_two_tables(detector_names) == DOUBLED_PYTHON_NAMES, DOUBLED_NAMES_MESSAGE
+    assert DOUBLED_PYTHON_NAMES <= registered_names(PYTHON)
+    assert (len(registered_names(PYTHON))
+            == sum_of_table_sizes(detector_names) - len(DOUBLED_PYTHON_NAMES))
 
 
 def test_a_javascript_name_in_two_tables_is_counted_once() -> None:
     """The same union rule holds on the JavaScript side, which overlaps on three tools."""
-    counted_twice = detector_names_js.TOOL_CLASSES & detector_names_js.HIGH_PRIVILEGE_TOOLS
-    assert OVERLAPPING_JAVASCRIPT_TOOL in counted_twice
-    assert OVERLAPPING_JAVASCRIPT_TOOL in registered_names(JAVASCRIPT)
+    assert names_held_by_two_tables(detector_names_js) == DOUBLED_JAVASCRIPT_NAMES, \
+        DOUBLED_NAMES_MESSAGE
+    assert DOUBLED_JAVASCRIPT_NAMES <= registered_names(JAVASCRIPT)
     assert (len(registered_names(JAVASCRIPT))
-            == sum_of_table_sizes(detector_names_js) - len(counted_twice))
+            == sum_of_table_sizes(detector_names_js) - len(DOUBLED_JAVASCRIPT_NAMES))
+
+
+def test_the_python_overlaps_are_the_two_deliberate_table_pairs() -> None:
+    """Two *pairs*, seven names: which tables overlap and why, so a third is noticed.
+
+    The count in the name is pairs of tables, not names -- five tools come from
+    one pair and two dataset loaders from the other. A doubled name is not a
+    mistake to be cleaned up: it is one published API name matched two ways.
+    `ShellTool` is a tool *and* a high-privilege one; `load_dataset` is matched
+    as a whole call name *and* as a leaf on any receiver. What would be a
+    mistake is a doubling nobody meant, which is why the pairs are named.
+    """
+    tools = detector_names.TOOL_CLASSES & detector_names.HIGH_PRIVILEGE_TOOLS
+    data_sources = set(detector_names.DATA_SOURCE_CALLS) & set(detector_names.DATA_SOURCE_METHODS)
+    assert OVERLAPPING_PYTHON_TOOL in tools
+    assert data_sources == {"load_dataset", "load_from_disk"}
+    assert tools | data_sources == DOUBLED_PYTHON_NAMES
 
 
 # --- Failing clearly -------------------------------------------------------
@@ -180,7 +241,7 @@ def test_an_empty_scan_leaves_every_registered_name_untested() -> None:
 
 
 def test_a_name_no_table_holds_is_not_counted_as_exercised() -> None:
-    """An app's own function is a surface, but it is not a framework name the corpus tested."""
+    """An app's own function is a surface, but it is not a framework name any key tested."""
     result = coverage(PYTHON, [surface("my_own_helper")])
     assert result["exercised"] == 0
     assert result["exercised_names"] == []
@@ -193,10 +254,34 @@ def test_coverage_reports_the_language_it_was_asked_about() -> None:
 
 # --- A known gap, pinned so closing it is noticed --------------------------
 
-def test_toolnode_and_tavily_are_registered_for_javascript_only() -> None:
-    """Pins the open TODO.md gap: the two languages disagree about the same libraries."""
+def test_toolnode_and_the_older_tavily_name_are_registered_for_both_languages() -> None:
+    """The gap TODO.md recorded: the Python tables now name what the JS ones did."""
     javascript = registered_names(JAVASCRIPT)
     python = registered_names(PYTHON)
-    for name in CROSS_LANGUAGE_GAP:
+    for name in NOW_IN_BOTH_LANGUAGES:
         assert name in javascript
-        assert name not in python, f"{name} {GAP_CLOSED_MESSAGE}"
+        assert name in python
+
+
+def test_the_newer_tavily_spelling_is_registered_for_python_only() -> None:
+    """What is left of the gap: `TavilySearch` is named in one language, not both."""
+    assert PYTHON_ONLY_TAVILY in registered_names(PYTHON)
+    assert PYTHON_ONLY_TAVILY not in registered_names(JAVASCRIPT), \
+        f"{PYTHON_ONLY_TAVILY}: {GAP_MOVED_MESSAGE}"
+
+
+def test_the_two_languages_file_toolnode_under_different_tables() -> None:
+    """Pinned because it changes the surface kind, not just the count.
+
+    Python names `ToolNode` a tool class, so `ToolNode([search])` extracts as a
+    TOOL_CALL; JavaScript names it an agent factory -- its table says counting
+    it as a tool would double-count the tools it wires up -- so the same
+    construct extracts as an AGENT_DEF there. The vocabulary total is blind to
+    this, since it is the union of the tables; a grading key joining on
+    `llm_surface`, and any check filtering on kind, are not.
+    """
+    assert "ToolNode" in detector_names.TOOL_CLASSES
+    assert "ToolNode" not in detector_names.AGENT_FACTORIES
+    assert "ToolNode" in detector_names_js.AGENT_FACTORIES
+    assert "ToolNode" not in detector_names_js.TOOL_CLASSES
+

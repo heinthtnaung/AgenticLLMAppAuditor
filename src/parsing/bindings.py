@@ -40,8 +40,8 @@ def _record(bindings: dict, names: list[str], value: ast.AST) -> None:
 
 
 # A binding belongs to the function that made it. Walking a whole module at
-# once conflates them: the corpus app binds `cursor` inside several functions,
-# and a module-wide view reports the last one for every use.
+# once conflates them: an app may bind `cursor` inside several functions, and a
+# module-wide view would report the last one for every use.
 SCOPE_NODES = (ast.FunctionDef, ast.AsyncFunctionDef)
 
 # A class body is not a scope its methods share: two methods binding the same
@@ -109,6 +109,26 @@ def argument_names(call: ast.Call) -> set[str]:
     return {a.id for a in given if isinstance(a, ast.Name)}
 
 
-def called_name(call: ast.Call) -> str:
-    """Return the plain name being called, or "" when it is not a bare name."""
-    return call.func.id if isinstance(call.func, ast.Name) else ""
+def receiver_name(call: ast.Call) -> str:
+    """Return the local name whose object is called: the callee for `f(x)`, `obj` for `obj.m(x)`.
+
+    A deeper chain answers "": in `a.b.c(x)` the receiver is the *value* of
+    `a.b`, which is not a local name this file bound and so cannot be matched
+    against one.
+    """
+    func = call.func
+    if isinstance(func, ast.Name):
+        return func.id
+    if isinstance(func, ast.Attribute) and isinstance(func.value, ast.Name):
+        return func.value.id
+    return ""
+
+
+def method_name(call: ast.Call) -> str:
+    """Return the method called on that name, or "" when the call is a bare name.
+
+    Kept apart from the receiver because they answer different questions:
+    *which object* is being used, and *what is being asked of it*. A caller
+    that cares only about the object should not have to know about methods.
+    """
+    return call.func.attr if isinstance(call.func, ast.Attribute) else ""

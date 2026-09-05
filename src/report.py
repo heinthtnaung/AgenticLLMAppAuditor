@@ -15,24 +15,17 @@ them into a rate, so no precision, recall or "detected N of M" appears here.
 import json
 from pathlib import Path
 
-from artifacts.finding import OWASP_IDS, PROBE, SCHEMA_VERSION, UNRESOLVED_OUTCOMES
+from artifacts.finding import PROBE, SCHEMA_VERSION, is_located
+from report_gaps import (
+    RISK_TITLES, dependency_vulnerability_lines, not_examined_lines, vex_summary_lines)
 
 HEADING = "# Audit report: {app}"
 
 NOTHING_FOUND = "No findings. See what was not examined, below, before reading that as clean."
 
-RISK_TITLES = {
-    "LLM01": "Prompt injection",
-    "LLM02": "Insecure output handling",
-    "LLM03": "Supply chain",
-    "LLM06": "Excessive agency",
-    "AUDITABILITY": "Inadequate auditability of agent actions",
-}
-
-
-def _plural(count: int, noun: str) -> str:
-    """Count a noun so the human report does not print "1 files"."""
-    return f"{count} {noun}" if count == 1 else f"{count} {noun}s"
+NOTHING_REACHED = ("No finding reaches an LLM surface. That is not a clean bill: known "
+                   "vulnerabilities in this app's dependencies are listed below, and what "
+                   "was not examined follows them.")
 
 
 def _probe_lines(finding: dict, probes: dict) -> list[str]:
@@ -57,7 +50,7 @@ def _probe_lines(finding: dict, probes: dict) -> list[str]:
 def _finding_lines(finding: dict, probes: dict) -> list[str]:
     """Render one finding with the evidence that produced it."""
     risk = RISK_TITLES.get(finding["owasp_id"], finding["owasp_id"])
-    located = finding.get("file") and finding.get("line")
+    located = is_located(finding)
     where = f"{finding['file']}:{finding['line']}" if located else "no code location"
     lines = [
         f"### {finding['owasp_id']} — {finding['title']}",
@@ -73,72 +66,37 @@ def _finding_lines(finding: dict, probes: dict) -> list[str]:
         lines.append(f"- **Component**: `{component}`")
     if finding.get("mapping_reason"):
         lines.append(f"- **Mapping**: {finding['mapping_reason']}")
+    lines += _advisory_evidence(finding)
     lines += _probe_lines(finding, probes)
     if finding.get("narrative"):
         lines += ["", finding["narrative"]]
     return lines + [""]
 
 
-def _skipped_lines(surfaces_document: dict) -> list[str]:
-    """Name the files that could not be read, so their surfaces read as absent, not clean."""
-    skipped = surfaces_document["skipped_files"]
-    if not skipped:
-        return ["Every source file was read.", ""]
-    count = _plural(len(skipped), "file")
-    return [f"**{count} could not be read**, so any surface in them is "
-            "absent from this report rather than absent from the app:"] + \
-           [f"- `{s['file']}` — {s['reason']}" for s in skipped] + [""]
-
-
-def _unresolved_lines(findings_document: dict) -> list[str]:
-    """Name the traces that ran out of syntax before reaching a verdict."""
-    unresolved = [p for p in findings_document["probes"]
-                  if p["outcome"] in UNRESOLVED_OUTCOMES]
-    if not unresolved:
+def _advisory_evidence(finding: dict) -> list[str]:
+    """Quote the advisory a finding cites: its id, the fix, the vector, and its VEX status."""
+    if not finding.get("advisory_id"):
         return []
-    count = _plural(len(unresolved), "trace")
-    # Both: detail is the sentence a person reads, reason the enum they can
-    # look up. The enum alone printed nine times is not a human report.
-    return [f"**{count} could not be followed.** The value may still "
-            "reach a model somewhere the syntax tree cannot show:"] + \
-           [f"- `{p['subject_id']}` — {p['detail']} (`{p['reason']}`)" for p in unresolved] + [""]
-
-
-def _uncovered_risk_lines(coverage: dict) -> list[str]:
-    """Name the risk classes no check looked for, which silence would otherwise hide."""
-    missing = sorted(set(OWASP_IDS) - set(coverage["risk_classes_checked"]))
-    if not missing:
-        return []
-    named = ", ".join(f"{risk} ({RISK_TITLES.get(risk, risk)})" for risk in missing)
-    return [f"**No check covers these risks**, so this report says nothing about them: {named}.", ""]
-
-
-def _unresolved_component_lines(coverage: dict) -> list[str]:
-    """Name the surfaces the supply-chain check had no component to examine."""
-    count = coverage["unresolved_component_count"]
-    if not count:
-        return []
-    return [f"**{_plural(count, 'surface')} could not be traced to a component**, so nothing "
-            "is said about where that code came from or what it depends on.", ""]
-
-
-def _advisory_lines(coverage: dict) -> list[str]:
-    """Say when a supply-chain finding names a package but nothing known about it."""
-    if coverage["advisory_data"] != "not_ingested":
-        return []
-    return ["**No advisory data was read**, so a supply-chain finding names a package "
-            "but not what is known to be wrong with it.", ""]
-
-
-def _not_examined_lines(findings_document: dict, surfaces_document: dict) -> list[str]:
-    """Say what the audit did not reach, in the same detail as what it found."""
-    coverage = findings_document["coverage"]
-    return (["## What was not examined", ""]
-            + _skipped_lines(surfaces_document)
-            + _unresolved_lines(findings_document)
-            + _unresolved_component_lines(coverage)
-            + _uncovered_risk_lines(coverage)
-            + _advisory_lines(coverage))
+    fix = finding.get("advisory_fixed_version")
+    lines = [f"- **Advisory**: `{finding['advisory_id']}`, "
+             + (f"fixed in `{fix}`" if fix else "no fixed version published")]
+    if finding.get("advisory_severity"):
+        lines.append(f"- **Severity**: {finding['advisory_severity']} "
+                     f"(per {finding['advisory_cvss_source']})")
+    if finding.get("advisory_cvss_vector"):
+        lines.append(f"- **CVSS ({finding['advisory_cvss_source']}, quoted)**: "
+                     f"`{finding['advisory_cvss_vector']}`")
+    # Says what this finding *would become*, not what a file already says: the
+    # OpenVEX document is written by `src/emit_vex.py`, a command of its own
+    # that also needs vexctl, so it need not exist when this report is read.
+    # Every such statement is `affected`; this project refuses to author the
+    # negative form, and `tests/test_vexctl_launch.py` enforces that by banning
+    # the phrase as a *value* anywhere under `src/` -- which is why that is
+    # said here rather than in the rendered line.
+    lines.append(f"- **VEX Status**: carries `{finding['advisory_id']}`, so "
+                 "`python src/emit_vex.py` would state it as `affected` — a "
+                 "component a surface reaches.")
+    return lines
 
 
 def _how_it_was_audited(findings_document: dict) -> list[str]:
@@ -154,7 +112,7 @@ def _how_it_was_audited(findings_document: dict) -> list[str]:
         f"- **Risk classes covered**: {', '.join(coverage['risk_classes_checked']) or 'none'}",
         f"- **Local model**: {model}",
         "",
-        "A check named above that reported nothing looked and found nothing. One that is "
+        "A check named above that reported nothing looked and found nothing, unless it appears in `checks_narrowed` -- then it looked at only some of its surfaces, and the counts there say how many. One that is "
         "absent could not look at all.",
         "",
     ]
@@ -175,13 +133,19 @@ def render(app: str, findings_document: dict, surfaces_document: dict) -> str:
     _check_readable(findings_document)
     findings = findings_document["findings"]
     probes = {p["probe_id"]: p for p in findings_document["probes"]}
+    coverage = findings_document["coverage"]
+    dependency_vulns = dependency_vulnerability_lines(coverage)
     lines = [HEADING.format(app=app), "", "## Findings", ""]
     if findings:
         for finding in findings:
             lines += _finding_lines(finding, probes)
+    elif dependency_vulns:
+        lines += [NOTHING_REACHED, ""]
     else:
         lines += [NOTHING_FOUND, ""]
-    lines += _not_examined_lines(findings_document, surfaces_document)
+    lines += dependency_vulns
+    lines += vex_summary_lines(findings_document)
+    lines += not_examined_lines(findings_document, surfaces_document)
     lines += _how_it_was_audited(findings_document)
     return "\n".join(lines)
 

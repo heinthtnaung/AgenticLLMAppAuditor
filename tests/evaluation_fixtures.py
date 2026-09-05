@@ -17,6 +17,7 @@ from collections.abc import Sequence
 from artifacts.finding import INCONCLUSIVE, SURFACE_SUBJECT, Finding, Probe
 from artifacts.findings_document import (
     ADVISORY_NOT_INGESTED,
+    ADVISORY_SNAPSHOT,
     MODEL_DISABLED,
     build_findings_document,
     coverage,
@@ -71,10 +72,12 @@ def findings_document(findings: Sequence = (), probes: Sequence = (),
                       advisory: str = ADVISORY_NOT_INGESTED,
                       unresolved_components: int | None = None) -> dict:
     """A findings document built the way the tool builds it, so the scorer reads real fields."""
+    from cli_helpers import STUB_ADVISORY_PIN
+    pin = STUB_ADVISORY_PIN if advisory == ADVISORY_SNAPSHOT else {}
     return build_findings_document(
         list(findings), list(probes),
         coverage(1, [RULE_ID], advisory, risk_classes_checked=list(risk_classes),
-                 unresolved_component_count=unresolved_components),
+                 unresolved_component_count=unresolved_components, **pin),
         run if run is not None else model_run(MODEL_DISABLED),
     )
 
@@ -108,8 +111,8 @@ def unresolved_probe(subject_id: str = SURFACE_ID) -> Probe:
 def every_value(node) -> list:
     """Return every scalar in a nested document, so a whole file can be asserted over.
 
-    Shared because the no-float rule is checked twice: once on a document built
-    from these fixtures, once on the one scored from the real corpus.
+    Shared because the no-float rule is checked over a whole document rather
+    than field by field: a float anywhere in it is the thing being refused.
     """
     if isinstance(node, dict):
         return [value for child in node.values() for value in every_value(child)]

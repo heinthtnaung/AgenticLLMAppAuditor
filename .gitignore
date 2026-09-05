@@ -2,7 +2,8 @@
 __pycache__/
 *.pyc
 
-# JavaScript (corpus fixtures ship a lockfile, never installed packages)
+# JavaScript: an audited repository's lockfile is its own; installed packages
+# are never committed here.
 node_modules/
 
 # Virtual environment (this project uses exactly one: .venv)
@@ -14,11 +15,25 @@ node_modules/
 # Tests
 .pytest_cache/
 
-# The audited app's source is third-party code and is not committed. Download
-# it with the command in the README; corpus/evidence/ (this project's own
-# grading key, manifest and baseline) IS committed.
-corpus/*
-!corpus/evidence/
+# Audited code is never committed: the auditor is pointed at a repository by
+# path or URL, and this repository holds no other project's source. What it
+# does commit is grading_keys/ -- this project's own hand-written keys, pins
+# and baselines about apps -- so that folder is deliberately NOT ignored.
+
+# Repositories fetched by src/fetch_repo.py, and the pins written beside them.
+# The pin is ignored too, deliberately: it is generated output about an
+# arbitrary repository someone fetched once. Adopting a fetched tree as a
+# graded app means transcribing its pin into grading_keys/ by hand, so exactly
+# one committed pin per app exists and two copies can never disagree.
+fetched/
+
+# The knowledge base the remediation advice is grounded on: an upstream clone
+# per source and the ChromaDB index built from it, both fetched and built
+# out-of-band (see the README). Only the manifest that pins them is committed:
+# the ignore covers the folder's contents and re-admits the two tracked files.
+knowledge/*
+!knowledge/manifest.json
+!knowledge/README.md
 
 # Generated output (surfaces.json, sbom.json, mapping.json, ...). Anchored with
 # a leading slash on purpose: a bare `artifacts/` also matches src/artifacts/
@@ -30,9 +45,9 @@ corpus/*
 *.bin
 *.safetensors
 
-# Report working files (the built docs/report.docx is what ships)
-docs/REPORT.md
-docs/build_report.py
+# Task 4.9, decided: docs/REPORT.md is tracked -- a diffable source is worth
+# more to a reviewer than a Word file -- and the stale report.docx is dropped
+# along with build_report.py, the helper that built it.
 
 # AI / agent tooling (local only — not part of the submitted project)
 .claude/

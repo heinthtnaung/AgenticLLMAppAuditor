@@ -9,6 +9,9 @@ is free to vary.
 import json
 from dataclasses import asdict
 
+# Re-exported so no caller moved when the coverage builder was split out.
+from artifacts.coverage import (
+    ADVISORY_NOT_INGESTED, ADVISORY_SNAPSHOT, check_narrowings, coverage)
 from artifacts.finding import (
     CONFIRMED,
     OWASP_IDS,
@@ -25,11 +28,8 @@ MODEL_UNAVAILABLE = "unavailable"
 MODEL_DISABLED = "disabled"
 MODEL_STATUSES = (MODEL_USED, MODEL_UNAVAILABLE, MODEL_DISABLED)
 
-# Whether advisory data was read. `not_ingested` is today's only real answer:
-# advisory ingestion is Phase 2's one unfinished item, so an LLM03 finding
-# cites the SBOM and the mapping but nothing about what is known to be wrong.
-ADVISORY_NOT_INGESTED = "not_ingested"
-ADVISORY_SNAPSHOT = "snapshot"
+# Whether advisory data was read. `snapshot` means Trivy ran offline against
+# a pinned database and `_check_advisory_pin` below holds the pin to it;
 
 # The two fields the model writes. Everything else is byte-identical across
 # runs and stays under the determinism comparison.
@@ -37,64 +37,39 @@ MODEL_AUTHORED_DOCUMENT_FIELD = "ranking"
 MODEL_AUTHORED_FINDING_FIELD = "narrative"
 
 
-def model_run(status: str, identifier: str | None = None,
-              settings: dict | None = None, ranking: list[str] | None = None) -> dict:
-    """Record what produced the prose, so a later run can repeat it."""
+def model_provenance(status: str, identifier: str | None = None,
+                     settings: dict | None = None, digest: str | None = None) -> dict:
+    """Record what produced some prose, so a later run can repeat it.
+
+    Shared by every artifact a model writes into, so two files cannot grow two
+    shapes for the same fact. `model_digest` is required because a tag is
+    mutable -- one of the models compared is literally `:latest` -- and a run
+    recorded only by tag is repeatable until someone re-pulls.
+    """
     if status not in MODEL_STATUSES:
         raise ValueError(f"unknown model status {status!r}; expected one of {MODEL_STATUSES}")
     if status != MODEL_USED and identifier is not None:
         raise ValueError(f"{status} names no model")
     if status == MODEL_USED and not identifier:
         raise ValueError("a used model must be named")
+    # A used run with no settings is not repeatable, and repeatability is the
+    # whole case for exempting model prose from the byte-identical rule.
+    if status == MODEL_USED and not settings:
+        raise ValueError("a used model must record the decode settings it was sent")
     return {
         "status": status,
         "model_identifier": identifier,
+        "model_digest": digest,
         "model_settings": dict(settings or {}),
-        MODEL_AUTHORED_DOCUMENT_FIELD: ranking,
     }
 
 
-def _check_risk_classes(risk_classes_checked: list[str] | None) -> None:
-    """Reject a risk class outside the vocabulary a reader can look up.
-
-    An unknown id both claims a class that does not exist and makes the real
-    one render as uncovered, which is the wrong direction to be wrong in.
-    """
-    unknown = sorted(set(risk_classes_checked or []) - set(OWASP_IDS))
-    if unknown:
-        raise ValueError(f"unknown risk classes {unknown}; expected ids from {OWASP_IDS}")
-
-
-def _check_unresolved(count: int | None, surfaces_considered: int) -> None:
-    """Reject an unresolved count that contradicts the surfaces it is counted from."""
-    if count is None:
-        return
-    if count < 0:
-        raise ValueError(f"unresolved_component_count must not be negative, got {count}")
-    if count > surfaces_considered:
-        raise ValueError(
-            f"unresolved_component_count {count} exceeds the {surfaces_considered} "
-            "surfaces considered; the mapping holds one entry per surface")
-
-
-def coverage(surfaces_considered: int, checks_run: list[str],
-             advisory_data: str = ADVISORY_NOT_INGESTED,
-             risk_classes_checked: list[str] | None = None,
-             unresolved_component_count: int | None = None) -> dict:
-    """Say what the search covered, so a short findings list is not read as a clean bill."""
-    if surfaces_considered < 0:
-        raise ValueError(f"surfaces_considered must not be negative, got {surfaces_considered}")
-    if advisory_data not in (ADVISORY_NOT_INGESTED, ADVISORY_SNAPSHOT):
-        raise ValueError(f"unknown advisory state {advisory_data!r}")
-    _check_risk_classes(risk_classes_checked)
-    _check_unresolved(unresolved_component_count, surfaces_considered)
-    return {
-        "surfaces_considered": surfaces_considered,
-        "checks_run": sorted(checks_run),
-        "risk_classes_checked": sorted(risk_classes_checked or []),
-        "unresolved_component_count": unresolved_component_count,
-        "advisory_data": advisory_data,
-    }
+def model_run(status: str, identifier: str | None = None,
+              settings: dict | None = None, ranking: list[str] | None = None,
+              digest: str | None = None) -> dict:
+    """Record what produced this findings document's prose, plus any model ordering."""
+    return {**model_provenance(status, identifier, settings, digest),
+            MODEL_AUTHORED_DOCUMENT_FIELD: ranking}
 
 
 def _check_probe_citations(findings: list[Finding], probes: list[Probe]) -> None:
@@ -117,16 +92,29 @@ def _check_unique_ids(findings: list[Finding]) -> None:
 
 
 def build_findings_document(findings: list[Finding], probes: list[Probe],
-                            document_coverage: dict, run: dict) -> dict:
-    """Return the findings document, refusing one whose parts contradict each other."""
+                            document_coverage: dict, run: dict,
+                            checks_narrowed: list[dict] | None = None) -> dict:
+    """Return the findings document, refusing one whose parts contradict each other.
+
+    `checks_narrowed` sits at the top level rather than inside `coverage`
+    deliberately: `artifacts/sarif.py` copies `coverage` wholesale into
+    `findings.sarif.json`, which is published as byte-identical every run, and
+    this is the one field a model can move. Defaulted to `[]` so a producer with
+    no planner -- `run_baseline.py` -- says nothing about one rather than
+    fabricating a record.
+    """
     _check_probe_citations(findings, probes)
     _check_unique_ids(findings)
     ordered = sorted(findings, key=sort_key)
     ranking = run.get(MODEL_AUTHORED_DOCUMENT_FIELD)
     if ranking is not None and sorted(ranking) != sorted(f.id for f in ordered):
         raise ValueError("the model's ranking must be a permutation of every finding id")
+    narrowed = check_narrowings(
+        list(checks_narrowed or []), document_coverage["checks_run"],
+        document_coverage["surfaces_considered"])
     return {
         "schema_version": SCHEMA_VERSION,
+        "checks_narrowed": narrowed,
         "coverage": document_coverage,
         "model_run": run,
         "probe_count": len(probes),

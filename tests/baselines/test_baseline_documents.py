@@ -18,9 +18,10 @@ import pytest
 from baseline_fixtures import EMPTY_SYFT_DOCUMENT, stub_syft, write_tiny_app
 from baselines.sbom_only import CHECK_NAME
 from artifacts.finding import SCHEMA_VERSION as FINDINGS_SCHEMA_VERSION
+from artifacts.findings_document import ADVISORY_NOT_INGESTED
 from artifacts.surface import SCHEMA_VERSION as SURFACES_SCHEMA_VERSION
 from baselines.static_rules import CHECK_NAMES
-from dependency_fixtures import CORPUS_GENERATOR_OUTPUT
+from dependency_fixtures import PYPI_GENERATOR_OUTPUT
 from run_baseline import SBOM_ONLY, STATIC_RULES, build_documents
 
 # What Baseline A reports on the one-match-per-rule app: five surfaces, and the
@@ -49,7 +50,7 @@ def static_rules_documents(tmp_path: Path) -> tuple[dict, dict]:
 @pytest.fixture
 def sbom_only_documents(monkeypatch, tmp_path: Path) -> tuple[dict, dict]:
     """Baseline B's findings and surfaces, Syft answered from recorded output."""
-    stub_syft(monkeypatch, CORPUS_GENERATOR_OUTPUT)
+    stub_syft(monkeypatch, PYPI_GENERATOR_OUTPUT)
     return documents(SBOM_ONLY, str(tmp_path))
 
 
@@ -57,7 +58,7 @@ def sbom_only_documents(monkeypatch, tmp_path: Path) -> tuple[dict, dict]:
 def test_neither_baseline_counts_its_unresolved_components(
         system, monkeypatch, tmp_path: Path) -> None:
     """Null, never 0: neither built a mapping, so none of them resolved anything."""
-    stub_syft(monkeypatch, CORPUS_GENERATOR_OUTPUT)
+    stub_syft(monkeypatch, PYPI_GENERATOR_OUTPUT)
     findings, _ = documents(system, write_tiny_app(tmp_path))
     assert findings["coverage"]["unresolved_component_count"] is None
 
@@ -65,7 +66,7 @@ def test_neither_baseline_counts_its_unresolved_components(
 @pytest.mark.parametrize("system", (STATIC_RULES, SBOM_ONLY))
 def test_neither_baseline_ran_a_model(system, monkeypatch, tmp_path: Path) -> None:
     """A baseline is deterministic code; `disabled` says so and names no model."""
-    stub_syft(monkeypatch, CORPUS_GENERATOR_OUTPUT)
+    stub_syft(monkeypatch, PYPI_GENERATOR_OUTPUT)
     findings, _ = documents(system, write_tiny_app(tmp_path))
     assert findings["model_run"]["status"] == "disabled"
     assert findings["model_run"]["model_identifier"] is None
@@ -74,7 +75,7 @@ def test_neither_baseline_ran_a_model(system, monkeypatch, tmp_path: Path) -> No
 @pytest.mark.parametrize("system", (STATIC_RULES, SBOM_ONLY))
 def test_neither_baseline_emits_a_probe(system, monkeypatch, tmp_path: Path) -> None:
     """`_surface_anchor` parses a probe's id, so a baseline probe would crash the scorer."""
-    stub_syft(monkeypatch, CORPUS_GENERATOR_OUTPUT)
+    stub_syft(monkeypatch, PYPI_GENERATOR_OUTPUT)
     findings, _ = documents(system, write_tiny_app(tmp_path))
     assert (findings["probes"], findings["probe_count"]) == ([], 0)
 
@@ -139,9 +140,24 @@ def test_baseline_b_claims_no_check_when_syft_reports_nothing(monkeypatch, tmp_p
 def test_both_baselines_report_advisory_data_as_not_ingested(
         system, monkeypatch, tmp_path: Path) -> None:
     """Neither reads advisories, so neither may imply a component was checked against one."""
-    stub_syft(monkeypatch, CORPUS_GENERATOR_OUTPUT)
+    stub_syft(monkeypatch, PYPI_GENERATOR_OUTPUT)
     findings, _ = documents(system, write_tiny_app(tmp_path))
-    assert findings["coverage"]["advisory_data"] == "not_ingested"
+    assert findings["coverage"]["advisory_data"] == ADVISORY_NOT_INGESTED
+
+
+@pytest.mark.parametrize("system", (STATIC_RULES, SBOM_ONLY))
+def test_neither_baseline_narrows_a_check(system, monkeypatch, tmp_path: Path) -> None:
+    """A baseline has no planner, so it says `[]` rather than inventing a record.
+
+    `build_findings_document` defaults `checks_narrowed` to `[]`, which is what
+    lets `run_baseline.py` stay unedited through task 7.4 -- a producer with no
+    model must not have to fabricate a narrowing to satisfy the schema. The
+    field is still present, because a comparison that measured two artifact
+    shapes would not be measuring two systems.
+    """
+    stub_syft(monkeypatch, PYPI_GENERATOR_OUTPUT)
+    findings, _ = documents(system, write_tiny_app(tmp_path))
+    assert findings["checks_narrowed"] == []
 
 
 # What the scorer reads off every produced finding, whichever system wrote it.
@@ -153,7 +169,7 @@ SCORED_FINDING_FIELDS = {"finding_id", "owasp_id", "file", "line",
 def test_both_baselines_write_the_schema_versions_the_auditor_writes(
         system, monkeypatch, tmp_path: Path) -> None:
     """The comparison measures two systems, so it must not measure two artifact shapes."""
-    stub_syft(monkeypatch, CORPUS_GENERATOR_OUTPUT)
+    stub_syft(monkeypatch, PYPI_GENERATOR_OUTPUT)
     findings, surfaces = documents(system, write_tiny_app(tmp_path))
     assert findings["schema_version"] == FINDINGS_SCHEMA_VERSION
     assert surfaces["schema_version"] == SURFACES_SCHEMA_VERSION
@@ -163,7 +179,7 @@ def test_both_baselines_write_the_schema_versions_the_auditor_writes(
 def test_every_produced_finding_carries_the_fields_the_join_reads(
         system, monkeypatch, tmp_path: Path) -> None:
     """`matches_key` reads these six off each finding; a missing one is a crash mid-score."""
-    stub_syft(monkeypatch, CORPUS_GENERATOR_OUTPUT)
+    stub_syft(monkeypatch, PYPI_GENERATOR_OUTPUT)
     findings, _ = documents(system, write_tiny_app(tmp_path))
     assert findings["findings"]
     for finding in findings["findings"]:

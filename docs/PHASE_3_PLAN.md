@@ -192,6 +192,11 @@ and a locally servable model. Recorded in `TODO.md` under Phase 4.
 - The planner picks the next probe over that state — and only that. A planner
   that decides *what counts as a finding* is the second detector this plan's
   scope rule forbids.
+  (As built, the pick was `remaining[0]` in `act` rather than in the planner at
+  all; Phase 7 moved it into `plan`, and task 7.4 lets a model choose which
+  surfaces each check examines. The second sentence stands unchanged: the
+  planner still decides nothing about *what counts as* a finding, and every
+  narrowing is recorded in `coverage.checks_narrowed`.)
 
 **Done when:** the auditor plans and runs probes over one app within its step
 cap, and the plan is recorded in the findings so a reader can see why each
@@ -239,7 +244,10 @@ rather than audited quietly.
 Built during Phase 1 and removed to keep it offline and simple. Bringing it back
 means bringing back the safety work an untrusted input needs: an https/git@
 allow-list, a validated directory name, a size cap, and a refusal to follow
-symlinks out of the target. The code is on the `phase3/url-fetcher` **tag**.
+symlinks out of the target. ~~The code is on the `phase3/url-fetcher` tag.~~
+**That tag does not exist** -- searched local tags, `origin`, and reachable
+history. See `TODO.md`'s corrected entry: this is a rewrite. Planned as Phase 5
+Task 5.1.
 
 It serves no Phase 3 finding — it enlarges the corpus, which is a Phase 4 need.
 Move it to Phase 4 if the phase runs long.
@@ -255,14 +263,21 @@ proved by a test per refusal, before it is wired into the CLI.
 - [x] `findings.json` schema defined by `schema-keeper` before its writer.
 - [x] Every finding cites the evidence that produced it.
 - [x] Probes report "could not test" distinctly from "nothing found".
-- [ ] The model's contribution is bounded, recorded, and never the sole basis
-      for a finding. **Untested in practice**: every run so far is
-      `model_run.status: "disabled"`, so the bound holds by construction and the
-      `used` path has never been exercised against a live server.
+- [x] The model's contribution is bounded, recorded, and never the sole basis
+      for a finding. **Now exercised against a live server**, which it had not
+      been: `src/checks/advise.py` asks the local model to advise on every
+      finding and records the answer in `remediation.json`, with
+      `model_run.status: "used"` naming the model, its digest and the settings
+      sent. The bound is structural rather than promised -- the advice lands in
+      a file the scorer cannot open, so `findings.json` is byte-identical
+      whether the model ran or not and no model word reaches a number. An
+      answer that names the app's own identifiers, arrives as a diff or
+      re-classifies the finding is refused whole and the refusal recorded.
 - [x] Report states what was not tested alongside what was. `src/report.py`
       gives skipped files, unfollowed traces, unresolved components and
       uncovered risk classes the same billing as the findings.
-- [x] Tests pass at 1037; `project-guard` clean on the finished code. The guard's
+- [x] Tests pass; `project-guard` clean on the finished code. 1037 at the time
+      this phase closed; the remediation advice added later took it higher. The guard's
       second pass on the report and the scope fix found a real regression --
       per-scope bindings matched against a module-wide walk, a false-positive
       class the old code did not have -- which is fixed and now has the

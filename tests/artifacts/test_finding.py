@@ -122,7 +122,7 @@ def test_a_component_anchored_finding_needs_no_surface() -> None:
 def test_sort_key_substitutes_for_the_nullable_fields() -> None:
     """A component-anchored finding sorts without ever comparing None to a string."""
     component = Finding("LLM03", RULE_ID, TITLE, STATIC, component_name="pyyaml")
-    assert sort_key(component) == ("", -1, "LLM03", RULE_ID, "", "")
+    assert sort_key(component) == ("", -1, "LLM03", RULE_ID, "", "", "")
 
 
 def test_sort_key_orders_by_file_then_line() -> None:

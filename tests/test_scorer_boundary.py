@@ -8,24 +8,26 @@ that measures the tuning.
 
 Like test_no_write_commands.py this is asserted over the source rather than by
 running anything: a path that was not taken looks exactly like one that does
-not exist. The ast helpers are imported from that file for the same reason its
-own checks live there -- one copy of the parsing, so both boundaries are read
-the same way.
+not exist. The `ast` scanners come from ast_scan.py, shared with every other
+guard that reads this project's own source -- one copy of the parsing, so every
+boundary is read the same way.
 """
 
 from pathlib import Path
 
-from conftest import SRC_DIR
-from test_no_write_commands import (
+from ast_scan import (
     imported_modules,
     module_name,
     parse,
     source_files,
     string_literals,
 )
+from conftest import SRC_DIR
 
 # The trees that make up the tool being scored. The scorer sits outside them.
-SCORED_TREES = ("checks", "detectors", "artifacts", "baselines")
+# `retrieval` is here because `checks/advise.py` is fed by it: a tree the
+# guard skipped would be the one a grading-key read could route through.
+SCORED_TREES = ("checks", "detectors", "artifacts", "baselines", "retrieval")
 
 # What none of them may read: the scorecard, and the module that writes it.
 EVALUATION_NAME = "evaluation.json"
@@ -34,10 +36,16 @@ SCORER_PACKAGE = "evaluation"
 # The grading key itself, which carries the hand-authored ids the tool must not see.
 GROUND_TRUTH_NAME = "ground_truth.json"
 
+# The module that locates every grading key. It was `corpus_paths` until the
+# pinned corpus was removed; the name is spelled once here because the guard
+# below is vacuous against a module that does not exist.
+KEYS_PACKAGE = "grading_keys"
+
 # A planted module, to prove the matcher below fires on a real violation.
 PLANTED_FILE = "planted.py"
 PLANTED_READER = 'MISSES = json.loads(open("evaluation.json").read())\n'
 PLANTED_IMPORT = "from evaluation.scorer import score_app\n"
+PLANTED_KEYS_IMPORT = "from grading_keys import GROUND_TRUTH_SUFFIX, key_path\n"
 
 
 def scored_trees() -> list[Path]:
@@ -121,12 +129,42 @@ def test_the_matcher_catches_a_planted_import_of_the_scorer(tmp_path) -> None:
     assert modules_importing(SCORER_PACKAGE, planted) == {PLANTED_FILE}
 
 
-def test_no_scored_module_imports_corpus_paths() -> None:
-    """A scored tree may not reach the corpus, and naming the tree is not enough.
+def test_the_keys_module_this_guard_names_really_exists() -> None:
+    """Guard on the guard: an import check against a renamed module is vacuously true.
+
+    This assertion was written as `scored_modules_importing("corpus_paths")`
+    and kept passing after that module became `grading_keys` -- silently
+    guarding nothing. The name is checked against the filesystem so the rename
+    fails here instead.
+    """
+    assert (SRC_DIR / f"{KEYS_PACKAGE}.py").is_file()
+
+
+def test_no_scored_module_imports_the_grading_key_locator() -> None:
+    """A scored tree may not reach the keys, and naming the file is not enough.
 
     The string check above catches a module that writes "ground_truth.json".
-    `corpus_paths` exposes `evidence_path` and `GROUND_TRUTH_SUFFIX`, so a
-    module importing it reaches every grading key without ever writing that
-    string -- which is exactly how a baseline could quietly score itself.
+    `grading_keys` exposes `key_path` and `GROUND_TRUTH_SUFFIX`, so a module
+    importing it reaches every grading key without ever writing that string --
+    which is exactly how a baseline could quietly score itself.
     """
-    assert scored_modules_importing("corpus_paths") == set()
+    assert scored_modules_importing(KEYS_PACKAGE) == set()
+
+
+def test_the_matcher_catches_a_planted_import_of_the_keys_module(tmp_path) -> None:
+    """Mutation check the assertion above never had: plant the import and see it named."""
+    planted = plant_tree(tmp_path, PLANTED_KEYS_IMPORT)
+    assert modules_importing(KEYS_PACKAGE, planted) == {PLANTED_FILE}
+
+
+def test_the_scorer_never_opens_the_remediation_artifact() -> None:
+    """Model prose must stay structurally unable to reach a score.
+
+    The design rests on the scorer opening three files and `remediation.json`
+    not being one of them, so no word a model wrote can enter a number. That
+    is stated in `SCHEMAS.md`, `FLOW.md`, the README and the module docstring,
+    and until now was pinned by nothing: adding the file to `harness.py` passed
+    every test.
+    """
+    assert modules_naming("remediation.json", SRC_DIR / "evaluation") == set()
+    assert modules_importing("artifacts.remediation", SRC_DIR / "evaluation") == set()

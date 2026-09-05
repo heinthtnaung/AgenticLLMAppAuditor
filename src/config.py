@@ -3,13 +3,17 @@
 import os
 from pathlib import Path
 
-ENV_FILE = Path(__file__).resolve().parents[1] / ".env"
+REPO_ROOT = Path(__file__).resolve().parents[1]
+ENV_FILE = REPO_ROOT / ".env"
 
 # Every setting the auditor understands, with the value used when nothing overrides it.
 DEFAULTS = {
     "AUDITOR_MODEL": "qwen2.5-coder:7b-instruct",
+    "AUDITOR_AI_REPORT_MODEL": "gemma4:latest",
     "AUDITOR_SERVER_URL": "http://localhost:11434/api/generate",
     "AUDITOR_TIMEOUT_SECONDS": "120",
+    "AUDITOR_EMBED_MODEL": "nomic-embed-text:latest",
+    "AUDITOR_KNOWLEDGE_DIR": "knowledge",
 }
 
 COMMENT_MARKER = "#"
@@ -82,6 +86,17 @@ def _describe_source(name: str, env_file: Path = ENV_FILE) -> str:
     if name in read_env_file(env_file):
         return str(env_file)
     return "built-in default"
+
+
+def get_path(name: str, env_file: Path = ENV_FILE) -> Path:
+    """Return one setting as a path, taking a relative one from the repository root.
+
+    Relative to the repository rather than the working directory, so an audit
+    run from anywhere finds the same knowledge base -- the same reason `.env`
+    is located from this file and not from where the command was typed.
+    """
+    value = Path(get(name, env_file))
+    return value if value.is_absolute() else REPO_ROOT / value
 
 
 def get_int(name: str, env_file: Path = ENV_FILE) -> int:

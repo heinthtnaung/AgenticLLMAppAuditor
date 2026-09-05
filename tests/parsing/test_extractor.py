@@ -1,106 +1,53 @@
-"""Task 1.7: every LLM surface named in a corpus app's ground truth must be extracted."""
+"""Task 1.7: what `extract_repo` and `extract_file` report, and what they refuse.
+
+This file used to assert every surface named in a pinned app's
+`ground_truth.json`. That corpus was removed, and with it the one input in the
+suite whose surfaces were written down by someone other than the author of the
+detectors. What is left is exercised over a tree the test writes, so its inputs
+were chosen by the same author as the code: no oversized file, no non-UTF-8
+source, no unforeseen framework idiom. `mixed_app_fixtures` states its counts as
+literals so an empty extraction cannot pass as a clean one.
+"""
 
 import pytest
-from conftest import CORPUS_APPS, app_is_present, CORPUS_DIR, ground_truth, require_corpus, scan_to_json
+from conftest import scan_to_json
+from mixed_app_fixtures import (
+    MIXED_APP_KINDS,
+    MIXED_APP_SURFACES,
+    PYTHON_FILE,
+    TYPESCRIPT_FILE,
+    write_mixed_app,
+)
 from parsing.extractor import extract_file, extract_repo
 from parsing.extractor_js import parse_source
 from parsing.extractor_python import parse_file
-from evaluation.grading import line_window
 from artifacts.skipped_file import UnreadableSource
 from artifacts.surface import SURFACE_KINDS
 
-# Named explicitly: CORPUS_APPS is discovered on disk, so its order is not a contract.
-SUPPORT_AGENT_APP = "vuln-app-1-support-agent"
+
+def test_extract_repo_finds_every_surface_in_the_written_app(tmp_path) -> None:
+    """The count is a literal, so an extraction that found nothing fails here."""
+    surfaces = extract_repo(str(write_mixed_app(tmp_path))).surfaces
+    assert len(surfaces) == MIXED_APP_SURFACES
 
 
-def _surface_findings(app: str) -> list[dict]:
-    """Return the findings of one app that name an LLM surface to be found."""
-    findings = ground_truth(app)["findings"]
-    return [finding for finding in findings if finding["llm_surface"] is not None]
-
-
-def _expected_cases() -> list:
-    """Build one pytest case per ground-truth finding that names a surface."""
-    cases = []
-    for app in CORPUS_APPS:
-        cases.extend(pytest.param(app, f, id=f["id"]) for f in _surface_findings(app))
-    return cases
-
-
-EXPECTED_SURFACE_CASES = _expected_cases()
-
-
-@pytest.fixture(scope="module")
-def extracted() -> dict:
-    """Extract every corpus app once and share the result across the tests."""
-    return {
-        app: extract_repo(str(CORPUS_DIR / app)).surfaces
-        for app in CORPUS_APPS
-        if app_is_present(app)
-    }
-
-
-@pytest.mark.parametrize("app, finding", EXPECTED_SURFACE_CASES)
-def test_ground_truth_surface_is_extracted(extracted: dict, app: str, finding: dict) -> None:
-    """The extractor finds each ground-truth surface at the right file, kind and line."""
-    require_corpus(app)
-    low, high = line_window(finding)
-    matches = [
-        surface
-        for surface in extracted[app]
-        if surface.file == finding["file"]
-        and surface.kind == finding["llm_surface"]
-        and low <= surface.line <= high
-    ]
-    assert matches, (
-        f"{finding['id']}: no {finding['llm_surface']} surface extracted for "
-        f"{app}/{finding['file']} lines {low}-{high} "
-        f"(ground truth line {finding['line']}, name {finding['surface_name']!r})"
-    )
-
-
-@pytest.mark.parametrize("app, finding", EXPECTED_SURFACE_CASES)
-def test_ground_truth_surface_name_matches(extracted: dict, app: str, finding: dict) -> None:
-    """A ground-truth surface_name matches an extracted surface's name exactly."""
-    require_corpus(app)
-    if finding["surface_name"] is None:
-        pytest.skip("finding records no surface name")
-    low, high = line_window(finding)
-    names = [
-        surface.name
-        for surface in extracted[app]
-        if surface.file == finding["file"]
-        and surface.kind == finding["llm_surface"]
-        and low <= surface.line <= high
-    ]
-    assert finding["surface_name"] in names, (
-        f"{finding['id']}: expected a surface named {finding['surface_name']!r} at "
-        f"{app}/{finding['file']}:{finding['line']}, extracted {names}"
-    )
-
-
-@pytest.mark.parametrize("app", CORPUS_APPS)
-def test_extract_repo_returns_repo_relative_paths(extracted: dict, app: str) -> None:
+def test_extract_repo_returns_repo_relative_paths(tmp_path) -> None:
     """Extracted files are repo-relative posix paths, so output is machine-independent."""
-    require_corpus(app)
-    files = {surface.file for surface in extracted[app]}
-    assert files
-    assert not [f for f in files if f.startswith("/") or "\\" in f]
+    surfaces = extract_repo(str(write_mixed_app(tmp_path))).surfaces
+    assert {surface.file for surface in surfaces} == {PYTHON_FILE, TYPESCRIPT_FILE}
 
 
-@pytest.mark.parametrize("app", CORPUS_APPS)
-def test_extract_repo_uses_only_known_kinds(extracted: dict, app: str) -> None:
-    """Every extracted surface carries one of the four declared kinds."""
-    require_corpus(app)
-    kinds = {surface.kind for surface in extracted[app]}
-    assert kinds <= set(SURFACE_KINDS)
+def test_extract_repo_never_reports_an_absolute_path(tmp_path) -> None:
+    """The tree sits under `tmp_path`, so a leaked absolute path would be visible."""
+    surfaces = extract_repo(str(write_mixed_app(tmp_path))).surfaces
+    assert not [s for s in surfaces if s.file.startswith("/") or "\\" in s.file]
 
 
-def test_support_agent_finds_all_four_kinds(extracted: dict) -> None:
-    """Demo app 1 exercises all four detectors, not just one."""
-    require_corpus("vuln-app-1-support-agent")
-    kinds = {surface.kind for surface in extracted[SUPPORT_AGENT_APP]}
-    assert kinds == set(SURFACE_KINDS)
+def test_extract_repo_uses_only_known_kinds(tmp_path) -> None:
+    """The written app holds all four declared kinds, and reports no fifth."""
+    surfaces = extract_repo(str(write_mixed_app(tmp_path))).surfaces
+    assert {surface.kind for surface in surfaces} == MIXED_APP_KINDS
+    assert MIXED_APP_KINDS <= set(SURFACE_KINDS)
 
 
 def test_extract_repo_on_repo_without_source_returns_empty(tmp_path) -> None:
@@ -133,22 +80,20 @@ def test_parse_source_names_the_file_with_broken_typescript(tmp_path) -> None:
         parse_source(broken.read_bytes(), broken)
 
 
-def test_extract_file_requires_a_file_label() -> None:
+def test_extract_file_requires_a_file_label(tmp_path) -> None:
     """extract_file will not guess a label, so a misused call fails at the call site."""
     with pytest.raises(TypeError):
-        extract_file(CORPUS_DIR / SUPPORT_AGENT_APP / "main.py")
+        extract_file(write_mixed_app(tmp_path) / PYTHON_FILE)
 
 
-def test_extract_file_rejects_an_absolute_label() -> None:
+def test_extract_file_rejects_an_absolute_label(tmp_path) -> None:
     """An absolute label is refused outright rather than producing a machine-specific artifact."""
-    require_corpus("vuln-app-1-support-agent")
-    path = CORPUS_DIR / SUPPORT_AGENT_APP / "main.py"
+    path = write_mixed_app(tmp_path) / PYTHON_FILE
     with pytest.raises(ValueError, match="repo-relative"):
         extract_file(path, str(path))
 
 
-def test_repeated_runs_produce_identical_bytes() -> None:
+def test_repeated_runs_produce_identical_bytes(tmp_path) -> None:
     """The same repository always serialises to the same bytes."""
-    require_corpus("vuln-app-1-support-agent")
-    repo = str(CORPUS_DIR / SUPPORT_AGENT_APP)
+    repo = str(write_mixed_app(tmp_path))
     assert scan_to_json(repo) == scan_to_json(repo)

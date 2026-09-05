@@ -1,9 +1,10 @@
 """Shared test data for the two comparison baselines in `src/baselines/`.
 
 One tiny application whose line numbers are named constants, and one stand-in
-for Syft's document. Both baselines are scored against the real corpus
-elsewhere; these exist so a rule can be asserted at a line a reader can count,
-and so Baseline B's unit tests never need Syft installed.
+for Syft's document. The pinned apps the baselines were scored against are
+gone, so this written tree is now the only application they run over: it exists
+so a rule can be asserted at a line a reader can count, and so Baseline B's
+unit tests never need Syft installed.
 
 The Syft stand-ins are the recorded generator output in `dependency_fixtures`,
 reused rather than re-invented: `JS_GENERATOR_SAMPLE` already lists one package

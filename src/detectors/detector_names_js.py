@@ -1,9 +1,9 @@
 """The JavaScript and TypeScript framework names each detector looks for.
 
 The mirror of detector_names.py. Names are drawn from the LangChain.js API.
-The ones exercised by a corpus fixture or a test are the ones the evaluation
-can speak for; the rest are there so a real app is not missed, and are listed
-as an untested-coverage gap in docs/TODO.md.
+The ones exercised by a test are the ones the evaluation can speak for; the
+rest are there so a real app is not missed, and are listed as an
+untested-coverage gap in docs/TODO.md.
 """
 
 from detectors.detector_names import (  # noqa: F401  (language-neutral, shared)

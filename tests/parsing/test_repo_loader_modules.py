@@ -6,13 +6,11 @@ dependency; too large and a genuine missing dependency is hidden.
 """
 
 import pytest
-from conftest import CORPUS_DIR, require_corpus
 from parsing.repo_loader import local_module_names
 
-SUPPORT_AGENT = "vuln-app-1-support-agent"
-
-# corpus/vuln-app-1-support-agent ships exactly these four modules.
-SUPPORT_AGENT_MODULES = frozenset({"main", "tools", "transaction_db", "utils"})
+# Four modules at the root of a written tree, to check the whole list at once
+# rather than one name at a time.
+FOUR_MODULES = ("main", "tools", "transaction_db", "utils")
 
 
 def test_a_top_level_module_contributes_its_own_name(tmp_path) -> None:
@@ -47,10 +45,11 @@ def test_installed_packages_are_not_local_modules(tmp_path) -> None:
     assert local_module_names(str(tmp_path)) == frozenset({"app"})
 
 
-def test_the_corpus_app_reports_exactly_its_four_modules() -> None:
-    """The real fixture yields main, tools, transaction_db and utils, and nothing else."""
-    require_corpus(SUPPORT_AGENT)
-    assert local_module_names(str(CORPUS_DIR / SUPPORT_AGENT)) == SUPPORT_AGENT_MODULES
+def test_a_repository_of_several_modules_reports_all_of_them(tmp_path) -> None:
+    """The whole set, so a loader that returned only the first file would fail here."""
+    for name in FOUR_MODULES:
+        (tmp_path / f"{name}.py").write_text("x = 1\n", encoding="utf-8")
+    assert local_module_names(str(tmp_path)) == frozenset(FOUR_MODULES)
 
 
 def test_a_missing_repository_path_fails_loudly(tmp_path) -> None:

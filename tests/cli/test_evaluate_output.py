@@ -112,7 +112,7 @@ def test_each_app_line_is_followed_by_what_bounds_it(tmp_path, monkeypatch) -> N
 
 def test_the_qualifications_that_bound_a_count_are_printed_beside_it(
         tmp_path, monkeypatch, capsys) -> None:
-    """`small_sample` and `model_disabled` hold on every corpus run and must be visible."""
+    """`small_sample` and `model_disabled` hold on any run this small, and must be visible."""
     scored(tmp_path, monkeypatch)
     assert "    bounded by: advisory_data_not_ingested, model_disabled, small_sample" \
         in capsys.readouterr().out
@@ -130,3 +130,39 @@ def test_a_refused_f1_is_printed_as_its_reason_and_not_as_a_number(
     document = incomplete_key_run(tmp_path, monkeypatch)
     assert evaluate.totals_lines(document)[-1] == (
         "  f1: no app supports both precision and recall")
+
+
+# --- The evidence-link lines -----------------------------------------------
+# The proposal asks for the share of findings carrying each kind of evidence
+# link. It is printed the way every other number here is printed: numerator,
+# denominator and the apps it rests on, with the division left to the reader.
+# The two no-rate guards above cover these lines too, which is the point.
+
+def test_one_evidence_line_is_printed_for_each_kind_of_link(tmp_path, monkeypatch) -> None:
+    """Three links, three lines: a missing one would read as a kind nobody counted."""
+    document = scored(tmp_path, monkeypatch)
+    lines = evaluate.evidence_lines(document)
+    assert len(lines) == len(evaluate.EVIDENCE_LABELS) == 3
+    assert [label for _key, label in evaluate.EVIDENCE_LABELS] == ["code", "SBOM/AIBOM", "VEX"]
+
+
+def test_each_evidence_line_carries_its_numerator_and_denominator(
+        tmp_path, monkeypatch) -> None:
+    """The one finding this run produced cites a line, and no component and no CVE."""
+    lines = evaluate.evidence_lines(scored(tmp_path, monkeypatch))
+    assert lines[0] == f"  code evidence: 1 of 1 findings over {APP}"
+    assert lines[1] == f"  SBOM/AIBOM evidence: 0 of 1 findings over {APP}"
+    assert lines[2] == f"  VEX evidence: 0 of 1 findings over {APP}"
+
+
+def test_the_evidence_lines_reach_the_terminal(tmp_path, monkeypatch, capsys) -> None:
+    """Guard: the assertions above are only worth having if `run` actually prints them."""
+    scored(tmp_path, monkeypatch)
+    assert f"  code evidence: 1 of 1 findings over {APP}" in capsys.readouterr().out
+
+
+def test_no_evidence_line_prints_a_share(tmp_path, monkeypatch) -> None:
+    """The same refusal the artifact makes, at the one place a division could appear."""
+    printed = "\n".join(evaluate.evidence_lines(scored(tmp_path, monkeypatch)))
+    assert "%" not in printed
+    assert rate_tokens(printed) == []

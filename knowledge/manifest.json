@@ -1,0 +1,24 @@
+{
+  "chromadb_version": "1.5.9",
+  "chunk_chars": 1200,
+  "chunk_overlap_chars": 200,
+  "embed_model": "nomic-embed-text:latest",
+  "embed_model_digest": "0a109f422b47e3a30ba2b10eca18548e944e8a23073ee3f3e947efcf3c45e59f",
+  "note": "The remediation advice is grounded on passages from these sources. Each is an upstream clone under knowledge/<name>/, fetched out-of-band and gitignored; the ChromaDB index built from them is gitignored too. This manifest is the one committed record: rebuild the index from the same commits with src/index_knowledge.py and the digests must match.",
+  "schema_version": 1,
+  "source_count": 1,
+  "sources": [
+    {
+      "content_digest": "sha256:3cca3f293c76dd77a8f2d4b7d10d8e9f7e3c52763fdd8bda0c055a06364e7f7c",
+      "file_count": 121,
+      "include": [
+        "cheatsheets/*.md"
+      ],
+      "indexed_passage_count": 3484,
+      "license": "CC-BY-SA-4.0",
+      "name": "owasp-cheatsheets",
+      "upstream_commit": "b8586414a5c47ae68911edb97d4e7b7bc6301035",
+      "upstream_url": "https://github.com/OWASP/CheatSheetSeries"
+    }
+  ]
+}

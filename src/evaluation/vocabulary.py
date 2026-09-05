@@ -1,7 +1,7 @@
-"""How much of the detector vocabulary the corpus actually exercises.
+"""How much of the detector vocabulary the graded apps actually exercise.
 
 An evaluation result, not a detector concern: a name the fixtures never reach is
-a name the corpus cannot speak for, however many of them the tables hold. The
+a name no graded app speaks for, however many of them the tables hold. The
 count lives here because prose counts drift -- `TODO.md` carried "57 across 12
 tables" for a while and no reading of the source reproduced it.
 
@@ -57,7 +57,7 @@ def _reaches(registered: str, found: str) -> bool:
     and then names the surface with the attribute chain it found, so
     `AgentExecutor` is genuinely reached by `AgentExecutor.from_agent_and_tools`
     and `execute` by `cursor.execute`. Comparing whole names undercounts, and
-    it undercounts in the direction that flatters the corpus -- it reported
+    it undercounts in the direction that flatters the tool -- it reported
     `AgentExecutor` as untested while a graded key entry rests on it.
     """
     return (registered == found

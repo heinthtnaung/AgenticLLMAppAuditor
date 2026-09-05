@@ -16,6 +16,7 @@ into a place to tune the tool against its own answer key.
 from artifacts.finding import SURFACE_SUBJECT, UNRESOLVED_OUTCOMES
 from artifacts.findings_document import ADVISORY_NOT_INGESTED, MODEL_USED
 from evaluation.grading import matches_key
+from evaluation.evidence import evidence_counts
 
 # Why a key entry went unanswered. Derived, never assigned by hand.
 NO_CHECK_FOR_RISK_CLASS = "no_check_for_risk_class"
@@ -157,6 +158,10 @@ def score_app(app: str, key: dict, findings_document: dict, surfaces_document: d
         "expected_surfaces_complete": key["expected_surfaces_complete"],
         "graded_files_skipped": skipped,
         "true_positives": len(matched),
+        # Findings, not entries: several findings may answer one entry (one per
+        # advisory on a reached component), and pooling entry-counts beside
+        # produced-finding counts would print "1 of 2" when nothing is wrong.
+        "answered_finding_count": len(answered),
         "false_negatives": len(key["findings"]) - len(matched),
         # Undefined when the key does not claim to list every finding: an
         # unmatched finding may be real and simply absent from the key.
@@ -166,6 +171,10 @@ def score_app(app: str, key: dict, findings_document: dict, surfaces_document: d
         "unmatched_finding_ids": sorted(f["finding_id"] for f in produced
                                         if f["finding_id"] not in answered),
         "misses": sorted(misses, key=lambda m: m["key_id"]),
+        # Unconditional, unlike the reportable flags below: evidence coverage is
+        # a property of what the tool produced, not of what the key claims, so
+        # no app is ever excluded from it.
+        "evidence": evidence_counts(produced),
         "recall_reportable": bool(key["findings"]) and not skipped,
         "precision_reportable": key["findings_complete"],
         "qualifications": _qualifications(key, findings_document, skipped),

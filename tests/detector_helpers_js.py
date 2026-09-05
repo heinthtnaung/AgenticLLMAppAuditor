@@ -17,7 +17,7 @@ FILE = "app/snippet.ts"
 ALL_DETECTORS = (find_prompt_templates, find_agent_defs, find_tool_calls, find_data_sources)
 
 
-def parse(source: str) -> tuple[Node, bytes]:
+def parse_snippet(source: str) -> tuple[Node, bytes]:
     """Parse a snippet with the TypeScript grammar, keeping its line numbers as written."""
     text = textwrap.dedent(source).lstrip("\n").encode("utf-8")
     return Parser(GRAMMARS[TYPESCRIPT]).parse(text).root_node, text
@@ -25,7 +25,7 @@ def parse(source: str) -> tuple[Node, bytes]:
 
 def run(detector, source: str) -> list:
     """Run one JS detector over a snippet and return the surfaces it found."""
-    root, text = parse(source)
+    root, text = parse_snippet(source)
     return detector(root, FILE, text)
 
 

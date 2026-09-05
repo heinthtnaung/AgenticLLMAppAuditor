@@ -18,8 +18,8 @@ from pathlib import Path
 
 import pytest
 
+from ast_scan import called_names, module_name, parse, source_files
 from conftest import SRC_DIR
-from test_no_write_commands import called_names, module_name, parse, source_files
 from test_scorer_boundary import SCORED_TREES
 
 BASELINES_TREE = "baselines"

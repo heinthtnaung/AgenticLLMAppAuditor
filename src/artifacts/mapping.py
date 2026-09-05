@@ -9,6 +9,7 @@ different facts and only one of them is a finding.
 import builtins
 import json
 
+from artifacts.component_ref import ComponentRef
 from artifacts.surface import Surface
 from deps.package_names import base_purl
 from deps.component_match import (
@@ -108,17 +109,17 @@ def _entry(surface: Surface, components: dict, local: frozenset) -> dict:
     else:
         reason, name, how = _classify_unnamed(surface)
     matched = components.get(_component_key(surface, name), []) if reason == THIRD_PARTY else []
-    return {
-        "surface_id": surface.id,
-        "module": surface.module,
-        "package_root": package_root(surface.module, surface.language) or None,
-        "component_name": name or None,
-        "ecosystem": matched[0]["ecosystem"] if matched else None,
-        "purl": _join_purl(matched),
-        "component_version_count": len(matched),
-        "reason": reason,
-        "resolved_by": how,
-    }
+    return ComponentRef(
+        surface_id=surface.id,
+        module=surface.module,
+        package_root=package_root(surface.module, surface.language) or None,
+        component_name=name or None,
+        ecosystem=matched[0]["ecosystem"] if matched else None,
+        purl=_join_purl(matched),
+        component_version_count=len(matched),
+        reason=reason,
+        resolved_by=how,
+    ).as_entry()
 
 
 def _components_by_key(sbom_document: dict) -> dict[tuple[str, str], list[dict]]:

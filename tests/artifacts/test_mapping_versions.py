@@ -17,21 +17,21 @@ from dependency_fixtures import (
     POETRY_LOCK,
     PYPI_MANIFEST,
     YARN_LOCK,
-    corpus_sbom,
-    corpus_surfaces,
+    pypi_sbom,
     js_sbom,
-    js_surfaces,
 )
 from deps.package_names import NPM, PYPI
 from parsing.languages import PYTHON, TYPESCRIPT
+from surface_fixtures import JS_SURFACES, LOCAL_MODULES, PYTHON_SURFACES
 
-# The three join shapes the JS corpus app really produces.
+# The three join shapes the recorded npm bill holds.
 ONE_VERSION_MODULE = "@langchain/langgraph"
 TWO_VERSION_MODULE = "@langchain/openai"
 THREE_VERSION_MODULE = "langsmith"
 
-# Measured on corpus/oss-app-langgraphjs-starter's five surfaces.
-EXPECTED_JS_THIRD_PARTY = 4
+# Measured on `JS_SURFACES`: three declared npm imports and one prompt string
+# the app wrote itself.
+EXPECTED_JS_THIRD_PARTY = 3
 EXPECTED_JS_FIRST_PARTY = 1
 
 # A name that exists in both ecosystems, used to show a cross-ecosystem miss.
@@ -39,7 +39,7 @@ SHARED_NAME = "langsmith"
 
 
 def js_entry_for(module: str) -> dict:
-    """Map a single TypeScript agent surface against the JS corpus app's SBOM."""
+    """Map a single TypeScript agent surface against a recorded npm SBOM."""
     surface = Surface(AGENT_DEF, "Thing", "src/agent.ts", 3, TYPESCRIPT, "", module)
     return build_mapping([surface], js_sbom())["entries"][0]
 
@@ -102,14 +102,16 @@ def test_an_unmapped_surface_counts_no_component_versions() -> None:
 
 def test_every_entry_states_a_component_version_count() -> None:
     """The field is required, so a reader can always tell an ambiguous join from a sure one."""
-    for entry in build_mapping(corpus_surfaces(), corpus_sbom())["entries"]:
+    entries = build_mapping(PYTHON_SURFACES, pypi_sbom(), LOCAL_MODULES)["entries"]
+    assert entries
+    for entry in entries:
         assert isinstance(entry["component_version_count"], int), entry
 
 
-def test_no_python_corpus_entry_is_ambiguous() -> None:
-    """The Python app installs one copy of everything, so npm's change did not reach it."""
+def test_no_entry_against_a_singly_locked_bill_is_ambiguous() -> None:
+    """The recorded PyPI bill locks one copy of everything, so no join can be ambiguous."""
     counts = [e["component_version_count"]
-              for e in build_mapping(corpus_surfaces(), corpus_sbom())["entries"]]
+              for e in build_mapping(PYTHON_SURFACES, pypi_sbom(), LOCAL_MODULES)["entries"]]
     assert max(counts) == 1
 
 
@@ -139,29 +141,29 @@ def test_a_joined_entry_records_the_ecosystem_it_joined_in() -> None:
     assert entry_against(PYPI, PYTHON)["ecosystem"] == PYPI
 
 
-def js_corpus_mapping() -> dict:
-    """Map the JS corpus app's real surfaces against its recorded SBOM."""
-    return build_mapping(js_surfaces(), js_sbom())
+def js_mapping() -> dict:
+    """Map the written TypeScript surfaces against the recorded npm SBOM."""
+    return build_mapping(JS_SURFACES, js_sbom())
 
 
-def test_the_js_corpus_app_maps_four_of_its_five_surfaces() -> None:
-    """Four surfaces come from declared npm packages; the prompt string comes from the app."""
-    counts = js_corpus_mapping()["reason_counts"]
+def test_three_of_the_four_js_surfaces_join_a_declared_package() -> None:
+    """Three come from declared npm packages; the prompt string comes from the app itself."""
+    counts = js_mapping()["reason_counts"]
     assert counts[THIRD_PARTY] == EXPECTED_JS_THIRD_PARTY
     assert counts[FIRST_PARTY] == EXPECTED_JS_FIRST_PARTY
 
 
-def test_the_js_corpus_chat_model_surface_gets_the_ambiguous_purl() -> None:
-    """src/agent.ts:20 builds ChatOpenAI, and two copies of @langchain/openai are installed."""
-    entry = next(e for e in js_corpus_mapping()["entries"]
+def test_the_chat_model_surface_gets_the_ambiguous_purl_in_a_whole_document() -> None:
+    """Two copies of @langchain/openai are locked, so the whole mapping drops the version too."""
+    entry = next(e for e in js_mapping()["entries"]
                  if e["surface_id"] == "src/agent.ts:20:AGENT_DEF:ChatOpenAI")
     assert entry["component_version_count"] == 2
     assert entry["purl"] == "pkg:npm/%40langchain/openai"
 
 
-def test_the_js_corpus_graph_surface_keeps_its_version() -> None:
-    """src/agent.ts:51 builds StateGraph, and @langchain/langgraph is installed once."""
-    entry = next(e for e in js_corpus_mapping()["entries"]
+def test_the_graph_surface_keeps_its_version_in_a_whole_document() -> None:
+    """@langchain/langgraph is locked once, so this entry may still state the version."""
+    entry = next(e for e in js_mapping()["entries"]
                  if e["surface_id"] == "src/agent.ts:51:AGENT_DEF:StateGraph")
     assert entry["component_version_count"] == 1
     assert entry["purl"] == "pkg:npm/%40langchain/langgraph@0.2.8"

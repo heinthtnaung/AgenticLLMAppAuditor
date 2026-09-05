@@ -1,7 +1,7 @@
 """Express-style route registrations, the JS data-source detector's HTTP entry points.
 
 Kept apart from test_detectors_js.py, which is already at its size budget. No
-corpus fixture runs an HTTP server, so every case here is an inline snippet and
+test may run an HTTP server, so every case here is an inline snippet and
 this detector has no measured false-positive rate (docs/TODO.md).
 """
 

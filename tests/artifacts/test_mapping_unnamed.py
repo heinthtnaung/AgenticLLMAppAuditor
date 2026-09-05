@@ -7,7 +7,7 @@ produces findings nobody can check.
 
 from artifacts.mapping import FIRST_PARTY, STDLIB, UNRESOLVED, build_mapping
 from artifacts.surface import DATA_SOURCE, PROMPT_TEMPLATE, Surface
-from dependency_fixtures import corpus_sbom
+from dependency_fixtures import pypi_sbom
 from deps.component_match import NOT_RESOLVED
 from parsing.languages import JAVASCRIPT, PYTHON
 
@@ -16,7 +16,7 @@ def entry_for(name: str, kind: str = DATA_SOURCE, language: str = PYTHON) -> dic
     """Map a single surface that records no module and return its one entry."""
     file = "app.py" if language == PYTHON else "app.js"
     surface = Surface(kind, name, file, 3, language, "")
-    return build_mapping([surface], corpus_sbom())["entries"][0]
+    return build_mapping([surface], pypi_sbom())["entries"][0]
 
 
 def test_a_dotted_name_is_unresolved() -> None:

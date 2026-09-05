@@ -11,8 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from conftest import app_path, require_corpus
-from dependency_fixtures import JS_DECLARED, JS_MANIFESTS, LANGGRAPHJS_STARTER
+from dependency_fixtures import JS_DECLARED, JS_MANIFESTS, YARN_LOCK
 from deps.npm_manifest import (
     DEPENDENCY_KEYS,
     MANIFEST_NAME,
@@ -147,17 +146,22 @@ def test_a_directory_named_like_the_manifest_is_not_one(tmp_path: Path) -> None:
     assert manifests_present(tmp_path) == []
 
 
-def test_the_corpus_manifest_matches_the_recorded_fixture() -> None:
-    """The real package.json still says what dependency_fixtures claims it says.
+def test_a_written_manifest_reads_back_as_the_recorded_fixture(tmp_path) -> None:
+    """The recorded declaration set still round-trips through the parser it describes.
 
-    This is what stops the recorded generator sample used by the other npm
-    tests from drifting away from the app it is supposed to describe.
+    This used to read the pinned JS app's own package.json, which is what kept
+    `JS_DECLARED` honest. That app is gone, so this can only prove the parser
+    and the fixture agree on the *format* -- not that either matches any real
+    application.
     """
-    require_corpus(LANGGRAPHJS_STARTER)
-    assert read_manifest(app_path(LANGGRAPHJS_STARTER)) == JS_DECLARED
+    (tmp_path / MANIFEST_NAME).write_text(
+        json.dumps({"dependencies": JS_DECLARED}), encoding="utf-8")
+    assert read_manifest(tmp_path) == JS_DECLARED
 
 
-def test_the_corpus_app_ships_a_manifest_and_a_lockfile() -> None:
-    """Both files exist, which is why the JS app is the fixture that exercises `locked`."""
-    require_corpus(LANGGRAPHJS_STARTER)
-    assert manifests_present(app_path(LANGGRAPHJS_STARTER)) == JS_MANIFESTS
+def test_a_manifest_and_a_lockfile_are_both_reported(tmp_path) -> None:
+    """Both files present is what makes an app able to exercise `locked` at all."""
+    (tmp_path / MANIFEST_NAME).write_text(
+        json.dumps({"dependencies": JS_DECLARED}), encoding="utf-8")
+    (tmp_path / YARN_LOCK).write_text("# yarn lockfile v1\n", encoding="utf-8")
+    assert manifests_present(tmp_path) == JS_MANIFESTS

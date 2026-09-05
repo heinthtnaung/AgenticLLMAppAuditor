@@ -1,4 +1,4 @@
-"""Lists the AI-specific parts of an app: its models, tools and agents.
+"""Lists the AI-specific parts of an app: its models, tools, agents, datasets and MCP servers.
 
 Derived from the surfaces already extracted rather than by reading the source
 again, so every entry can be traced back to the record it came from. An entry
@@ -7,8 +7,10 @@ nobody can trace is an entry nobody can check.
 
 import json
 
-from artifacts.surface import AGENT_DEF, TOOL_CALL, Surface
-from detectors.detector_names import MODEL_CLASSES
+from artifacts.surface import AGENT_DEF, DATA_SOURCE, TOOL_CALL, Surface
+from detectors.detector_names import (
+    DATA_SOURCE_CALLS, DATA_SOURCE_METHODS, DATASET_CALLS, MCP_CLASSES,
+    MODEL_CLASSES, TOOL_CLASSES)
 from detectors.detector_names_js import MODEL_CLASSES as JS_MODEL_CLASSES
 from parsing.languages import PYTHON
 
@@ -17,7 +19,26 @@ SCHEMA_VERSION = 1
 MODEL = "MODEL"
 TOOL = "TOOL"
 AGENT = "AGENT"
-AIBOM_KINDS = (MODEL, TOOL, AGENT)
+# Named in the proposal beside models, tools and agent roles. A dataset is a
+# corpus the app pulls in whole; an MCP server is a process it reaches for
+# tools it does not define itself. Both are AI components a reader of a bill
+# of materials would expect to find, and neither was recorded before.
+DATASET = "DATASET"
+MCP_SERVER = "MCP_SERVER"
+AIBOM_KINDS = (MODEL, TOOL, AGENT, DATASET, MCP_SERVER)
+
+# Both new kinds read a name table the *detectors* own, so a name here that no
+# detector emits would be a kind that can never occur -- a coverage claim with
+# no path to it. Refused at import rather than left to be discovered.
+_EMITTED_LEAVES = {name.split('.')[-1] for name in DATA_SOURCE_CALLS} | set(DATA_SOURCE_METHODS)
+if not DATASET_CALLS <= _EMITTED_LEAVES:
+    raise ValueError(
+        f"DATASET_CALLS names {sorted(DATASET_CALLS - _EMITTED_LEAVES)}, which no "
+        "data-source detector emits, so no surface could ever carry the kind")
+if not MCP_CLASSES <= TOOL_CLASSES:
+    raise ValueError(
+        f"MCP_CLASSES names {sorted(MCP_CLASSES - TOOL_CLASSES)}, which no tool "
+        "detector emits")
 
 # Where a model's identity came from. `literal` is deliberately absent: no
 # surface records a model name yet, so the value could never occur.
@@ -37,10 +58,18 @@ def _is_model_client(surface: Surface) -> bool:
     return surface.name.split(".")[0] in classes
 
 
+def _leaf(name: str) -> str:
+    """The last dotted segment of a surface name, which is what the tables match on."""
+    return name.split(".")[-1]
+
+
 def _kind_of(surface: Surface) -> str | None:
     """Return the AIBOM kind a surface belongs to, or None if it is not one."""
+    if surface.kind == DATA_SOURCE:
+        # Only the loaders: a database query is a data source and not a dataset.
+        return DATASET if _leaf(surface.name) in DATASET_CALLS else None
     if surface.kind == TOOL_CALL:
-        return TOOL
+        return MCP_SERVER if surface.name.split(".")[0] in MCP_CLASSES else TOOL
     if surface.kind != AGENT_DEF:
         return None
     return MODEL if _is_model_client(surface) else AGENT

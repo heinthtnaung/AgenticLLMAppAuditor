@@ -9,10 +9,17 @@ from pathlib import Path
 
 import pytest
 from deps import syft_runner
-from conftest import app_path, require_corpus
-from dependency_fixtures import CORPUS_GENERATOR_OUTPUT, SUPPORT_AGENT
+from dependency_fixtures import PYPI_DECLARED
 
 LIBRARY = "library"
+
+# A manifest Syft really reads, so the one test that runs the tool has
+# something to find. Written by the test: the pinned app it used to scan is
+# gone, so the recorded generator output can no longer be re-verified against a
+# real repository -- only the tool's own reading of a manifest can be.
+MANIFEST_NAME = "requirements.txt"
+PINNED = {name: constraint for name, constraint in PYPI_DECLARED.items()
+          if constraint.startswith("==")}
 
 
 def test_update_check_is_disabled() -> None:
@@ -61,30 +68,30 @@ def test_missing_syft_points_at_the_prerequisites(tmp_path: Path, monkeypatch) -
     assert "README" in str(error.value)
 
 
-def recorded_libraries() -> set[tuple[str, str]]:
-    """The (name, version) pairs the recorded generator output claims Syft reports."""
-    return {
-        (c["name"], c["version"])
-        for c in CORPUS_GENERATOR_OUTPUT["components"] if c["type"] == LIBRARY
-    }
+def write_pinned_manifest(root: Path) -> Path:
+    """Write a requirements.txt pinning each exactly-versioned recorded package."""
+    lines = [f"{name}{constraint}" for name, constraint in PINNED.items()]
+    (root / MANIFEST_NAME).write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return root
 
 
-def test_syft_scan_returns_the_recorded_component_list() -> None:
-    """The real tool, when installed: scanning the corpus app yields its components.
+def test_syft_scan_reports_the_packages_the_manifest_pins(tmp_path: Path) -> None:
+    """The real tool, when installed: what it reports for a manifest written here.
 
     The only test in the suite that runs Syft. It skips rather than fails when
     the prerequisite is absent, so the rest of Phase 2 stays runnable anywhere.
-    Comparing against the recorded output is what keeps the fabricated input
-    used by the other Phase 2 tests honest.
+    The manifest is written by the test, so this checks the tool still reads a
+    pinned requirement the way the recorded fixtures assume -- it can no longer
+    re-verify those fixtures against a real repository.
     """
     if not syft_runner.is_available():
         pytest.skip("syft is not installed - see the README prerequisites")
-    require_corpus(SUPPORT_AGENT)
-    output = syft_runner.scan(app_path(SUPPORT_AGENT))
+    output = syft_runner.scan(write_pinned_manifest(tmp_path))
     assert isinstance(output, dict)
     assert isinstance(output.get("components"), list)
     libraries = {
         (c["name"], c.get("version"))
         for c in output["components"] if c.get("type") == LIBRARY
     }
-    assert libraries == recorded_libraries(), "re-record CORPUS_GENERATOR_OUTPUT"
+    expected = {(name, constraint.removeprefix("==")) for name, constraint in PINNED.items()}
+    assert expected and libraries >= expected

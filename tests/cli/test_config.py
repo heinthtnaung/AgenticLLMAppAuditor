@@ -35,9 +35,12 @@ def missing_env_file(directory: Path) -> Path:
     return directory / ".env"
 
 
-def test_defaults_hold_the_three_known_settings() -> None:
-    """DEFAULTS names exactly the settings the auditor understands."""
+def test_defaults_hold_exactly_the_known_settings() -> None:
+    """DEFAULTS names exactly the settings the auditor understands, the two Phase 6 ones included."""
     assert sorted(config.DEFAULTS) == [
+        "AUDITOR_AI_REPORT_MODEL",
+        "AUDITOR_EMBED_MODEL",
+        "AUDITOR_KNOWLEDGE_DIR",
         "AUDITOR_MODEL",
         "AUDITOR_SERVER_URL",
         "AUDITOR_TIMEOUT_SECONDS",
@@ -179,3 +182,27 @@ def test_unrelated_keys_in_env_file_are_left_alone(tmp_path: Path) -> None:
 def test_unmatched_quote_is_kept(tmp_path: Path) -> None:
     """Only a matched pair of quotes is stripped, so a typo stays visible."""
     assert config.parse_env_text('AUDITOR_MODEL="oops\'') == {"AUDITOR_MODEL": '"oops\''}
+
+
+def test_get_path_resolves_a_relative_setting_against_the_repo_root(tmp_path: Path) -> None:
+    """Relative to the repository, not the working directory, so an audit run from anywhere agrees."""
+    env_file = write_env_file(tmp_path, "AUDITOR_KNOWLEDGE_DIR=kb/here\n")
+    assert config.get_path("AUDITOR_KNOWLEDGE_DIR", env_file=env_file) == REPO_ROOT / "kb" / "here"
+
+
+def test_get_path_leaves_an_absolute_setting_alone(tmp_path: Path) -> None:
+    """An absolute path already says where it is."""
+    env_file = write_env_file(tmp_path, f"AUDITOR_KNOWLEDGE_DIR={tmp_path / 'kb'}\n")
+    assert config.get_path("AUDITOR_KNOWLEDGE_DIR", env_file=env_file) == tmp_path / "kb"
+
+
+def test_the_default_knowledge_dir_is_the_repos_knowledge_folder(tmp_path: Path) -> None:
+    """With nothing configured, the knowledge base is `knowledge/` beside `src/`."""
+    assert config.get_path("AUDITOR_KNOWLEDGE_DIR", env_file=missing_env_file(tmp_path)) == (
+        REPO_ROOT / "knowledge")
+
+
+def test_get_path_rejects_an_unknown_setting_name(tmp_path: Path) -> None:
+    """The path form goes through the same known-setting check as the text form."""
+    with pytest.raises(KeyError, match="unknown setting"):
+        config.get_path("AUDITOR_NOT_A_PATH", env_file=missing_env_file(tmp_path))

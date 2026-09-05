@@ -7,29 +7,30 @@ less is a normal outcome and is reported, not treated as a failure.
 """
 
 import argparse
+import time
 import subprocess
 import sys
 from pathlib import Path
 
 from artifacts.aibom import aibom_to_json, build_aibom
 from artifacts.findings_document import findings_to_json
-from artifacts.cyclonedx import to_cyclonedx
-from artifacts.mapping import build_mapping, mapping_to_json
-from artifacts.sbom import build_sbom, sbom_to_json
-from artifacts.skipped_file import SkippedFile
-from artifacts.surface import Surface, surfaces_to_json
+from artifacts.planner_document import planner_to_json
+from artifacts.surface import surfaces_to_json
 from checks.run_checks import build_findings
-from deps import npm_manifest, syft_runner
-from deps.package_names import NPM, PYPI
-from deps.requirements_parser import (
-    MANIFEST_NAME as PYPI_MANIFEST_NAME,
-    manifests_present,
-    read_requirements,
-)
+from dependency_inputs import (
+    declared_ecosystems, dependencies_readable, dependency_artifacts)
+from deps import trivy_runner
 from parsing.extractor import extract_repo
 from parsing.repo_loader import local_module_names
+import model_client
+import pipeline
 
-import report
+import outputs
+from outputs import (
+    AIBOM_NAME,
+    FINDINGS_NAME,
+    SURFACES_NAME,
+)
 
 # The auditor is one of three scored systems, so its artifacts live under its
 # own name: a baseline's findings.json must not overwrite the auditor's. The
@@ -39,118 +40,83 @@ import report
 # agree, so the copy cannot drift.
 DEFAULT_ARTIFACTS_DIR = Path("artifacts") / "agentic_auditor"
 
-SURFACES_NAME = "surfaces.json"
-AIBOM_NAME = "aibom.json"
-SBOM_NAME = "sbom.json"
-CYCLONEDX_NAME = "sbom.cyclonedx.json"
-MAPPING_NAME = "mapping.json"
-FINDINGS_NAME = "findings.json"
-REPORT_NAME = "report.md"
-
-# Naming both files, not just both ecosystems: the reader has to know which two
-# manifests to look at to understand why no bill was produced.
-MIXED_MANIFEST_REASON = (
-    f"both a Python ({PYPI_MANIFEST_NAME}) and an npm ({npm_manifest.MANIFEST_NAME}) "
-    "manifest are present, which is not read yet"
-)
-
 
 # Conditions the user can fix, reported as a message rather than a traceback.
-EXPECTED_FAILURES = (FileNotFoundError, NotADirectoryError, ValueError, RuntimeError)
+EXPECTED_FAILURES = (FileNotFoundError, FileExistsError, NotADirectoryError,
+                     ValueError, RuntimeError)
 
 
 def build_parser() -> argparse.ArgumentParser:
     """Describe the command line arguments."""
     parser = argparse.ArgumentParser(description="Audit an LLM application's source.")
-    parser.add_argument("repo_path", help="path to the repository to analyse")
+    parser.add_argument("repo_path", help="path to the repository to analyse, or an "
+                        "https:// link to fetch, audit, and publish in one run")
     parser.add_argument(
         "--artifacts-dir", type=Path, default=DEFAULT_ARTIFACTS_DIR,
         help=f"where to write the artifacts (default: {DEFAULT_ARTIFACTS_DIR})",
     )
+    parser.add_argument(
+        "--semantic-probe", action="store_true",
+        help="ask the local model to judge each prompt template for injection. "
+             "Off by default: it puts model-authored findings in findings.json, "
+             "which is otherwise byte-identical whether a model ran or not. It "
+             "is also the switch that lets the model choose the check order, "
+             "recorded in planner.json",
+    )
     return parser
 
 
-def declared_ecosystems(app_dir: Path) -> list[str]:
-    """Return every packaging ecosystem this app declares, in a stable order."""
-    found = [PYPI] if manifests_present(app_dir) else []
-    return found + ([NPM] if npm_manifest.has_manifest(app_dir) else [])
+def probe_inputs(wanted: bool) -> tuple[object, dict | None]:
+    """The model call and its provenance for the semantic probe, or nothing.
 
-
-def dependencies_readable(app_dir: Path) -> tuple[bool, str]:
-    """Say whether this repository's dependencies can be read, and why not if they cannot.
-
-    A repository declaring two is refused rather than half-read. One SBOM holds
-    one ecosystem, so reporting only the Python half would understate the tree
-    while looking complete.
+    The one place an audit hands `model_client.ask` to a check. Imported here
+    rather than in `checks/semantic_probe.py`, which
+    `tests/parsing/test_offline_containment.py` bars from naming the module at
+    all -- the check stays pure and the socket stays at the edge.
     """
-    if not syft_runner.is_available():
-        return False, f"{syft_runner.GENERATOR_NAME} is not installed"
-    ecosystems = declared_ecosystems(app_dir)
-    if len(ecosystems) > 1:
-        return False, MIXED_MANIFEST_REASON
-    if not ecosystems:
-        return False, "no dependency manifest found"
-    return True, ""
+    if not wanted:
+        return None, None
+    try:
+        digest = model_client.model_digest()
+    except RuntimeError:
+        # The digest is a provenance nicety; the audit is not. Asking for it
+        # unguarded meant `--semantic-probe` with the server down wrote **no
+        # artifacts at all** -- and every degradation path the probe has was
+        # unreachable through the command line. `outputs.build_remediation`
+        # guards the same call for the same reason.
+        digest = None
+    return model_client.ask, {
+        "identifier": model_client.MODEL,
+        "settings": model_client.DECODE_SETTINGS,
+        "digest": digest,
+    }
 
 
-def _declarations(app_dir: Path, ecosystem: str) -> tuple[dict[str, str], list[str]]:
-    """Return what the app declares and which manifests said so, for one ecosystem."""
-    if ecosystem == PYPI:
-        return read_requirements(app_dir), manifests_present(app_dir)
-    return npm_manifest.read_manifest(app_dir), npm_manifest.manifests_present(app_dir)
+def advisory_inputs(app_dir: Path) -> tuple[dict | None, dict | None]:
+    """Trivy's advisories indexed for the join, and the pin naming what matched.
 
-
-def dependency_artifacts(app_dir: Path, surfaces: list[Surface],
-                         ecosystem: str) -> tuple[dict[str, str], dict]:
-    """Build the bill of materials and the surface-to-component mapping.
-
-    Two bills are written. sbom.json is the contract the later phases read;
-    sbom.cyclonedx.json is the same scan in a standard format, so the result
-    can be fed to other supply-chain tooling and checked independently.
+    (None, None) degrades exactly as a missing Syft does: the check is absent
+    from checks_run and coverage says advisory_data was not ingested.
     """
-    scanned = syft_runner.scan(app_dir)
-    declared, present = _declarations(app_dir, ecosystem)
-    document = build_sbom(
-        scanned, declared,
-        syft_runner.GENERATOR_NAME, syft_runner.generator_version(),
-        present, syft_runner.GUESS_UNPINNED, ecosystem,
-    )
-    mapped = build_mapping(surfaces, document, local_module_names(str(app_dir)))
-    return {
-        SBOM_NAME: sbom_to_json(document),
-        CYCLONEDX_NAME: sbom_to_json(to_cyclonedx(scanned)),
-        MAPPING_NAME: mapping_to_json(mapped),
-    }, mapped
-
-
-def report_skipped_files(skipped: list[SkippedFile]) -> None:
-    """Warn about each file the scan could not analyse."""
-    for record in skipped:
-        where = f" (line {record.line})" if record.line else ""
-        print(f"warning: skipped {record.file}: {record.reason}{where}", file=sys.stderr)
-
-
-def report_coverage(mapping_document: dict) -> None:
-    """Say how much of the app the mapping reached.
-
-    Printed rather than stored: a mapping covering a third of the surfaces
-    looks the same on disk as one covering all of them.
-    """
-    total, mapped = mapping_document["surface_count"], mapping_document["mapped_count"]
-    share = f"{mapped / total:.0%}" if total else "n/a"
-    print(f"  mapped {mapped} of {total} surfaces ({share})", file=sys.stderr)
-    for reason, count in sorted(mapping_document["reason_counts"].items()):
-        if count:
-            print(f"    {reason:22} {count}", file=sys.stderr)
-    for name in mapping_document["undeclared_components"]:
-        print(f"  used but never declared: {name}", file=sys.stderr)
+    date = trivy_runner.db_snapshot_date() if trivy_runner.is_available() else None
+    if date is None:
+        return None, None
+    report = trivy_runner.scan(app_dir)
+    return trivy_runner.advisory_index(report), trivy_runner.pin(report, date)
 
 
 def run(args: argparse.Namespace) -> int:
-    """Audit the repository and write its artifacts. Returns the exit code."""
-    app_dir = Path(args.repo_path)
-    scan = extract_repo(args.repo_path)
-    report_skipped_files(scan.skipped)
+    """Audit the repository and write its artifacts. Returns the exit code.
+
+    Times itself: "audit execution time" is one of the measures the proposal
+    committed to, and a wall-clock second is the only honest unit here -- the
+    run shells out to Syft and Trivy and may call a local model, so CPU time
+    would understate what a reader actually waits for.
+    """
+    started = time.monotonic()
+    app_dir = pipeline.resolve_repo(args.repo_path)
+    scan = extract_repo(str(app_dir))
+    outputs.report_skipped_files(scan.skipped)
     documents = {
         SURFACES_NAME: surfaces_to_json(scan.surfaces, scan.skipped),
         AIBOM_NAME: aibom_to_json(build_aibom(scan.surfaces)),
@@ -163,26 +129,37 @@ def run(args: argparse.Namespace) -> int:
             app_dir, scan.surfaces, declared_ecosystems(app_dir)[0])
         documents.update(built)
 
-    documents[FINDINGS_NAME] = findings_to_json(
-        build_findings(args.repo_path, scan.surfaces, mapping_document))
+    advisories, advisory_pin = ((None, None) if mapping_document is None
+                                else advisory_inputs(app_dir))
+    findings_document, planner_document = build_findings(
+        str(app_dir), scan.surfaces, mapping_document, advisories, advisory_pin,
+        *probe_inputs(args.semantic_probe))
+    documents[FINDINGS_NAME] = findings_to_json(findings_document)
+    documents[outputs.PLANNER_NAME] = planner_to_json(planner_document)
+    documents.update(outputs.standard_format(findings_document))
+    # The only model call an audit makes, and the only artifact it writes into.
+    # findings.json is written above and never revisited, so the scored numbers
+    # stay static whatever the model says.
+    documents[outputs.REMEDIATION_NAME] = outputs.build_remediation(
+        findings_document, outputs.declared_language(scan.surfaces),
+        tuple(local_module_names(str(app_dir))))
 
-    out = args.artifacts_dir / app_dir.resolve().name
-    out.mkdir(parents=True, exist_ok=True)
-    for name, text in sorted(documents.items()):
-        (out / name).write_text(text, encoding="utf-8")
-
-    # Rendered from the two files just written, not from what is still in
-    # memory: the report is a reading of the artifacts, and reading them back
-    # is what keeps it one.
-    (out / REPORT_NAME).write_text(
-        report.render_from_files(app_dir.resolve().name, out / FINDINGS_NAME, out / SURFACES_NAME),
-        encoding="utf-8")
-    print(f"wrote {len(documents) + 1} artifacts to {out}")
+    app = app_dir.resolve().name
+    written = outputs.write_all(args.artifacts_dir / app, documents, app)
+    print(f"wrote {written} artifacts to {args.artifacts_dir / app}")
 
     if no_bill_reason:
         print(f"  no bill of materials: {no_bill_reason}", file=sys.stderr)
     if mapping_document is not None:
-        report_coverage(mapping_document)
+        outputs.report_coverage(mapping_document)
+    # A link runs the whole pipeline; a local path stays the offline audit.
+    if pipeline.is_url(args.repo_path):
+        pipeline.publish(args.artifacts_dir / app, advisory_pin is not None)
+    # Printed, never written into an artifact: a duration is the one number here
+    # that changes on every run, and putting it in a file would break the
+    # byte-identical guarantee every artifact makes for a fact about the
+    # machine rather than about the audited app.
+    print(f"audit completed in {time.monotonic() - started:.2f} seconds")
     return 0
 
 
