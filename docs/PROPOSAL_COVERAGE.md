@@ -6,7 +6,7 @@ reader check the code against what was committed to. This file closes that gap:
 every commitment below is quoted verbatim from the proposal and answered with a
 file path or an admission.
 
-**Headline: roughly 74% of the proposal's concrete commitments are delivered.**
+**Headline: roughly 77% of the proposal's concrete commitments are delivered.**
 The engineering is further along than the research design. The largest single
 gap is not a missing module -- it is that the study's own central comparison was
 never run.
@@ -15,11 +15,10 @@ never run.
 
 **33 commitments, all of them rows in the tables below** -- Objectives,
 Methodology, Evaluation and Dissemination. Fully delivered counts 1, partial
-counts 0.5, missing counts 0. That gives **24.5 / 33 ~= 74%**, and the count is
+counts 0.5, missing counts 0. That gives **25.5 / 33 ~= 77%**, and the count is
 reproducible by anyone who adds up the tables; an earlier version of this file
 quoted 24.5/35 against 33 rows, which nobody could check.
-Last recounted 2026-09-05 after the grading key, `ComponentRef` and the two new
-AIBOM kinds landed.
+Last recounted 2026-09-05 after Objective 5 was measured.
 Counted over the engineering commitments alone it is nearer 80%; over the
 evaluation and research-design commitments alone, nearer 50%.
 
@@ -40,10 +39,18 @@ rather than on its own.
 > "The study will measure ... the **data-exposure implications** of sending
 > sensitive audit artefacts to an external inference provider."
 
-**Nothing in this repository addresses any of it.** There is no cloud
-configuration, no comparison harness, no second model path, and no measurement
-of data exposure. `grep` for `cloud`, `frontier`, or any hosted-provider client
-in `src/` returns nothing.
+**Addressed 2026-09-05, and the answer is uncomfortable.** `experiments/`
+holds the harness — outside `src/`, so the audit path's offline guarantee is
+untouched and nothing under `src/` may import it. On the single case where the
+two models could be compared, the **hosted model was more accurate**: the local
+one flagged a static template as injectable by describing what the application
+does rather than what the template is. That means the semantic probe's only
+contribution to detection is a true positive resting on a false rationale.
+Written up in `docs/REPORT.md`.
+
+Still counted **Partial**, not delivered: one app, one template, one hosted
+model, three runs. That is a data point, not the comparative study the objective
+describes.
 
 The tool is *architecturally* offline -- `src/model_client.py` is the only
 module that opens a connection, and it talks to localhost. But that is the
@@ -166,8 +173,8 @@ of them.
 | "percentage of findings containing valid code, SBOM/AIBOM, and CSAF/VEX evidence links" | Yes -- `src/evaluation/evidence.py`, as counts plus denominators (`evaluation.json` forbids float fields by design) |
 | "precision and recall of LLM surface extraction" | **Partial** -- `expected_surfaces` explains *why a finding was missed*; extraction is not scored as its own precision/recall figure |
 | "audit execution time" | Yes | `src/main.py` times each run; `docs/REPORT.md` "Audit Execution Latency" publishes the three-configuration table with a repeated measurement. |
-| Local vs cloud-hosted frontier comparison | **No** -- section 1 |
-| Data-exposure implications | **No** -- section 1 |
+| Local vs cloud-hosted frontier comparison | **Partial** -- run 2026-09-05, `experiments/compare_models.py`, `qwen2.5-coder:7b-instruct` against `z-ai/glm-5.2`. Both arms stable over three runs and they disagree; the hosted model was correct. But it is **one application, one prompt template, one hosted model** -- a data point, not a rate, and it cannot answer "can open weights compete" in general. Counted half for that reason. |
+| Data-exposure implications | **Partial** -- 2671 bytes per arm, one request per template, transmitted fields enumerated. Four things are named as **unmeasurable** rather than dressed up: retention, training use, jurisdiction, and which upstream provider served the request. And what was sent was a *public* file, so this measures the mechanism, not the exposure a private repository would incur. |
 | "qualitative usefulness of reports for a human security reviewer" | **No** -- not attempted; this is a human study, not code |
 
 ### Dissemination
@@ -197,8 +204,8 @@ Worth stating, because a coverage number read alone understates the work:
 
 ## 6. What to do next, in order of what an examiner would notice
 
-Four of the five actions this file first listed were taken on 2026-09-05, which
-is why the sections above read as they do. What is left:
+Six of the seven actions this file has listed were taken on 2026-09-05. Two
+commitments are now at zero, down from four. What is left:
 
 1. **Verify the shipped grading key.** It exists and it measures — see
    `docs/REPORT.md`, where the auditor scores 4 of 6 static and 5 of 6 with the
@@ -213,6 +220,13 @@ is why the sections above read as they do. What is left:
    and records it, and the order changes no artifact unless `MAX_STEPS` binds.
    Either accept that and keep the record as provenance, or let it choose what
    to probe -- which reopens the rule that it must never subtract.
+4. **Fix the semantic probe's rationale, or narrow its title.** The Objective 5
+   study showed the local model flags a static template by describing the
+   application rather than the template. The check's own criterion is not met on
+   the one case it contributes. Either the prompt asks a sharper question, or the
+   title stops claiming interpolation.
+5. **Repeat Objective 5 across more templates and a second hosted model**, if it
+   is to be a comparison rather than a data point.
 
 Done, and where: **Objective 5** and the **RAG/AUDITABILITY substitution** are
 both now stated in `docs/REPORT.md`'s "Addendum: Methodology Deviations from
