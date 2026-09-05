@@ -55,7 +55,13 @@ python src/run_baseline.py baseline_static_rules <app>
 python src/emit_vex.py artifacts/agentic_auditor/<app>
 python src/export_reports.py artifacts/agentic_auditor/<app>
 python src/index_knowledge.py             # build the advice knowledge base
+python src/ai_report.py artifacts/agentic_auditor/<app>   # optional AI-styled view
+python src/fetch_repo.py <url>            # fetch and pin a repo without auditing
+python src/model_client.py                # check the local model answers
 ```
+
+`report.ai.html` is a presentation of `report.md`, not an authority: it is
+model-written, non-deterministic, and refused whole if it invents an advisory.
 
 ## What it found
 
