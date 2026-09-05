@@ -130,7 +130,7 @@ def test_the_step_just_past_the_cap_stops_too() -> None:
 def test_the_cap_cannot_bind_on_the_checks_the_auditor_knows_how_to_run() -> None:
     """`MAX_STEPS` must stay slack, or the planner's order starts subtracting checks.
 
-    `docs/SCHEMAS.md`, `docs/FLOW.md`, `docs/PHASE_7_PLAN.md` and
+    `docs/SCHEMAS.md`, `docs/FLOW.md`, `docs/HISTORY.md` and
     `src/artifacts/planner_document.py` all argue that the model-chosen order
     provably changes nothing in `findings.json`, and every one of them rests on
     the cap not binding. Add a check past the cap and the argument inverts: the

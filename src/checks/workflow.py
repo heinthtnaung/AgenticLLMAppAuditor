@@ -99,7 +99,7 @@ def choose_next(remaining: list[str]) -> str:
 
     Deterministic, and the only place the pick is made. The *order* it walks is
     decided before the graph starts, so a model can inform that order without
-    the graph ever calling one -- see `docs/PHASE_7_PLAN.md`.
+    the graph ever calling one -- see `docs/HISTORY.md`.
     """
     if not remaining:
         raise ValueError("nothing left to choose from; should_continue ends the run first")

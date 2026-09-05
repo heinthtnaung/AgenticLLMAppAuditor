@@ -556,7 +556,7 @@ run the grep baseline reaches more of the grading key than the auditor does --
 surface-to-component join. Re-measured after advisory ingestion and the
 reachability key entry: 3 of 7 against 5 of 7, the auditor at zero false
 positives -- figures marked `key_unverified` until a human re-checks the edited
-key. The run labels live in `PHASE_4_PLAN.md` and the README.
+key. The run labels live in `docs/HISTORY.md` and the README.
 
 Phase 5 is built, minus its VEX *filter* (emission ships; see section 9): a repository can be fetched by URL
 (`src/fetch_repo.py`) and both reports exported as HTML and PDF

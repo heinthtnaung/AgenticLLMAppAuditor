@@ -42,7 +42,7 @@ NETWORK_IMPORTS = frozenset({"urllib.request", "socket", "http.client", "request
 
 # The one module that may import chromadb, and the package name that counts as
 # importing it. Named because `store.py`'s docstring, `requirements.txt`,
-# `docs/RAG_PLAN.md` and `knowledge/README.md` all make this claim, and until
+# `docs/HISTORY.md` and `knowledge/README.md` all make this claim, and until
 # now none of them was backed by a test.
 CHROMADB = "chromadb"
 CHROMADB_MODULES = frozenset({"retrieval/store.py"})

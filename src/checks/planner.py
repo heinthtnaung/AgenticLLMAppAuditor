@@ -12,7 +12,7 @@ fail it even where the model is absent and the code degrades correctly.
 **The one invariant: the model may reorder, never remove.** Every eligible check
 appears in the returned order exactly once, whatever the model says or fails to
 say. A model that could drop a check would decide what counts as a finding, and
-`docs/FLOW.md` and `docs/PHASE_3_PLAN.md` both forbid exactly that: the absence
+`docs/FLOW.md` and `docs/HISTORY.md` both forbid exactly that: the absence
 would land in `coverage.checks_run`, which `docs/SCHEMAS.md` defines as "could
 not look at all" and the scorer reads as `no_check_for_risk_class`. A silent
 recall loss wearing coverage vocabulary. So the merge below is monotone, and

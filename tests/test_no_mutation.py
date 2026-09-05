@@ -1,7 +1,7 @@
 """The auditor reports; it never edits, patches or runs the code it audits.
 
 `.claude/AGENTS.md` and `README.md` have promised this in prose since Phase 1,
-and `docs/PHASE_3_PLAN.md` adds that nothing executes the audited app. Both are
+and `docs/HISTORY.md` adds that nothing executes the audited app. Both are
 asserted here by running the real CLI and hashing the repository underneath it
 before and after. A grep over `src/` would miss a write through a path added
 later; hashing the tree cannot. The structural half -- that no source module can

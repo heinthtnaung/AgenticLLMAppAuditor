@@ -2,7 +2,7 @@
 
 Task 7.4 reversed this phase's original rule: the planner may now narrow a check
 to some of its surfaces, so a finding can go unfound because the model did not
-look. `docs/PHASE_7_PLAN.md` carries the reversal and why. This module is the
+look. `docs/HISTORY.md` carries the reversal and why. This module is the
 containment, and it is pure -- no model call, no I/O.
 
 **Five rules, each closing a way the narrowing could lie.**

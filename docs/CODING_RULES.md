@@ -4,7 +4,7 @@ The standard this project is held to. These are **binding**, not preferences:
 work that breaks one is not finished.
 
 This is the single place they are written down. `.claude/AGENTS.md` and
-`docs/PHASE_1_PLAN.md` both point here rather than restating them, because two
+`docs/HISTORY.md` both point here rather than restating them, because two
 copies of a rule list is how the two copies start disagreeing.
 
 ## Why they are strict

@@ -5,7 +5,7 @@ returned order is a permutation of the eligible checks. A dropped check would
 land in `coverage.checks_run` as an absence, and `docs/SCHEMAS.md` defines that
 absence as "could not look at all" -- the scorer reads it as
 `no_check_for_risk_class`. So a model able to subtract would be deciding what
-counts as a finding, which `docs/FLOW.md` and `docs/PHASE_3_PLAN.md` both
+counts as a finding, which `docs/FLOW.md` and `docs/HISTORY.md` both
 forbid, and it would do it in coverage vocabulary where a reader would not see
 it.
 

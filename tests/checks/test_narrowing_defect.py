@@ -5,7 +5,7 @@ on everything, and no absence from `coverage.checks_run` is ever the model's
 doing.** `docs/SCHEMAS.md` defines an absence there as "could not look at all"
 and `src/evaluation/scorer.py` reads it as `no_check_for_risk_class`, so an
 absence the model caused is a coverage claim written by a model -- which
-`docs/PHASE_7_PLAN.md` rejects as a contract violation rather than a preference.
+`docs/HISTORY.md` rejects as a contract violation rather than a preference.
 
 One case still does it. `semantic_probe` runs at the edge, and `run_checks`
 names it in `checks_run` only when it produced a probe. Narrowed to surfaces
