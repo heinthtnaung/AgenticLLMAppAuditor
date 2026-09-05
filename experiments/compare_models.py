@@ -28,6 +28,7 @@ import cloud_client                                             # noqa: E402
 import model_client                                             # noqa: E402
 from artifacts.surface import Surface                           # noqa: E402
 from checks.run_checks import build_findings                    # noqa: E402
+from comparison_report import to_page                            # noqa: E402
 from exposure import UNMEASURABLE, Ledger                        # noqa: E402
 from parsing.extractor import extract_repo                      # noqa: E402
 
@@ -80,6 +81,17 @@ def compare(repo: str, cloud_model: str) -> dict:
     }
 
 
+def _note(result: dict) -> str:
+    """One line saying what a disagreement means, or that there was none."""
+    if not result["disagreements"]:
+        return "**The models agreed on every template.** Agreement is not proof of "
+    "correctness: both could be wrong the same way."
+    return ("**They disagree, so at most one is right.** A verdict here is a claim about "
+            "the *template's structure* -- whether it drops a value into instruction text "
+            "with nothing separating the two -- not about whether the application is "
+            "vulnerable. Read each model's reasoning below against the template itself.")
+
+
 def _print(result: dict) -> None:
     """Report the comparison, leading with the per-template agreement."""
     print(f"{result['repository']}: {result['templates_examined']} prompt templates\n")
@@ -99,6 +111,11 @@ def main() -> int:
     parser.add_argument("repo_path")
     parser.add_argument("--cloud-model", default=cloud_client.DEFAULT_MODEL)
     parser.add_argument("--out", type=Path, help="write the full comparison as JSON")
+    parser.add_argument(
+        "--html", type=Path,
+        help="write a readable comparison page. Deliberately NOT report.html: that "
+             "artifact is the audit, is byte-identical run to run, and stays local-only "
+             "whether or not a key is set")
     args = parser.parse_args()
     try:
         result = compare(args.repo_path, args.cloud_model)
@@ -109,6 +126,9 @@ def main() -> int:
     if args.out:
         args.out.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
         print(f"\nwrote {args.out}")
+    if args.html:
+        args.html.write_text(to_page(result, _note(result)))
+        print(f"wrote {args.html}")
     return 0
 
 

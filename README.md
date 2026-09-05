@@ -125,6 +125,26 @@ advisory-carrying components reached by nothing. Both are correct, and the pair
 is the point: this tool answers "does the LLM reach it?", not "is it
 vulnerable?".
 
+## Optional: compare a local and a hosted model
+
+Off unless you ask for it. **With no API key, nothing changes** — `report.html`
+holds local-model output only, as it always does.
+
+```bash
+export OPENROUTER_API_KEY=...          # this shell only; never commit it
+python experiments/compare_models.py fetched/<app> \
+  --html artifacts/agentic_auditor/<app>/comparison.html
+```
+
+Writes `comparison.html` **beside** `report.html`, not inside it: the audit
+report is byte-identical run to run, and a hosted model's answer is neither
+reproducible nor available without a key. The page shows each model's verdict
+per prompt template **and its reasoning**, so you can judge which is right
+rather than trusting a count.
+
+`experiments/` is outside `src/` and nothing under `src/` may import it — the
+audit path stays offline, and a test asserts it in both directions.
+
 ## Guarantees
 
 - **Never executes the audited app.** `test_no_mutation.py` hashes the tree
