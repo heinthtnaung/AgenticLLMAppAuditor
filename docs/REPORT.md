@@ -125,6 +125,43 @@ a security tool's apparent recall — a false rationale landing on a true findin
 That is one data point and is stated as one: it does not establish that hosted
 models are generally better at this task, and the sample cannot support a rate.
 
+### Widened: four models, two applications
+
+The single-template result above is a data point. Repeating it:
+
+**On templates that genuinely interpolate** — `rag-tutorial-v2`, five prompt
+templates, two of which contain a runtime value — `qwen2.5-coder:7b-instruct`
+(local), `qwen/qwen-2.5-coder-32b-instruct` and `z-ai/glm-5.2` **agree on all
+five**, and on the two that interpolate all three name the actual interpolation
+point (`{question}`, `{actual_response}`). The local model is not worse here.
+The other three are refuted before any model is asked, because their text is not
+written literally at that line.
+
+**On the static template that produced the false positive**, asked directly of
+four models:
+
+| Model | Verdict | |
+|---|---|---|
+| `qwen2.5-coder:7b-instruct` (local) | VULNERABLE | wrong — invented `{name}` |
+| `qwen/qwen-2.5-coder-32b-instruct` | SAFE | right |
+| `z-ai/glm-5.2` | SAFE | right |
+| `openai/gpt-4o-mini` | VULNERABLE | wrong — invented `userId` |
+
+**This is not a local-versus-hosted result, and reporting it as one would be
+wrong.** A hosted model from a major vendor makes the same error as the local
+one, while the *same family* at 4.5× the size does not. Both failures are the
+same shape: the model **named an interpolation point that is not in the text**.
+Two of four models hallucinated evidence for a security finding.
+
+**What that means for the objective.** The proposal asks whether open-weight
+models can compete with frontier offerings. On this task the axis that predicted
+correctness was not open-versus-hosted — `qwen-32B` is open-weight and was
+right, `gpt-4o-mini` is hosted and was wrong. The useful conclusion is narrower
+and more actionable: **a model's claim about code must be checked against the
+code**, because the failure was not a judgement call but a fabricated citation.
+That is why the fix went into `semantic_probe.py` as a static refutation rather
+than into the prompt — it holds whichever model is configured.
+
 ### Data exposure, measured and unmeasurable
 
 **Measured**: 2671 bytes per arm, one request per prompt template. Transmitted:

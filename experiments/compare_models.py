@@ -60,23 +60,27 @@ def _arm(name: str, ask, settings: dict, repo: str, surfaces: list[Surface]) -> 
     }
 
 
-def compare(repo: str, cloud_model: str) -> dict:
-    """Run both arms over one repository and return the comparison."""
+def compare(repo: str, cloud_models: list[str]) -> dict:
+    """Run the local model and each hosted model over one repository."""
     surfaces = extract_repo(repo).surfaces
-    local = _arm(model_client.MODEL, model_client.ask,
-                 model_client.DECODE_SETTINGS, repo, surfaces)
-    cloud = _arm(cloud_model, lambda prompt: cloud_client.ask(prompt, cloud_model),
-                 cloud_client.DECODE_SETTINGS, repo, surfaces)
-    subjects = sorted(set(local["verdicts"]) | set(cloud["verdicts"]))
+    arms = [_arm(model_client.MODEL, model_client.ask,
+                 model_client.DECODE_SETTINGS, repo, surfaces)]
+    for name in cloud_models:
+        arms.append(_arm(name, lambda prompt, m=name: cloud_client.ask(prompt, m),
+                         cloud_client.DECODE_SETTINGS, repo, surfaces))
+    subjects = sorted({s for arm in arms for s in arm["verdicts"]})
+
+    def verdicts(subject: str) -> dict:
+        return {arm["model"]: arm["verdicts"].get(subject) for arm in arms}
+
+    unanimous = [s for s in subjects if len(set(verdicts(s).values())) == 1]
     return {
         "repository": repo,
         "templates_examined": len(subjects),
-        "arms": [local, cloud],
-        "agreements": [s for s in subjects
-                       if local["verdicts"].get(s) == cloud["verdicts"].get(s)],
-        "disagreements": [{"surface": s, "local": local["verdicts"].get(s),
-                           "cloud": cloud["verdicts"].get(s)} for s in subjects
-                          if local["verdicts"].get(s) != cloud["verdicts"].get(s)],
+        "arms": arms,
+        "agreements": unanimous,
+        "disagreements": [{"surface": s, **verdicts(s)} for s in subjects
+                          if s not in unanimous],
         "unmeasurable_exposure": list(UNMEASURABLE),
     }
 
@@ -102,14 +106,16 @@ def _print(result: dict) -> None:
     print(f"\n  agree on {len(result['agreements'])} of {result['templates_examined']}, "
           f"disagree on {len(result['disagreements'])}")
     for row in result["disagreements"]:
-        print(f"    {row['surface']}: local={row['local']} cloud={row['cloud']}")
+        said = "  ".join(f"{m.split('/')[-1]}={v}" for m, v in row.items() if m != "surface")
+        print(f"    {row['surface']}\n      {said}")
 
 
 def main() -> int:
     """Compare a local and a hosted model over one repository."""
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("repo_path")
-    parser.add_argument("--cloud-model", default=cloud_client.DEFAULT_MODEL)
+    parser.add_argument("--cloud-model", action="append", dest="cloud_models",
+                        help="repeatable; defaults to " + cloud_client.DEFAULT_MODEL)
     parser.add_argument("--out", type=Path, help="write the full comparison as JSON")
     parser.add_argument(
         "--html", type=Path,
@@ -118,7 +124,8 @@ def main() -> int:
              "whether or not a key is set")
     args = parser.parse_args()
     try:
-        result = compare(args.repo_path, args.cloud_model)
+        result = compare(args.repo_path,
+                         args.cloud_models or [cloud_client.DEFAULT_MODEL])
     except RuntimeError as error:
         print(f"error: {error}", file=sys.stderr)
         return 1

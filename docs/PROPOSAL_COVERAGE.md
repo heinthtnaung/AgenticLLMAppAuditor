@@ -173,7 +173,7 @@ of them.
 | "percentage of findings containing valid code, SBOM/AIBOM, and CSAF/VEX evidence links" | Yes -- `src/evaluation/evidence.py`, as counts plus denominators (`evaluation.json` forbids float fields by design) |
 | "precision and recall of LLM surface extraction" | **Partial** -- `expected_surfaces` explains *why a finding was missed*; extraction is not scored as its own precision/recall figure |
 | "audit execution time" | Yes | `src/main.py` times each run; `docs/REPORT.md` "Audit Execution Latency" publishes the three-configuration table with a repeated measurement. |
-| Local vs cloud-hosted frontier comparison | **Partial** -- run 2026-09-05, `experiments/compare_models.py`, `qwen2.5-coder:7b-instruct` against `z-ai/glm-5.2`. Both arms stable over three runs and they disagree; the hosted model was correct. But it is **one application, one prompt template, one hosted model** -- a data point, not a rate, and it cannot answer "can open weights compete" in general. Counted half for that reason. |
+| Local vs cloud-hosted frontier comparison | **Partial** -- run 2026-09-05, `experiments/compare_models.py`. Four models over two applications and seven prompt templates. The result refuses the framing: `qwen-2.5-coder-32b` (open weights, hosted) and `glm-5.2` were right, while `gpt-4o-mini` (hosted, major vendor) made the *same* error as the local 7B -- both hallucinating an interpolation point absent from the text. So the axis was capability, not open-versus-hosted. Counted half: enough to show the failure shape, not enough for a rate, and no cost or throughput comparison was attempted. |
 | Data-exposure implications | **Partial** -- 2671 bytes per arm, one request per template, transmitted fields enumerated. Four things are named as **unmeasurable** rather than dressed up: retention, training use, jurisdiction, and which upstream provider served the request. And what was sent was a *public* file, so this measures the mechanism, not the exposure a private repository would incur. |
 | "qualitative usefulness of reports for a human security reviewer" | **No** -- not attempted; this is a human study, not code |
 
@@ -214,8 +214,10 @@ commitments are now at zero, down from four. What is left:
    `key_ai_drafted` and `key_unverified`. A human reading its six entries
    against `c0cf9a14` is what turns an indication into a result, and it is the
    cheapest remaining upgrade in the whole document.
-2. **Repeat Objective 5 across more templates and a second hosted model**, if it
-   is to be a comparison rather than a data point. One template is one template.
+2. **Widen Objective 5 further.** It now covers four models over two
+   applications and seven prompt templates, which is enough to show the failure
+   shape but not enough for a rate. More applications would be the next
+   increment.
 3. **The planner's *order* is still inconsequential**, though its *narrowing* is
    not: narrowing changes `checks_narrowed` and what each check examines. Decide
    whether the order record is worth keeping as provenance, or whether the
