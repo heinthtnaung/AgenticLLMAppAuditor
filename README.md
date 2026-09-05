@@ -63,6 +63,42 @@ python src/model_client.py                # check the local model answers
 `report.ai.html` is a presentation of `report.md`, not an authority: it is
 model-written, non-deterministic, and refused whole if it invents an advisory.
 
+## Worked example
+
+`damn-vulnerable-llm-agent` is a deliberately vulnerable LangChain ReAct agent,
+and the app this project is measured against.
+
+```bash
+# 1. get it at the commit the grading key pins
+git clone https://github.com/ReversecLabs/damn-vulnerable-llm-agent.git \
+  fetched/damn-vulnerable-llm-agent
+cd fetched/damn-vulnerable-llm-agent
+git checkout c0cf9a14adad76e9d6a53c41741f625334bd9971
+cd ../.. && rm -rf fetched/damn-vulnerable-llm-agent/.git
+
+# 2. audit it
+python src/main.py fetched/damn-vulnerable-llm-agent
+
+# 3. score it against the shipped grading key
+python src/evaluate.py
+
+# 4. compare against the baselines
+python src/run_baseline.py baseline_static_rules fetched/damn-vulnerable-llm-agent
+python src/evaluate.py --system baseline_static_rules
+```
+
+Expect 6 findings and **4 of 6** matched; add `--semantic-probe` for 5 of 6.
+Read `artifacts/agentic_auditor/damn-vulnerable-llm-agent/report.md`.
+
+Two things that will silently spoil it: **editing the app's
+`requirements.txt`** (the tree stops matching the pin and the supply-chain
+finding disappears), and **leaving `.git` in place** (git commands inside then
+resolve to the clone rather than this repo).
+
+`main.py` also takes the URL directly, but not for this app — the name belongs
+to a grading key, and the tool refuses to overwrite artifacts scored against
+one.
+
 ## What it found
 
 On `damn-vulnerable-llm-agent` at commit `c0cf9a14`, scored against
