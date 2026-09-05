@@ -23,7 +23,7 @@ from cli_helpers import (
     stub_syft,
 )
 from outputs import FINDINGS_NAME, REMEDIATION_NAME, REMEDIATION_REPORT_NAME
-from remediation_report import render_from_files
+from reporting.remediation_report import render_from_files
 
 APP_NAME = "advised-app"
 

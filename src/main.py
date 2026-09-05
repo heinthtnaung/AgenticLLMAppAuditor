@@ -17,7 +17,7 @@ from artifacts.findings_document import findings_to_json
 from artifacts.planner_document import planner_to_json
 from artifacts.surface import surfaces_to_json
 from checks.run_checks import build_findings
-from dependency_inputs import (
+from deps.inputs import (
     declared_ecosystems, dependencies_readable, dependency_artifacts)
 from deps import trivy_runner
 from parsing.extractor import extract_repo

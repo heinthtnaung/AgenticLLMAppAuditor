@@ -42,7 +42,7 @@ COVERAGE_FIELDS = (
 
 # The modules that bind the block to a name called `coverage` and read keys off
 # it. Each would raise a bare `KeyError` mid-report on a key the block lost.
-READERS = ("report.py", "report_gaps.py", "artifacts/vex.py")
+READERS = ("reporting/report.py", "reporting/report_gaps.py", "artifacts/vex.py")
 
 # A pin, so the snapshot branch of every reader is reachable from one block.
 PINNED = {"advisory_generator_name": "trivy", "advisory_generator_version": "0.58.1",

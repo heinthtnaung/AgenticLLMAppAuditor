@@ -11,7 +11,7 @@ from advisory_fixtures import (
 from artifacts.findings_document import ADVISORY_SNAPSHOT
 from cli_helpers import STUB_ADVISORY_PIN
 from findings_fixtures import static_finding
-from report import render
+from reporting.report import render
 from report_fixtures import (
     APP,
     document_with_coverage,

@@ -14,7 +14,7 @@ from artifacts.findings_document import ADVISORY_NOT_INGESTED, ADVISORY_SNAPSHOT
 from artifacts.skipped_file import UNDECODABLE_BYTES, UNPARSEABLE_SYNTAX, SkippedFile
 from checks.taint import LEFT_THE_FILE
 from findings_fixtures import OWASP_ID, build_document, confirmed_probe, probe_finding
-from report import RISK_TITLES, render
+from reporting.report import RISK_TITLES, render
 from report_fixtures import (
     APP,
     UNREADABLE,

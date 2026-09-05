@@ -16,7 +16,7 @@ import json
 from pathlib import Path
 
 from artifacts.finding import PROBE, SCHEMA_VERSION, is_located
-from report_gaps import (
+from reporting.report_gaps import (
     RISK_TITLES, dependency_vulnerability_lines, not_examined_lines, vex_summary_lines)
 
 HEADING = "# Audit report: {app}"

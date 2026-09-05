@@ -12,7 +12,7 @@ model-authored -- is in test_markdown_html_escaping.py.
 
 import pytest
 
-from markdown_html import body_html, to_html
+from reporting.markdown_html import body_html, to_html
 
 TITLE = "Audit report"
 

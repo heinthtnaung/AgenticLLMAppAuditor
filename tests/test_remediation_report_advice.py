@@ -28,7 +28,7 @@ from remediation_fixtures import (
     unavailable_run,
     written_entry,
 )
-from remediation_report import GROUNDED_ON, ILLUSTRATION_NOTE, render
+from reporting.remediation_report import GROUNDED_ON, ILLUSTRATION_NOTE, render
 from retrieval.owasp_reference import reference_for
 
 APP = "vulnerable-support-agent"

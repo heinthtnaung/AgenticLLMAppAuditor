@@ -30,8 +30,8 @@ from parsing.languages import PYTHON
 from retrieval import retrieve
 import config
 import model_client
-import remediation_report
-import report
+from reporting import remediation_report
+from reporting import report
 
 # Every per-app artifact name, in one place, because three modules join paths
 # from them and two copies is how the two copies start disagreeing.

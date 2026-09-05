@@ -24,7 +24,7 @@ import sys
 from pathlib import Path
 
 import config
-import markdown_html
+from reporting import markdown_html
 import model_client
 
 REPORT_NAME = "report.md"

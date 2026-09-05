@@ -27,7 +27,7 @@ from remediation_fixtures import (
     used_run,
     written_entry,
 )
-from remediation_report import (
+from reporting.remediation_report import (
     DIGEST_CHARS,
     LICENCE_NOTE,
     NO_MODEL,

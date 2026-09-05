@@ -81,7 +81,7 @@ ALLOWED_TO_NAME_VEX = frozenset({
     # the emitter ran, and tells the reader to run `python src/emit_vex.py`.
     # Both are rendered prose: it opens nothing, reads no document, and names
     # no path into `vex/`.
-    "report.py",
+    "reporting/report.py",
 })
 
 SOURCES = ("upstream_published", "project_authored")

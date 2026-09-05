@@ -20,7 +20,7 @@ nothing here asserts a shape the tool does not write.
 from artifacts.findings_document import (
     MODEL_DISABLED, build_findings_document, coverage, model_run)
 from findings_fixtures import RULE_ID, static_finding
-from report import render
+from reporting.report import render
 from report_fixtures import APP, HOW_HEADING, NOT_EXAMINED_HEADING, surfaces_document
 
 # The field a reader is sent to. Spelled here rather than imported, because the

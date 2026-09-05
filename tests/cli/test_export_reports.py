@@ -24,8 +24,8 @@ from pathlib import Path
 import pytest
 
 import export_reports
-import remediation_report
-import report
+from reporting import remediation_report
+from reporting import report
 from findings_fixtures import build_document, static_finding
 from pdf_text import drawn_text
 from remediation_fixtures import remediation_document, source, written_entry

@@ -11,7 +11,7 @@ image, in each of the three places report text can appear. They must come out
 as characters on the page, never as elements in it.
 """
 
-from markdown_html import body_html, to_html
+from reporting.markdown_html import body_html, to_html
 
 SCRIPT = "<script>alert(1)</script>"
 IMAGE = '<img src=x onerror="alert(1)">'

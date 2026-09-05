@@ -23,7 +23,7 @@ from artifacts.findings_document import (
 from artifacts.surface import surfaces_to_json
 from checks import semantic_probe
 from checks.run_checks import RISK_CLASS_BY_CHECK
-from report import render
+from reporting.report import render
 from semantic_probe_fixtures import (
     Answering,
     NO_PROMPT_APP,

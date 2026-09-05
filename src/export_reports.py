@@ -22,7 +22,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from fpdf import FPDF
 
-import markdown_html
+from reporting import markdown_html
 
 REPORT_STEM = "report"
 REMEDIATION_STEM = "remediation"
