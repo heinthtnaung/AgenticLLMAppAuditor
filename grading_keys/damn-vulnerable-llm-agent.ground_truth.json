@@ -53,15 +53,15 @@
     {
       "id": "DVLA-09",
       "file": "tools.py",
-      "line": 34,
+      "line": 32,
       "owasp_id": "LLM01",
       "llm_surface": null,
       "surface_name": null,
       "component": null,
       "detection": "static",
       "title": "Stored transaction rows reach the model as observations, unvalidated",
-      "description": "get_transactions returns database rows straight to the agent, where they become observations the model reasons over. Any text an attacker can get stored -- a recipient or reference field -- is read by the model as part of its own transcript. This is the indirect half of LLM01, and the app seeds it deliberately: transaction_db.py:50 stores 'FLAG:plutonium-256' in a recipient field.",
-      "code_anchor": "return transactions"
+      "description": "db.get_user_transactions returns database rows into the tool, and get_transactions hands them to the agent, where they become observations the model reasons over. Any text an attacker can get stored -- a recipient or reference field -- is read as part of the model's own transcript. This is the indirect half of LLM01, and the app seeds it deliberately: transaction_db.py:50 stores 'FLAG:plutonium-256' in a recipient column. Anchored where the rows arrive rather than at the return, so its line window stays disjoint from DVLA-08's at tools.py:37 -- overlapping windows would let one finding score as two true positives.",
+      "code_anchor": "transactions = db.get_user_transactions(userId)"
     },
     {
       "id": "DVLA-08",

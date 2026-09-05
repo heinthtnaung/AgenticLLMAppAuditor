@@ -130,8 +130,10 @@ The key is **AI-drafted and unverified**, so every figure carries
 
 **The sets matter more than the counts.** The auditor alone reaches the
 supply-chain entry — that needs joining a surface to a component, which no grep
-rule has. The baseline alone reaches the tool-authorisation entry. Union: all
-six.
+rule has. The baseline alone reaches the system-prompt and tool-authorisation
+entries, both of which are *absences* a regex catches and this auditor's
+dataflow does not. **Three of the eight are reached by neither**, which is the
+honest state of the tool rather than a rounding error.
 
 **Why this tool rather than a scanner.** On a repo with no LLM surfaces, Trivy
 finds 311 vulnerabilities and this auditor reports 0 findings and 79
