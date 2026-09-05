@@ -21,14 +21,12 @@ What is deliberately not here: the join rule's own edges, which are
 copies of one rule to disagree over.
 """
 
-from dataclasses import asdict
-
 import pytest
 
 from deps.package_names import PYPI, base_purl
 from evaluation.grading import GUARDED_ENTRY_FIELDS, matches_key
 from evaluation_fixtures import key_entry
-from findings_fixtures import static_finding
+from findings_fixtures import produced_finding
 from shipped_key_fixtures import shipped_entries
 
 # Every purl starts with this, so a bare package name is not one and can match
@@ -46,11 +44,6 @@ UNDECLARED_PURL = "pkg:pypi/pyyaml@5.3.1"
 EMPTY = ""
 
 
-def produced(**overrides) -> dict:
-    """The produced finding as `findings.json` holds it: a plain dict, not a record."""
-    return asdict(static_finding(**overrides))
-
-
 # --- The mechanism ----------------------------------------------------------
 
 def test_the_purl_prefix_is_the_one_the_tools_own_builder_writes() -> None:
@@ -60,13 +53,13 @@ def test_the_purl_prefix_is_the_one_the_tools_own_builder_writes() -> None:
 
 def test_a_component_named_by_bare_package_name_answers_nothing() -> None:
     """The `DVLA-07` trap: `component` is compared against `purl`, never against a name."""
-    finding = produced(purl=UNDECLARED_PURL)
+    finding = produced_finding(purl=UNDECLARED_PURL)
     assert not matches_key(finding, key_entry(component=UNDECLARED_NAME))
 
 
 def test_the_same_finding_matches_once_the_component_is_spelled_as_a_purl() -> None:
     """Guard: everything else about that entry joins, so the name alone was the failure."""
-    finding = produced(purl=UNDECLARED_PURL)
+    finding = produced_finding(purl=UNDECLARED_PURL)
     assert matches_key(finding, key_entry(component=UNDECLARED_PURL))
 
 
@@ -77,14 +70,14 @@ def test_a_wrong_component_is_a_silent_miss_and_not_an_error() -> None:
     cannot be caught at score time, because at score time it looks exactly like
     a defect the auditor failed to find.
     """
-    assert matches_key(produced(purl=UNDECLARED_PURL),
+    assert matches_key(produced_finding(purl=UNDECLARED_PURL),
                        key_entry(component=UNDECLARED_NAME)) is False
 
 
 @pytest.mark.parametrize("field", GUARDED_ENTRY_FIELDS)
 def test_an_empty_string_widens_the_join_instead_of_narrowing_it(field: str) -> None:
     """A falsy value is skipped, so an author who wrote `""` constrained nothing."""
-    assert matches_key(produced(), key_entry(**{field: EMPTY}))
+    assert matches_key(produced_finding(), key_entry(**{field: EMPTY}))
 
 
 # --- What the shipped key may hold ------------------------------------------

@@ -9,6 +9,8 @@ findings from its real surfaces went with the corpus; a test that wants a whole
 document over real source writes the source itself.
 """
 
+from dataclasses import asdict
+
 from artifacts.finding import (
     CONFIRMED,
     PROBE,
@@ -49,6 +51,11 @@ def static_finding(**overrides) -> Finding:
         "detection": STATIC, **SURFACE_FIELDS, **overrides,
     }
     return Finding(**fields)
+
+
+def produced_finding(**overrides) -> dict:
+    """A produced finding as `findings.json` holds it: a plain dict, not a record."""
+    return asdict(static_finding(**overrides))
 
 
 def confirmed_probe(subject_id: str = SURFACE_ID) -> Probe:
