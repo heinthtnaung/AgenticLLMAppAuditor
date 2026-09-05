@@ -6,7 +6,7 @@ throughout, so this runs on a machine that has never installed it.
 
 Its two neighbours cover the rest of the same journey: which repositories are
 readable at all is in test_main_ecosystem_choice.py, and the real generator run
-over the corpus app is in test_main_npm_corpus.py.
+over a pinned third-party app went with the corpus that held it.
 """
 
 from pathlib import Path
@@ -14,7 +14,7 @@ from pathlib import Path
 from cli_helpers import read_artifact, run_cli, stub_syft
 from dependency_fixtures import NPM_MANIFEST, PYPI_MANIFEST, TINY_PACKAGE_JSON
 from deps.package_names import NPM
-from main import MAPPING_NAME, SBOM_NAME
+from outputs import MAPPING_NAME, SBOM_NAME
 
 APP_NAME = "tiny-js-app"
 

@@ -1,9 +1,10 @@
-"""The CLI writes all seven artifacts, or fails with a message and exit 1.
+"""The CLI writes all eleven artifacts, or fails with a message and exit 1.
 
 Syft is stubbed throughout, so this runs offline on a machine that has never
 installed it.
 """
 
+import re
 import subprocess
 from pathlib import Path
 
@@ -12,21 +13,27 @@ from deps import syft_runner
 from deps.package_names import PYPI
 from deps.requirements_parser import MANIFEST_NAME as PYPI_MANIFEST
 from parsing.languages import PYTHON
+from outputs import report_coverage
 from main import (
-    FINDINGS_NAME,
-    REPORT_NAME,
-    AIBOM_NAME,
-    CYCLONEDX_NAME,
-    MAPPING_NAME,
-    SBOM_NAME,
-    SURFACES_NAME,
     build_parser,
     dependency_artifacts,
-    report_coverage,
     run,
 )
+from outputs import (
+    AIBOM_NAME,
+    CYCLONEDX_NAME,
+    FINDINGS_NAME,
+    MAPPING_NAME,
+    PLANNER_NAME,
+    REMEDIATION_NAME,
+    REMEDIATION_REPORT_NAME,
+    REPORT_NAME,
+    SARIF_NAME,
+    SBOM_NAME,
+    SURFACES_NAME,
+)
 from artifacts.mapping import build_mapping
-from dependency_fixtures import corpus_sbom
+from dependency_fixtures import pypi_sbom
 from artifacts.surface import DATA_SOURCE, PROMPT_TEMPLATE, Surface
 
 # Each artifact versions independently, so a shared number would be a
@@ -38,8 +45,14 @@ from artifacts.surface import DATA_SOURCE, PROMPT_TEMPLATE, Surface
 # check covers this risk" from "a check covered it and stayed silent", and
 # `unresolved_component_count`, without which it cannot learn that the
 # supply-chain check had surfaces it could say nothing about at all.
-# aibom.json did not move.
-EXPECTED_SCHEMA_VERSIONS = {SBOM_NAME: 3, AIBOM_NAME: 1, MAPPING_NAME: 2, FINDINGS_NAME: 2}
+# aibom.json did not move. planner.json arrived at 1 with Phase 7 and versions
+# on its own, independently of the findings.json it records the check order for;
+# task 7.4 moved both, and separately: findings.json to 7 for the top-level
+# `checks_narrowed`, planner.json to 2 for `surface_selection` and
+# `refused_narrowing`. Two numbers for one change is the point of versioning
+# them apart.
+EXPECTED_SCHEMA_VERSIONS = {SBOM_NAME: 3, AIBOM_NAME: 1, MAPPING_NAME: 2,
+                            FINDINGS_NAME: 7, PLANNER_NAME: 2}
 
 # The artifacts carrying this project's own schema_version. Derived from the
 # table above, so a future artifact cannot be listed here and left unchecked.
@@ -47,7 +60,8 @@ ARTIFACT_NAMES = tuple(EXPECTED_SCHEMA_VERSIONS)
 
 # Everything a successful run leaves on disk, including the standard-format
 # bill, which carries CycloneDX's version rather than one of ours.
-ALL_ARTIFACT_NAMES = (SURFACES_NAME, CYCLONEDX_NAME, REPORT_NAME) + ARTIFACT_NAMES
+ALL_ARTIFACT_NAMES = (SURFACES_NAME, CYCLONEDX_NAME, REPORT_NAME, SARIF_NAME,
+                      REMEDIATION_NAME, REMEDIATION_REPORT_NAME) + ARTIFACT_NAMES
 APP_NAME = "tiny-app"
 
 # One agent surface importing langchain, so the mapping has something to join.
@@ -79,13 +93,30 @@ def test_writes_the_sbom_aibom_and_mapping_and_exits_zero(monkeypatch, tmp_path)
         assert (tmp_path / "artifacts" / APP_NAME / name).is_file(), name
 
 
-def test_writes_seven_artifacts_and_says_so(monkeypatch, tmp_path, capsys) -> None:
-    """Both bills, the findings and the report land beside the rest, and the count agrees."""
+def test_writes_eleven_artifacts_and_says_so(monkeypatch, tmp_path, capsys) -> None:
+    """Both bills, the findings and the report land beside the rest, and the count agrees.
+
+    Eleven since task 7.2 put `planner.json` on disk. The printed count is nine
+    documents plus the two reports `write_all` renders from them.
+    """
     stub_syft(monkeypatch, STUB_GENERATOR_OUTPUT)
     assert run_cli(monkeypatch, write_app(tmp_path), tmp_path / "artifacts") == 0
     written = sorted(p.name for p in (tmp_path / "artifacts" / APP_NAME).iterdir())
     assert written == sorted(ALL_ARTIFACT_NAMES)
-    assert "wrote 7 artifacts" in capsys.readouterr().out
+    assert len(ALL_ARTIFACT_NAMES) == 11
+    assert "wrote 11 artifacts" in capsys.readouterr().out
+
+
+def test_the_run_prints_how_long_it_took_on_its_last_line(monkeypatch, tmp_path, capsys) -> None:
+    """Audit execution time is a measure the proposal committed to, and it is printed only.
+
+    Printed rather than stored: a duration is the one number here that changes
+    on every run, so an artifact carrying it could not be byte-identical.
+    """
+    stub_syft(monkeypatch, STUB_GENERATOR_OUTPUT)
+    assert run_cli(monkeypatch, write_app(tmp_path), tmp_path / "artifacts") == 0
+    last_line = capsys.readouterr().out.splitlines()[-1]
+    assert re.fullmatch(r"audit completed in \d+\.\d\d seconds", last_line), last_line
 
 
 def test_the_standard_format_bill_is_written_beside_the_project_one(monkeypatch, tmp_path) -> None:
@@ -167,7 +198,7 @@ def coverage_mapping() -> dict:
         Surface(kind=DATA_SOURCE, name="yaml.load", file="app.py", line=2,
                 language=PYTHON, detail="", module="yaml"),
     ]
-    return build_mapping(surfaces, corpus_sbom())
+    return build_mapping(surfaces, pypi_sbom())
 
 
 def test_report_coverage_prints_how_much_was_mapped(capsys) -> None:
@@ -193,5 +224,5 @@ def test_report_coverage_names_each_undeclared_component(capsys) -> None:
 
 def test_report_coverage_of_an_empty_mapping_says_n_a(capsys) -> None:
     """No surfaces means no share to report; it must not divide by zero."""
-    report_coverage(build_mapping([], corpus_sbom()))
+    report_coverage(build_mapping([], pypi_sbom()))
     assert "mapped 0 of 0 surfaces (n/a)" in capsys.readouterr().err

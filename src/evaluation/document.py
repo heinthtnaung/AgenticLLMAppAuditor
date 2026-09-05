@@ -1,16 +1,22 @@
 """Assembles the whole run's evaluation document from the per-app scores.
 
 Separate from `scorer.py`, which answers "how did the tool do on this app".
-This answers "what may be said across the corpus", and the two have different
+This answers "what may be said across every graded app", and the two have different
 readers: a per-app row can be quoted, a pooled total cannot be quoted without
 the apps it rests on.
 
-Pooled counts, never a mean: with two apps an average hides which one carried
+Pooled counts, never a mean: an average hides which app carried
 the number. F1 is refused rather than omitted, because an absent field reads as
 unimplemented and this is a decision.
 """
 
-SCHEMA_VERSION = 1
+from evaluation.evidence import pooled_evidence
+
+# Version 2 added answered_finding_count: findings that matched some entry,
+# beside true_positives which counts entries, so the pool never mixes units.
+# Version 3 added `evidence` to each app score and to `totals`: how many
+# findings carry a code, SBOM or VEX evidence link, counts only.
+SCHEMA_VERSION = 3
 
 # Which system produced the findings being scored. Carried inside the record,
 # not only in the filename, so a row copied into a write-up keeps its label.
@@ -33,9 +39,11 @@ def _totals(scored: list[dict]) -> dict:
         "precision": {
             "apps_included": sorted(a["app"] for a in precision_apps),
             "true_positives": sum(a["true_positives"] for a in precision_apps),
+            "answered_finding_count": sum(a["answered_finding_count"] for a in precision_apps),
             "false_positives": sum(a["false_positives"] for a in precision_apps),
             "produced_finding_count": sum(a["produced_finding_count"] for a in precision_apps),
         },
+        "evidence": pooled_evidence(scored),
         "f1_reportable": bool(both),
         "f1_blocked_reason": None if both else "no app supports both precision and recall",
     }

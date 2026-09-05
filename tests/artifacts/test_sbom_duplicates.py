@@ -1,6 +1,6 @@
 """One package installed at several versions, and which manifest declared it.
 
-A lockfile legitimately resolves the same name more than once: the JS corpus app
+A lockfile legitimately resolves the same name more than once: the recorded npm scan
 has `langsmith` at three versions and `@langchain/openai` at two. Each installed
 copy is its own supply-chain fact, so each gets its own record -- a name-keyed
 dict would keep the last and silently drop the rest.
@@ -22,7 +22,7 @@ from dependency_fixtures import (
 )
 from deps.package_names import LOCKFILE_NAMES, NPM, NPM_LOCKFILES, PYPI_LOCKFILES
 
-# Measured on the recorded sample of the JS corpus app's lockfile scan.
+# Measured on the recorded sample of that lockfile scan.
 LANGSMITH_VERSIONS = ["0.1.48", "0.1.55", "0.1.61"]
 OPENAI_VERSIONS = ["0.3.0", "0.3.2"]
 

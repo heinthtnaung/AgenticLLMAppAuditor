@@ -14,11 +14,11 @@ from artifacts.sbom import (
 )
 from deps.package_names import PYPI, exact_version
 from dependency_fixtures import (
-    CORPUS_DECLARED,
+    PYPI_DECLARED,
     GENERATOR_NAME,
     GENERATOR_VERSION,
     PYPI_MANIFEST,
-    corpus_sbom,
+    pypi_sbom,
 )
 
 # A generator that found nothing, for the cases about what the manifest alone says.
@@ -55,16 +55,16 @@ def test_an_unconstrained_package_leaves_the_purl_bare() -> None:
 
 def test_every_pinned_component_states_its_version_in_its_purl() -> None:
     """Direction one: a pinned component's purl ends in `@<version>`, never bare."""
-    pinned = [c for c in corpus_sbom()["components"] if c["version_source"] == PINNED]
-    assert pinned, "the corpus app declares an exact pin; without one this proves nothing"
+    pinned = [c for c in pypi_sbom()["components"] if c["version_source"] == PINNED]
+    assert pinned, "the recorded manifest declares an exact pin; without one this proves nothing"
     for component in pinned:
         assert component["purl"] == f"pkg:pypi/{component['name']}@{component['version']}"
 
 
 def test_no_unpinned_component_states_a_version_in_its_purl() -> None:
     """Direction two: everything else has a bare purl, so dropping all versions fails too."""
-    unpinned = [c for c in corpus_sbom()["components"] if c["version_source"] != PINNED]
-    assert len(unpinned) == 4, "the corpus app has four unpinned packages"
+    unpinned = [c for c in pypi_sbom()["components"] if c["version_source"] != PINNED]
+    assert len(unpinned) == 4, "the recorded manifest has four unpinned packages"
     for component in unpinned:
         assert component["purl"] == f"pkg:pypi/{component['name']}"
 
@@ -75,7 +75,7 @@ def test_an_inferred_version_is_still_recorded_outside_the_purl() -> None:
     Dropping it would lose real evidence, which is why the purl check above
     cannot be satisfied by emitting no versions at all.
     """
-    langchain = next(c for c in corpus_sbom()["components"] if c["name"] == "langchain")
+    langchain = next(c for c in pypi_sbom()["components"] if c["name"] == "langchain")
     assert (langchain["version"], langchain["version_source"]) == ("0.3.25", INFERRED)
 
 
@@ -131,9 +131,9 @@ def test_an_exact_pin_survives_a_generator_that_reports_nothing() -> None:
     assert component["tool_reported"] is False
 
 
-def test_the_corpus_manifest_declares_one_exact_pin() -> None:
+def test_the_recorded_manifest_declares_one_exact_pin() -> None:
     """The fixture data holds one pin, two ranges and two bare names, so every path runs."""
-    exact = [name for name, text in CORPUS_DECLARED.items() if text.startswith("==")]
-    ranges = [name for name, text in CORPUS_DECLARED.items() if text.startswith("~=")]
+    exact = [name for name, text in PYPI_DECLARED.items() if text.startswith("==")]
+    ranges = [name for name, text in PYPI_DECLARED.items() if text.startswith("~=")]
     assert exact == ["langchain-litellm"]
     assert ranges == ["langchain", "openai"]

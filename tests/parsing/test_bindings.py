@@ -8,22 +8,37 @@ taint that was never there.
 
 The scope cases at the bottom are the same concern one level up: two functions,
 or two methods of one class, binding the same name are two bindings.
+
+`receiver_name` and `method_name` are tested as the pair they are: *which
+object* is used and *what is asked of it*. The taint check needs both, and the
+single `called_name` they replaced conflated them into a blind spot.
 """
 
 import ast
 
-from conftest import app_path, require_corpus
-from dependency_fixtures import SUPPORT_AGENT
 from parsing.bindings import (
     Binding,
     argument_names,
-    called_name,
+    method_name,
+    receiver_name,
     scoped_call_bindings,
 )
 from parsing.extractor_python import parse_file
 
 # What the vulnerable app's main.py really binds, read off the file by hand.
-CORPUS_BINDINGS = {"prompt": 60, "llm": 63, "chat_agent": 69, "executor": 71}
+# The four names an agent trace has to follow, written into one module so the
+# line each is bound at can be counted by a reader. The pinned app this was
+# verified against by hand is gone; the shape of the chain is what mattered.
+AGENT_CHAIN_SOURCE = '''\
+from langchain.agents import AgentExecutor, create_react_agent
+
+if prompt := ChatPromptTemplate.from_template("answer {question}"):
+    pass
+llm = ChatLiteLLM(model="gpt-4o-mini")
+chat_agent = create_react_agent(llm, [], prompt)
+executor = AgentExecutor(agent=chat_agent, tools=[])
+'''
+AGENT_CHAIN_BINDINGS = {"prompt": 3, "llm": 5, "chat_agent": 6, "executor": 7}
 
 # Two methods of one class binding the same name. A class body is not a scope
 # its methods share, so this is two bindings and never one.
@@ -53,7 +68,7 @@ def bindings_of(source: str) -> dict[str, Binding]:
 
 
 def first_call(source: str) -> ast.Call:
-    """Return the first call node in a snippet, for the two helpers that take one."""
+    """Return the first call node in a snippet, for the three helpers that take one."""
     return next(n for n in ast.walk(ast.parse(source)) if isinstance(n, ast.Call))
 
 
@@ -63,7 +78,7 @@ def scopes_of(source: str) -> list:
 
 
 def test_a_walrus_binds_the_name_to_the_call_line() -> None:
-    """`if prompt := st.chat_input(...)` is how the corpus app takes its input."""
+    """`if prompt := st.chat_input(...)` is how a real Streamlit app takes its input."""
     assert bindings_of("if prompt := st.chat_input('ask'):\n    pass\n")["prompt"] == \
         Binding("prompt", 1)
 
@@ -117,7 +132,7 @@ def test_a_nested_call_does_not_bind_the_outer_name() -> None:
 
 
 def test_a_multi_line_call_binds_the_line_it_starts_on() -> None:
-    """The corpus app's AgentExecutor call spans nine lines and is anchored on the first."""
+    """A multi-line AgentExecutor call spans nine lines and is anchored on the first."""
     source = "executor = AgentExecutor.from_agent_and_tools(\n    tools=tools,\n)\n"
     assert bindings_of(source)["executor"].line == 1
 
@@ -128,7 +143,7 @@ def test_an_empty_module_binds_nothing() -> None:
 
 
 def test_argument_names_returns_positional_names() -> None:
-    """A tainted name reaches a sink positionally in the corpus app."""
+    """A tainted name reaches a sink positionally, the shape the trace can follow."""
     assert argument_names(first_call("executor(prompt, other)")) == {"prompt", "other"}
 
 
@@ -147,27 +162,61 @@ def test_argument_names_of_a_call_with_no_arguments_is_empty() -> None:
     assert argument_names(first_call("executor()")) == set()
 
 
-def test_called_name_returns_the_plain_name_being_called() -> None:
-    """`executor(prompt)` is how a bound sink is invoked."""
-    assert called_name(first_call("executor(prompt)")) == "executor"
+def test_receiver_name_returns_the_plain_name_being_called() -> None:
+    """`executor(prompt)` is how a bound sink is invoked, and the callee is the receiver."""
+    assert receiver_name(first_call("executor(prompt)")) == "executor"
 
 
-def test_called_name_is_empty_for_a_method_call() -> None:
-    """`obj.method()` names no bare variable, and the empty string says so."""
-    assert called_name(first_call("obj.method(prompt)")) == ""
+def test_receiver_name_returns_the_object_a_method_is_called_on() -> None:
+    """`agent.invoke(prompt)` uses the object named `agent`, which a binding can match.
+
+    This is the case the deleted `called_name` answered `""` to. It asserted
+    the defect: the receiver of the modern LangChain spelling is a local name,
+    and reading it as "no name" is what made the taint trace silently blind.
+    """
+    assert receiver_name(first_call("agent.invoke(prompt)")) == "agent"
 
 
-def test_called_name_is_empty_for_a_call_on_a_call_result() -> None:
+def test_receiver_name_is_empty_for_a_deeper_attribute_chain() -> None:
+    """`a.b.c(prompt)` is called on the *value* of `a.b`, which this file never bound."""
+    assert receiver_name(first_call("a.b.c(prompt)")) == ""
+
+
+def test_method_name_is_still_the_method_when_the_receiver_is_empty() -> None:
+    """The one input where the pair disagrees: no receiver, but the method is known.
+
+    `a.b.c(prompt)` gives `""` from `receiver_name` and `"c"` from `method_name`.
+    That divergence is intended -- the helpers answer two questions, and only the
+    receiver half is unresolvable here -- so it is asserted rather than left to
+    look like an oversight. It is also what makes the deep chain a *silent* miss
+    in `test_taint_defect.py`: `taint.py` gates on the receiver first, so the
+    call is dropped before the method it could have judged is ever consulted.
+    """
+    assert method_name(first_call("a.b.c(prompt)")) == "c"
+
+
+def test_receiver_name_is_empty_for_a_call_on_a_call_result() -> None:
     """`factory()(prompt)` has no name to match a binding against either."""
-    assert called_name(first_call("factory()(prompt)")) == ""
+    assert receiver_name(first_call("factory()(prompt)")) == ""
 
 
-def test_the_corpus_app_binds_the_names_the_trace_depends_on() -> None:
-    """Verified by hand against main.py: the walrus prompt, the model, the agent, the executor."""
-    require_corpus(SUPPORT_AGENT)
-    bindings = merged_bindings(parse_file(app_path(SUPPORT_AGENT) / "main.py"))
-    found = {name: bindings[name].line for name in CORPUS_BINDINGS if name in bindings}
-    assert found == CORPUS_BINDINGS
+def test_method_name_returns_the_method_called_on_the_receiver() -> None:
+    """*What* is asked of the object, which decides whether the call consumes the value."""
+    assert method_name(first_call("agent.invoke(prompt)")) == "invoke"
+
+
+def test_method_name_is_empty_for_a_bare_call() -> None:
+    """`executor(prompt)` names no method, and the empty string says so."""
+    assert method_name(first_call("executor(prompt)")) == ""
+
+
+def test_a_whole_agent_chain_binds_every_name_the_trace_depends_on(tmp_path) -> None:
+    """The walrus prompt, the model, the agent and the executor, each at its own line."""
+    module = tmp_path / "main.py"
+    module.write_text(AGENT_CHAIN_SOURCE, encoding="utf-8")
+    bindings = merged_bindings(parse_file(module))
+    found = {name: bindings[name].line for name in AGENT_CHAIN_BINDINGS if name in bindings}
+    assert found == AGENT_CHAIN_BINDINGS
 
 
 def test_two_methods_binding_the_same_name_keep_one_binding_each() -> None:

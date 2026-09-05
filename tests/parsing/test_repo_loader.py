@@ -1,28 +1,21 @@
-"""The repo loader must return exactly the audited app's own source files."""
+"""The repo loader must return exactly the audited app's own source files.
+
+Every tree below is written by the test. The pinned apps that used to supply a
+real directory layout are gone, so what remains is the loader's rules stated
+one at a time -- skip-dirs, extensions, size, symlinks -- rather than one
+assertion over a real repository's file list.
+"""
 
 import pytest
-from conftest import CORPUS_DIR, require_corpus
 from parsing.repo_loader import MAX_FILE_BYTES, SKIP_DIRS, list_oversized_files, list_source_files
 
-SUPPORT_AGENT = CORPUS_DIR / "vuln-app-1-support-agent"
-LANGGRAPH_JS = CORPUS_DIR / "oss-app-langgraphjs-starter"
 
-# The Python demo app's own modules, as committed under corpus/.
-SUPPORT_AGENT_FILES = ["main.py", "tools.py", "transaction_db.py", "utils.py"]
-
-
-def test_lists_exactly_the_support_agent_files() -> None:
-    """Demo app 1 yields its four modules and nothing else."""
-    require_corpus("vuln-app-1-support-agent")
-    found = list_source_files(str(SUPPORT_AGENT))
-    assert [path.name for path in found] == SUPPORT_AGENT_FILES
-
-
-def test_returned_paths_exist_and_are_python() -> None:
-    """Every returned path is a real .py file on disk."""
-    require_corpus("vuln-app-1-support-agent")
-    for path in list_source_files(str(SUPPORT_AGENT)):
-        assert path.is_file() and path.suffix == ".py"
+def test_returned_paths_exist_and_are_real_files(tmp_path) -> None:
+    """Every returned path is a real file on disk, with a suffix the loader analyses."""
+    (tmp_path / "main.py").write_text("x = 1\n", encoding="utf-8")
+    (tmp_path / "web.ts").write_text("const x = 1;\n", encoding="utf-8")
+    for path in list_source_files(str(tmp_path)):
+        assert path.is_file() and path.suffix in {".py", ".ts"}
 
 
 def test_returns_both_python_and_typescript(tmp_path) -> None:

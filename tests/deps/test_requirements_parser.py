@@ -6,8 +6,7 @@ becomes a component that is missing or misnamed everywhere downstream.
 
 from pathlib import Path
 
-from conftest import app_path, require_corpus
-from dependency_fixtures import CORPUS_DECLARED, SUPPORT_AGENT
+from dependency_fixtures import PYPI_DECLARED
 from deps.package_names import PYPI, normalise_name
 from deps.requirements_parser import (
     MANIFEST_NAME,
@@ -98,14 +97,17 @@ def test_missing_manifest_declares_nothing(tmp_path: Path) -> None:
     assert read_requirements(tmp_path) == {}
 
 
-def test_corpus_manifest_matches_the_recorded_fixture() -> None:
-    """The real corpus manifest still says what dependency_fixtures claims it says.
+def test_a_written_manifest_reads_back_as_the_recorded_fixture(tmp_path: Path) -> None:
+    """The recorded declaration set still round-trips through the parser it describes.
 
-    This is what stops the fabricated generator input used by the other Phase 2
-    tests from drifting away from the app it is supposed to describe.
+    This used to read the pinned app's own requirements.txt, which is what kept
+    `PYPI_DECLARED` honest. That app is gone, so this can only prove the
+    parser and the fixture agree on the *format* -- not that either matches any
+    real application.
     """
-    require_corpus(SUPPORT_AGENT)
-    assert read_requirements(app_path(SUPPORT_AGENT)) == CORPUS_DECLARED
+    lines = [f"{name}{constraint}" for name, constraint in PYPI_DECLARED.items()]
+    (tmp_path / MANIFEST_NAME).write_text("\n".join(lines) + "\n", encoding="utf-8")
+    assert read_requirements(tmp_path) == PYPI_DECLARED
 
 
 def test_no_manifest_present_is_an_empty_list(tmp_path: Path) -> None:

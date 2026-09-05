@@ -31,3 +31,37 @@ langgraph==1.2.11
 
 # Testing
 pytest>=8.0.0
+
+# --- Phase 5: exporting the reports ---
+# The THIRD exception to the stdlib-first rule, after tree-sitter and langgraph
+# above. A PDF writer is not something the standard library has, and this one is
+# chosen over weasyprint because it is pure Python: an examiner can install it
+# without cairo, pango or gdk-pixbuf, which is the difference between a report
+# that builds on their machine and one that does not.
+#
+# It needs a Unicode TTF, which is NOT committed -- both reports print an em
+# dash, and fpdf2's built-in fonts are Latin-1 only. src/export_reports.py looks
+# for DejaVu on the machine and skips the PDF when there is none, exactly as a
+# missing Syft yields no bill of materials. The HTML never depends on it.
+fpdf2==2.8.8
+
+# --- Phase 6: grounding the remediation advice (RAG) ---
+# The FOURTH exception to the stdlib-first rule, and the only one that cannot
+# argue the standard library was unable to do the job. Exact cosine search over
+# a few thousand vectors is a short loop, and this project would normally write
+# it. ChromaDB is here because it was asked for by name, so the honest record is
+# that this is a choice, not a necessity.
+#
+# What it costs, measured on 2026-09-04: about sixty packages, including
+# onnxruntime, five opentelemetry packages, huggingface_hub, kubernetes, grpcio
+# and a web server. None of it is used here -- the store is opened as a local
+# file, never as a service.
+#
+# Two of its defaults would break this project's offline guarantee, and both are
+# closed in src/retrieval/store.py with a test on each: its default embedding
+# function fetches a model over the network the first time it embeds text (so a
+# refusing function is always attached and the store accepts vectors only, which
+# src/model_client.py computes against local Ollama), and its client reports
+# usage telemetry unless told not to. Measured with every socket refused:
+# importing, opening, indexing and querying attempt no connection at all.
+chromadb==1.5.9

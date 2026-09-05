@@ -1,274 +1,149 @@
-# AgenticLLMAppAuditor
+# Agentic LLM-App Auditor
 
-An offline, human-in-the-loop security auditor for LLM applications
-(LangChain / LangGraph). It analyses a repository and reports findings mapped
-to a subset of the OWASP Top 10 for LLM Applications, backed by SBOM/AIBOM
-evidence.
+Audits a single LLM application repository and reports findings mapped to the
+OWASP Top 10 for LLM Applications, backed by SBOM/AIBOM evidence.
 
-It reads **Python** (via the standard library's `ast`) and **JavaScript and
-TypeScript** (via tree-sitter). The design is language-agnostic: adding one
-starts in `src/parsing/languages.py`.
+Runs **offline** with a local model. It reports; it never patches, commits, or
+runs the code it audits.
 
-It **reports only** — it never edits, patches, or merges the audited code, and
-it never runs it either: the auditor reads source and artifacts, so auditing an
-app cannot execute it. Both guarantees are asserted by tests rather than
-promised in prose. It runs offline against a local model.
+## Risks it covers
 
-Master's degree project. Contributors: Hein Thet Naung, Neo Jia Wei,
-Tan Bing Hong.
+From the **2025** OWASP list (the edition matters — supply chain is LLM03 now,
+LLM05 before):
 
-## Status
+| Risk | Check | What it proves |
+|---|---|---|
+| LLM01 prompt injection | `taint.py` | An untrusted value reaches a model |
+| LLM01 (opt-in) | `semantic_probe.py` | A prompt template interpolates a value with no delimiter |
+| LLM02 output handling | `output_handling.py` | A query is built by string interpolation |
+| LLM03 supply chain | `supply_chain.py`, `known_advisory.py` | A package is undeclared, or carries a known CVE and a surface reaches it |
+| LLM06 excessive agency | `permissions.py` | A tool grants shell, interpreter or network reach |
+| AUDITABILITY | `auditability.py` | An agent is built with no callback or handler |
 
-**Phase 4: evaluation.** Static analysis only, and the auditor never runs the
-app it audits.
+LLM02 is the **2023** spelling of improper output handling; 2025 numbers it
+LLM05. AUDITABILITY is this project's own category, not a stock OWASP entry.
 
-Phase 3 is committed: three checks run over one app under a bounded LangGraph
-planner, writing `findings.json` and a `report.md` that gives what was *not*
-examined the same billing as what was found. The local model client is set up
-but still writes nothing -- every run records `model_run.status: "disabled"`.
-Phase 4's scorer grades those findings against the hand-written keys and
-produces counts, never rates; what is open there is a command to run it from
-and the two baselines to compare against.
+Each check's title says what it establishes, not what its risk class implies.
 
-Phase 1 is complete: the extractor finds prompt templates, agent definitions,
-tool definitions and data-source sites, and records where each one lives.
-Phase 2 adds a bill of materials for Python and npm dependencies, an inventory
-of the models, tools and agents, and a join from each surface to the package it
-came from.
+## Install
 
-What that produces on the two fixtures today:
-
-| Fixture | surfaces | components | surfaces joined to a package |
-|---|---|---|---|
-| `vuln-app-1-support-agent` (Python) | 19 | 5 | 6 of 19 |
-| `oss-app-langgraphjs-starter` (TypeScript) | 5 | 82 | 4 of 5 |
-
-Most unjoined surfaces are not defects: a language builtin, the app's own code,
-or a call on a local variable whose type static analysis cannot follow.
-
-One kind is a finding. A package used but never declared is a supply-chain
-risk — one surface in the Python fixture hits it, importing PyYAML.
-`mapping.json` records which of the five reasons each surface got, so "no
-package exists" is never confused with "we could not tell", and neither is
-confused with a finding.
-
-The second app has no planted vulnerabilities, so it is the fixture that
-measures **false positives**: it currently reports 5 of 5 expected surfaces and
-nothing else.
-
-Progress and blockers: [`docs/TODO.md`](docs/TODO.md).
-
-## Prerequisites
-
-Only the first row is needed to run the auditor. The rest are for specific
-tasks, so you can start without them.
-
-| You need | Version | What for | Check |
-|---|---|---|---|
-| **Python** | 3.10 or newer | everything — the auditor uses modern type hints | `python3 --version` |
-| **git** | any | cloning this repository | `git --version` |
-| **Syft** | 1.51.0 | building an SBOM (`src/main.py`) from a `requirements.txt` or a `package.json`. Not needed to extract surfaces | `syft version` |
-| **Ollama** | any | only the local model client (`src/model_client.py`), which is set up for Phase 3 and unused by the extractor | `ollama --version` |
-
-On Debian or Ubuntu, Python's venv support is a separate package:
-
-```sh
-sudo apt install python3-venv
-```
-
-Everything else is installed by `pip` into the virtual environment below.
-There are only two dependencies, and neither is needed to read Python:
-
-| Package | What for |
-|---|---|
-| `tree-sitter` + `tree-sitter-javascript` + `tree-sitter-typescript` | parsing JavaScript and TypeScript. Python is read with the standard library's `ast`, so these are only used for JS/TS |
-| `pytest` | running the tests |
-
-The auditor makes **no network calls**. Ollama and Syft both run on your own
-machine; Syft is told explicitly not to check for its own updates, which is
-the one thing it would otherwise do over the network.
-
-Install Syft to `~/.local/bin` without root:
-
-```sh
-curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh \
-  | sh -s -- -b ~/.local/bin
-```
-
-### Optional: the local model
-
-Needed only if you want `src/model_client.py` to answer. Install Ollama, then:
-
-```sh
-ollama pull qwen2.5-coder:7b-instruct
-python src/model_client.py          # prints a reply from the local server
-```
-
-Without it the extractor works normally and the model test skips.
-
-## Setup
-
-Use one virtual environment named `.venv` at the repo root:
-
-```sh
-python -m venv .venv
-source .venv/bin/activate        # Windows: .venv\Scripts\activate
+```bash
+python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-If `python -m venv` reports that `ensurepip` is unavailable, install the
-matching venv package first (on Debian/Ubuntu: `sudo apt install python3-venv`).
+Optional, each degrades with a printed reason if absent: **Syft** (SBOM),
+**Trivy** (advisories), **vexctl** (OpenVEX), **Ollama** with
+`qwen2.5-coder:7b-instruct` (advice and the probe).
 
-### Settings (optional)
+## Use
 
-Everything runs on sensible defaults with no configuration. To point the
-auditor at a different model or a non-standard Ollama address, copy the
-template and edit it:
-
-```sh
-cp .env.example .env
+```bash
+python src/main.py https://github.com/owner/app.git   # fetch, audit, report
+python src/main.py path/to/app                        # audit a local tree
+python src/main.py path/to/app --semantic-probe       # + ask the model about prompt templates
 ```
 
-`.env` is gitignored — it holds your machine's settings, not the project's.
-A real environment variable always wins over a value in `.env`, which in turn
-wins over the built-in default:
+Writes 11 artifacts to `artifacts/agentic_auditor/<app>/`. Start with
+`report.md`.
 
-```sh
-AUDITOR_MODEL=llama3.1:8b python src/main.py corpus/vuln-app-1-support-agent
+Other commands:
+
+```bash
+python src/evaluate.py                    # score against grading_keys/
+python src/run_baseline.py baseline_static_rules <app>
+python src/emit_vex.py artifacts/agentic_auditor/<app>
+python src/export_reports.py artifacts/agentic_auditor/<app>
+python src/index_knowledge.py             # build the advice knowledge base
+python src/ai_report.py artifacts/agentic_auditor/<app>   # optional AI-styled view
+python src/fetch_repo.py <url>            # fetch and pin a repo without auditing
+python src/model_client.py                # check the local model answers
 ```
 
-## Usage
+`report.ai.html` is a presentation of `report.md`, not an authority: it is
+model-written, non-deterministic, and refused whole if it invents an advisory.
 
-### Downloading the apps
+## Worked example
 
-The audited apps are third-party projects, so their source is **not** committed
-here — only what this project authored about them, in `corpus/evidence/`.
-Download them once:
+`damn-vulnerable-llm-agent` is a deliberately vulnerable LangChain ReAct agent,
+and the app this project is measured against.
 
-```sh
-git clone https://github.com/ReversecLabs/damn-vulnerable-llm-agent \
-    corpus/vuln-app-1-support-agent
-git -C corpus/vuln-app-1-support-agent checkout -q c0cf9a14adad76e9d6a53c41741f625334bd9971
+```bash
+# 1. get it at the commit the grading key pins
+git clone https://github.com/ReversecLabs/damn-vulnerable-llm-agent.git \
+  fetched/damn-vulnerable-llm-agent
+cd fetched/damn-vulnerable-llm-agent
+git checkout c0cf9a14adad76e9d6a53c41741f625334bd9971
+cd ../.. && rm -rf fetched/damn-vulnerable-llm-agent/.git
 
-git clone https://github.com/langchain-ai/langgraphjs-studio-starter \
-    corpus/oss-app-langgraphjs-starter
-git -C corpus/oss-app-langgraphjs-starter checkout -q cd9a02c64afd97fe008199665ebb0aac803451da
+# 2. audit it
+python src/main.py fetched/damn-vulnerable-llm-agent
+
+# 3. score it against the shipped grading key
+python src/evaluate.py
+
+# 4. compare against the baselines
+python src/run_baseline.py baseline_static_rules fetched/damn-vulnerable-llm-agent
+python src/evaluate.py --system baseline_static_rules
 ```
 
-The first app carries planted vulnerabilities and measures **recall**. The
-second is an official starter template with nothing planted in it, so it is the
-only fixture that can measure **false positives** — a detector that flags
-something here is wrong by construction.
+Expect 6 findings and **4 of 6** matched; add `--semantic-probe` for 5 of 6.
+Read `artifacts/agentic_auditor/damn-vulnerable-llm-agent/report.md`.
 
-**The checkout line matters as much as the clone.** Every line number in a
-grading key is recorded against that app's pinned commit. Both happen to be on
-the default branch today, but the moment upstream commits anything a plain
-`git clone` lands on different code. The drift is caught — the `code_anchor`
-test fails and names the findings — but pinning is far cheaper than debugging
-that later. Each commit is recorded in its
-`corpus/evidence/<app>.manifest.json`.
+Two things that will silently spoil it: **editing the app's
+`requirements.txt`** (the tree stops matching the pin and the supply-chain
+finding disappears), and **leaving `.git` in place** (git commands inside then
+resolve to the clone rather than this repo).
 
-Optionally, `rm -rf corpus/*/.git` afterwards. It saves a few MB and stops a
-later `git pull` silently moving you off the pin. Nothing depends on it: the
-auditor skips `.git` directories anyway.
+`main.py` also takes the URL directly, but not for this app — the name belongs
+to a grading key, and the tool refuses to overwrite artifacts scored against
+one.
 
-Until you run this, the tests that need an app skip and say so; everything else
-runs. The suite is green without Syft and without Ollama too — those tests skip
-rather than fail, so a fresh checkout needs only Python.
+## What it found
 
-### Running the auditor
+On `damn-vulnerable-llm-agent` at commit `c0cf9a14`, scored against
+`grading_keys/`:
 
-Audit a repository:
-
-```sh
-python src/main.py corpus/vuln-app-1-support-agent
-```
-
-It writes everything it can into `artifacts/<app>/` and makes no network call:
-
-| Artifact | Needs |
+| System | Matched |
 |---|---|
-| `surfaces.json` | nothing but the source. Also records any file it could not read, so a later phase never mistakes a partial scan for a complete one |
-| `aibom.json` | the same — it is derived from the surfaces |
-| `sbom.json` | Syft, plus a `requirements.txt` (Python) or a `package.json` (npm) |
-| `sbom.cyclonedx.json` | the same scan, re-emitted in the standard format |
-| `mapping.json` | the SBOM, to join each surface to the package it came from |
-| `findings.json` | the surfaces, and the mapping for the supply-chain check. Records which risk classes were examined, so silence is never read as a clean result |
-| `report.md` | the two files above, rendered for a person. Not a contract: nothing consumes it |
+| This auditor, static | 4 of 6 |
+| This auditor, `--semantic-probe` | 5 of 6 |
+| grep/AST baseline | 5 of 6 |
+| SBOM-only baseline | 0 of 6 |
 
-Producing less is a normal outcome, not a failure. Without Syft, or with no
-manifest it knows how to read, it writes what it can and says on stderr why the
-rest were skipped. A repository declaring **both** a Python and an npm
-manifest is refused a bill rather than given half of one.
+The key is **AI-drafted and unverified**, so every figure carries
+`key_ai_drafted` and `key_unverified`.
 
-Run the tests with:
+**The sets matter more than the counts.** The auditor alone reaches the
+supply-chain entry — that needs joining a surface to a component, which no grep
+rule has. The baseline alone reaches the tool-authorisation entry. Union: all
+six.
 
-```sh
-python -m pytest tests -q
-```
+**Why this tool rather than a scanner.** On a repo with no LLM surfaces, Trivy
+finds 311 vulnerabilities and this auditor reports 0 findings and 79
+advisory-carrying components reached by nothing. Both are correct, and the pair
+is the point: this tool answers "does the LLM reach it?", not "is it
+vulnerable?".
 
-## Layout
+## Guarantees
 
-```
-src/         the auditor's source code, one responsibility per module
-  parsing/   read a repository and turn its files into syntax trees
-  detectors/ find the four kinds of LLM surface in a tree
-  artifacts/ the JSON documents each run produces, and their shapes
-  deps/      read an app's dependencies, and match imports to packages
-  checks/    the security checks, and the LangGraph planner that runs them
-  evaluation/ score the findings against a grading key; the one join rule
-  main.py    the single entry point; report.py renders the human report
-  model_client.py talks to Ollama
-  config.py  settings from the environment; corpus_paths.py locates fixtures
-corpus/
-  <app>/     the audited app, downloaded not committed (see Usage)
-  evidence/  committed: grading key, manifest, baseline — this project's work
-tests/       pytest tests
-docs/        plans, roadmap, and the artifact schemas
-artifacts/   generated JSON output (gitignored)
-```
+- **Never executes the audited app.** `test_no_mutation.py` hashes the tree
+  before and after; `test_no_write_commands.py` refuses write-capable
+  subprocesses.
+- **Opens no socket** except to local Ollama. `model_client.py` is the only
+  module that connects.
+- **The model never decides what counts as a finding.** It writes advice, may
+  order and narrow the plan, and judges prompt templates behind an opt-in flag.
+- **Artifacts are byte-identical** run to run, except model-authored prose,
+  `planner.json`'s order, and probe findings — all inert by default.
 
-The apps under `corpus/` are third-party fixtures, one of them deliberately
-vulnerable, each pinned to an upstream commit in `corpus/evidence/`. They are
-audited input, not dependencies: never install their requirements, and never
-"fix" their code. Their source is downloaded rather than committed, so this
-repository contains no other project's code. One measures recall against
-planted findings; the other measures false positives on clean code.
+## Docs
 
-### Adding an app to the corpus
-
-Clone it into `corpus/<name>/` and delete its `.git`. That directory is then a
-byte-identical copy of upstream and is never edited again.
-
-Everything you write about it goes in `corpus/evidence/`, **not** inside the
-app directory:
-
-- `corpus/evidence/<name>.manifest.json` — the upstream URL and the exact
-  commit taken. Every line number in the ground truth is only valid against
-  that commit.
-- `corpus/evidence/<name>.ground_truth.json` — the known findings and expected
-  surfaces. Without it the extractor still runs, but the app cannot be scored,
-  so it contributes nothing to Phase 4.
-- `corpus/evidence/<name>.baseline.json` — a snapshot of what the extractor
-  finds today, so a change that silently drops or adds a surface fails a test.
-  It is tool-derived, so it can never measure the tool's own accuracy: that is
-  the grading key's job, and Phase 4 must not read this file.
-
-Nothing else needs editing: the suite discovers a fixture from its grading key
-in `corpus/evidence/`. Putting those files inside `corpus/<name>/` instead
-leaves the app **silently ungraded**, so the layout matters.
-
-## Documentation
-
-- [`docs/CODING_RULES.md`](docs/CODING_RULES.md) — the standard this code is held to
-- [`docs/FLOW.md`](docs/FLOW.md) — how the system works, step by step
-- [`docs/TODO.md`](docs/TODO.md) — roadmap, current progress, open blockers
-- [`docs/PHASE_1_PLAN.md`](docs/PHASE_1_PLAN.md) — Phase 1 task breakdown
-- [`docs/PHASE_2_PLAN.md`](docs/PHASE_2_PLAN.md) — Phase 2 task breakdown
-- [`docs/PHASE_3_PLAN.md`](docs/PHASE_3_PLAN.md) — Phase 3 task breakdown
-- [`docs/SCHEMAS.md`](docs/SCHEMAS.md) — the JSON contracts between phases
-
-## Licence
-
-MIT for this project's own code — see [LICENSE](LICENSE). The demo apps under
-`corpus/` keep their own upstream licences.
+| File | What |
+|---|---|
+| `docs/SCHEMAS.md` | The artifact contracts |
+| `docs/REPORT.md` | Results and limitations |
+| `docs/TODO.md` | Open work |
+| `docs/HISTORY.md` | What was built, in order |
+| `docs/PROPOSAL_COVERAGE.md` | Every proposal commitment, answered |
+| `docs/CODING_RULES.md` | The 20 binding rules |

@@ -24,7 +24,7 @@ def find_over_privileged_tools(surfaces: list) -> list[Finding]:
     """Report every tool surface whose class carries a high-privilege capability.
 
     Note what this does not find. An ordinary tool that accepts an identifier
-    without checking who asked for it is also excessive agency, and the corpus
+    without checking who asked for it is also excessive agency, and a grading key
     grades one -- but that is a missing authorisation check, not a privileged
     class, and seeing it needs the dataflow the taint probe builds.
     """

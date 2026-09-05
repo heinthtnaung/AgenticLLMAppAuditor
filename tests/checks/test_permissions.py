@@ -2,8 +2,13 @@
 
 The rule is a named list, not an inference, so the tests are about which
 surfaces reach it: the class must be listed *and* the surface must be a tool
-call. Both corpus fixtures are checked too, because a check that fires on
-neither of them must be shown to fire on nothing rather than assumed to.
+call. It is also run over extracted surfaces at both ends -- a written app
+whose tools are ordinary, and one that really does instantiate a shell -- so
+"reports nothing" is shown to be a decision rather than a check that never
+fires.
+
+Those two apps are written by the tests. The pinned ones this used to run over
+are gone, so no tool name here was chosen by anyone but this project's authors.
 """
 
 import pytest
@@ -11,14 +16,23 @@ import pytest
 from artifacts.finding import STATIC
 from artifacts.surface import AGENT_DEF, DATA_SOURCE, TOOL_CALL, Surface
 from checks.permissions import CHECK_NAME, OWASP_ID, find_over_privileged_tools
-from dependency_fixtures import corpus_surfaces, js_surfaces
 from detectors.detector_names import HIGH_PRIVILEGE_TOOLS
+from mixed_app_fixtures import PYTHON_FILE, write_mixed_app
+from parsing.extractor import extract_repo
 from parsing.languages import PYTHON
 
 APP_FILE = "app/agent.py"
 
 # A tool class carrying no shell, interpreter or network capability.
 ORDINARY_TOOL = "GetUserTransactions"
+
+# A written app whose one tool carries no privileged capability, so a check
+# that fired on everything would be caught here rather than assumed harmless.
+ORDINARY_APP_FILE = "ordinary.py"
+ORDINARY_APP_SOURCE = f'''from langchain.tools import Tool
+
+lookup = Tool(name="{ORDINARY_TOOL}", func=None)
+'''
 
 
 def tool_surface(name: str, kind: str = TOOL_CALL, line: int = 12) -> Surface:
@@ -77,11 +91,16 @@ def test_each_privileged_surface_gets_its_own_finding() -> None:
     assert len({finding.id for finding in findings}) == 2
 
 
-def test_the_python_corpus_app_uses_no_privileged_tool_class() -> None:
-    """Its graded LLM06 is a missing authorisation check, which this rule cannot see."""
-    assert find_over_privileged_tools(corpus_surfaces()) == []
+def test_an_app_of_ordinary_tools_yields_no_finding(tmp_path) -> None:
+    """Run over extracted surfaces, not written ones: the check invents nothing."""
+    (tmp_path / ORDINARY_APP_FILE).write_text(ORDINARY_APP_SOURCE, encoding="utf-8")
+    surfaces = extract_repo(str(tmp_path)).surfaces
+    assert surfaces, "the app yielded no surfaces, so a clean result proves nothing"
+    assert find_over_privileged_tools(surfaces) == []
 
 
-def test_the_javascript_corpus_app_uses_no_privileged_tool_class() -> None:
-    """The clean fixture stays clean: this check invents nothing on it."""
-    assert find_over_privileged_tools(js_surfaces()) == []
+def test_an_app_that_really_instantiates_a_shell_is_reported(tmp_path) -> None:
+    """The other end of the same path: extraction to finding, over a written app."""
+    surfaces = extract_repo(str(write_mixed_app(tmp_path))).surfaces
+    findings = find_over_privileged_tools(surfaces)
+    assert [(f.file, f.surface_name) for f in findings] == [(PYTHON_FILE, "ShellTool")]

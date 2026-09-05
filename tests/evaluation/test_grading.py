@@ -126,3 +126,34 @@ def test_the_title_and_narrative_are_never_compared() -> None:
     """Prose is descriptive only: a model-written narrative cannot move a score."""
     assert matches_key(produced(title="something else entirely",
                                 narrative="the model's opinion"), key_entry())
+
+
+# One component purl, spelled exactly as the SBOM writes it.
+COMPONENT_PURL = "pkg:npm/%40langchain/community@0.3.3"
+
+
+def test_a_key_entry_naming_a_component_requires_the_equal_purl() -> None:
+    """Where the key names a component, a finding citing that exact purl answers it."""
+    assert matches_key(produced(purl=COMPONENT_PURL), key_entry(component=COMPONENT_PURL))
+
+
+def test_a_key_entry_naming_a_component_rejects_a_different_purl() -> None:
+    """A finding on the right surface but the wrong component is not that finding."""
+    assert not matches_key(produced(purl="pkg:pypi/pyyaml@5.3.1"),
+                           key_entry(component=COMPONENT_PURL))
+
+
+def test_a_key_entry_naming_a_component_rejects_a_finding_without_a_purl() -> None:
+    """This clause keeps a component entry out of every baseline's reach: no purl, no credit."""
+    assert not matches_key(produced(), key_entry(component=COMPONENT_PURL))
+
+
+def test_a_key_entry_with_a_null_component_ignores_the_purl() -> None:
+    """`component` is null on surface-level entries, so a purl-less finding still matches."""
+    assert matches_key(produced(), key_entry(component=None))
+
+
+def test_the_component_join_is_byte_for_byte_so_percent_encoding_matters() -> None:
+    """The key spells the purl as the SBOM writes it; no decoding rescues a near-miss."""
+    assert not matches_key(produced(purl="pkg:npm/@langchain/community@0.3.3"),
+                           key_entry(component=COMPONENT_PURL))

@@ -12,8 +12,8 @@ from pathlib import Path
 
 from checks.permissions import OWASP_ID as PERMISSION_RISK, TITLE as PERMISSION_TITLE
 from cli_helpers import EMPTY_SCAN, run_cli, stub_syft
-from main import FINDINGS_NAME, REPORT_NAME, SURFACES_NAME
-from report import NOTHING_FOUND, render_from_files
+from outputs import FINDINGS_NAME, REPORT_NAME, SURFACES_NAME
+from reporting.report import NOTHING_FOUND, render_from_files
 
 APP_NAME = "report-app"
 

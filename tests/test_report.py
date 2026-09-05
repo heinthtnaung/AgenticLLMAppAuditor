@@ -17,7 +17,7 @@ from findings_fixtures import (
     probe_finding,
     static_finding,
 )
-from report import NOTHING_FOUND, RISK_TITLES, render, render_from_files
+from reporting.report import NOTHING_FOUND, RISK_TITLES, render, render_from_files
 from report_fixtures import (
     APP,
     FINDINGS_HEADING,

@@ -8,6 +8,7 @@ not the same package.
 """
 
 import re
+from pathlib import PurePosixPath
 
 PYPI = "pypi"
 NPM = "npm"
@@ -34,6 +35,15 @@ NPM_EXACT_VERSION = re.compile(r"^\d+\.\d+\.\d+([-+][0-9A-Za-z.-]+)?$")
 PYPI_LOCKFILES = ("Pipfile.lock", "poetry.lock")
 NPM_LOCKFILES = ("package-lock.json", "pnpm-lock.yaml", "yarn.lock")
 LOCKFILE_NAMES = frozenset(PYPI_LOCKFILES + NPM_LOCKFILES)
+
+
+def is_lockfile_path(path: str) -> bool:
+    """Say whether a generator-reported location is a lockfile, by its file name.
+
+    By basename, not by equality: the generator writes a scan-root-relative
+    `/yarn.lock`, and a monorepo writes `/packages/a/yarn.lock`.
+    """
+    return PurePosixPath(path).name in LOCKFILE_NAMES
 
 # npm scopes start with `@`, which a PURL must percent-encode.
 NPM_SCOPE_PREFIX = "@"

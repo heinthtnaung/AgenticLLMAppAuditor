@@ -12,14 +12,14 @@ from pathlib import Path
 from artifacts.finding import SCHEMA_VERSION
 from artifacts.findings_document import ADVISORY_NOT_INGESTED, MODEL_DISABLED
 from artifacts.mapping import UNRESOLVED
+from checks.output_handling import CHECK_NAME as QUERY_CHECK
 from checks.permissions import CHECK_NAME as PERMISSION_CHECK
-from checks.run_checks import CHECK_NAMES
 from checks.supply_chain import CHECK_NAME as SUPPLY_CHAIN_CHECK
 from checks.taint import CHECK_NAME as TAINT_CHECK
 from cli_helpers import EMPTY_SCAN, read_artifact, run_cli, stub_syft
 from dependency_fixtures import string_values
 from deps.requirements_parser import MANIFEST_NAME as PYPI_MANIFEST
-from main import FINDINGS_NAME, MAPPING_NAME, SURFACES_NAME
+from outputs import FINDINGS_NAME, MAPPING_NAME, SURFACES_NAME
 
 APP_NAME = "shell-tool-app"
 
@@ -29,6 +29,10 @@ APP_NAME = "shell-tool-app"
 # the language's own (`stdlib`). The mapping therefore counts more unmapped
 # surfaces than unresolved ones, so a coverage block copying the wrong number
 # cannot pass the test below by coincidence.
+#
+# That query is written out in full, so the query check reads it and clears it:
+# it is named in `checks_run` and reports nothing, which is why the only finding
+# below is the privileged tool.
 APP_SOURCE = """from langchain_community.tools import ShellTool
 
 tool = ShellTool()
@@ -88,12 +92,22 @@ def test_a_run_without_a_manifest_omits_the_check_that_needed_the_mapping(
     """That check had nothing to read here, and coverage must not imply it cleared the app."""
     checks_run = audit(monkeypatch, tmp_path, with_manifest=False)["coverage"]["checks_run"]
     assert SUPPLY_CHAIN_CHECK not in checks_run
-    assert checks_run == [PERMISSION_CHECK, TAINT_CHECK]
+    assert checks_run == sorted([PERMISSION_CHECK, QUERY_CHECK, TAINT_CHECK])
 
 
-def test_a_run_with_a_manifest_names_every_check(monkeypatch, tmp_path) -> None:
-    """Python source and a mapping to read: all three had a subject, so all three are named."""
-    assert audit(monkeypatch, tmp_path)["coverage"]["checks_run"] == sorted(CHECK_NAMES)
+def test_a_run_with_a_manifest_names_every_static_check(monkeypatch, tmp_path) -> None:
+    """Python source, a mapping to read and a tool surface: four static checks are named.
+
+    Not `sorted(CHECK_NAMES)`: the advisory check needs Trivy and a database,
+    which `stub_syft` switches off so no test depends on this machine having
+    either. Its presence with advisory data is asserted in its own test.
+
+    The query check is here because this app has both halves it needs -- Python
+    to read and a tool the model can call -- and it clears the constant query.
+    """
+    checks_run = audit(monkeypatch, tmp_path)["coverage"]["checks_run"]
+    assert checks_run == sorted(
+        [PERMISSION_CHECK, QUERY_CHECK, SUPPLY_CHAIN_CHECK, TAINT_CHECK])
 
 
 def test_the_coverage_agrees_with_the_surfaces_artifact(monkeypatch, tmp_path) -> None:

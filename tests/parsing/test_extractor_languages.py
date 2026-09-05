@@ -1,6 +1,5 @@
 """extract_repo must dispatch to both language backends over one mixed repository."""
 
-from conftest import CORPUS_DIR
 from parsing.extractor import extract_repo
 from parsing.languages import PYTHON, TYPESCRIPT
 from conftest import scan_to_json
@@ -9,9 +8,6 @@ from artifacts.surface import PROMPT_TEMPLATE
 PYTHON_SOURCE = 'system_prompt = "You are a helpful support assistant."\n'
 
 TYPESCRIPT_SOURCE = 'const systemPrompt = `You are a helpful support assistant.`;\n'
-
-# The TypeScript fixture, used to prove a JS-only repository still yields surfaces.
-LANGGRAPH_JS_APP = "oss-app-langgraphjs-starter"
 
 
 def make_mixed_repo(root) -> str:

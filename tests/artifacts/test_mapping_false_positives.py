@@ -8,10 +8,10 @@ the trust the real ones need.
 
 from artifacts.mapping import FIRST_PARTY, STDLIB, USED_BUT_UNDECLARED, build_mapping
 from artifacts.surface import DATA_SOURCE, TOOL_CALL, Surface
-from dependency_fixtures import corpus_sbom
+from dependency_fixtures import pypi_sbom
 from parsing.languages import PYTHON, TYPESCRIPT
 
-# The corpus app's own modules, as the repo loader reports them.
+# One app's own modules, as the repo loader reports them.
 CORPUS_LOCAL_MODULES = frozenset({"main", "tools", "transaction_db", "utils"})
 
 
@@ -27,7 +27,7 @@ def typescript_surface(module: str) -> Surface:
 
 def reason_for(surface: Surface, local: frozenset = frozenset()) -> str:
     """Map one surface and return the single outcome it was given."""
-    return build_mapping([surface], corpus_sbom(), local)["entries"][0]["reason"]
+    return build_mapping([surface], pypi_sbom(), local)["entries"][0]["reason"]
 
 
 def test_the_apps_own_module_is_first_party() -> None:

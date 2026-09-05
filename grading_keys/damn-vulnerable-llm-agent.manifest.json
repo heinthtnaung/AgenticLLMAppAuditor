@@ -1,0 +1,10 @@
+{
+  "name": "damn-vulnerable-llm-agent",
+  "role": "deliberately_vulnerable_demo",
+  "upstream_url": "https://github.com/ReversecLabs/damn-vulnerable-llm-agent.git",
+  "upstream_commit": "c0cf9a14adad76e9d6a53c41741f625334bd9971",
+  "upstream_commit_date": "2025-06-25T14:58:42+01:00",
+  "note": "The commit the key's line numbers were read at. Re-clone this pin before scoring; a key read against a different commit scores the wrong lines and nothing detects it.",
+  "framework": "langchain",
+  "language": "python"
+}

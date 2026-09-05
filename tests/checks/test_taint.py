@@ -7,9 +7,22 @@ the source the file never named, which is reported as inconclusive rather than
 dropped. "We could not look" and "we looked and found nothing" are different
 answers, and the probe record is what keeps them apart.
 
-The last two hold the other boundary: a scope. A source in one function and a
+Two of them hold the other boundary: a scope. A source in one function and a
 sink call in another that reuses the name are not a trace, and reporting one
 was a real regression.
+
+This file traces the value. How the sink is *called* is the other half and lives
+next door in `test_taint_methods.py`: `agent.invoke(question)` is a consumption,
+`llm.bind(api_key=key)` is a configuration, and telling them apart is what keeps
+the second from being reported. A method that is neither -- which this check
+answers with an `INCONCLUSIVE` probe naming it, rather than with silence -- is
+pinned in `test_taint_unknown_method.py`.
+
+What all three files hold is what the check really does, boundaries included. What it
+still cannot follow -- a deeper chain like `agent.runnable.invoke(question)`, and
+a value passed inside a dict literal -- is kept executable, as a strict xfail, in
+`test_taint_defect.py`: separate so a recorded hole is never read here as a
+decided boundary.
 """
 
 import ast
@@ -26,7 +39,7 @@ SOURCE_NAME = "st.chat_input"
 AGENT_NAME = "AgentExecutor.from_agent_and_tools"
 TOOL_NAME = "GetUserTransactions"
 
-# The corpus app's trace, reduced to the three lines that carry it: the walrus
+# A real app's trace, reduced to the three lines that carry it: the walrus
 # that names the untrusted value, the agent bound to a name, and the call that
 # hands one to the other.
 TRACED = '''if prompt := st.chat_input("ask"):
@@ -211,3 +224,4 @@ def test_a_source_in_one_function_is_not_matched_to_a_sink_call_in_another() -> 
                 surface(AGENT_DEF, AGENT_NAME, 3),
                 surface(AGENT_DEF, AGENT_NAME, 7)]
     assert trace(CROSS_SCOPE, surfaces) == ([], [])
+

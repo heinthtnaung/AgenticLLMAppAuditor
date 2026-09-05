@@ -58,7 +58,10 @@ def test_coverage_defaults_to_no_advisory_data() -> None:
 
 def test_coverage_accepts_a_snapshot() -> None:
     """The other documented value is available for when a snapshot is read from disk."""
-    assert coverage(1, [RULE_ID], ADVISORY_SNAPSHOT)["advisory_data"] == ADVISORY_SNAPSHOT
+    from cli_helpers import STUB_ADVISORY_PIN
+    built = coverage(1, [RULE_ID], ADVISORY_SNAPSHOT, **STUB_ADVISORY_PIN)
+    assert built["advisory_data"] == ADVISORY_SNAPSHOT
+    assert built["advisory_db_updated_at"] == STUB_ADVISORY_PIN["advisory_db_updated_at"]
 
 
 def test_coverage_refuses_an_unknown_advisory_state() -> None:

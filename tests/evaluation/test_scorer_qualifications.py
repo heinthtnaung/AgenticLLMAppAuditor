@@ -6,6 +6,9 @@ earns it, absent on the same input with that one fact changed.
 """
 
 from artifacts.findings_document import ADVISORY_SNAPSHOT, MODEL_USED, model_run
+
+# A used run must record what it sent, so a later run can repeat it.
+DECODE_SETTINGS = {"temperature": 0, "seed": 0}
 from evaluation.scorer import QUALIFICATIONS, SMALL_SAMPLE_BELOW, score_app
 from evaluation_fixtures import (
     APP,
@@ -156,7 +159,7 @@ def test_a_run_with_the_model_off_says_so() -> None:
 
 def test_a_run_that_used_the_model_does_not() -> None:
     """Read from `model_run.status`, which only a real run can set to `used`."""
-    document = findings_document(run=model_run(MODEL_USED, MODEL_NAME))
+    document = findings_document(run=model_run(MODEL_USED, MODEL_NAME, DECODE_SETTINGS))
     assert "model_disabled" not in qualifications(grading_key([key_entry()]), document)
 
 

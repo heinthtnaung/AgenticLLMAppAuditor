@@ -25,7 +25,7 @@ from deps.package_names import (
 )
 
 # The load-bearing pair: two different real npm packages that PEP 503 would
-# merge into one. No corpus fixture has a dotted npm name -- the JS app's scan
+# merge into one. No recorded scan has a dotted npm name -- the JS one
 # reports 80 library components and not one of them contains a `.` -- so this
 # case is synthetic, and it is the reason npm normalisation only lowercases.
 DOTTED_NPM_NAME = "lodash.merge"
@@ -76,7 +76,7 @@ def test_pypi_collapses_a_dotted_name_onto_a_hyphenated_one() -> None:
 def test_npm_keeps_a_dotted_name_distinct_from_a_hyphenated_one() -> None:
     """On npm those are two different real packages, so the dot must survive.
 
-    Synthetic: no corpus fixture has a dotted npm name, but applying PEP 503
+    Synthetic: no recorded scan has a dotted npm name, but applying PEP 503
     here would join a vulnerability to the wrong package.
     """
     assert normalise_name(DOTTED_NPM_NAME, NPM) == DOTTED_NPM_NAME

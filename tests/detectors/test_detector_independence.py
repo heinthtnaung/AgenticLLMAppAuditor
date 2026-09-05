@@ -16,7 +16,7 @@ from detector_helpers import (
     TOOL_DECORATOR_SOURCE,
     TOOL_SUBCLASS_SOURCE,
     other_detectors,
-    parse,
+    parse_snippet,
 )
 from detectors.detectors import (
     find_agent_defs,
@@ -40,7 +40,7 @@ from detectors.detectors import (
 )
 def test_other_detectors_ignore_this_construct(detector, source: str) -> None:
     """Only the owning detector reports a construct; the other three return nothing."""
-    tree = parse(source)
+    tree = parse_snippet(source)
     found = {other.__name__: other(tree, FILE) for other in other_detectors(detector)}
     assert not [name for name, surfaces in found.items() if surfaces], found
 

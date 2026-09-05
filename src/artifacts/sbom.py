@@ -9,6 +9,7 @@ import json
 
 from deps.package_names import (
     LOCKFILE_NAMES,
+    is_lockfile_path,
     base_purl,
     check_ecosystem,
     exact_version,
@@ -20,6 +21,11 @@ SCHEMA_VERSION = 3
 # How a component's version was arrived at. Never read `version` without it.
 PINNED = "pinned"
 LOCKED = "locked"
+
+# How the generator spells "I read this component from this file": a property
+# named `syft:location:<n>:path`. Matched by its ends so the index is free.
+LOCATION_PREFIX = "syft:location:"
+LOCATION_SUFFIX = ":path"
 INFERRED = "inferred"
 UNCONSTRAINED = "unconstrained"
 UNKNOWN = "unknown"
@@ -73,7 +79,7 @@ def purl_for(name: str, ecosystem: str, version: str | None, source: str) -> str
 
 def _component(name: str, constraint: str | None, declared: bool, version: str | None,
                declared_in: str | None, tool_reported: bool, ecosystem: str,
-               from_lockfile: bool = False) -> dict:
+               from_lockfile: bool) -> dict:
     """Build one component record.
 
     An exact pin is taken from the manifest, not from the generator. The
@@ -120,6 +126,30 @@ def _reported_versions(generator_output: dict, ecosystem: str) -> dict[str, list
     return {name: sorted(versions, key=lambda v: v or "") for name, versions in found.items()}
 
 
+def _lockfile_pinned(generator_output: dict, ecosystem: str) -> set[tuple[str, str | None]]:
+    """The (name, version) pairs the generator found in a lockfile rather than a manifest.
+
+    Per component, because "a lockfile exists in this directory" says nothing
+    about where any one version came from. The generator already records the
+    file it read each component from, so this reads that evidence rather than
+    re-parsing the lockfile or trusting the directory listing.
+    """
+    pinned: set[tuple[str, str | None]] = set()
+    for component in generator_output.get("components", []):
+        if component.get("type") != LIBRARY or not component.get("name"):
+            continue
+        if any(_is_location_of_a_lockfile(prop) for prop in component.get("properties", [])):
+            pinned.add((normalise_name(component["name"], ecosystem), component.get("version")))
+    return pinned
+
+
+def _is_location_of_a_lockfile(prop: dict) -> bool:
+    """Say whether one generator property records a location, and that it is a lockfile."""
+    name = prop.get("name", "")
+    return (name.startswith(LOCATION_PREFIX) and name.endswith(LOCATION_SUFFIX)
+            and is_lockfile_path(prop.get("value", "")))
+
+
 def _declaring_manifest(scanned_manifests: list[str]) -> str | None:
     """Return the manifest that declares dependencies, as opposed to a lockfile that pins them.
 
@@ -146,12 +176,12 @@ def build_sbom(generator_output: dict, declared: dict[str, str],
     check_ecosystem(ecosystem)
     reported = _reported_versions(generator_output, ecosystem)
     manifest = _declaring_manifest(scanned_manifests)
-    from_lockfile = any(name in LOCKFILE_NAMES for name in scanned_manifests)
+    locked = _lockfile_pinned(generator_output, ecosystem)
     components = [
         _component(name, declared.get(name), declared=name in declared, version=version,
                    declared_in=manifest if name in declared else None,
                    tool_reported=name in reported, ecosystem=ecosystem,
-                   from_lockfile=from_lockfile)
+                   from_lockfile=(name, version) in locked)
         for name in sorted(set(declared) | set(reported))
         for version in reported.get(name) or [None]
     ]
