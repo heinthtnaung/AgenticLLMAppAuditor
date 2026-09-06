@@ -13,25 +13,42 @@ commit `8c3f9f6`.
 | 6 | Remediation advice grounded in a pinned OWASP knowledge base (ChromaDB). `remediation.json`. |
 | 7 | LLM planner and the semantic prompt-injection probe. `planner.json`. |
 | — | Advisory ingestion (Trivy) folded into Phase 2/3. |
-| — | One grading key ships, AI-drafted and unverified; eight entries after review. |
+| — | One grading key shipped from 2026-09-05, AI-drafted and unverified, eight entries after review; **removed 2026-09-06**, recoverable at `f9bd9ff`. |
 | — | Objective 5: `experiments/` compares the local model against hosted ones. |
 | — | `reproduce.sh` regenerated every figure in one command; replaced by `main.py --compare-models`, which audits with both models and scores both. |
 | — | The comparison's exposure ledger was measuring nothing: `surfaces_described` held a constant label, not a measurement, and the field list was asserted rather than derived. |
 | — | The comparison counted templates no model was asked about as agreement; `experiments/agreement.py` partitions them into four buckets that must sum. |
 | — | `src/` may not import `experiments/`, and a test now asserts it rather than the README claiming it. |
+| — | `--draft-key`: the local model drafts a grading key into `grading_keys/drafts/`, which nothing discovers and git ignores. `promote_key.py` accepts one after a human corrects it. |
+| — | `--compare-models` audits a tree twice, local against hosted, and scores both. `cloud_client` moved into `src/`, so two modules there open a socket, not one. |
+| — | `cloud_client` counts what leaves the machine; the total prints at the end of a comparison. |
+| — | The AI-formatted report was deleted: model prose restating a report that was already authoritative. |
+| — | Two parsing blindspots closed: a prompt held on `self`, and a chat-message dict written inline. Each made class-based and framework-free apps invisible to the prompt detector. |
+| — | The taint trace follows a chain of any length, sees the module's names from inside a function, and looks through literal containers. Two of those were silent misses, not gaps. |
+| — | `src/keys/`, `artifacts/names.py`, and `outputs.py` split by job: 177 lines doing four things became 57 doing one. |
 
 ## Decisions that still bind
 
 - **The auditor never executes the audited app.** Enforced by
   `test_no_mutation.py` and `test_no_write_commands.py`.
-- **The audit opens no socket** except to local Ollama. `model_client.py` is the
-  only module in `src/` that connects. `experiments/` is the study, not the
+- **An audit opens no socket** except to local Ollama. Two modules in `src/`
+  can connect, as an exact set: `model_client.py` to Ollama, and
+  `cloud_client.py` to a hosted model, constructed only under
+  `--compare-models`. That used to be one module, and the difference is a real
+  reduction in what the tool guarantees. `experiments/` is the study, not the
   tool, and is barred from `src/` in both directions.
 - **The model never decides what counts as a finding.** It writes advice, may
   order and narrow the plan, and judges prompt templates behind an opt-in flag.
+  Behind `--draft-key` it drafts *ground truth*, which is the one place it
+  decides what an audit is marked against -- so that is a flag, the draft lands
+  where nothing discovers it, and every figure such a key produces is qualified.
 - **No rate is a field in `evaluation.json`.** Counts and denominators only.
 - **The pinned corpus was removed 2026-09-04.** Grading keys replace it: a key
   describes a public app this project does not ship.
+- **No key ships now either.** `docs/REPORT.md`'s figures were measured against
+  the one that did, so none of them is reproducible from a clean checkout, and
+  `evaluate.py` refuses rather than scoring zero. Restoring or writing a key is
+  what makes the measurement claim true again.
 
 ## Reversals
 
@@ -40,3 +57,8 @@ commit `8c3f9f6`.
   `checks_narrowed`; five rules stop it becoming a silent claim.
 - **VEX filtering** was declared out of scope; only emitting shipped.
 - **The sandbox** for `probe_injection` was refused. See `REPORT.md`.
+- **`reproduce.sh`** was the single entry point for an examiner; deleted in
+  favour of `main.py --compare-models`.
+- **Key drafting ran on every URL audit** for one commit, then went behind
+  `--draft-key`: a default run should be fast and produce the same artifacts
+  whether a model was running or not.

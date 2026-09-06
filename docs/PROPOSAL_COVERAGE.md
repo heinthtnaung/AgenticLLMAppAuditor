@@ -153,13 +153,13 @@ of them.
 | `probe_injection` -- "controlled, benign direct and indirect prompt-injection tests **in a sandboxed environment**" | **Partial, by decision** | `src/checks/semantic_probe.py` asks the local model to judge a template's structure. **Nothing is executed and there is no sandbox** -- a deliberate methodological choice, argued in full in `docs/REPORT.md`'s Addendum: a dynamic test would either transmit the audited app's prompts to an external provider (the exposure this project exists to avoid) or measure `qwen2.5-coder` instead of the app, and it would cost the enforced never-executes guarantee that makes auditing an untrusted URL safe. Counted Partial because the proposal did specify a sandbox; the shortfall is stated, not silent. **Indirect injection through retrieved documents is not probed at all.** |
 | `check_tool_perms` | Yes | `src/checks/permissions.py` |
 | `link_supply_chain_evidence` | Yes | `src/artifacts/mapping.py` + `src/checks/known_advisory.py` |
-| `assemble_report` -- JSON and Markdown/HTML | Yes | `src/report.py`, `src/markdown_html.py`, `src/export_reports.py` |
+| `assemble_report` -- JSON and Markdown/HTML | Yes | `src/reporting/report.py`, `src/reporting/markdown_html.py`, `src/export_reports.py` |
 
 ### Runtime guarantees
 
 | Promised | Status |
 |---|---|
-| All inference local, via Ollama or LMStudio | Yes -- `src/model_client.py`, Ollama; enforced by `tests/parsing/test_offline*.py` |
+| All inference local, via Ollama or LMStudio | **Yes for an audit, and no longer unconditionally.** `src/model_client.py` talks to Ollama and `tests/parsing/test_offline*.py` enforce that an audit reaches nothing else. `--compare-models` deliberately breaks it: `src/cloud_client.py` sends the audited app's source to a hosted model, so `src/` now holds two modules that can open a socket rather than one. It is a flag, off by default, named in the command, and it prints how many bytes left the machine -- but the promise as written was unqualified and this is the qualification. |
 | Human-in-the-loop; never patches, deploys or alters the target | Yes -- enforced by `tests/test_no_mutation.py` and `tests/test_no_write_commands.py` |
 
 ### Evaluation (Methodology 4)
@@ -177,7 +177,7 @@ of them.
 | Data-exposure implications | **Partial** -- the byte figure is withdrawn: it counted the planner's prompt as a probe prompt and "one request per template" was never true (3 requests for 5 templates in the saved run). The ledger now derives what was sent; the number needs a re-measure. Four things are named as **unmeasurable** rather than dressed up: retention, training use, jurisdiction, and which upstream provider served the request. And what was sent was a *public* file, so this measures the mechanism, not the exposure a private repository would incur. |
 | "qualitative usefulness of reports for a human security reviewer" | **No** -- not attempted; this is a human study, not code |
 
-#**The shipped key was removed from the repository** after these figures were
+**The shipped key was removed from the repository** after these figures were
 measured. They stand as a record of a run against a key recoverable from commit
 `f9bd9ff`, and the commitment to ship evaluation materials is no longer met by
 what is on the branch. That is a deliberate change, not an oversight, and this
@@ -189,7 +189,7 @@ document would otherwise claim otherwise.
 |---|---|
 | Academic research report | Partial -- `docs/REPORT.md` is a repository document with the measured results; the submitted academic report is separate work |
 | Supervisor demonstration | Deliverable -- `python src/main.py <url>` runs the whole pipeline |
-| Code repository with prototype, schemas, **reproducible demo applications**, evaluation materials | Partial -- the demo applications were removed (section 3). What ships instead is a **grading key** for a public app, pinned to upstream `c0cf9a14` and cloned by URL: `grading_keys/damn-vulnerable-llm-agent.*`. That restores measurement without shipping someone else's code, but it is AI-drafted and `verified: false`, so every figure it produces is qualified. |
+| Code repository with prototype, schemas, **reproducible demo applications**, evaluation materials | **Downgraded 2026-09-06.** Partial -- the demo applications were removed (section 3). What ships instead is a **grading key** for a public app, pinned to upstream `c0cf9a14` and cloned by URL: `grading_keys/damn-vulnerable-llm-agent.*`. That restores measurement without shipping someone else's code, but it is AI-drafted and `verified: false`, so every figure it produces is qualified. |
 
 ---
 

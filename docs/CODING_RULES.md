@@ -64,8 +64,7 @@ any file and understand it in a minute:
     and no module grows past roughly 200 lines. When a file starts doing two
     jobs, split it before adding more.
 19. **Always route work through the project sub-agents.** Every task and every
-    test goes through `project-guard` before it is called done. See
-    "Mandatory sub-agent use" below. Skipping it is a rule violation.
+    test goes through `project-guard` before it is called done. Skipping it is a rule violation.
 20. **Keep `docs/TODO.md` current.** It is the project roadmap and the single
     source of truth for progress. Tick the box in the *same* change that
     finishes the work — never leave a finished task unticked, and never tick
