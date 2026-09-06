@@ -3,7 +3,9 @@
 from detector_helpers import (
     FILE,
     AGENT_SOURCE,
+    CLASS_PROMPT_SOURCE,
     NON_TEXT_PROMPT_SOURCE,
+    PAIRED_PROMPT_SOURCE,
     PROMPT_CALL_SOURCE,
     PROMPT_CONCAT_SOURCE,
     PROMPT_FORMAT_SOURCE,
@@ -41,6 +43,36 @@ def test_finds_prompt_shaped_string_assignment() -> None:
 def test_ignores_plain_string_assignment() -> None:
     """A string with no prompt-shaped name is not a prompt surface."""
     assert find_prompt_templates(parse_snippet("greeting = \"hello\"\n"), FILE) == []
+
+
+# --- Prompts a class holds on itself ---------------------------------------
+# The name is matched against `PROMPT_NAME_HINTS`, and `assigned_name` answered
+# "" for an attribute target until 2026-09-06, so a class-based application
+# carrying an interpolating system prompt extracted no prompt surface at all.
+def test_finds_prompt_assigned_to_an_instance_attribute() -> None:
+    """A prompt a class holds on itself is a PROMPT_TEMPLATE named for the attribute."""
+    surface = only(find_prompt_templates(parse_snippet(CLASS_PROMPT_SOURCE), FILE))
+    assert (surface.kind, surface.name, surface.line) == (PROMPT_TEMPLATE, "system_prompt", 3)
+
+
+def test_attribute_prompt_carries_the_detail_a_variable_prompt_carries() -> None:
+    """The detail names how the text was built and what it was assigned to, as elsewhere."""
+    surface = only(find_prompt_templates(parse_snippet(CLASS_PROMPT_SOURCE), FILE))
+    assert surface.detail == "prompt f-string assigned to system_prompt"
+
+
+def test_ignores_attribute_whose_name_matches_no_hint() -> None:
+    """Being held on an object is not what makes a string a prompt: `self.cfg` is not one."""
+    assert find_prompt_templates(parse_snippet("self.cfg = \"gpt-4o-mini\"\n"), FILE) == []
+
+
+def test_attribute_and_variable_prompts_are_both_found() -> None:
+    """The guard that would have caught the blindspot: one prompt, written both ways."""
+    found = find_prompt_templates(parse_snippet(PAIRED_PROMPT_SOURCE), FILE)
+    assert [(surface.name, surface.line) for surface in found] == [
+        ("system_prompt", 3),
+        ("system_prompt", 4),
+    ]
 
 
 # --- Agent definitions -----------------------------------------------------

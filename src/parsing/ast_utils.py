@@ -48,11 +48,27 @@ def decorator_names(node: ast.FunctionDef | ast.AsyncFunctionDef) -> list[str]:
 
 
 def assigned_name(node: ast.Assign) -> str:
-    """Return the single variable an assignment targets, or '' if it is not a simple one."""
+    """Return the single name an assignment targets, or '' if it is not a simple one.
+
+    An attribute answers with its last segment, so `self.system_prompt = ...`
+    is `system_prompt`. Without that, every prompt a class holds on itself was
+    invisible: `_prompt_from_assignment` matches the name against
+    `PROMPT_NAME_HINTS`, and this returned "" for an attribute target, so a
+    class-based application could carry an interpolating system prompt and
+    extract no surface at all.
+
+    The last segment only, and deliberately: the hints describe what the value
+    is, not who holds it. `self.system_prompt`, `agent.system_prompt` and
+    `self.config.system_prompt` are all the same fact about the same string.
+    Anything else -- a subscript, a tuple unpack, a starred target -- is still
+    "", because there is no single name to match a hint against.
+    """
     if len(node.targets) != 1:
         return ""
     target = node.targets[0]
-    return target.id if isinstance(target, ast.Name) else ""
+    if isinstance(target, ast.Name):
+        return target.id
+    return target.attr if isinstance(target, ast.Attribute) else ""
 
 
 def is_text_value(node: ast.expr) -> bool:
