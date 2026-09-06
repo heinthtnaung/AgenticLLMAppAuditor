@@ -25,81 +25,132 @@ LLM05. AUDITABILITY is this project's own category, not a stock OWASP entry.
 
 Each check's title says what it establishes, not what its risk class implies.
 
+## Prerequisites
+
+**Required.** Nothing else is needed to get surfaces, findings and a report.
+
+| | | |
+|---|---|---|
+| Python | **3.10+** | modern type hints (`list[Path]`) |
+| `git` | any | only for fetching a repository by URL |
+| the packages in `requirements.txt` | pinned exactly | tree-sitter (JS/TS parsing), langgraph, fpdf2, chromadb |
+
+Versions are pinned with `==`, not `>=`, on purpose: a tree-sitter grammar
+update renames node types, which would silently change `surfaces.json` — the
+artifact every published number is computed from.
+
+**Optional.** Each one is absent-tolerant: the audit still completes, prints why
+the stage was skipped, and produces fewer artifacts. None of them is needed to
+try the tool.
+
+| Tool | Install | Without it |
+|---|---|---|
+| **Syft** | `brew install syft` / [releases](https://github.com/anchore/syft/releases) | no `sbom.json`, no `mapping.json`, so no supply-chain findings |
+| **Trivy** | `brew install trivy` / [releases](https://github.com/aquasecurity/trivy/releases) | no advisory findings; `coverage` says the data was not ingested |
+| **Ollama** + `qwen2.5-coder:7b-instruct` | `ollama pull qwen2.5-coder:7b-instruct` | no remediation advice, no `--semantic-probe`, no `--draft-key` |
+| **vexctl** | [releases](https://github.com/openvex/vexctl/releases) | no `findings.openvex.json` |
+| **DejaVu font** | usually already present on Linux | HTML reports still written, PDFs skipped |
+| An **OpenRouter key** | in `.env` | `--compare-models` refuses; nothing else notices |
+
 ## Install
 
 ```bash
+git clone <this repo> && cd AgenticLLMAppAuditor
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Optional, each degrades with a printed reason if absent: **Syft** (SBOM),
-**Trivy** (advisories), **vexctl** (OpenVEX), **Ollama** with
-`qwen2.5-coder:7b-instruct` (advice and the probe).
-
-## Use
+Check the local model answers, if you installed Ollama:
 
 ```bash
-python src/main.py https://github.com/owner/app.git   # fetch, audit, report
-python src/main.py <repo> --draft-key                  # + draft a grading key to correct
-python src/main.py path/to/app                        # audit a local tree
-python src/main.py path/to/app --semantic-probe       # + ask the model about prompt templates
+python src/model_client.py
 ```
 
-Writes 11 artifacts to `artifacts/agentic_auditor/<app>/`. Start with
-`report.md`.
+## Step by step
 
-Other commands:
+**1 — audit something.** A URL is fetched at its current commit and pinned; a
+local path is read where it is.
 
 ```bash
-python src/promote_key.py <app>           # accept a drafted key, after correcting it
-python src/evaluate.py                    # score against grading_keys/
-python src/run_baseline.py baseline_static_rules <app>
-python src/emit_vex.py artifacts/agentic_auditor/<app>
-python src/export_reports.py artifacts/agentic_auditor/<app>
-python src/index_knowledge.py             # build the advice knowledge base
-python src/fetch_repo.py <url>            # fetch and pin a repo without auditing
-python src/model_client.py                # check the local model answers
+python src/main.py https://github.com/owner/app.git
 ```
 
-## Compare a local and a hosted model, in one command
+Writes 11 artifacts to `artifacts/agentic_auditor/<app>/`. **Start with
+`report.md`.** The run prints what it could not do — a missing Syft, an
+unreachable model — rather than failing.
+
+**2 — look at the evidence behind a finding.**
+
+```
+report.md            what was found, in prose, with the line and why it matters
+findings.json        the same, as data; `coverage` says which checks could look
+surfaces.json        every LLM surface found, and every file skipped
+mapping.json         which surface reaches which dependency
+remediation.md       per-finding advice, attributed to the passages that grounded it
+```
+
+**3 — turn on the optional model checks.** Off by default so an ordinary audit
+is fast and produces the same artifacts whether a model was running or not.
 
 ```bash
-python src/main.py https://github.com/owner/app.git --compare-models
+python src/main.py <repo> --semantic-probe   # ask the model to judge prompt templates
+python src/main.py <repo> --draft-key        # draft a grading key for a human to correct
 ```
 
-Fetches the repo, drafts a grading key with the local model, audits the tree
-twice — once local, once hosted — publishes both, and scores both.
+**4 — export and publish.** Separate commands, because the audit itself opens no
+socket and needs no renderer.
 
+```bash
+python src/export_reports.py artifacts/agentic_auditor/<app>   # HTML and PDF
+python src/emit_vex.py artifacts/agentic_auditor/<app>         # OpenVEX, needs vexctl
 ```
-artifacts/agentic_auditor/<app>/   local arm
-artifacts/cloud_auditor/<app>/     hosted arm
-grading_keys/drafts/<app>.*        the key both were scored against
+
+**5 — score it, if you have a grading key.** A key is a human's answer for one
+app; `grading_keys/README.md` says how to write one.
+
+```bash
+python src/evaluate.py                                    # the auditor
+python src/run_baseline.py baseline_static_rules <repo>   # a comparison baseline
+python src/evaluate.py --system baseline_static_rules
 ```
 
-Needs `OPENROUTER_API_KEY` in `.env`; `--cloud-model` overrides
-`OPENROUTER_MODEL`. It implies `--semantic-probe`, because without a model call
-the two arms produce identical findings.
+**6 — accept a drafted key**, once you have corrected it. This is the step that
+makes a draft count: it refuses one that is not yet fit and says which of the
+reasons.
 
-**Three of four model-driven stages follow the flag** — the planner's order, the
-semantic probe and the remediation advice. The knowledge-base embeddings stay
-local in both arms, so the hosted run is a cloud audit wherever a model can
-change a finding.
+```bash
+python src/promote_key.py <app>
+```
 
-**It sends the audited repository's source to a third party**: prompt template
-text, file paths, line numbers, surface names, finding titles and code
-snippets. That is why it is a flag and not a default.
+**Grounding the advice (optional, once).** Builds a local knowledge base from a
+pinned OWASP Cheat Sheet clone, so remediation advice cites passages instead of
+inventing them.
 
-**The drafted key is circular evaluation and every figure says so.** A key
-written by the system being scored measures the model's agreement with itself,
-not the tool's recall — a defect the model cannot see when auditing will also be
-missing from the key it writes. Such keys carry `source: "tool_drafted"`, which
-earns `key_ai_drafted`, `key_unverified` **and**
-`key_drafted_by_scored_system`. The last survives a human verifying every entry,
-because verification cannot make the tool's own choice of what to include
-independent. Drafted keys go to `grading_keys/drafts/` — inside the keys folder, but
-gitignored and invisible to discovery, so nothing is scored against one until
-`promote_key.py` moves it up. An app that already has a key is refused outright
-rather than drafted over.
+```bash
+python src/index_knowledge.py
+```
+
+**Fetch without auditing**, if you want the pinned tree on disk first:
+
+```bash
+python src/fetch_repo.py <url>
+```
+
+## Settings
+
+All optional, read from the environment first, then `.env` (gitignored). An
+unknown `AUDITOR_*` name is refused rather than ignored, so a typo is loud.
+
+| Setting | Default | |
+|---|---|---|
+| `AUDITOR_MODEL` | `qwen2.5-coder:7b-instruct` | the local model |
+| `AUDITOR_SERVER_URL` | `http://localhost:11434/api/generate` | must stay a local address |
+| `AUDITOR_TIMEOUT_SECONDS` | `120` | |
+| `AUDITOR_EMBED_MODEL` | `nomic-embed-text:latest` | needs its `:tag`, or provenance comes out null |
+| `AUDITOR_KNOWLEDGE_DIR` | `knowledge` | |
+| `AUDITOR_MAX_TREE_MB` | `500` | raise it to audit a repo that ships datasets |
+| `OPENROUTER_API_KEY` | — | `--compare-models` only; never read by an audit |
+| `OPENROUTER_MODEL` | `z-ai/glm-5.2` | |
 
 ## Worked example
 
@@ -129,10 +180,12 @@ Expect 6 findings and **3 of 8** matched. `--semantic-probe` adds a model's
 opinion on prompt templates; on this app it adds no finding.
 Read `artifacts/agentic_auditor/damn-vulnerable-llm-agent/report.md`.
 
-Two things that will silently spoil it: **editing the app's
-`requirements.txt`** (the tree stops matching the pin and the supply-chain
-finding disappears), and **leaving `.git` in place** (git commands inside then
-resolve to the clone rather than this repo).
+Three things that will silently spoil it. **Editing the app's
+`requirements.txt`** — the tree stops matching the pin and the supply-chain
+finding disappears. **Leaving `.git` in place** — git commands inside then
+resolve to the clone rather than this repo. And **pointing `main.py` at the
+artifacts directory** instead of the app: it audits that folder, finds no
+source, and writes the empty result back over the real one.
 
 `main.py` also takes the URL directly, but not for this app — the name belongs
 to a grading key, and the tool refuses to overwrite artifacts scored against
@@ -185,17 +238,47 @@ OPENROUTER_MODEL=z-ai/glm-5.2
 ### Run
 
 ```bash
-python experiments/compare_models.py fetched/<app>
+python src/main.py <repo> --compare-models
 ```
 
-Compares the local model against `OPENROUTER_MODEL`. To compare several at once,
-`--cloud-model` repeats and overrides the default:
+Audits the tree twice — once with the local model, once with the hosted one —
+publishes both, drafts a grading key if none exists, and scores both arms.
+
+```
+artifacts/agentic_auditor/<app>/   the local arm
+artifacts/cloud_auditor/<app>/     the hosted arm
+grading_keys/drafts/<app>.*        the key both were scored against
+```
+
+It implies `--semantic-probe`: without a model call the two arms produce
+identical findings. `--cloud-model <name>` overrides `OPENROUTER_MODEL`.
+
+**It sends the audited repository's source to a third party** — prompt text,
+file paths, line numbers, surface names, finding titles and code snippets — and
+prints how much at the end:
+
+```
+Total bytes exposed to cloud: 4820 in 3 request(s)
+```
+
+Request bodies only, counted before each send, so a request that timed out is
+still counted. What it cannot measure is on the line beneath: retention,
+training use, and which upstream provider OpenRouter routed to.
+
+**Three of four model-driven stages follow the flag** — the planner's order, the
+semantic probe and the remediation advice. The knowledge-base embeddings stay
+local in both arms.
+
+### The study behind it
+
+`experiments/compare_models.py` is the Objective 5 write-up rather than the
+tool: it runs the probe alone across several models at once and renders a page
+comparing their reasoning.
 
 ```bash
 python experiments/compare_models.py fetched/<app> \
   --cloud-model qwen/qwen-2.5-coder-32b-instruct \
   --cloud-model z-ai/glm-5.2 \
-  --out comparison.json \
   --html artifacts/agentic_auditor/<app>/comparison.html
 ```
 
