@@ -20,6 +20,13 @@ Ticked history is in git before commit `a78482c`; what shipped is in
 
 ## Open tasks
 
+- **Inline messages are matched on one key, `content`.** Every mainstream chat
+  API spells it that way, but a provider that does not -- or a wrapper building
+  `{"text": ...}` -- extracts nothing, and the artifacts cannot tell that from
+  an app with no prompts. Same shape as the two blindspots that hid LLM01 on
+  `indirect-prompt-injection-poc`: absence of a surface is indistinguishable
+  from absence of a defect.
+
 - Teach `evaluation/scorer.py` about `checks_narrowed`, so a key entry at a
   surface the planner skipped is not scored as an ordinary miss. Phase 4 change;
   needs a re-measure. **Not with per-surface probes** — `scorer.py` keys its

@@ -250,6 +250,51 @@ one public, deliberately vulnerable file. An audit of a private repository would
 send its prompts, paths and component inventory, and the four unmeasurable items
 would apply to all of it.
 
+## A second application, and two blindspots it exposed
+
+`indirect-prompt-injection-poc` is a public demonstration of indirect prompt
+injection: it scrapes a page, hands the text to a model, and says in its own
+comments that it is vulnerable. The auditor found **no LLM01 on it at all**.
+Two extraction gaps, each invisible in the artifacts, each fixed:
+
+**Prompts a class holds on itself.** `assigned_name` answered `""` for anything
+that was not a plain `ast.Name`, and it is the only thing between the detector
+and `PROMPT_NAME_HINTS`. So `self.system_prompt = ...` extracted nothing, and
+every class-based application was invisible to the prompt-template detector.
+That repository's entire prompt surface was missing: 0 templates before, 2
+after. On `damn-vulnerable-llm-agent` it changes nothing, so the figures above
+are unaffected.
+
+**The message dict itself.** `{"role": "user", "content": f"...{content}"}` is
+how a plain OpenAI-style call is written, and it was invisible twice over: it
+carries no name, so the assignment detector had no hint to match, and it is not
+a template constructor, so the call detector never saw it. That dict *is* the
+prompt in an application that uses no framework.
+
+With both fixed the probe confirms it, on the line where the scraped text
+reaches the model:
+
+```
+LLM01 semantic_probe at app.py:77
+  CONFIRMED: the interpolation point `{content}` is placed inside instruction
+  text with no delimiter, quoting, or system/data separation around it.
+```
+
+**What this says about the method.** Both gaps were in *extraction*, not in the
+checks. A check cannot report what the extractor never handed it, and nothing in
+`findings.json` distinguishes "looked and found nothing" from "never saw it" --
+`coverage.checks_run` named `untrusted_input_reaches_model` on every one of
+these runs, because the check did run, over surfaces that were not there. The
+grading key is what catches this class of error, which is the argument for
+hand-written keys over any figure the tool produces about itself.
+
+**Still not found on that app, and worth stating.** The dataflow path --
+`requests.get` to `response.text` to `soup` to `page_text`, across two methods,
+into a call whose receiver is an attribute chain and whose value sits inside a
+list of dicts -- defeats the taint trace at three separate documented limits.
+The finding above comes from the semantic probe reading one line, not from
+following the data. The trace is the weaker half of this tool's LLM01 story.
+
 ## Why this tool rather than a scanner
 
 On `security-agent-testbed`, Trivy finds 311 vulnerabilities; this auditor

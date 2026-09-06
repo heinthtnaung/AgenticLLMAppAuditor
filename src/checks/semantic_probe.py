@@ -36,6 +36,7 @@ from artifacts.finding import (
 from artifacts.skipped_file import UnreadableSource
 from artifacts.surface import PROMPT_TEMPLATE, Surface
 from checks.taint import python_files
+from detectors.detector_names import MESSAGE_CONTENT_KEY
 from parsing.extractor_python import parse_file
 
 # The injected model call, the way `checks/planner.py` declares its own.
@@ -124,12 +125,23 @@ def _render(node: ast.expr) -> str:
     return "{" + node.id + "}" if isinstance(node, ast.Name) else ""
 
 
+# What can build a prompt on one line, in the order a line is read for one. A
+# call wins over the assignment holding it, and both win over a dict, so a
+# `create(messages=[{...}])` written on one line is still read as the call.
+# Ordered explicitly rather than left to `ast.walk`, whose order is an accident
+# of tree shape and would decide this silently.
+PROMPT_NODES = (ast.Call, ast.Assign, ast.Dict)
+
+
 def _node_at(tree: ast.AST, line: int) -> ast.AST | None:
-    """The prompt-building expression on one line: the call if there is one, else the assignment."""
+    """The prompt-building expression on one line: a call, else an assignment, else a dict."""
     here = [node for node in ast.walk(tree) if getattr(node, "lineno", None) == line
-            and isinstance(node, (ast.Call, ast.Assign))]
-    calls = [node for node in here if isinstance(node, ast.Call)]
-    return (calls or here or [None])[0]
+            and isinstance(node, PROMPT_NODES)]
+    for kind in PROMPT_NODES:
+        found = [node for node in here if isinstance(node, kind)]
+        if found:
+            return found[0]
+    return None
 
 
 def _only_placeholders(text: str) -> bool:
@@ -154,13 +166,34 @@ def template_text(tree: ast.AST, line: int) -> str:
     """
     node = _node_at(tree, line)
     if isinstance(node, ast.Assign):
-        return _render(node.value)
+        # A message bound to a name -- `message = {"role": ..., "content": ...}`
+        # -- is an assignment whose value is the dict the detector anchored on.
+        # Rendering the assignment would answer "", and `judge` would then say
+        # the text is not written literally at this line, about a line where it
+        # plainly is. Reading through to the message keeps the probe true.
+        return _render(node.value) if not isinstance(node.value, ast.Dict) \
+            else _message_text(node.value)
+    if isinstance(node, ast.Dict):
+        return _message_text(node)
     if not isinstance(node, ast.Call):
         return ""
     written = [_render(arg) for arg in node.args]
     written += [_render(keyword.value) for keyword in node.keywords]
     text = "".join(part for part in written if part.strip())
     return "" if _only_placeholders(text) else text
+
+
+def _message_text(node: ast.Dict) -> str:
+    """The text an inline chat message carries, or "" if it carries none.
+
+    The message dict is the surface `detectors` extracts; this reads the same
+    `content` value back so the probe judges the text that actually reaches the
+    model, rather than the whole literal with its role and its punctuation.
+    """
+    for key, value in zip(node.keys, node.values):
+        if isinstance(key, ast.Constant) and key.value == MESSAGE_CONTENT_KEY:
+            return _render(value)
+    return ""
 
 
 def _verdict_in(head: str) -> str | None:

@@ -16,6 +16,7 @@ from parsing.ast_utils import (
 )
 from detectors.detector_names import (
     AGENT_FACTORIES,
+    MESSAGE_CONTENT_KEY,
     DATA_SOURCE_CALLS,
     DATA_SOURCE_METHODS,
     HIGH_PRIVILEGE_TOOLS,
@@ -51,6 +52,38 @@ def _prompt_from_call(node: ast.AST, file: str, imports: dict[str, str]) -> Surf
                    detail=detail, module=imports.get(root, ""))
 
 
+# What an inline message surface is called. One name for all of them, because
+# the dict has no name of its own -- the line is what tells two apart.
+INLINE_MESSAGE_NAME = "inline_message"
+
+
+def _prompt_from_inline_message(node: ast.AST, file: str) -> Surface | None:
+    """Report prompt text written inline as a chat message dict.
+
+    `{"role": "user", "content": f"Analyze: {text}"}` is how most LLM APIs are
+    called directly, and it was invisible: it carries no name, so
+    `_prompt_from_assignment` had no hint to match, and it is not a template
+    constructor, so `_prompt_from_call` did not see it either. That is the shape
+    that puts untrusted text in front of a model in a plain OpenAI-style call.
+
+    Only literal text counts. `{"content": self.system_prompt}` names a string
+    built elsewhere and `text_build_shape` answers "" for it, so the assignment
+    that built it is the surface instead -- one fact, reported once.
+    """
+    if not isinstance(node, ast.Dict):
+        return None
+    for key, value in zip(node.keys, node.values):
+        # A `**spread` entry has `None` for its key, and `ast.Str` was removed
+        # in 3.12, so a string key is a Constant or it is not a string key.
+        if not isinstance(key, ast.Constant) or key.value != MESSAGE_CONTENT_KEY:
+            continue
+        shape = text_build_shape(value)
+        if shape:
+            return Surface(PROMPT_TEMPLATE, INLINE_MESSAGE_NAME, file, node.lineno,
+                           PYTHON, detail=f"inline dict message with {shape}")
+    return None
+
+
 def _prompt_from_assignment(node: ast.AST, file: str) -> Surface | None:
     """Report prompt text assigned to a prompt-shaped variable name."""
     if not isinstance(node, ast.Assign):
@@ -65,11 +98,13 @@ def _prompt_from_assignment(node: ast.AST, file: str) -> Surface | None:
 
 
 def find_prompt_templates(tree: ast.AST, file: str) -> list[Surface]:
-    """Find prompt template constructors and prompt-shaped string assignments."""
+    """Find prompt template constructors, prompt-shaped assignments, and inline messages."""
     imports = build_import_table(tree)
     found = []
     for node in ast.walk(tree):
-        surface = _prompt_from_call(node, file, imports) or _prompt_from_assignment(node, file)
+        surface = (_prompt_from_call(node, file, imports)
+                   or _prompt_from_assignment(node, file)
+                   or _prompt_from_inline_message(node, file))
         if surface is not None:
             found.append(surface)
     return found
