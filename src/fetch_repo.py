@@ -20,12 +20,20 @@ from pathlib import Path
 
 from keys.grading_keys import GROUND_TRUTH_SUFFIX, MANIFEST_SUFFIX, key_path
 from repo_url import REQUIRED_SCHEME, destination_name, validated_url
+import config
 
 PROGRAM_NAME = "git"
 TIMEOUT_SECONDS = 300
 
 # A source tree, not a data set: anything larger is a tarball or a mistake.
-MAX_TREE_BYTES = 500 * 1024 * 1024
+BYTES_PER_MB = 1024 * 1024
+
+# Configurable, because the right answer depends on the repository. A repo
+# that ships datasets beside its source can run to gigabytes while holding
+# a few thousand lines of Python, and `repo_loader` already skips a file
+# over a megabyte and anything that is not source -- so the cost of a large
+# tree is disk, not scan time.
+MAX_TREE_BYTES = config.get_int("AUDITOR_MAX_TREE_MB") * BYTES_PER_MB
 
 # Its own root, so a fetch never lands on a tree someone is grading: a grading
 # key cites line numbers against one commit, and a fetch over it would rot
@@ -94,8 +102,12 @@ def _check_size(destination: Path) -> None:
     """Refuse a tree over the cap, so an enormous repository is never scanned."""
     size = tree_bytes(destination)
     if size > MAX_TREE_BYTES:
-        raise ValueError(f"{destination.name} is {size} bytes, over the "
-                         f"{MAX_TREE_BYTES} byte cap")
+        raise ValueError(
+            f"{destination.name} is {size} bytes ({size // BYTES_PER_MB} MB), over "
+            f"the {MAX_TREE_BYTES} byte cap ({MAX_TREE_BYTES // BYTES_PER_MB} MB). "
+            "Raise AUDITOR_MAX_TREE_MB in .env or the environment if the repository "
+            "is meant to be this large: the scan reads only source files, and skips "
+            "any over a megabyte, so a big tree costs disk rather than scan time.")
 
 
 def read_pin(destination: Path) -> tuple[str, str]:

@@ -13,6 +13,10 @@ DEFAULTS = {
     "AUDITOR_TIMEOUT_SECONDS": "120",
     "AUDITOR_EMBED_MODEL": "nomic-embed-text:latest",
     "AUDITOR_KNOWLEDGE_DIR": "knowledge",
+    # Megabytes, so the setting reads the way a person says it. Some
+    # repositories ship datasets or model weights beside their source and
+    # run to gigabytes; raising this is how you audit one.
+    "AUDITOR_MAX_TREE_MB": "500",
 }
 
 COMMENT_MARKER = "#"

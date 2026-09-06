@@ -40,6 +40,7 @@ def test_defaults_hold_exactly_the_known_settings() -> None:
     assert sorted(config.DEFAULTS) == [
         "AUDITOR_EMBED_MODEL",
         "AUDITOR_KNOWLEDGE_DIR",
+        "AUDITOR_MAX_TREE_MB",
         "AUDITOR_MODEL",
         "AUDITOR_SERVER_URL",
         "AUDITOR_TIMEOUT_SECONDS",
