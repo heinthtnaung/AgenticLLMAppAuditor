@@ -39,13 +39,26 @@ Ticked history is in git before commit `a78482c`; what shipped is in
 - `owasp_reference.REFERENCES["LLM02"]` describes model output reaching a sink,
   which `output_handling.py` explicitly disclaims. The finding title is honest
   and the advice prompt beside it is not.
-- Five tests import a private helper where a public path exists.
-- Three test files sit just over the ~200-line rule.
+- Tests import private helpers where a public path exists; the study's tests add
+  `_arm`, `_note` and `_check_partition`, whose only public path opens sockets.
+- Many files sit over the ~200-line rule -- 31 under `tests/`, plus
+  `src/checks/semantic_probe.py` (284). `tests/semantic_probe_fixtures.py` (240)
+  grew here, by sharing the static-refutation app rather than copying it.
 
-- **Objective 5 needs repeating.** `experiments/` shipped and the comparison is
-  in `docs/REPORT.md`, but it is **one run of four models on one app**. Hosted
-  models take no `seed`, and `glm-5.2` gave different verdicts on the same
-  template across runs. Repeat before any figure from it is quoted as a result.
+- **Objective 5 needs repeating, and one of its figures is withdrawn.**
+  - The exposure byte count is gone from `docs/REPORT.md`: it counted the
+    planner's prompt as a probe prompt, and "one request per prompt template"
+    was never true (3 requests for 5 templates in the saved run). Re-measure it
+    over an app that has prompt templates.
+  - The agreement counts moved. `agreement.py` now excludes subjects no model
+    was asked about, which turned the saved three-arm run from "agree on 5 of 5"
+    into "agree 2, no model asked 3". Any figure quoted from the old shape is
+    wrong.
+  - It is still **one run per app**, and hosted models take no `seed` —
+    `glm-5.2` gave different verdicts on the same template across runs.
+  - `damn-vulnerable-llm-agent` can no longer serve as the comparison app: its
+    one template interpolates nothing, so the probe refutes it statically and
+    neither model is ever asked.
 
 ## Blocked on a decision
 

@@ -71,7 +71,11 @@ model-written, non-deterministic, and refused whole if it invents an advisory.
 
 Clones the app at its pinned commit, audits it with the probe, runs both
 baselines, scores all three, and — if `OPENROUTER_API_KEY` is set — runs the
-local-versus-hosted comparison. Regenerates every figure in `docs/REPORT.md`.
+local-versus-hosted comparison.
+
+Regenerates every detection and latency figure in `docs/REPORT.md`. **Not the
+Objective 5 numbers**: those were measured over two other applications, one of
+which is not pinned by any grading key, so the script cannot reproduce them.
 
 Without a key it completes anyway and says which step it skipped. A placeholder
 key would be worse than none: it fails authentication and, under `set -e`, would
@@ -182,17 +186,27 @@ neither reproducible nor available without a key.
 ### Reading the output
 
 ```
-  qwen2.5-coder:7b-instruct     2 flagged,  2.5s, 2970 bytes sent
-  z-ai/glm-5.2                  2 flagged, 58.6s, 2970 bytes sent
+  fetched/<app>: 5 prompt template(s), 2 put to a model     # illustrative
 
-  agree on 5 of 5, disagree on 0
+  qwen2.5-coder:7b-instruct     2 flagged of 5,   2.6s, 2970 bytes over 3 request(s)
+  z-ai/glm-5.2                  2 flagged of 5,  29.0s, 2970 bytes over 3 request(s)
+
+  agree 2, disagree 0, no model asked 3, not seen by every model 0  (of 5)
 ```
 
+That block shows the format, not a run you can reproduce: it is hand-written
+from the saved five-template study's numbers, and its byte figure is one
+`docs/REPORT.md` withdraws. **Three requests for five templates** is the point —
+one of them is the planner's, and three templates were never sent at all.
+
+**All four counts print together on purpose.** Only templates every model was
+actually asked about can agree or disagree; the probe settles the rest on the
+text alone — a template written somewhere other than that line, or one that
+interpolates nothing. Counting those as agreement is how a run that consulted
+nobody once reported "agree on 5 of 5".
+
 The page shows each model's verdict **per prompt template with its reasoning**,
-because a count alone hides which model is right. In the measured run the local
-model flagged a template that interpolates nothing, by describing what the
-application does rather than what the template says — the hosted one did not.
-See `docs/REPORT.md`.
+because a count alone hides which model is right. See `docs/REPORT.md`.
 
 Three things worth knowing before quoting a result:
 

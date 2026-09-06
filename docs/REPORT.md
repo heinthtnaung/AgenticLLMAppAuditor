@@ -180,11 +180,17 @@ The single-template result above is a data point. Repeating it:
 
 **On templates that genuinely interpolate** — `rag-tutorial-v2`, five prompt
 templates, two of which contain a runtime value — `qwen2.5-coder:7b-instruct`
-(local), `qwen/qwen-2.5-coder-32b-instruct` and `z-ai/glm-5.2` **agree on all
-five**, and on the two that interpolate all three name the actual interpolation
-point (`{question}`, `{actual_response}`). The local model is not worse here.
-The other three are refuted before any model is asked, because their text is not
-written literally at that line.
+(local), `qwen/qwen-2.5-coder-32b-instruct` and `z-ai/glm-5.2` **agree on both
+templates a model was asked about**, and on each they name a real
+interpolation point (`{question}`; `{expected_response}` or
+`{actual_response}` on the second). The local model is not
+worse here.
+
+That is 2 of 5, not 5 of 5. The other three were settled before any model saw
+them — their text is not written literally at that line — and the run
+originally published them as agreement, which is the defect
+`experiments/agreement.py` now prevents. Three models concurring about a
+template none of them read is not a result.
 
 **On the static template that produced the false positive**, asked directly of
 four models:
@@ -213,9 +219,19 @@ than into the prompt — it holds whichever model is configured.
 
 ### Data exposure, measured and unmeasurable
 
-**Measured**: 2671 bytes per arm, one request per prompt template. Transmitted:
-the prompt template's source text, surface file paths and line numbers, surface
-kinds and names.
+**Measured, and the figure below is withdrawn.** It was published as "2671
+bytes per arm, one request per prompt template. Transmitted: the prompt
+template's source text, surface file paths and line numbers, surface kinds and
+names." Both halves were wrong, and the study's own saved output shows it: the
+three-arm run recorded **3 requests for 5 templates**, because the planner is
+driven through the same seam as the probe and a template settled on its own text
+generates no request at all. So one of those requests carried no template text,
+and three of the templates were never transmitted.
+
+The ledger now classifies each prompt and derives the field list from what was
+actually sent, so a run that transmitted only the planner's prompt says so. The
+byte figure cannot be restated here: it needs a re-measure over an app with
+prompt templates, which `docs/TODO.md` carries.
 
 **Observed, not merely predicted:** `glm-5.2` returned different verdicts for
 the same template on `test_rag.py:4` across runs — flagging it once and refuting

@@ -86,6 +86,48 @@ package must leave it `null`.
 `verified: false` means the scorer attaches `key_unverified` to every figure. A
 run against `false` is not thesis-grade and says so.
 
+## Study output, not an audit artifact
+
+`model-comparison.json` and `comparison.html`, written by
+`experiments/compare_models.py` beside the audit's artifacts. **Deliberately
+absent from the table above**, because it fails all three rules those rows
+share: it is not produced by `src/`, it is not byte-identical (the hosted arm
+takes no `seed` and `seconds` is wall clock), and it cannot be produced offline
+or without a key.
+
+It still carries `schema_version` — 1. Nothing validates it, because nothing
+reads the document back: it is written once and rendered from memory, and a
+loader with no reader would be dead code. The field is there because the shape
+has already changed once silently — two incompatible files sit in the untracked
+`experiments/results/` with nothing to tell them apart, and the next reader
+should not have to guess.
+
+```
+schema_version  repository  subjects_seen  arms
+agreements      disagreements
+not_put_to_a_model  not_examined_by_every_arm  unmeasurable_exposure
+```
+
+- **The four buckets partition `subjects_seen`**, and the producer raises if
+  they do not. Only subjects every arm actually put to its model can agree or
+  disagree; `not_put_to_a_model` holds the ones the probe settled on the text
+  alone, or where no model answered, each with a reason. Counting those as
+  agreement is how a run that consulted nobody reported "agree on 1 of 1".
+- **`not_examined_by_every_arm` takes precedence**: the planner may narrow the
+  probe per arm, and a subject one arm never saw is not comparable whatever the
+  others concluded.
+- **The one join on `Probe.detail` in the project.** `agreement.py` tells a
+  template refuted from its own text apart from one a model called safe. Both
+  are `refuted` carrying no reason — `Probe.__post_init__` forbids a reason on a
+  concluded outcome — so the sentence is the only marker. It joins on
+  `semantic_probe.STATIC_REFUTATION`, a constant `src/` owns rather than model
+  prose, and `tests/checks/test_semantic_probe_static_refutation.py` pins the
+  two together. A second such join would mean the field is carrying a
+  vocabulary and should be given one.
+- **`exposure.field_kinds_transmitted` is derived, never asserted.** It comes
+  from `prompt_kinds` — the kinds of prompt actually recorded — because the
+  planner and the probe share one seam and carry different things.
+
 ## evaluation.json
 
 Counts only. `apps[]` carries `true_positives`, `false_negatives`,

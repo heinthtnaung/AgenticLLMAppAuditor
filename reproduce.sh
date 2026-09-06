@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 #
-# Reproduce every figure in docs/REPORT.md from a clean checkout.
+# Reproduce docs/REPORT.md's detection and latency figures from a clean checkout.
+# Not its Objective 5 numbers: those were measured over two other applications,
+# and this app's one prompt template is refuted before any model is asked.
 #
 #   ./reproduce.sh
 #
