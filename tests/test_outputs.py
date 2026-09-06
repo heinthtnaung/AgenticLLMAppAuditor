@@ -21,6 +21,7 @@ candidates, cite at most TOP_K -- are held to a number rather than assumed.
 import json
 
 import outputs
+import remediation_run
 from artifacts.findings_document import MODEL_UNAVAILABLE, MODEL_USED
 from artifacts.remediation import (
     KNOWLEDGE_INDEXED,
@@ -49,17 +50,17 @@ def surface(language: str, name: str = "lookup") -> Surface:
 def test_the_declared_language_is_the_one_most_surfaces_are_written_in() -> None:
     """A snippet's fence has to claim one language, so the app's majority is chosen."""
     surfaces = [surface(PYTHON), surface(PYTHON, "second"), surface(JAVASCRIPT, "third")]
-    assert outputs.declared_language(surfaces) == PYTHON
+    assert remediation_run.declared_language(surfaces) == PYTHON
 
 
 def test_the_declared_language_follows_the_surfaces_rather_than_a_default() -> None:
     """A TypeScript app must not be advised in Python."""
-    assert outputs.declared_language([surface(TYPESCRIPT)]) == TYPESCRIPT
+    assert remediation_run.declared_language([surface(TYPESCRIPT)]) == TYPESCRIPT
 
 
 def test_an_app_with_no_surfaces_declares_python() -> None:
     """The reference implementation's language is the fallback, not an error."""
-    assert outputs.declared_language([]) == PYTHON
+    assert remediation_run.declared_language([]) == PYTHON
 
 
 def remediation_for(monkeypatch, findings: dict) -> dict:
@@ -70,7 +71,7 @@ def remediation_for(monkeypatch, findings: dict) -> dict:
     index, and a grounded run would call the embedding server.
     """
     stub_knowledge(monkeypatch)
-    return json.loads(outputs.build_remediation(findings, PYTHON, MODULE_NAMES))
+    return json.loads(remediation_run.build_remediation(findings, PYTHON, MODULE_NAMES))
 
 
 def one_finding_document() -> dict:
@@ -124,8 +125,8 @@ def test_two_unreachable_runs_write_byte_identical_files(monkeypatch) -> None:
     stub_model_unavailable(monkeypatch)
     stub_knowledge(monkeypatch)
     findings = one_finding_document()
-    first = outputs.build_remediation(findings, PYTHON, MODULE_NAMES)
-    second = outputs.build_remediation(findings, PYTHON, MODULE_NAMES)
+    first = remediation_run.build_remediation(findings, PYTHON, MODULE_NAMES)
+    second = remediation_run.build_remediation(findings, PYTHON, MODULE_NAMES)
     assert first == second
 
 
@@ -134,8 +135,8 @@ def test_an_index_present_run_that_reached_no_model_is_byte_identical(monkeypatc
     stub_model_unavailable(monkeypatch)
     stub_knowledge(monkeypatch, indexed_knowledge())
     findings = one_finding_document()
-    first = outputs.build_remediation(findings, PYTHON, MODULE_NAMES)
-    second = outputs.build_remediation(findings, PYTHON, MODULE_NAMES)
+    first = remediation_run.build_remediation(findings, PYTHON, MODULE_NAMES)
+    second = remediation_run.build_remediation(findings, PYTHON, MODULE_NAMES)
     assert first == second
 
 
@@ -143,7 +144,7 @@ def test_a_missing_model_and_a_built_index_are_recorded_on_their_own_blocks(monk
     """Two absences, two blocks: an unreachable server must not read as an unbuilt index."""
     stub_model_unavailable(monkeypatch)
     stub_knowledge(monkeypatch, indexed_knowledge())
-    document = json.loads(outputs.build_remediation(
+    document = json.loads(remediation_run.build_remediation(
         one_finding_document(), PYTHON, MODULE_NAMES))
     assert document["knowledge_base"]["status"] == KNOWLEDGE_INDEXED
     assert document["model_run"]["status"] == MODEL_UNAVAILABLE
@@ -153,7 +154,7 @@ def test_the_serialised_document_ends_in_a_newline(monkeypatch) -> None:
     """The on-disk form is fixed, so a diff shows content rather than formatting."""
     stub_model(monkeypatch)
     stub_knowledge(monkeypatch)
-    assert outputs.build_remediation(one_finding_document(), PYTHON, MODULE_NAMES).endswith("\n")
+    assert remediation_run.build_remediation(one_finding_document(), PYTHON, MODULE_NAMES).endswith("\n")
 
 
 def test_write_all_writes_every_document_and_both_reports(tmp_path, monkeypatch) -> None:
@@ -166,7 +167,7 @@ def test_write_all_writes_every_document_and_both_reports(tmp_path, monkeypatch)
                                            "schema_version": 3, "surface_count": 0,
                                            "skipped_count": 0}),
         outputs.FINDINGS_NAME: json.dumps(findings),
-        outputs.REMEDIATION_NAME: outputs.build_remediation(findings, PYTHON, MODULE_NAMES),
+        outputs.REMEDIATION_NAME: remediation_run.build_remediation(findings, PYTHON, MODULE_NAMES),
     }
     written = outputs.write_all(tmp_path / "app", documents, "app")
     assert written == len(documents) + 2
@@ -214,7 +215,7 @@ def recorded_remediation(monkeypatch) -> tuple[dict, RecordingStore]:
     recording = RecordingStore()
     stub_model(monkeypatch)
     stub_knowledge(monkeypatch, indexed_knowledge(), recording)
-    document = json.loads(outputs.build_remediation(
+    document = json.loads(remediation_run.build_remediation(
         one_finding_document(), PYTHON, MODULE_NAMES))
     return document, recording
 
@@ -243,7 +244,7 @@ def grounded_remediation_for(monkeypatch, findings: dict) -> dict:
     """
     stub_model(monkeypatch)
     stub_knowledge(monkeypatch, indexed_knowledge(), FakeStore())
-    return json.loads(outputs.build_remediation(findings, PYTHON, MODULE_NAMES))
+    return json.loads(remediation_run.build_remediation(findings, PYTHON, MODULE_NAMES))
 
 
 def test_a_grounded_run_records_the_passage_its_advice_was_grounded_on(monkeypatch) -> None:

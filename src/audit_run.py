@@ -28,6 +28,8 @@ from parsing.repo_loader import local_module_names
 import fetch_repo
 import model_client
 import outputs
+from reporting import progress
+import remediation_run
 from outputs import AIBOM_NAME, FINDINGS_NAME, SURFACES_NAME
 
 
@@ -64,7 +66,7 @@ def audit(app_dir: Path, artifacts_dir: Path, model: dict | None = None) -> dict
     """
     started = time.monotonic()
     scan = extract_repo(str(app_dir))
-    outputs.report_skipped_files(scan.skipped)
+    progress.report_skipped_files(scan.skipped)
     documents = {
         SURFACES_NAME: surfaces_to_json(scan.surfaces, scan.skipped),
         AIBOM_NAME: aibom_to_json(build_aibom(scan.surfaces)),
@@ -83,8 +85,8 @@ def audit(app_dir: Path, artifacts_dir: Path, model: dict | None = None) -> dict
     # The only model call an audit makes beyond the planner and the probe, and
     # the only artifact it writes into. findings.json is written above and never
     # revisited, so the scored numbers stay static whatever the model says.
-    documents[outputs.REMEDIATION_NAME] = outputs.build_remediation(
-        findings_document, outputs.declared_language(scan.surfaces),
+    documents[outputs.REMEDIATION_NAME] = remediation_run.build_remediation(
+        findings_document, remediation_run.declared_language(scan.surfaces),
         tuple(local_module_names(str(app_dir))), model)
 
     app = app_dir.resolve().name
@@ -93,7 +95,7 @@ def audit(app_dir: Path, artifacts_dir: Path, model: dict | None = None) -> dict
     if no_bill_reason:
         print(f"  no bill of materials: {no_bill_reason}", file=sys.stderr)
     if mapping_document is not None:
-        outputs.report_coverage(mapping_document)
+        progress.report_coverage(mapping_document)
     return {"app": app, "artifacts": artifacts_dir / app,
             "advisories_read": advisory_pin is not None,
             "seconds": time.monotonic() - started}

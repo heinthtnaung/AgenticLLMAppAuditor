@@ -1,6 +1,6 @@
 """`remediation.json` names the model that actually answered, not the one in `src/`.
 
-The seam is `outputs.build_remediation(..., advisor)`, which reaches
+The seam is `remediation_run.build_remediation(..., advisor)`, which reaches
 `advise.advise_all(..., ask)`. Without it the cloud arm of `--compare-models`
 would call a hosted model and then write `model_client.MODEL` into an artifact
 sitting under `artifacts/cloud_auditor/` -- a false provenance record, and the
@@ -16,6 +16,7 @@ import json
 
 import model_client
 import outputs
+import remediation_run
 from artifacts.findings_document import MODEL_UNAVAILABLE, MODEL_USED
 from artifacts.remediation import UNAVAILABLE, WRITTEN
 from cli_helpers import STUB_ADVICE, stub_knowledge, stub_model
@@ -53,7 +54,7 @@ def advised(monkeypatch, ask=cloud_ask, given=advisor) -> dict:
     """Build the remediation artifact for one finding and return it parsed."""
     stub_knowledge(monkeypatch)
     document = build_document([static_finding()])
-    return json.loads(outputs.build_remediation(
+    return json.loads(remediation_run.build_remediation(
         document, PYTHON, (), given(ask) if given else None))
 
 

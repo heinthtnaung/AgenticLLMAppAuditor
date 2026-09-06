@@ -36,6 +36,7 @@ from cli_helpers import read_artifact, stub_knowledge
 from mixed_app_fixtures import APP_NAME, write_mixed_app
 from offline_fixtures import no_network  # noqa: F401  (used as a fixture)
 from outputs import FINDINGS_NAME
+import remediation_run
 
 # The only endpoint an audit may reach, read from the setting that names it
 # rather than respelled -- a machine with AUDITOR_SERVER_URL on another port is
@@ -49,7 +50,7 @@ OLLAMA_PORT = urlsplit(model_client.SERVER_URL).port
 OFFLINE_RULE_IDS = sorted(
     [PERMISSION_CHECK, TAINT_CHECK, QUERY_CHECK, AUDITABILITY_CHECK])
 
-# One call: `outputs.build_remediation` asks for the model's digest before it
+# One call: `remediation_run.build_remediation` asks for the model's digest before it
 # advises, and the refusal that comes back degrades every advice entry.
 DEFAULT_RUN_ATTEMPTS = 1
 

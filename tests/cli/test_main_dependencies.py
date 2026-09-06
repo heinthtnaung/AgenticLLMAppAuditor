@@ -13,7 +13,7 @@ from deps import syft_runner
 from deps.package_names import PYPI
 from deps.requirements_parser import MANIFEST_NAME as PYPI_MANIFEST
 from parsing.languages import PYTHON
-from outputs import report_coverage
+from reporting.progress import report_coverage
 from deps.inputs import dependency_artifacts
 from main import build_parser, run
 from outputs import (

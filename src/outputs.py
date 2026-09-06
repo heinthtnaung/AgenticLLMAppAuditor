@@ -1,151 +1,31 @@
 """Puts one audit's results on disk: the JSON artifacts, then the two reports.
 
-Split out of `main.py`, which is the command line and was at its size limit.
-This module owns one job -- writing what a run produced -- and it is also where
-the only model call in an audit happens, so a reader looking for "does this tool
-ever call a model" finds the answer in one place.
+**One job, since the split.** Four used to live here -- the artifact filenames,
+two stderr progress helpers, the remediation document with the audit's only
+model call, and this file writing. They are now `artifacts/names.py`,
+`reporting/progress.py` and `remediation_run.py`. The old docstring claimed "one
+job" and then said the module was also where the model call happened, which was
+the tell.
 
 Both reports are rendered from the files just written rather than from what is
 still in memory. A report is a reading of the artifacts, and reading them back
 is what keeps it one.
 """
 
-import sys
-from collections import Counter
 from pathlib import Path
 
-from artifacts.findings_document import MODEL_UNAVAILABLE, MODEL_USED, model_provenance
-from artifacts.remediation import (
-    MODEL_UNAVAILABLE as ADVICE_UNAVAILABLE_REASON,
-    UNAVAILABLE,
-    advice_entry,
-    build_remediation_document,
-    remediation_to_json,
-)
 from artifacts.sarif import sarif_to_json, to_sarif
-from artifacts.skipped_file import SkippedFile
-from artifacts.surface import Surface
-from checks import advise
-from parsing.languages import PYTHON
-from retrieval import retrieve
-import config
-import model_client
 from reporting import remediation_report
 from reporting import report
 
 # The names live in `artifacts/names.py`: `deps/inputs.py` and three commands
 # read them too, and a leaf package importing this module for a filename made
-# the dependency point the wrong way. Re-exported here because sixteen modules
-# already import them from this one.
+# the dependency point the wrong way. Re-exported here because the modules that
+# write artifacts already import them from this one.
 from artifacts.names import (                                    # noqa: E402
     AIBOM_NAME, CYCLONEDX_NAME, FINDINGS_NAME, MAPPING_NAME, PLANNER_NAME,
     REMEDIATION_NAME, REMEDIATION_REPORT_NAME, REPORT_NAME, SARIF_NAME,
     SBOM_NAME, SURFACES_NAME)
-
-
-def report_skipped_files(skipped: list[SkippedFile]) -> None:
-    """Warn about each file the scan could not analyse."""
-    for record in skipped:
-        where = f" (line {record.line})" if record.line else ""
-        print(f"warning: skipped {record.file}: {record.reason}{where}", file=sys.stderr)
-
-
-def report_coverage(mapping_document: dict) -> None:
-    """Say how much of the app the mapping reached.
-
-    Printed rather than stored: a mapping covering a third of the surfaces
-    looks the same on disk as one covering all of them.
-    """
-    total, mapped = mapping_document["surface_count"], mapping_document["mapped_count"]
-    share = f"{mapped / total:.0%}" if total else "n/a"
-    print(f"  mapped {mapped} of {total} surfaces ({share})", file=sys.stderr)
-    for reason, count in sorted(mapping_document["reason_counts"].items()):
-        if count:
-            print(f"    {reason:22} {count}", file=sys.stderr)
-    for name in mapping_document["undeclared_components"]:
-        print(f"  used but never declared: {name}", file=sys.stderr)
-
-
-def declared_language(surfaces: list[Surface]) -> str:
-    """Say which language this app is mostly written in, for a snippet's fence."""
-    counted = Counter(surface.language for surface in surfaces)
-    return counted.most_common(1)[0][0] if counted else PYTHON
-
-
-def _unreachable_advice(findings: list[dict]) -> tuple[list[dict], dict]:
-    """Record one entry per finding when no model answered, and say so once."""
-    entries = [advice_entry(finding["finding_id"], UNAVAILABLE, ADVICE_UNAVAILABLE_REASON)
-               for finding in findings]
-    return entries, model_provenance(MODEL_UNAVAILABLE)
-
-
-def _advice_with_provenance(findings: list[dict], language: str,
-                            module_names: tuple[str, ...],
-                            passages_for: advise.Retriever,
-                            advisor: dict | None) -> tuple[list[dict], dict]:
-    """Advise with the named model, or the local one, recording whichever answered."""
-    if advisor is None:
-        digest = model_client.model_digest()
-        entries = advise.advise_all(findings, language, module_names, passages_for)
-        return entries, model_provenance(
-            MODEL_USED, model_client.MODEL, model_client.DECODE_SETTINGS, digest)
-    entries = advise.advise_all(findings, language, module_names, passages_for,
-                                advisor["ask"])
-    if not entries or _nothing_answered(entries):
-        # `advise_one` swallows the per-finding RuntimeError, so an unreachable
-        # advisor otherwise reaches here looking like a model that answered and
-        # gets recorded as `used` -- while every entry beneath it says
-        # `model_unavailable`. Raising hands it to the caller's existing
-        # degradation path, so remediation.json agrees with findings.json
-        # instead of contradicting it. The local branch is spared this because
-        # `model_digest` probes reachability before any advice is asked for.
-        # `not entries` too: with no findings nothing was asked, and the local
-        # branch may claim `used` there only because `model_digest` proved the
-        # server was up. An advisor has no such probe, so claiming it would be
-        # a provenance record of a call that never happened.
-        raise RuntimeError(f"{advisor['identifier']} answered no finding")
-    return entries, model_provenance(
-        MODEL_USED, advisor["identifier"], advisor["settings"], advisor.get("digest"))
-
-
-def _nothing_answered(entries: list[dict]) -> bool:
-    """True when there were entries and every one of them says the model was unreachable."""
-    return bool(entries) and all(
-        entry["status"] == UNAVAILABLE and entry.get("reason") == ADVICE_UNAVAILABLE_REASON
-        for entry in entries)
-
-
-def build_remediation(findings_document: dict, language: str,
-                      module_names: tuple[str, ...],
-                      advisor: dict | None = None) -> str:
-    """Ask the model to advise on every finding, and record what it said or did not.
-
-    A model that cannot be reached degrades the artifact rather than failing the
-    audit: producing less is a normal outcome here, exactly as a missing Syft
-    yields no bill of materials. The knowledge base degrades separately and is
-    probed once for the whole run -- an unreachable model and an unbuilt index
-    are two different absences, and the artifact records each on its own block.
-
-    `advisor` names a different model and the call that reaches it, as
-    `build_findings` takes `probe_model`. Absent -- every ordinary audit -- the
-    local client answers and records itself. It exists so the cloud arm of
-    `--compare-models` cannot write the local model's identifier into an
-    artifact a hosted model produced.
-    """
-    findings = findings_document["findings"]
-    # Probed before the findings are looked at, so an app with nothing found
-    # still records whether an index was there. `knowledge_base` describes the
-    # run's inputs, not its output: "indexed, and no entries" is a fact worth
-    # having, and it costs one embed call that `advise_all([])` would not make.
-    grounding = retrieve.probe(config.get_path("AUDITOR_KNOWLEDGE_DIR"))
-    try:
-        entries, provenance = _advice_with_provenance(
-            findings, language, module_names, grounding.passages_for, advisor)
-    except RuntimeError:
-        entries, provenance = _unreachable_advice(findings)
-    document = build_remediation_document(
-        entries, provenance, grounding.knowledge, findings_document["schema_version"])
-    return remediation_to_json(document)
 
 
 def standard_format(findings_document: dict) -> dict[str, str]:
