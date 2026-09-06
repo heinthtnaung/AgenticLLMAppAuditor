@@ -47,14 +47,15 @@ def _drafts_never_reach_the_tracked_folder(tmp_path_factory, monkeypatch):
 
     `grading_keys/` is this project's committed evidence, and
     `key_drafting.DRAFTED_KEYS_DIR` is an absolute path inside it. Any test that
-    drives a URL run reaches the drafting stage, so a stubbed model that ever
-    answers JSON would write a model-authored answer key into the tree and a
-    later `git add` would commit it as though a human wrote it.
+    reaches the drafting stage with a model stubbed to answer JSON would write a
+    model-authored answer key into the tree, and a later `git add` would commit
+    it as though a human wrote it.
 
-    Autouse, because the tests at risk are the ones that do not know they are:
-    `test_pipeline_command.py` is safe today only because its stub answers prose.
-    A test that wants the real value imports the name directly, which binds
-    before this runs and is therefore unaffected.
+    Only `--draft-key` reaches that stage; until 2026-09-06 every URL run did,
+    which is what this fixture was written for and why it stays autouse -- the
+    tests at risk are the ones that do not know they are. A test that wants the
+    real value imports the name directly, which binds before this runs and is
+    therefore unaffected.
     """
     monkeypatch.setattr(key_drafting, "DRAFTED_KEYS_DIR",
                         tmp_path_factory.mktemp("drafts"))

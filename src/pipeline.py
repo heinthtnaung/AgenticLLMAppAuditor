@@ -116,8 +116,10 @@ DRAFTING_FAILURES = (RuntimeError, ValueError, OSError)
 def draft_key(app_dir: Path, ask, keys_dir: Path | None = None) -> Path | None:
     """Draft a grading key for a fetched tree when none exists yet.
 
-    Only for a fetched repository: a key pins line numbers to a commit, and a
-    local path this project did not fetch may be at no commit at all.
+    Any pinned tree, fetched or not: a key pins line numbers to a commit, and
+    `key_store.write` refuses one that cannot name a commit -- which is the
+    honest answer for a local path this project did not fetch, and a better one
+    than never trying. Reached only through `main.py --draft-key`.
 
     The draft goes under `grading_keys/drafts/`, which nothing discovers and git
     ignores, so it is a file a human reads and corrects -- not an answer key the

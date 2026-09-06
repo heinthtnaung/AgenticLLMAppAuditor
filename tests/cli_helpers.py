@@ -43,9 +43,11 @@ def run_cli(monkeypatch: pytest.MonkeyPatch, repo_path: Path, artifacts_dir: Pat
     the same trap `stub_syft` records having fallen into. Pass `advice=None`
     after stubbing the model yourself to exercise a different path.
 
-    `flags` is how an opt-in reaches the parser -- `--semantic-probe` is the
-    only one today, and it is the one flag that changes what the audit asks a
-    server for, so a test drives it through argparse rather than around it.
+    `flags` is how an opt-in reaches the parser. Two of them matter here:
+    `--semantic-probe`, which changes what the audit asks a server for, and
+    `--draft-key`, which is the only thing that runs the drafting stage. Both
+    are driven through argparse rather than around it, because what a default
+    run does not do is a fact about the command a reader types.
     """
     if advice is not None or not _model_already_stubbed():
         stub_model(monkeypatch, advice if advice is not None else STUB_ADVICE)

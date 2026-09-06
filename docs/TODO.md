@@ -71,18 +71,13 @@ Ticked history is in git before commit `a78482c`; what shipped is in
   fixed from this side.
 - **`--artifacts-dir` half-applies under `--compare-models`**: the local arm
   follows it, the cloud arm is always `artifacts/cloud_auditor/`.
-- **The model now authors ground truth on a default path.** Any `main.py <url>`
-  drafts a key when none exists. It lands somewhere nothing discovers and git
-  ignores, and promotion is a human act -- but the guarantee a reader remembers
-  is weaker than "the model never decides what counts as a finding".
 - **One of four model-driven stages stays local under `--compare-models`**: the
   knowledge-base embeddings (`retrieval/retrieve.py`). Threading the ask through
   it would make the cloud arm whole.
 - **A drafted key is bounded above by the extractor.** The model is shown the
   extracted surfaces and `draft` drops any entry naming a file, line or risk
   class it was not shown, so such a key can never falsify the extractor. The
-  output does not record that ceiling, and this now happens on every URL audit
-  rather than behind a flag.
+  output does not record that ceiling.
 - **Drafted keys live under `grading_keys/drafts/`, which is gitignored**, so a
   figure scored against one is unreproducible from a clean checkout until a
   human promotes it. Acceptable only because `tool_drafted` makes the number

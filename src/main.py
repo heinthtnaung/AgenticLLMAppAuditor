@@ -47,6 +47,14 @@ def build_parser() -> argparse.ArgumentParser:
              "recorded in planner.json",
     )
     parser.add_argument(
+        "--draft-key", action="store_true",
+        help="after the audit, ask the LOCAL model to draft a grading key for this "
+             "app when none exists, into grading_keys/drafts/. Off by default: it "
+             "costs a model call and a default audit is meant to stay fast and "
+             "static. The draft is a starting point for a human to correct, not an "
+             "answer -- see promote_key.py",
+    )
+    parser.add_argument(
         "--compare-models", action="store_true",
         help="audit the tree twice, once with the local model and once with a "
              "hosted one, draft a grading key if none exists, and score both. "
@@ -71,6 +79,10 @@ def _draft_key(app_dir: Path) -> None:
     here is a printed reason and an exit code of zero. Without this a second run
     over the same app would raise `FileExistsError`, which `EXPECTED_FAILURES`
     turns into exit 1 -- an audit that succeeded, reported as a failure.
+
+    Works on any tree that is pinned, not just a fetched one: a key's line
+    numbers mean nothing without the commit they were read at, and
+    `key_store.write` says exactly that when it cannot find one.
     """
     try:
         drafted = pipeline.draft_key(app_dir, audit_run.local_model(True)["ask"])
@@ -107,6 +119,11 @@ def run(args: argparse.Namespace) -> int:
     # A link runs the whole pipeline; a local path stays the offline audit.
     if pipeline.is_url(args.repo_path):
         pipeline.publish(result["artifacts"], result["advisories_read"])
+    # Asked for, never assumed. Drafting costs a model call, and a default audit
+    # is meant to be fast and to make the same artifacts whether a model was
+    # running or not. It is also the one place the model authors ground truth,
+    # which is worth a flag a reader can see in the command they typed.
+    if args.draft_key:
         _draft_key(app_dir)
     # Printed, never written into an artifact: a duration is the one number here
     # that changes on every run, and putting it in a file would break the

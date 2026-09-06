@@ -39,7 +39,8 @@ Optional, each degrades with a printed reason if absent: **Syft** (SBOM),
 ## Use
 
 ```bash
-python src/main.py https://github.com/owner/app.git   # fetch, audit, report, draft a key
+python src/main.py https://github.com/owner/app.git   # fetch, audit, report
+python src/main.py <repo> --draft-key                  # + draft a grading key to correct
 python src/main.py path/to/app                        # audit a local tree
 python src/main.py path/to/app --semantic-probe       # + ask the model about prompt templates
 ```
@@ -256,9 +257,10 @@ because `--compare-models` needs it — see Guarantees for what that costs.
   guarantees, bought deliberately for the comparison.
 - **The model never decides what counts as a finding.** It writes advice, may
   order and narrow the plan, and judges prompt templates behind an opt-in flag.
-  Behind `--compare-models` it also drafts *ground truth* — the one place it
-  decides what an audit is marked against, which is why every figure such a key
-  produces carries `key_drafted_by_scored_system`.
+  Behind `--draft-key` it also drafts *ground truth* — the one place it decides
+  what an audit is marked against, which is why that is a flag, why the draft
+  lands where nothing discovers it, and why every figure such a key produces
+  carries `key_drafted_by_scored_system`.
 - **Artifacts are byte-identical** run to run, except model-authored prose,
   `planner.json`'s order, and probe findings — all inert by default. **Not the
   `cloud_auditor` arm**: a hosted model takes no seed, so nothing under
