@@ -13,8 +13,7 @@ Ticked history is in git before commit `a78482c`; what shipped is in
 | `checks/output_handling.py` | `%` is judged by shape: `execute("SELECT %s" % ("lit",))` is reported, `% "lit"` is not. Arbitrary. |
 | `artifacts/aibom.py` | `_kind_of` reads Python's name tables whatever the language, so the import guards cover the Python backend only. |
 | `artifacts/aibom.py` | An MCP client given `name=` files as `TOOL`, not `MCP_SERVER`. Shape-versus-membership, same family as the dataset gap. Strict xfail. |
-| `artifacts/vex.py` | Subscripts `finding["purl"]` unguarded, then sorts. A future advisory producer omitting it would sort `str` against `None`. |
-| `checks/workflow.py` | `act` dispatching `undeclared_dependency` with a null mapping dies as `AttributeError`, not a clear error. Unreachable today. |
+| `artifacts/vex.py` | A finding with a null `purl` groups under `""`, so its statement names no subcomponent and the `component_name` it carried is not used instead; two unversioned components under one advisory collapse into one statement. Schema-valid input today's check cannot produce. Pinned by tests. |
 | `coverage.checks_run` | Means "was dispatched" for a graph check and "found a subject" for the edge check, so a model can move the probe between them. Strict xfail. |
 | `evaluation.json` | `model_disabled` fires on `unavailable` too, collapsing "turned off" and "unreachable". |
 | Scoring | Nothing version-gates `findings.json`, so a stale artifact scores silently against fresh code. |

@@ -63,6 +63,48 @@ class AuditState(TypedDict):
     steps: int
 
 
+def _mapping_for(name: str, state: AuditState) -> dict:
+    """The surface-to-component mapping, refusing to run a check without one.
+
+    Both component-anchored checks read it, and neither fails usefully on None.
+    `supply_chain` raises `AttributeError: 'NoneType' object has no attribute
+    'get'`, which names nothing a reader can act on. `known_advisory` is worse:
+    it returns *no findings at all*, so `coverage.checks_run` names a check that
+    ran over nothing and the artifact reads as "looked and found none" when the
+    truth is "was handed nothing to look at".
+
+    A check reaching here with no mapping is a dispatch bug -- `run_checks`
+    decides eligibility from the same field -- so this refuses loudly rather
+    than degrading. Degrading is for a missing generator, not for the auditor
+    contradicting itself.
+    """
+    mapping = state["mapping_document"]
+    if mapping is None:
+        raise ValueError(
+            f"{name} was dispatched but the mapping document is None; the check "
+            "is only eligible when dependencies were readable, so this is a "
+            "dispatch bug rather than a repository without a manifest")
+    return mapping
+
+
+def _advisories_for(name: str, state: AuditState) -> dict:
+    """The advisory index, refusing to run the advisory check without one.
+
+    The sibling of `_mapping_for`, and the same silence one argument over:
+    `find_known_advisories` returns no findings for a null index exactly as it
+    did for a null mapping, so `coverage.checks_run` named a check that was
+    handed nothing. `run_checks._checks_that_examined_something` gates on both
+    fields, so arriving here without either is the same dispatch bug.
+    """
+    advisories = state["advisories"]
+    if advisories is None:
+        raise ValueError(
+            f"{name} was dispatched but no advisory index was ingested; the check "
+            "is only eligible when Trivy produced one, so this is a dispatch bug "
+            "rather than a run without advisory data")
+    return advisories
+
+
 def _run_one(name: str, state: AuditState,
              surfaces: list) -> tuple[list[Finding], list[Probe]]:
     """Run the named check over the surfaces the planner left it, and return what it concluded.
@@ -77,12 +119,13 @@ def _run_one(name: str, state: AuditState,
         return permissions.find_over_privileged_tools(surfaces), []
     if name == supply_chain.CHECK_NAME:
         return supply_chain.find_undeclared_dependencies(
-            state["mapping_document"], supply_chain.surface_fields(state["surfaces"])), []
+            _mapping_for(name, state),
+            supply_chain.surface_fields(state["surfaces"])), []
     if name == taint.CHECK_NAME:
         return taint.run_over_repo(state["repo_path"], surfaces)
     if name == known_advisory.CHECK_NAME:
         return known_advisory.find_known_advisories(
-            state["mapping_document"], state["advisories"],
+            _mapping_for(name, state), _advisories_for(name, state),
             supply_chain.surface_fields(state["surfaces"])), []
     if name == output_handling.CHECK_NAME:
         return output_handling.run_over_repo(state["repo_path"], surfaces), []
