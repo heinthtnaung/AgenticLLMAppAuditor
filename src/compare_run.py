@@ -110,6 +110,7 @@ def score_both(app: str, local_dir: Path) -> None:
 
 def run(repo_path: str, artifacts_dir: Path, cloud_model: str | None = None) -> int:
     """Fetch, draft a key, audit twice, publish both, and score both."""
+    cloud_client.reset_exposure()
     app_dir = pipeline.resolve_repo(repo_path)
     audit_run.report_pin_gap(app_dir)
     app = app_dir.resolve().name
@@ -143,3 +144,23 @@ def _summarise(local_result: dict, cloud_result: dict, key: Path | None) -> None
         print(f"key    {key}  (tool_drafted, verified: false)")
     print("\nThe two arms differ in the planner's order, the semantic probe and the "
           "advice. The knowledge-base embeddings are local in both.")
+    _report_exposure()
+
+
+def _report_exposure() -> None:
+    """Say how much of the audited app went to a third party on this run.
+
+    The request bodies only, and every request that left -- including one that
+    timed out, because the bytes went whether or not an answer came back. The
+    API key travels in a header and is deliberately not in this figure.
+
+    What it cannot tell you is on the second line, and it is the part that
+    matters: retention, training use, and which upstream provider OpenRouter
+    routed to are not knowable from this side at all.
+    """
+    sent, requests = cloud_client.exposure()
+    print(f"\nTotal bytes exposed to cloud: {sent} in {requests} request(s)")
+    print("  the audited app's own source -- prompt text, file paths, line numbers, "
+          "finding titles and code snippets")
+    print("  not measurable from here: retention, training use, and which upstream "
+          "provider served the request")

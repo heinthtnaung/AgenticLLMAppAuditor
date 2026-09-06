@@ -50,10 +50,45 @@ MAX_TOKENS = 4000
 DECODE_SETTINGS = {"temperature": 0, "max_tokens": MAX_TOKENS}
 
 
+# What has left this machine for a third party, this process, in bytes on the
+# wire. Module state because both arms of a comparison send through this one
+# function and the total is a property of the run, not of either call.
+#
+# The request body only. The `Authorization` header carries the key, which is
+# not the audited app's source and must never be counted into a figure a report
+# prints -- and header framing is the transport's, not this tool's to claim.
+_sent_bytes = 0
+_sent_requests = 0
+
+
+def exposure() -> tuple[int, int]:
+    """How many bytes in how many requests have gone to the hosted model so far."""
+    return _sent_bytes, _sent_requests
+
+
+def reset_exposure() -> None:
+    """Start the count again. For a caller measuring one run, and for tests."""
+    global _sent_bytes, _sent_requests
+    _sent_bytes = _sent_requests = 0
+
+
+def _count(body: bytes) -> None:
+    """Record one request's body against the running total."""
+    global _sent_bytes, _sent_requests
+    _sent_bytes += len(body)
+    _sent_requests += 1
+
+
 def _post(payload: dict, key: str, timeout: int) -> dict:
     """Send one request. Raises `RuntimeError` for anything but a usable reply."""
+    body = json.dumps(payload).encode()
+    # Counted before the send, not after a successful reply: a request that
+    # times out or is refused has still left the machine, and a total that only
+    # counted successes would understate exposure in exactly the cases a reader
+    # cares most about.
+    _count(body)
     request = urllib.request.Request(
-        API_URL, data=json.dumps(payload).encode(),
+        API_URL, data=body,
         headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"})
     try:
         with urllib.request.urlopen(request, timeout=timeout) as response:
