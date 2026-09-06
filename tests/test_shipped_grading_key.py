@@ -16,6 +16,8 @@ required is required whether a reader guards it or not.
 from artifacts.repo_path import is_repo_relative_posix
 from artifacts.surface import SURFACE_KINDS
 from grading_keys import GROUND_TRUTH_SUFFIX, MANIFEST_SUFFIX, discover_graded_apps, key_path
+from evaluation.harness import KEY_SCHEMA_VERSION
+from grading_keys import AI_DRAFTED, KEY_SOURCES
 from shipped_key_fixtures import SHIPPED_APPS, read, shipped_entries, shipped_keys
 
 # `docs/SCHEMAS.md`, "the hand-written answer key": every field marked required.
@@ -34,13 +36,10 @@ REQUIRED_ENTRY_FIELDS = (
     "llm_surface",
 )
 
-KEY_SCHEMA_VERSION = 2
 # `docs/SCHEMAS.md`: a code anchor is the first 60 characters of the trimmed
 # source text at `line`.
 CODE_ANCHOR_LENGTH = 60
 OWASP_IDS = ("LLM01", "LLM02", "LLM03", "LLM06", "AUDITABILITY")
-KEY_SOURCES = ("ai_drafted", "upstream_docs", "manual_review")
-AI_DRAFTED = "ai_drafted"
 
 
 # --- What ships -------------------------------------------------------------

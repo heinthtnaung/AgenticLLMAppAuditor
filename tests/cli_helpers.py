@@ -141,13 +141,12 @@ def stub_model(monkeypatch: pytest.MonkeyPatch, answer: str = STUB_ADVICE) -> No
     model said that day. The contract's refusal rules are tested directly
     against `judge`, so nothing here needs a real answer to be meaningful.
     """
-    # All three take the optional `model` the real signatures take: the AI report
-    # asks a different local model, and the retriever asks for the embedding
-    # model's digest and for vectors, so a stub that accepted neither would fail
-    # on the call rather than on the answer. `embed` is stubbed here because it
-    # is the third call this client makes to the server, and a grounded run
-    # makes it once per finding.
-    monkeypatch.setattr(model_client, "ask", lambda prompt, model=None: answer)
+    # All three take the optional `model` the real signatures take: the
+    # retriever asks for the embedding model's digest and for vectors, so a
+    # stub that refused that argument would fail on the call rather than on the
+    # answer. `embed` is stubbed here because it is the third call this client
+    # makes to the server, and a grounded run makes it once per finding.
+    monkeypatch.setattr(model_client, "ask", lambda prompt: answer)
     monkeypatch.setattr(model_client, "model_digest", lambda model=None: STUB_MODEL_DIGEST)
     monkeypatch.setattr(model_client, "embed",
                         lambda texts, model=None: [STUB_EMBEDDING for _ in texts])

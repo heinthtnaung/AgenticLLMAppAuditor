@@ -15,7 +15,7 @@ commit `8c3f9f6`.
 | — | Advisory ingestion (Trivy) folded into Phase 2/3. |
 | — | One grading key ships, AI-drafted and unverified; eight entries after review. |
 | — | Objective 5: `experiments/` compares the local model against hosted ones. |
-| — | `reproduce.sh` regenerates every detection and latency figure in one command. |
+| — | `reproduce.sh` regenerated every figure in one command; replaced by `main.py --compare-models`, which audits with both models and scores both. |
 | — | The comparison's exposure ledger was measuring nothing: `surfaces_described` held a constant label, not a measurement, and the field list was asserted rather than derived. |
 | — | The comparison counted templates no model was asked about as agreement; `experiments/agreement.py` partitions them into four buckets that must sum. |
 | — | `src/` may not import `experiments/`, and a test now asserts it rather than the README claiming it. |

@@ -1,11 +1,21 @@
-"""Asks a hosted model, for the local-vs-cloud study only.
+"""Asks a hosted model. The second of two modules in `src/` that opens a socket.
 
-**Outside `src/` on purpose.** The auditor's published guarantee is that its
-audit path opens no socket except to local Ollama, and
-`tests/parsing/test_offline_containment.py` asserts an *exact* set of modules
-that reach the network. This module would break that set. It is not part of the
-tool: it is part of the study that evaluates the tool, and nothing under `src/`
-may import it -- which the same test now enforces in both directions.
+**Read this before assuming the auditor is still offline.** It is, by default,
+and that is now a narrower claim than it was. `model_client` reaches local
+Ollama; this reaches OpenRouter over the internet, and
+`tests/parsing/test_offline_containment.py` names both as an exact set, so a
+third module still cannot appear without a test failing.
+
+What keeps the guarantee meaningful is that **nothing imports this unless
+`--compare-models` is passed**. An ordinary audit -- a local path or a URL,
+with or without `--semantic-probe` -- never constructs a cloud ask, and
+`tests/parsing/test_offline.py` still counts the sockets an audit attempts. The
+honest statement is no longer "the tool cannot reach the internet" but "the
+audit does not, and asking it to is one explicit flag that says so in its name".
+
+Using it sends the audited repository's own source to a third party: prompt
+template text to the probe, surface ids and code snippets to the planner and
+the advice prompts. `experiments/exposure.py` is what accounts for that.
 
 The key is read from the environment and never written anywhere. Error messages
 name the variable, never its value, and never echo headers or the request body.
@@ -13,14 +23,11 @@ name the variable, never its value, and never echo headers or the request body.
 
 import json
 import os
-import sys
 import urllib.error
 import urllib.request
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-
-from config import ENV_FILE, read_env_file  # noqa: E402
+from config import ENV_FILE, read_env_file
 
 API_URL = "https://openrouter.ai/api/v1/chat/completions"
 KEY_VARIABLE = "OPENROUTER_API_KEY"

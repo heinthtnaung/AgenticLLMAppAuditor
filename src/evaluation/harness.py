@@ -18,7 +18,8 @@ from pathlib import Path
 
 from evaluation.document import AGENTIC_AUDITOR, build_evaluation
 from evaluation.scorer import score_app
-from grading_keys import GROUND_TRUTH_SUFFIX, key_path
+from grading_keys import (
+    GROUND_TRUTH_SUFFIX, KEY_SOURCES, TOOL_DRAFTED, key_path)
 
 FINDINGS_NAME = "findings.json"
 SURFACES_NAME = "surfaces.json"
@@ -30,8 +31,10 @@ KEY_FIELDS = (
     "schema_version", "upstream_commit", "source", "verified", "verified_by",
     "verified_date", "findings", "findings_complete", "expected_surfaces_complete",
 )
-# The ground_truth.json shape the scorer knows how to read.
-KEY_SCHEMA_VERSION = 2
+# The ground_truth.json shape the scorer knows how to read. Version 3 widened
+# `source` with `tool_drafted`; the check is exact equality, so a version-2 key
+# is refused rather than read by a scorer whose vocabulary has moved under it.
+KEY_SCHEMA_VERSION = 3
 
 # The entry fields whose absence would raise: `scorer.py` and `grading.py` both
 # subscript these unguarded. A deliberate **subset** of the eight `SCHEMAS.md`
@@ -62,8 +65,14 @@ def _read(path: Path, what: str, system: str = AGENTIC_AUDITOR) -> dict:
         raise ValueError(f"{path} is not readable json: {error}") from error
 
 
-def _check_key(key: object, path: Path) -> dict:
-    """Refuse a key the scorer would misread, naming the fault rather than raising deep."""
+def check_key(key: object, path: Path) -> dict:
+    """Refuse a key the scorer would misread, naming the fault rather than raising deep.
+
+    Public because promotion asks it the same question a scoring run does: a
+    key that would be refused at score time must be refused at promotion
+    time, and reimplementing these rules in `key_promotion` is how the two
+    copies come to disagree.
+    """
     if not isinstance(key, dict):
         raise ValueError(f"{path} must hold a grading key object, got {type(key).__name__}")
     missing = [field for field in KEY_FIELDS if field not in key]
@@ -73,6 +82,15 @@ def _check_key(key: object, path: Path) -> dict:
         raise ValueError(
             f"{path} is schema_version {key['schema_version']!r}; the scorer reads "
             f"{KEY_SCHEMA_VERSION}")
+    if key["source"] not in KEY_SOURCES:
+        raise ValueError(
+            f"{path} has source {key['source']!r}, which is not one of {KEY_SOURCES}. "
+            "A source outside the vocabulary earns no qualification, so a typo here "
+            "would publish a drafted key's figures as though a human had written it.")
+    if key["source"] == TOOL_DRAFTED and key["verified"]:
+        raise ValueError(
+            f"{path} is {TOOL_DRAFTED} and verified: a tool cannot verify the key it "
+            "wrote for itself. Change the source if a human has since checked it.")
     if not isinstance(key["findings"], list):
         raise ValueError(f"{path} has a non-list findings; a key lists what is really there")
     for position, entry in enumerate(key["findings"]):
@@ -112,7 +130,7 @@ def load_app(app: str, artifacts_dir: Path, system: str = AGENTIC_AUDITOR,
     findings_path = artifacts_dir / app / FINDINGS_NAME
     surfaces_path = artifacts_dir / app / SURFACES_NAME
     return (
-        _check_key(_read(path, f"a grading key for {app}"), path),
+        check_key(_read(path, f"a grading key for {app}"), path),
         _check_artifact(_read(findings_path, f"{app}'s findings", system),
                         FINDINGS_FIELDS, findings_path),
         _check_artifact(_read(surfaces_path, f"{app}'s surfaces", system),

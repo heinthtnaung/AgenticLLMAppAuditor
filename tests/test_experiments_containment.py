@@ -40,18 +40,19 @@ from conftest import REPO_ROOT, SRC_DIR
 EXPERIMENTS_DIR = REPO_ROOT / "experiments"
 EXPERIMENTS_PACKAGE = "experiments"
 
-# The six modules present when this guard was written, named so the sweep
-# cannot pass by finding an empty or moved directory. `cloud_client` is the one
-# that reaches the internet; the others are what it is wired to, and any of them
-# would drag it in. This is a floor, not the whole set: a seventh file is
-# covered by the derivation above without editing the list.
-KNOWN_EXPERIMENT_MODULES = frozenset({"cloud_client", "compare_models", "exposure",
+# The five modules present when this guard was written, named so the sweep
+# cannot pass by finding an empty or moved directory. `cloud_client` used to be
+# here and moved to `src/` when `--compare-models` landed, so the study no
+# longer owns the socket -- what is left is the comparison itself. This is a
+# floor, not the whole set: a sixth file is covered by the derivation above
+# without editing the list.
+KNOWN_EXPERIMENT_MODULES = frozenset({"compare_models", "exposure",
                                       "comparison_report", "agreement", "prompt_kinds"})
 
 # Two planted importers, one per spelling, to prove the sweep fires on a real
 # violation rather than on nothing at all.
 PLANTED_FILE = "planted.py"
-PLANTED_BARE_IMPORT = "import cloud_client\n"
+PLANTED_BARE_IMPORT = "import agreement\n"
 PLANTED_PACKAGE_IMPORT = "from experiments.exposure import Ledger\n"
 
 
@@ -91,10 +92,15 @@ def test_the_experiment_modules_guarded_against_are_present() -> None:
     assert experiment_import_names() >= KNOWN_EXPERIMENT_MODULES
 
 
-def test_the_cloud_client_is_one_of_the_names_derived() -> None:
-    """The module that reaches the internet is named by derivation, not by hand."""
-    assert (EXPERIMENTS_DIR / "cloud_client.py").is_file()
-    assert "cloud_client" in experiment_import_names()
+def test_the_studys_own_entry_point_is_one_of_the_names_derived() -> None:
+    """A module really present is really derived, so the sweep cannot pass on nothing.
+
+    It used to be `cloud_client` here, because that was the module reaching the
+    internet. It now lives in `src/` behind `--compare-models`, so this tree no
+    longer owns a socket and the guard's subject is the study's own code.
+    """
+    assert (EXPERIMENTS_DIR / "compare_models.py").is_file()
+    assert "compare_models" in experiment_import_names()
 
 
 def test_no_source_module_imports_anything_from_experiments() -> None:
@@ -103,7 +109,7 @@ def test_no_source_module_imports_anything_from_experiments() -> None:
 
 
 def test_that_the_sweep_would_notice_a_bare_name_import(tmp_path) -> None:
-    """Mutation check: `import cloud_client` names no folder, and must still be caught."""
+    """Mutation check: `import agreement` names no folder, and must still be caught."""
     (tmp_path / PLANTED_FILE).write_text(PLANTED_BARE_IMPORT, encoding="utf-8")
     assert modules_importing_experiments(tmp_path) == {PLANTED_FILE}
 

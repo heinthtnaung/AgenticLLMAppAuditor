@@ -87,8 +87,45 @@ def _unreachable_advice(findings: list[dict]) -> tuple[list[dict], dict]:
     return entries, model_provenance(MODEL_UNAVAILABLE)
 
 
+def _advice_with_provenance(findings: list[dict], language: str,
+                            module_names: tuple[str, ...],
+                            passages_for: advise.Retriever,
+                            advisor: dict | None) -> tuple[list[dict], dict]:
+    """Advise with the named model, or the local one, recording whichever answered."""
+    if advisor is None:
+        digest = model_client.model_digest()
+        entries = advise.advise_all(findings, language, module_names, passages_for)
+        return entries, model_provenance(
+            MODEL_USED, model_client.MODEL, model_client.DECODE_SETTINGS, digest)
+    entries = advise.advise_all(findings, language, module_names, passages_for,
+                                advisor["ask"])
+    if not entries or _nothing_answered(entries):
+        # `advise_one` swallows the per-finding RuntimeError, so an unreachable
+        # advisor otherwise reaches here looking like a model that answered and
+        # gets recorded as `used` -- while every entry beneath it says
+        # `model_unavailable`. Raising hands it to the caller's existing
+        # degradation path, so remediation.json agrees with findings.json
+        # instead of contradicting it. The local branch is spared this because
+        # `model_digest` probes reachability before any advice is asked for.
+        # `not entries` too: with no findings nothing was asked, and the local
+        # branch may claim `used` there only because `model_digest` proved the
+        # server was up. An advisor has no such probe, so claiming it would be
+        # a provenance record of a call that never happened.
+        raise RuntimeError(f"{advisor['identifier']} answered no finding")
+    return entries, model_provenance(
+        MODEL_USED, advisor["identifier"], advisor["settings"], advisor.get("digest"))
+
+
+def _nothing_answered(entries: list[dict]) -> bool:
+    """True when there were entries and every one of them says the model was unreachable."""
+    return bool(entries) and all(
+        entry["status"] == UNAVAILABLE and entry.get("reason") == ADVICE_UNAVAILABLE_REASON
+        for entry in entries)
+
+
 def build_remediation(findings_document: dict, language: str,
-                      module_names: tuple[str, ...]) -> str:
+                      module_names: tuple[str, ...],
+                      advisor: dict | None = None) -> str:
     """Ask the model to advise on every finding, and record what it said or did not.
 
     A model that cannot be reached degrades the artifact rather than failing the
@@ -96,6 +133,12 @@ def build_remediation(findings_document: dict, language: str,
     yields no bill of materials. The knowledge base degrades separately and is
     probed once for the whole run -- an unreachable model and an unbuilt index
     are two different absences, and the artifact records each on its own block.
+
+    `advisor` names a different model and the call that reaches it, as
+    `build_findings` takes `probe_model`. Absent -- every ordinary audit -- the
+    local client answers and records itself. It exists so the cloud arm of
+    `--compare-models` cannot write the local model's identifier into an
+    artifact a hosted model produced.
     """
     findings = findings_document["findings"]
     # Probed before the findings are looked at, so an app with nothing found
@@ -104,10 +147,8 @@ def build_remediation(findings_document: dict, language: str,
     # having, and it costs one embed call that `advise_all([])` would not make.
     grounding = retrieve.probe(config.get_path("AUDITOR_KNOWLEDGE_DIR"))
     try:
-        digest = model_client.model_digest()
-        entries = advise.advise_all(findings, language, module_names, grounding.passages_for)
-        provenance = model_provenance(
-            MODEL_USED, model_client.MODEL, model_client.DECODE_SETTINGS, digest)
+        entries, provenance = _advice_with_provenance(
+            findings, language, module_names, grounding.passages_for, advisor)
     except RuntimeError:
         entries, provenance = _unreachable_advice(findings)
     document = build_remediation_document(

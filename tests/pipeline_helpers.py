@@ -3,16 +3,15 @@
 `pipeline.py` composes stages that each have test files of their own, so the
 tests here replace each stage at the seam the pipeline calls it through:
 `fetch` on the pipeline's own imported name, `emit` and `is_available` on
-`emit_vex`, `export_all` on `export_reports`, `format_report` on `ai_report`.
-Nothing in this module clones, launches a process, calls a model, or writes
-outside the tmp_path a test hands it.
+`emit_vex`, and `export_all` on `export_reports`. Nothing in this module
+clones, launches a process, calls a model, or writes outside the tmp_path a
+test hands it.
 """
 
 from pathlib import Path
 
 import pytest
 
-import ai_report
 import emit_vex
 import export_reports
 import fetch_repo
@@ -101,22 +100,3 @@ def stub_export(monkeypatch: pytest.MonkeyPatch, written: tuple[Path, ...] = (),
     monkeypatch.setattr(export_reports, "export_all", fake_export)
     return calls
 
-
-def stub_ai_report(monkeypatch: pytest.MonkeyPatch, written: Path | None = None,
-                   error: Exception | None = None) -> list[Path]:
-    """Replace the optional AI-formatted view, recording what it was asked to format.
-
-    Answers the page path the real stage would return, so no repaired test
-    prints `wrote None`; `error` is how a test asks for the degrade path.
-    """
-    calls: list[Path] = []
-
-    def fake_format(app_artifacts: Path) -> Path:
-        """Record the artifact directory, then answer with a page or refuse."""
-        calls.append(app_artifacts)
-        if error is not None:
-            raise error
-        return written if written is not None else app_artifacts / ai_report.AI_REPORT_NAME
-
-    monkeypatch.setattr(ai_report, "format_report", fake_format)
-    return calls

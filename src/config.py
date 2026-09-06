@@ -9,7 +9,6 @@ ENV_FILE = REPO_ROOT / ".env"
 # Every setting the auditor understands, with the value used when nothing overrides it.
 DEFAULTS = {
     "AUDITOR_MODEL": "qwen2.5-coder:7b-instruct",
-    "AUDITOR_AI_REPORT_MODEL": "gemma4:latest",
     "AUDITOR_SERVER_URL": "http://localhost:11434/api/generate",
     "AUDITOR_TIMEOUT_SECONDS": "120",
     "AUDITOR_EMBED_MODEL": "nomic-embed-text:latest",

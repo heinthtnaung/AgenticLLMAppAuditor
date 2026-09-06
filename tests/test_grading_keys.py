@@ -35,7 +35,7 @@ from grading_keys import (
 APP = "a-graded-app"
 
 # Enough for a key to exist and parse. Discovery never reads a key's contents
-# -- the scorer does, and `harness._check_key` is where its shape is checked.
+# -- the scorer does, and `harness.check_key` is where its shape is checked.
 STUB = "{}"
 
 # A manifest that really pins something. Discovery *does* read this one: a

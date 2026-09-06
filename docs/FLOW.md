@@ -12,8 +12,8 @@ repo (path or URL)
 ```
 
 Separate commands, by design — the audit path opens no socket and needs no
-renderer: `emit_vex.py` (OpenVEX), `export_reports.py` (HTML/PDF),
-`ai_report.py` (model-styled view), `evaluate.py` (scoring).
+renderer: `emit_vex.py` (OpenVEX), `export_reports.py` (HTML/PDF), `evaluate.py`
+(scoring).
 
 ## The checks
 

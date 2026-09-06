@@ -16,7 +16,7 @@ The states, and why each is its own test:
   audit that never reached for a server at all.
 
 Every model here is a stand-in the test wrote. `PROBE_MODEL` is shaped like the
-block `main.probe_inputs` builds, so what is asserted is the shape a real run
+block `main.local_model` builds, so what is asserted is the shape a real run
 records; `tests/cli/test_main_probe.py` covers the real one.
 """
 

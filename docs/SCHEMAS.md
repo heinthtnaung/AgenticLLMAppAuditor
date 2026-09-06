@@ -16,7 +16,7 @@ one and you update every reader. Full prior wording is in git before commit
 | `findings.openvex.json` | — | OpenVEX, written by `emit_vex.py` |
 | `remediation.json` | 2 | per-finding advice + what grounded it |
 | `planner.json` | 2 | the check order and what chose it |
-| `evaluation.json` | 3 | scores against grading keys |
+| `evaluation.json` | 4 | scores against grading keys |
 
 ## Rules that hold across all of them
 
@@ -42,6 +42,8 @@ Closed sets. Adding a value bumps the artifact's `schema_version`.
 | `mapping.reason` | `third_party` `stdlib` `first_party` `used_but_undeclared` `unresolved` |
 | `aibom.kind` | `MODEL` `TOOL` `AGENT` `DATASET` `MCP_SERVER` |
 | `model_run.status` | `used` `unavailable` `disabled` |
+| `evaluation.system` | `agentic_auditor` `baseline_static_rules` `baseline_sbom_only` `cloud_auditor` |
+| `ground_truth.source` | `ai_drafted` `manual_review` `tool_drafted` `upstream_docs` |
 
 `LLM02` is the **2023** spelling of improper output handling; 2025 numbers it
 LLM05. Every other id is 2025.
@@ -85,6 +87,28 @@ package must leave it `null`.
 
 `verified: false` means the scorer attaches `key_unverified` to every figure. A
 run against `false` is not thesis-grade and says so.
+
+**Discovery is non-recursive, and that is a contract.** `discover_graded_apps`
+globs one level, so `grading_keys/drafts/` is invisible to it, to
+`evaluate.py`, to `fetch_repo.check_not_a_graded_app` and to `emit_vex`. That is
+what lets the auditor draft a key without enrolling the app against it. Three
+modules depend on it; changing the glob to `rglob` breaks all three silently.
+
+Drafts also carry `expected_surfaces` (what the extractor found, so a miss can
+be told from a bad find), a per-entry `code_anchor` read from the source rather
+than asked of the model, and entries sorted by `(file, line, id)`. A draft that
+lacks any of those is refused by `promote_key.py` rather than moved.
+
+**`source` is validated against the vocabulary**, not merely required: a typo
+used to be accepted and earn no qualification at all. `ai_drafted` and
+`tool_drafted` both earn `key_ai_drafted`; `tool_drafted` earns
+`key_drafted_by_scored_system` as well and may never be `verified: true`, since
+a tool cannot verify the key it wrote for itself. That qualification is about
+**validity, not quality** — it survives a human checking every entry, because
+checking cannot make the tool's own choice of what to include independent.
+
+Schema 3 widened `source`. The check is exact equality, so a version-2 key is
+refused rather than read by a scorer whose vocabulary has moved under it.
 
 ## Study output, not an audit artifact
 

@@ -15,7 +15,8 @@ import importlib.util
 import os
 from pathlib import Path
 
-from ast_scan import imported_modules, module_name, parse, source_files
+from ast_scan import (
+    imported_modules, module_name, modules_importing, parse, source_files)
 from conftest import SRC_DIR
 from deps import syft_runner
 from retrieval import store
@@ -25,14 +26,23 @@ WORKFLOW_SOURCE = SRC_DIR / "checks" / "workflow.py"
 # The two settings that would send a trace of the audit to LangSmith.
 TRACING_VARIABLES = ("LANGSMITH_TRACING", "LANGCHAIN_TRACING_V2")
 
-# The only module that opens a network connection *in this process*, and it
-# talks to Ollama on this machine. `fetch_repo` is deliberately absent: it
-# reaches a remote, but it does so by launching git, so the connection is a
-# child process's and never this one's. Which programs may be launched is
-# asserted by test_no_write_commands.py, so the two guards meet without
-# overlapping -- and together they say the auditor's own process opens nothing
-# but a local model socket.
-NETWORK_MODULES = frozenset({"model_client.py"})
+# The modules that open a network connection *in this process*. Two, and the
+# difference between them is the whole guarantee:
+#
+#   model_client.py  reaches Ollama on this machine.
+#   cloud_client.py  reaches OpenRouter over the internet, and is constructed
+#                    only when `--compare-models` is passed.
+#
+# The set is exact, so a third module cannot appear without this failing. What
+# it no longer says is that the tool cannot reach the internet -- it says only
+# two modules can, and `test_offline.py` is what proves an ordinary audit
+# attempts neither beyond Ollama.
+#
+# `fetch_repo` is deliberately absent: it reaches a remote, but it does so by
+# launching git, so the connection is a child process's and never this one's.
+# Which programs may be launched is asserted by test_no_write_commands.py, so
+# the two guards meet without overlapping.
+NETWORK_MODULES = frozenset({"model_client.py", "cloud_client.py"})
 
 # What a module would have to import to open one. `subprocess` is absent on
 # purpose: it starts a program, and which programs may be started is asserted
@@ -65,7 +75,7 @@ PLANTED_CHROMADB = "from chromadb.config import Settings\n"
 #
 # `checks/semantic_probe.py` is the third and the sharpest case, because it is
 # the only check whose whole job is asking the model a question. Its purity is
-# what makes that safe: `model_ask_fn` is a parameter, `main.probe_inputs` is
+# what makes that safe: `model_ask_fn` is a parameter, `audit_run.local_model` is
 # the one place `model_client.ask` is handed to it, and absent that argument the
 # check returns nothing at all. An import here would let the module reach the
 # server on its own -- from inside `workflow.audit`, where the graph must
@@ -79,13 +89,6 @@ PLANTED_MODEL_CLIENT = "import model_client\n"
 def test_the_vector_store_is_told_not_to_phone_home() -> None:
     """Chroma's telemetry is a setting, so it is asserted like Syft's update check above."""
     assert store.CLIENT_SETTINGS.anonymized_telemetry is False
-
-
-def modules_importing(package: str, root: Path = SRC_DIR) -> set[str]:
-    """The modules under a tree that import a package, by its name or any submodule."""
-    return {module_name(path, root) for path in source_files(root)
-            if any(name == package or name.startswith(f"{package}.")
-                   for name in imported_modules(parse(path)))}
 
 
 def modules_importing_chromadb(root: Path = SRC_DIR) -> set[str]:

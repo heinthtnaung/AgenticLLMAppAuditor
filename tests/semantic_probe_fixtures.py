@@ -124,7 +124,7 @@ PROMPT_APP_SURFACES = 3
 PROMPT_APP_FINDINGS = 2
 PROMPT_APP_CHECKS_RUN = 4
 
-# Provenance shaped like `main.probe_inputs`, which is the one place the real
+# Provenance shaped like `main.local_model`, which is the one place the real
 # client is handed to the check. The digest is bare hex the way Ollama reports
 # one, and the settings are non-empty because `model_provenance` refuses a used
 # model that cannot say how it was decoded.

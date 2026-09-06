@@ -299,6 +299,76 @@ What the static approach shows: structural weakness in a prompt template is
 detectable without execution, and cheaply. What it does not: that static matches
 dynamic in recall, which would need the comparison this study did not run.
 
+## Local versus hosted, over a whole audit
+
+`--compare-models` audits the tree twice. Run against `damn-vulnerable-llm-agent`
+at `c0cf9a14`, `qwen2.5-coder:7b-instruct` against `z-ai/glm-5.2`:
+
+| | local | hosted |
+|---|---|---|
+| Findings | 6 | 6 |
+| `findings.json` difference | — | **`model_run` only** |
+| Advice written | 2 of 6 | 4 of 6 |
+| Advice rejected | 4 | 1 |
+| Advice unavailable | 0 | 1 |
+| Wall clock | 14.9s | 122.3s |
+
+**Detection was identical.** The two `findings.json` files differ in exactly one
+field, `model_run`, and the six findings match line for line. That is not a
+surprise once the pieces are named: the planner may reorder checks but never
+subtract one, and this app's single prompt template interpolates nothing, so the
+semantic probe refutes it from the text and neither model is ever asked. On this
+app the model cannot change what is found, which makes it a poor choice of
+comparison subject and a good demonstration of why the static checks carry the
+result.
+
+**The difference is in the advice**, the one stage where a better model showed
+plainly: 4 of 6 findings got usable guidance from the hosted model against 2 of
+6 from the local one, at eight times the wall clock and with the audited app's
+source leaving the machine. One hosted entry came back `unavailable`.
+
+One run, no seed on the hosted side. Quote it as a sample.
+
+## The auto-drafted grading key, measured
+
+`--compare-models` drafts a key with the local model when none exists. Run once
+against `damn-vulnerable-llm-agent` at `c0cf9a14` -- a run the tool now refuses,
+because that app has a shipped key -- here is what it produced:
+
+| | |
+|---|---|
+| Entries drafted | 12 |
+| OWASP classes used | `LLM06` for all 12 |
+| Files named | `transaction_db.py` (8), `utils.py` (4) |
+| Matched by the local arm | 0 of 12 |
+| Matched by the hosted arm | 0 of 12 |
+
+All twelve entries name surfaces the extractor really found, so the grounding
+filter added afterwards keeps all twelve: the key is wrong in its judgements,
+not in its coordinates, and no filter over coordinates can catch that.
+
+**The key is not merely circular. It is noise.** It stamped one risk class on
+every entry, never opened `main.py` -- where the prompt injection and the
+discarded agent trace actually are -- and agreed with nothing, including the
+audit run by the same model that wrote it. The shipped key -- itself
+`ai_drafted` and `verified: false`, but written against the app's source and
+revised under review -- finds 3 of 8 on the same tree.
+
+The failure is worth naming precisely, because it is not the one predicted. The
+risk anticipated was a *flattering* key: a model marking its own homework and
+scoring well. What happened instead is that the drafting task and the auditing
+task are different enough that the same model fails them differently, so the
+score collapses to zero rather than inflating. Either way the number measures
+nothing about the tool, which is what `key_drafted_by_scored_system` exists to
+say on every figure such a key produces.
+
+**It stays in the tool because it was asked for**, it is behind a flag, and its
+output is self-describing. It is not a substitute for the shipped key, nothing
+in this report is scored against it, and drafting is now refused outright for
+any app that already has one -- the first run of this feature overwrote
+`artifacts/agentic_auditor/evaluation.json`, replacing the 3-of-8 figure with a
+0-of-12 measured against the drafted key.
+
 ## Threats to validity
 
 - One application, eight entries, an unverified key drafted by the same system

@@ -18,6 +18,7 @@ from pathlib import Path
 from ast_scan import (
     imported_modules,
     module_name,
+    modules_importing,
     parse,
     source_files,
     string_literals,
@@ -57,13 +58,6 @@ def modules_naming(text: str, root: Path) -> set[str]:
     """Return the modules under a tree that write a given string anywhere in their source."""
     return {module_name(path, root) for path in source_files(root)
             if any(text in literal for literal in string_literals(parse(path)))}
-
-
-def modules_importing(package: str, root: Path) -> set[str]:
-    """Return the modules under a tree that import a package, or anything inside it."""
-    return {module_name(path, root) for path in source_files(root)
-            if any(name == package or name.startswith(f"{package}.")
-                   for name in imported_modules(parse(path)))}
 
 
 def scored_modules_naming(text: str) -> set[str]:

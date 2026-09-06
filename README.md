@@ -39,7 +39,7 @@ Optional, each degrades with a printed reason if absent: **Syft** (SBOM),
 ## Use
 
 ```bash
-python src/main.py https://github.com/owner/app.git   # fetch, audit, report
+python src/main.py https://github.com/owner/app.git   # fetch, audit, report, draft a key
 python src/main.py path/to/app                        # audit a local tree
 python src/main.py path/to/app --semantic-probe       # + ask the model about prompt templates
 ```
@@ -50,36 +50,55 @@ Writes 11 artifacts to `artifacts/agentic_auditor/<app>/`. Start with
 Other commands:
 
 ```bash
+python src/promote_key.py <app>           # accept a drafted key, after correcting it
 python src/evaluate.py                    # score against grading_keys/
 python src/run_baseline.py baseline_static_rules <app>
 python src/emit_vex.py artifacts/agentic_auditor/<app>
 python src/export_reports.py artifacts/agentic_auditor/<app>
 python src/index_knowledge.py             # build the advice knowledge base
-python src/ai_report.py artifacts/agentic_auditor/<app>   # optional AI-styled view
 python src/fetch_repo.py <url>            # fetch and pin a repo without auditing
 python src/model_client.py                # check the local model answers
 ```
 
-`report.ai.html` is a presentation of `report.md`, not an authority: it is
-model-written, non-deterministic, and refused whole if it invents an advisory.
-
-## Reproduce everything
+## Compare a local and a hosted model, in one command
 
 ```bash
-./reproduce.sh
+python src/main.py https://github.com/owner/app.git --compare-models
 ```
 
-Clones the app at its pinned commit, audits it with the probe, runs both
-baselines, scores all three, and — if `OPENROUTER_API_KEY` is set — runs the
-local-versus-hosted comparison.
+Fetches the repo, drafts a grading key with the local model, audits the tree
+twice — once local, once hosted — publishes both, and scores both.
 
-Regenerates every detection and latency figure in `docs/REPORT.md`. **Not the
-Objective 5 numbers**: those were measured over two other applications, one of
-which is not pinned by any grading key, so the script cannot reproduce them.
+```
+artifacts/agentic_auditor/<app>/   local arm
+artifacts/cloud_auditor/<app>/     hosted arm
+grading_keys/drafts/<app>.*        the key both were scored against
+```
 
-Without a key it completes anyway and says which step it skipped. A placeholder
-key would be worse than none: it fails authentication and, under `set -e`, would
-abort before the summary.
+Needs `OPENROUTER_API_KEY` in `.env`; `--cloud-model` overrides
+`OPENROUTER_MODEL`. It implies `--semantic-probe`, because without a model call
+the two arms produce identical findings.
+
+**Three of four model-driven stages follow the flag** — the planner's order, the
+semantic probe and the remediation advice. The knowledge-base embeddings stay
+local in both arms, so the hosted run is a cloud audit wherever a model can
+change a finding.
+
+**It sends the audited repository's source to a third party**: prompt template
+text, file paths, line numbers, surface names, finding titles and code
+snippets. That is why it is a flag and not a default.
+
+**The drafted key is circular evaluation and every figure says so.** A key
+written by the system being scored measures the model's agreement with itself,
+not the tool's recall — a defect the model cannot see when auditing will also be
+missing from the key it writes. Such keys carry `source: "tool_drafted"`, which
+earns `key_ai_drafted`, `key_unverified` **and**
+`key_drafted_by_scored_system`. The last survives a human verifying every entry,
+because verification cannot make the tool's own choice of what to include
+independent. Drafted keys go to `grading_keys/drafts/` — inside the keys folder, but
+gitignored and invisible to discovery, so nothing is scored against one until
+`promote_key.py` moves it up. An app that already has a key is refused outright
+rather than drafted over.
 
 ## Worked example
 
@@ -218,22 +237,32 @@ Three things worth knowing before quoting a result:
 - **Latency is not a quality signal** — it is confounded by network, provider
   queue and routing.
 
-`experiments/` lives outside `src/`, and nothing under `src/` may import it, so
-the audit path stays offline. A test asserts both directions.
+`experiments/` lives outside `src/` and nothing under `src/` may import it; a
+test asserts both directions. The cloud client itself now lives in `src/`,
+because `--compare-models` needs it — see Guarantees for what that costs.
 
 ## Guarantees
 
 - **Never executes the audited app.** `test_no_mutation.py` hashes the tree
   before and after; `test_no_write_commands.py` refuses write-capable
   subprocesses.
-- **The audit path opens no socket** except to local Ollama. `model_client.py`
-  is the only module under `src/` that connects, asserted as an exact set. The
-  one exception is `experiments/`, the local-vs-cloud study, which is not part
-  of the tool and which nothing under `src/` may import.
+- **An audit opens no socket** except to local Ollama. Two modules under `src/`
+  can connect and the set is exact: `model_client.py` reaches Ollama on this
+  machine, and `cloud_client.py` reaches OpenRouter — constructed only when
+  `--compare-models` is passed, which is why `main.py` imports it inside that
+  branch. A test runs a default audit and counts the sockets it attempts, so
+  the narrower claim is proved rather than asserted. **This used to say one
+  module. It says two now, and that is a real reduction** in what the tool
+  guarantees, bought deliberately for the comparison.
 - **The model never decides what counts as a finding.** It writes advice, may
   order and narrow the plan, and judges prompt templates behind an opt-in flag.
+  Behind `--compare-models` it also drafts *ground truth* — the one place it
+  decides what an audit is marked against, which is why every figure such a key
+  produces carries `key_drafted_by_scored_system`.
 - **Artifacts are byte-identical** run to run, except model-authored prose,
-  `planner.json`'s order, and probe findings — all inert by default.
+  `planner.json`'s order, and probe findings — all inert by default. **Not the
+  `cloud_auditor` arm**: a hosted model takes no seed, so nothing under
+  `artifacts/cloud_auditor/` is reproducible byte for byte.
 
 ## Docs
 

@@ -1,5 +1,5 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "app": "damn-vulnerable-llm-agent",
   "upstream_commit": "c0cf9a14adad76e9d6a53c41741f625334bd9971",
   "source": "ai_drafted",

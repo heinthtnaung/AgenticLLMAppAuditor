@@ -73,6 +73,18 @@ def imported_modules(tree: ast.Module) -> set[str]:
                     if isinstance(node, ast.ImportFrom) and node.module}
 
 
+def modules_importing(package: str, root: Path = SRC_DIR) -> set[str]:
+    """The modules under a tree that import a package, by its name or any submodule.
+
+    Three guards ask this question of three different packages -- chromadb, the
+    model client, the cloud client -- so the scan lives here rather than in the
+    first file that needed it.
+    """
+    return {module_name(path, root) for path in source_files(root)
+            if any(name == package or name.startswith(f"{package}.")
+                   for name in imported_modules(parse(path)))}
+
+
 def referenced_names(tree: ast.Module) -> set[str]:
     """Return every name a module mentions -- bare, as an attribute leaf, or imported by name.
 

@@ -142,6 +142,21 @@ def _pin_for(app_dir: Path) -> Path | None:
     return graded if graded.is_file() else None
 
 
+def pin_document(app_dir: Path) -> dict:
+    """What pins this tree, as a document, or an empty one when nothing does.
+
+    The public form of `_pin_for`, added because drafting a grading key needs
+    the commit and must not form a second opinion about where it comes from.
+    """
+    pin = _pin_for(app_dir)
+    if pin is None:
+        return {}
+    try:
+        return json.loads(pin.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
 def check_tree_matches_pin(app_dir: Path) -> str:
     """Refuse an audit of a tree that no longer matches the commit its manifest pins.
 

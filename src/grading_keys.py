@@ -23,6 +23,23 @@ from pathlib import Path
 
 KEYS_DIR = Path(__file__).resolve().parents[1] / "grading_keys"
 
+# Who wrote a key. Closed, and consulted at runtime rather than only in a test:
+# `scorer` compared against a bare literal and `harness` validated the field's
+# presence but never its value, so a typo'd source earned no qualification at
+# all -- silence in exactly the place a qualification exists to break it.
+AI_DRAFTED = "ai_drafted"
+MANUAL_REVIEW = "manual_review"
+TOOL_DRAFTED = "tool_drafted"
+UPSTREAM_DOCS = "upstream_docs"
+KEY_SOURCES = (AI_DRAFTED, MANUAL_REVIEW, TOOL_DRAFTED, UPSTREAM_DOCS)
+
+# No human wrote either, so both are unverified drafts. `TOOL_DRAFTED` is the
+# narrower and worse case: the key was written by the very system it then
+# scores, so the measurement is circular and stays circular even after a human
+# checks every entry -- verifying a key does not make the tool's own choice of
+# what to put in it independent.
+DRAFTED_SOURCES = (AI_DRAFTED, TOOL_DRAFTED)
+
 GROUND_TRUTH_SUFFIX = ".ground_truth.json"
 MANIFEST_SUFFIX = ".manifest.json"
 BASELINE_SUFFIX = ".baseline.json"
