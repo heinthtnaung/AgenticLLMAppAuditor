@@ -111,17 +111,15 @@ no socket, counting attempts rather than successes.
 Nine entry points. The first audits; the rest each do one thing to what an audit
 produced, so none of them is on the audit path.
 
-```
-python src/main.py <repo>              audit; --semantic-probe, --draft-key, --compare-models
-python src/evaluate.py                 score against grading_keys/
-python src/run_baseline.py <system>    run a comparison baseline
-python src/promote_key.py <app>        accept a corrected drafted key
-python src/emit_vex.py <artifacts>     OpenVEX, via vexctl
-python src/export_reports.py <dir>     HTML and PDF
-python src/index_knowledge.py          build the advice knowledge base
-python src/fetch_repo.py <url>         fetch and pin, without auditing
-python src/model_client.py             check the local model answers
-```
+- `python src/main.py <repo>`: Audit; `--semantic-probe`, `--draft-key`, `--compare-models`
+- `python src/evaluate.py`: Score against `grading_keys/`
+- `python src/run_baseline.py <system>`: Run a comparison baseline
+- `python src/promote_key.py <app>`: Accept a corrected drafted key
+- `python src/emit_vex.py <artifacts>`: OpenVEX, via vexctl
+- `python src/export_reports.py <dir>`: HTML and PDF
+- `python src/index_knowledge.py`: Build the advice knowledge base
+- `python src/fetch_repo.py <url>`: Fetch and pin, without auditing
+- `python src/model_client.py`: Check the local model answers
 
 ## Boundaries
 

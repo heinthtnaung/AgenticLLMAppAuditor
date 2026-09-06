@@ -29,11 +29,11 @@ Each check's title says what it establishes, not what its risk class implies.
 
 **Required.** Nothing else is needed to get surfaces, findings and a report.
 
-| | | |
+| Requirement | Version | Note |
 |---|---|---|
 | Python | **3.10+** | modern type hints (`list[Path]`) |
 | `git` | any | only for fetching a repository by URL |
-| the packages in `requirements.txt` | pinned exactly | tree-sitter (JS/TS parsing), langgraph, fpdf2, chromadb |
+| Dependencies | pinned exactly | tree-sitter (JS/TS parsing), langgraph, fpdf2, chromadb |
 
 Versions are pinned with `==`, not `>=`, on purpose: a tree-sitter grammar
 update renames node types, which would silently change `surfaces.json` — the
@@ -43,7 +43,7 @@ artifact every published number is computed from.
 the stage was skipped, and produces fewer artifacts. None of them is needed to
 try the tool.
 
-| Tool | Install | Without it |
+| Tool | Installation | Consequence if Missing |
 |---|---|---|
 | **Syft** | `brew install syft` / [releases](https://github.com/anchore/syft/releases) | no `sbom.json`, no `mapping.json`, so no supply-chain findings |
 | **Trivy** | `brew install trivy` / [releases](https://github.com/aquasecurity/trivy/releases) | no advisory findings; `coverage` says the data was not ingested |
@@ -81,13 +81,11 @@ unreachable model — rather than failing.
 
 **2 — look at the evidence behind a finding.**
 
-```
-report.md            what was found, in prose, with the line and why it matters
-findings.json        the same, as data; `coverage` says which checks could look
-surfaces.json        every LLM surface found, and every file skipped
-mapping.json         which surface reaches which dependency
-remediation.md       per-finding advice, attributed to the passages that grounded it
-```
+- `report.md`: What was found, in prose, with the line and why it matters.
+- `findings.json`: The same, as data; `coverage` says which checks could look.
+- `surfaces.json`: Every LLM surface found, and every file skipped.
+- `mapping.json`: Which surface reaches which dependency.
+- `remediation.md`: Per-finding advice, attributed to the passages that grounded it.
 
 **3 — turn on the optional model checks.** Off by default so an ordinary audit
 is fast and produces the same artifacts whether a model was running or not.
@@ -141,7 +139,7 @@ python src/fetch_repo.py <url>
 All optional, read from the environment first, then `.env` (gitignored). An
 unknown `AUDITOR_*` name is refused rather than ignored, so a typo is loud.
 
-| Setting | Default | |
+| Setting | Default | Description |
 |---|---|---|
 | `AUDITOR_MODEL` | `qwen2.5-coder:7b-instruct` | the local model |
 | `AUDITOR_SERVER_URL` | `http://localhost:11434/api/generate` | must stay a local address |
@@ -267,11 +265,9 @@ python src/main.py <repo> --compare-models
 Audits the tree twice — once with the local model, once with the hosted one —
 publishes both, drafts a grading key if none exists, and scores both arms.
 
-```
-artifacts/agentic_auditor/<app>/   the local arm
-artifacts/cloud_auditor/<app>/     the hosted arm
-grading_keys/drafts/<app>.*        the key both were scored against
-```
+- `artifacts/agentic_auditor/<app>/`: The local arm.
+- `artifacts/cloud_auditor/<app>/`: The hosted arm.
+- `grading_keys/drafts/<app>.*`: The key both were scored against.
 
 It implies `--semantic-probe`: without a model call the two arms produce
 identical findings. `--cloud-model <name>` overrides `OPENROUTER_MODEL`.
@@ -347,6 +343,59 @@ Three things worth knowing before quoting a result:
 `experiments/` lives outside `src/` and nothing under `src/` may import it; a
 test asserts both directions. The cloud client itself now lives in `src/`,
 because `--compare-models` needs it — see Guarantees for what that costs.
+
+## Where everything lives
+
+```
+src/          the auditor
+tests/        its tests, mirroring src/ package for package
+docs/         what it does, what it found, what is left
+experiments/  the local-vs-hosted study — not the tool
+grading_keys/ the answers a run is scored against
+knowledge/    what the remediation advice is grounded on
+vex/          deliberately empty; see below
+artifacts/    generated output          (gitignored)
+fetched/      repositories fetched by URL (gitignored)
+```
+
+**`src/` — one responsibility per module.** The nine commands sit at the top
+level because `python src/main.py` is the interface; everything else is grouped
+by the job it does.
+
+| | |
+|---|---|
+| `parsing/` | read a repository into a syntax tree, and bind names to what they hold |
+| `detectors/` | find the LLM surfaces in that tree — the vocabulary of framework names lives here |
+| `artifacts/` | the record types and their JSON shapes; **schemas are contracts**, so this is where a change breaks readers |
+| `checks/` | the six checks, plus the planner and the graph that runs them |
+| `deps/` | Syft and Trivy, and the surface-to-component mapping |
+| `baselines/` | the two systems the auditor is compared against — a grep/AST ruleset and an SBOM-only one |
+| `evaluation/` | the scorer, and the one join rule that decides whether a finding answers a key entry |
+| `keys/` | grading keys: locating, drafting, promoting |
+| `retrieval/` | the knowledge index behind the advice |
+| `reporting/` | Markdown, HTML, and the progress an operator sees |
+
+Two boundaries in that list are enforced by tests rather than convention.
+`evaluation/` is outside the trees it scores, so a check can never read the
+scorecard. And `experiments/` is outside `src/` entirely — nothing in `src/` may
+import it — because it is the study that evaluates the tool, not part of it.
+
+**Three folders are not source and are worth knowing about.**
+
+`grading_keys/` holds the answer keys a run is scored against, one per app,
+hand-written. **It ships none today.** `drafts/` beneath it is where
+`--draft-key` writes, gitignored and invisible to discovery, so a model-written
+key is never mistaken for a human's.
+
+`knowledge/` is the pinned OWASP Cheat Sheet index the remediation advice cites.
+Build it with `python src/index_knowledge.py`; without it the advice still runs,
+ungrounded, and says so.
+
+`vex/` is **empty on purpose** and expected to stay that way. It was for OpenVEX
+documents this project would *consume* — upstream claims that a CVE does not
+affect a component. Consuming VEX is out of scope, and the folder's own README
+says what would revive it. The VEX this project *emits* is a different thing and
+lands in `artifacts/`.
 
 ## Guarantees
 

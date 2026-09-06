@@ -25,6 +25,10 @@ one and you update every reader. Full prior wording is in git before commit
 - **Three exceptions, all model-authored, all inert by default**:
   `findings.json`'s prose fields and its probe records, `remediation.json`'s
   advice, and `planner.json`'s `order`.
+- **And one whole directory.** Nothing under `artifacts/cloud_auditor/` is
+  byte-identical: a hosted model takes no `seed`, so the arm `--compare-models`
+  writes there differs run to run in the fields a model authored. The rule holds
+  for every other system.
 - **No rate is ever a field in `evaluation.json`.** Counts and denominators
   only, so no number can be quoted without what it is out of.
 
@@ -34,26 +38,23 @@ Closed sets. Adding a value bumps the artifact's `schema_version`.
 
 | Field | Values |
 |---|---|
-| `Surface.kind` | `PROMPT_TEMPLATE` `AGENT_DEF` `TOOL_CALL` `DATA_SOURCE` |
-| `Finding.owasp_id` | `LLM01` `LLM02` `LLM03` `LLM06` `AUDITABILITY` |
-| `Finding.detection` | `static` `probe` |
-| `Probe.outcome` | `confirmed` `refuted` `inconclusive` `not_run` |
-| `Probe.reason` | `trace_left_static_analysis` `app_not_runnable` `step_cap_reached` `model_unavailable` |
-| `mapping.reason` | `third_party` `stdlib` `first_party` `used_but_undeclared` `unresolved` |
-| `aibom.kind` | `MODEL` `TOOL` `AGENT` `DATASET` `MCP_SERVER` |
-| `model_run.status` | `used` `unavailable` `disabled` |
-| `evaluation.system` | `agentic_auditor` `baseline_static_rules` `baseline_sbom_only` `cloud_auditor` |
-| `ground_truth.source` | `ai_drafted` `manual_review` `tool_drafted` `upstream_docs` |
+| `Surface.kind` | `PROMPT_TEMPLATE`, `AGENT_DEF`, `TOOL_CALL`, `DATA_SOURCE` |
+| `Finding.owasp_id` | `LLM01`, `LLM02`, `LLM03`, `LLM06`, `AUDITABILITY` |
+| `Finding.detection` | `static`, `probe` |
+| `Probe.outcome` | `confirmed`, `refuted`, `inconclusive`, `not_run` |
+| `Probe.reason` | `trace_left_static_analysis`, `app_not_runnable`, `step_cap_reached`, `model_unavailable` |
+| `mapping.reason` | `third_party`, `stdlib`, `first_party`, `used_but_undeclared`, `unresolved` |
+| `aibom.kind` | `MODEL`, `TOOL`, `AGENT`, `DATASET`, `MCP_SERVER` |
+| `model_run.status` | `used`, `unavailable`, `disabled` |
+| `evaluation.system` | `agentic_auditor`, `baseline_static_rules`, `baseline_sbom_only`, `cloud_auditor` |
+| `ground_truth.source` | `ai_drafted`, `manual_review`, `tool_drafted`, `upstream_docs` |
 
 `LLM02` is the **2023** spelling of improper output handling; 2025 numbers it
 LLM05. Every other id is 2025.
 
 ## findings.json
 
-```
-schema_version   coverage        model_run       probe_count
-checks_narrowed  probes          finding_count   findings
-```
+Keys: `schema_version`, `coverage`, `model_run`, `probe_count`, `checks_narrowed`, `probes`, `finding_count`, `findings`.
 
 - **`coverage.checks_run`** — checks that had something to examine, sorted.
   Absent means "could not look at all", which the scorer reads as
@@ -77,8 +78,25 @@ checks_narrowed  probes          finding_count   findings
 `grading_keys/<app>.ground_truth.json` + `.manifest.json`. The manifest must
 pin `upstream_commit`; a key without one is refused.
 
-Entry fields: `id` `file` `line` `owasp_id` `llm_surface` `surface_name`
-`component` `detection` `title` `description` `code_anchor`.
+**None ships today.** One did, from 2026-09-05 to 2026-09-06; `git show
+f9bd9ff:grading_keys/damn-vulnerable-llm-agent.ground_truth.json` recovers it,
+and `docs/REPORT.md`'s figures were measured against it. With no key,
+`evaluate.py` refuses rather than scoring zero.
+
+**Top-level fields**, thirteen, all required: `schema_version`, `app`,
+`upstream_commit`, `source`, `verified`, `verified_by`, `verified_date`,
+`findings`, `finding_count`, `findings_complete`, `expected_surfaces`,
+`expected_surface_count`, `expected_surfaces_complete`. `harness.check_key`
+enforces nine of them — the ones the scorer would crash on; the other four are
+held by the promotion checks and by the tests over a promoted key.
+
+**Entry fields.** Required: `id`, `file`, `line`, `owasp_id`, `llm_surface`,
+`title`, `description`, and `code_anchor` — the first seven by
+`key_promotion.ENTRY_FIELDS`, the anchor by its own check because an absent one
+and an empty one are different faults. Optional and nullable: `surface_name`,
+`component`, `detection`, `line_end`. The join reads the optional three behind a
+truthiness test, which is what makes the next paragraph a trap rather than a
+detail.
 
 Two that silently weaken the join if wrong: `llm_surface` is compared against
 the finding's `surface_kind`, and **`component` is compared against the
@@ -126,11 +144,7 @@ has already changed once silently — two incompatible files sit in the untracke
 `experiments/results/` with nothing to tell them apart, and the next reader
 should not have to guess.
 
-```
-schema_version  repository  subjects_seen  arms
-agreements      disagreements
-not_put_to_a_model  not_examined_by_every_arm  unmeasurable_exposure
-```
+Keys: `schema_version`, `repository`, `subjects_seen`, `arms`, `agreements`, `disagreements`, `not_put_to_a_model`, `not_examined_by_every_arm`, `unmeasurable_exposure`.
 
 - **The four buckets partition `subjects_seen`**, and the producer raises if
   they do not. Only subjects every arm actually put to its model can agree or

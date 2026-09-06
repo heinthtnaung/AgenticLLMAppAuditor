@@ -5,11 +5,8 @@ long-form discussion is in git before commit `c10daa0`.
 
 ## Detection
 
-**The key these figures were measured against is no longer in the repository.** It was removed deliberately; the last commit holding it is `f9bd9ff`, and `git show f9bd9ff:grading_keys/damn-vulnerable-llm-agent.ground_truth.json` recovers it. So the measurement happened and is auditable, and `python src/evaluate.py` on a clean checkout now finds no app to score. Read every number below as a record of a run, not as one you can reproduce today.
-
-
-Scored against `grading_keys/damn-vulnerable-llm-agent.ground_truth.json`, eight
-entries.
+**The key these figures were measured against is no longer in the repository.** It was removed deliberately; the last commit holding it is `f9bd9ff`, and `git show f9bd9ff:grading_keys/damn-vulnerable-llm-agent.ground_truth.json` recovers it. The measurement happened and is auditable, but running `python src/evaluate.py` on a clean checkout will now find no app to score. Read every number below as a record of a run, not as one you can reproduce today.
+These were scored against `grading_keys/damn-vulnerable-llm-agent.ground_truth.json`, comprising eight entries.
 
 | System | Matched | Missed |
 |---|---|---|
@@ -17,12 +14,10 @@ entries.
 | Baseline A, grep/AST rules | **4 of 8** | DVLA-05, 07, 08, 09 |
 | Baseline B, SBOM-only | **0 of 8** | all |
 
-```
-auditor only   DVLA-07
-baseline only  DVLA-01, DVLA-02
-both           DVLA-03, DVLA-06
-neither        DVLA-05, DVLA-08, DVLA-09
-```
+- **Auditor only**: DVLA-07
+- **Baseline only**: DVLA-01, DVLA-02
+- **Both**: DVLA-03, DVLA-06
+- **Neither**: DVLA-05, DVLA-08, DVLA-09
 
 **The auditor reaches DVLA-07 alone** — the supply-chain entry — because that
 means joining an LLM surface to a component in a bill of materials, which no
