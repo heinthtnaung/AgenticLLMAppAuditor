@@ -9,8 +9,13 @@ same way the fixed one did:
 
 * a deeper chain, `agent.runnable.invoke(question)` -- the receiver is the
   *value* of `agent.runnable`, which this file never bound to a name;
-* a value inside a container, `agent.invoke({"input": question})` --
-  `argument_names` sees bare names only, so the dict hides the value.
+* a value through a nested call, `agent.invoke(build(question))` --
+  `argument_names` looks through literal containers now, but not through a
+  call, whose return value is not what was passed in.
+
+The container shape that used to sit here -- `agent.invoke({"input": question})`
+-- is **fixed**, and its test moved to `test_taint_methods.py` with the rest of
+the decided behaviour. That is the retirement path this file describes.
 
 Both yield **no finding and no probe**, and neither of the two probes the check
 does emit catches them: `_unfollowed` reports only a source that was never bound
@@ -49,11 +54,11 @@ DEEP_CHAIN_UNRESOLVED = (
     "agent.runnable.invoke(question) matches no bound sink, and the miss is "
     "not reported as an INCONCLUSIVE probe either")
 
-DICT_LITERAL_UNRESOLVED = (
-    "open defect, see the LLM01 entry in docs/TODO.md -- the dict literal: "
-    "argument_names sees bare names only, so agent.invoke({'input': question}) "
-    "hands the value over invisibly, and the miss is not reported as an "
-    "INCONCLUSIVE probe either")
+NESTED_CALL_UNRESOLVED = (
+    "open defect, see the LLM01 entry in docs/TODO.md -- the nested call: "
+    "argument_names looks through literal containers but not through a call, so "
+    "agent.invoke(build(question)) hands the value over invisibly, and the miss "
+    "is not reported as an INCONCLUSIVE probe either")
 
 
 @pytest.mark.xfail(strict=True, reason=DEEP_CHAIN_UNRESOLVED)
@@ -70,8 +75,14 @@ def test_a_sink_reached_through_a_deeper_chain_is_not_answered_with_silence() ->
     assert findings or probes
 
 
-@pytest.mark.xfail(strict=True, reason=DICT_LITERAL_UNRESOLVED)
-def test_a_value_passed_inside_a_dict_literal_is_not_answered_with_silence() -> None:
-    """The standard LangChain input shape, and the same wrong answer for a different reason."""
-    findings, probes = trace_agent_call('agent.invoke({"input": question})')
+@pytest.mark.xfail(strict=True, reason=NESTED_CALL_UNRESOLVED)
+def test_a_value_handed_through_a_nested_call_is_not_answered_with_silence() -> None:
+    """The hole `argument_names` left when it learned to look through containers.
+
+    A literal container carries its contents to the callee unchanged, so walking
+    one is sound. A call does not: `build(question)` returns whatever `build`
+    made of it. Naming that `question` would be a different claim -- so it is
+    not walked, and the shape is recorded here rather than passing as silence.
+    """
+    findings, probes = trace_agent_call("agent.invoke(build(question))")
     assert findings or probes

@@ -20,9 +20,15 @@ pinned in `test_taint_unknown_method.py`.
 
 What all three files hold is what the check really does, boundaries included. What it
 still cannot follow -- a deeper chain like `agent.runnable.invoke(question)`, and
-a value passed inside a dict literal -- is kept executable, as a strict xfail, in
-`test_taint_defect.py`: separate so a recorded hole is never read here as a
-decided boundary.
+a value handed over through a nested call like `agent.invoke(build(question))` --
+is kept executable, as a strict xfail, in `test_taint_defect.py`: separate so a
+recorded hole is never read here as a decided boundary.
+
+Three more files each hold one thing this file's three-line flow does not show:
+`test_taint_module_scope.py` the source and sink bound in different scopes,
+`test_taint_containers.py` the value passed inside a literal container, and
+`test_taint_multihop.py` the value the app derived from the source before
+handing it over -- and what that following over-claims.
 """
 
 import ast

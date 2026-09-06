@@ -17,7 +17,7 @@ from pathlib import Path
 
 from evaluation.document import AGENTIC_AUDITOR, SCORED_SYSTEMS
 from evaluation.harness import score_apps, write_evaluation
-from grading_keys import KEYS_DIR, discover_graded_apps
+from keys.grading_keys import KEYS_DIR, discover_graded_apps
 
 DEFAULT_ARTIFACTS_DIR = Path("artifacts")
 

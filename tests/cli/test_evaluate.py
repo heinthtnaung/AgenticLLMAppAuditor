@@ -1,7 +1,7 @@
 """Where the evaluation entry point writes, and how two systems stay apart.
 
 The per-system layout is the decision under test. `artifacts/<system>/<app>/`
-exists so three scored systems can coexist -- without it the second system's
+exists so four scored systems can coexist -- without it the second system's
 `evaluation.json` overwrites the first, and "scored by the unmodified harness"
 stops being true. So these tests assert the path and assert that two systems do
 not collide, not merely that a file appeared.
@@ -40,7 +40,7 @@ def test_the_evaluation_is_written_under_the_system_directory(tmp_path, monkeypa
 
 
 def test_nothing_is_written_beside_the_system_directory(tmp_path, monkeypatch) -> None:
-    """A file at `<artifacts-dir>/evaluation.json` is the path three systems would share."""
+    """A file at `<artifacts-dir>/evaluation.json` is the path four systems would share."""
     keys_dir = stage_keys(tmp_path)
     artifacts_dir = stage_artifacts(tmp_path)
     run_evaluate(monkeypatch, artifacts_dir, keys_dir=keys_dir)

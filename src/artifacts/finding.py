@@ -68,7 +68,9 @@ UNRESOLVED_OUTCOMES = (INCONCLUSIVE, NOT_RUN)
 class Probe:
     """One check that ran, or was planned and did not.
 
-    `detail` is descriptive only, like a surface's: nothing may join on it.
+    `detail` is descriptive only, like a surface's: **nothing in the audit or
+    scoring path may join on it**, because much of it is model-written. One
+    join exists, outside both paths, and `docs/SCHEMAS.md` records why.
     """
 
     probe_name: str

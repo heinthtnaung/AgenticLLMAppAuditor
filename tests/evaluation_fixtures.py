@@ -15,6 +15,7 @@ import json
 from collections.abc import Sequence
 
 from artifacts.finding import INCONCLUSIVE, SURFACE_SUBJECT, Finding, Probe
+from evaluation.harness import KEY_SCHEMA_VERSION
 from artifacts.findings_document import (
     ADVISORY_NOT_INGESTED,
     ADVISORY_SNAPSHOT,
@@ -59,7 +60,7 @@ def key_entry(**overrides) -> dict:
 def grading_key(entries: list[dict], **overrides) -> dict:
     """A whole key: complete, verified and hand-reviewed, so a test relaxes one flag at a time."""
     key = {
-        "app": APP, "schema_version": 2, "findings": list(entries),
+        "app": APP, "schema_version": KEY_SCHEMA_VERSION, "findings": list(entries),
         "findings_complete": True, "expected_surfaces_complete": True,
         "source": "manual_review", "verified": True, "verified_by": "a person",
         "verified_date": "2026-01-01", "upstream_commit": COMMIT,

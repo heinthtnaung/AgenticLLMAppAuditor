@@ -94,6 +94,20 @@ F_STRING_LINE = 5
 F_STRING_VARIABLE = "{user_role}"
 F_STRING_TEMPLATE = "You are a {user_role} agent. Answer the user."
 
+# An app whose template holds no interpolation point at all: every character of
+# it is text the author wrote. The check's claim cannot be met by such a
+# template, so it is refuted from the text alone and no model is asked -- the
+# one verdict this check reaches on its own.
+STATIC_TEMPLATE_APP = '''from langchain.prompts import ChatPromptTemplate
+
+prompt = ChatPromptTemplate.from_template("You are a support agent. Answer politely.")
+'''
+
+STATIC_TEMPLATE_LINE = 3
+STATIC_TEMPLATE_SURFACE_ID = (
+    f"{FILE}:{STATIC_TEMPLATE_LINE}:PROMPT_TEMPLATE:{PROMPT_SURFACE_NAME}")
+STATIC_TEMPLATE_TEXT = "You are a support agent. Answer politely."
+
 # An LLM app with no prompt template at all: a model is offered and there is
 # still nothing to ask about, which is what `checks_run` must leave out.
 NO_PROMPT_APP = '''from langchain.agents import AgentExecutor
@@ -110,7 +124,7 @@ PROMPT_APP_SURFACES = 3
 PROMPT_APP_FINDINGS = 2
 PROMPT_APP_CHECKS_RUN = 4
 
-# Provenance shaped like `main.probe_inputs`, which is the one place the real
+# Provenance shaped like `main.local_model`, which is the one place the real
 # client is handed to the check. The digest is bare hex the way Ollama reports
 # one, and the settings are non-empty because `model_provenance` refuses a used
 # model that cannot say how it was decoded.

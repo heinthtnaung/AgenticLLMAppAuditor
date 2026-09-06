@@ -24,7 +24,7 @@ from evaluation.harness import EVALUATION_NAME, FINDINGS_NAME, SURFACES_NAME
 from evaluation_fixtures import APP, COMMIT, findings_document, grading_key, key_entry, \
     surfaces_document
 from findings_fixtures import static_finding
-from grading_keys import GROUND_TRUTH_SUFFIX, MANIFEST_SUFFIX
+from keys.grading_keys import GROUND_TRUTH_SUFFIX, MANIFEST_SUFFIX
 
 # A second scored system, to prove the layout keeps two of them apart.
 OTHER_SYSTEM = "baseline_static_rules"

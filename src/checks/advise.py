@@ -35,6 +35,9 @@ PROMPT_BUDGET = 6000
 # the attributions to record. `Grounding.passages_for` has this shape.
 Retriever = Callable[[dict], tuple[str, list[dict]]]
 
+# Same shape as `model_client.ask`, so either client satisfies it.
+Ask = Callable[[str], str]
+
 # Enumerating the forbidden tokens measurably lowers the refusal rate, so the
 # prompt does it. It is an efficiency, never the guard: told the same thing in
 # general terms, the model quoted the app's own identifier straight back.
@@ -95,11 +98,17 @@ def split_answer(answer: str, language: str) -> tuple[str, list[dict]]:
 
 
 def advise_one(finding: dict, language: str, module_names: tuple[str, ...] = (),
-               retriever: Retriever | None = None) -> dict:
-    """Ask the model about one finding and return the entry, accepted or refused."""
+               retriever: Retriever | None = None, ask: Ask | None = None) -> dict:
+    """Ask the model about one finding and return the entry, accepted or refused.
+
+    `ask` defaults to the local model, so an ordinary audit is unchanged. It is
+    injected only by the cloud arm of `--compare-models`: without the seam that
+    arm would write the local model's identifier into `remediation.json` under
+    a directory named for the cloud, which is a false provenance record.
+    """
     passages, sources = retriever(finding) if retriever else ("", [])
     try:
-        answer = model_client.ask(build_prompt(finding, module_names, passages))
+        answer = (ask or model_client.ask)(build_prompt(finding, module_names, passages))
     except RuntimeError:
         return advice_entry(finding["finding_id"], UNAVAILABLE, MODEL_UNAVAILABLE)
     guidance, snippets = split_answer(answer, language)
@@ -111,6 +120,7 @@ def advise_one(finding: dict, language: str, module_names: tuple[str, ...] = (),
 
 
 def advise_all(findings: list[dict], language: str, module_names: tuple[str, ...] = (),
-               retriever: Retriever | None = None) -> list[dict]:
+               retriever: Retriever | None = None, ask: Ask | None = None) -> list[dict]:
     """Advise on every finding, so the artifact carries one entry per finding."""
-    return [advise_one(finding, language, module_names, retriever) for finding in findings]
+    return [advise_one(finding, language, module_names, retriever, ask)
+            for finding in findings]

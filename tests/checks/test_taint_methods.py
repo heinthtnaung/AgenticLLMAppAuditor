@@ -180,3 +180,22 @@ def test_each_method_list_still_holds_its_anchor_spellings() -> None:
     """The guard for the test above: two emptied lists are disjoint and would prove nothing."""
     assert ANCHOR_CONSUMING <= CONSUMING_METHODS
     assert ANCHOR_CONFIGURING <= CONFIGURING_METHODS
+
+
+def test_a_value_inside_a_dict_literal_is_followed_to_the_sink() -> None:
+    """The standard LangChain input shape, and a hole in this file's history.
+
+    `agent.invoke({"input": question})` was a strict xfail in
+    `test_taint_defect.py`: `argument_names` saw bare names only, so the dict
+    hid the value and the audit read as traced-and-found-nothing. It is decided
+    behaviour now, and it lives here because that is what this file is for.
+    """
+    findings, _probes = trace_agent_call('agent.invoke({"input": question})')
+    assert len(findings) == 1
+
+
+def test_a_value_inside_a_list_of_messages_is_followed_to_the_sink() -> None:
+    """The shape a plain chat API is called with, nested two containers deep."""
+    findings, _probes = trace_agent_call(
+        'agent.invoke(messages=[{"role": "user", "content": question}])')
+    assert len(findings) == 1

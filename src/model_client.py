@@ -79,18 +79,19 @@ def _post(url: str, payload: dict, model: str) -> dict:
         raise RuntimeError(f"model server at {url} sent invalid json: {error}") from error
 
 
-def ask(prompt: str, model: str = MODEL) -> str:
+def ask(prompt: str) -> str:
     """Send one prompt to the local model server and return its text reply.
 
-    `model` defaults to the audit model; a caller that wants a different local
-    model (the AI-formatted report uses gemma) passes it, and the rest of the
-    offline, fixed-decode contract is unchanged.
+    One model, `MODEL`. A `model=` parameter lived here for the AI-formatted
+    report, which asked a different local model; that feature is gone and
+    nothing else ever passed it. `embed` and `model_digest` still take theirs,
+    because an embedding model genuinely is a different model.
     """
     if not prompt.strip():
         raise ValueError("prompt must not be empty")
     body = _post(SERVER_URL, {
-        "model": model, "prompt": prompt, "stream": False, "options": DECODE_SETTINGS,
-    }, model)
+        "model": MODEL, "prompt": prompt, "stream": False, "options": DECODE_SETTINGS,
+    }, MODEL)
     if "response" not in body:
         raise RuntimeError(f"model server reply had no 'response' field: {body}")
     return body["response"]

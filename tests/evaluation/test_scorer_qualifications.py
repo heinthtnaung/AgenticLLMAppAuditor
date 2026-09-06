@@ -40,7 +40,8 @@ def test_the_vocabulary_is_the_documented_one() -> None:
     """A fixed list, sorted: the write-up quotes these strings verbatim."""
     assert QUALIFICATIONS == (
         "advisory_data_not_ingested", "expected_surfaces_not_complete",
-        "findings_not_complete", "key_ai_drafted", "key_unverified",
+        "findings_not_complete", "key_ai_drafted",
+        "key_drafted_by_scored_system", "key_unverified",
         "model_disabled", "no_key_findings", "scan_partial", "small_sample",
         "unresolved_components")
 

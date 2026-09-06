@@ -9,6 +9,8 @@ source, no unforeseen framework idiom. `mixed_app_fixtures` states its counts as
 literals so an empty extraction cannot pass as a clean one.
 """
 
+import json
+
 import pytest
 from conftest import scan_to_json
 from mixed_app_fixtures import (
@@ -22,7 +24,7 @@ from parsing.extractor import extract_file, extract_repo
 from parsing.extractor_js import parse_source
 from parsing.extractor_python import parse_file
 from artifacts.skipped_file import UnreadableSource
-from artifacts.surface import SURFACE_KINDS
+from artifacts.surface import PROMPT_TEMPLATE, SURFACE_KINDS
 
 
 def test_extract_repo_finds_every_surface_in_the_written_app(tmp_path) -> None:
@@ -97,3 +99,32 @@ def test_repeated_runs_produce_identical_bytes(tmp_path) -> None:
     """The same repository always serialises to the same bytes."""
     repo = str(write_mixed_app(tmp_path))
     assert scan_to_json(repo) == scan_to_json(repo)
+
+
+# --- A whole application that keeps its prompts on the instance --------------
+# The mixed app above holds its prompt in a module-level variable, so nothing in
+# this file walked a class-based application until now. Two methods assign the
+# same attribute, which is also the one thing the detector tests cannot show:
+# `surfaces.json` deduplicates on (file, line, kind, name), so two prompts
+# sharing a name have to survive as two records rather than collapse into one.
+CLASS_APP_FILE = "support_agent.py"
+CLASS_APP_SOURCE = '''class SupportAgent:
+    def __init__(self, user):
+        self.system_prompt = f"You are a support agent helping {user}."
+
+    def escalate(self, user):
+        self.system_prompt = f"You are escalating the ticket of {user}."
+'''
+CLASS_APP_PROMPT_LINES = (3, 6)
+
+
+def test_prompts_held_on_a_class_reach_the_artifact(tmp_path) -> None:
+    """Both attribute prompts are serialised, at their own lines and under their own name."""
+    repo = tmp_path / "class-app"
+    repo.mkdir()
+    (repo / CLASS_APP_FILE).write_text(CLASS_APP_SOURCE, encoding="utf-8")
+    document = json.loads(scan_to_json(str(repo)))
+    prompts = [s for s in document["surfaces"] if s["kind"] == PROMPT_TEMPLATE]
+    assert [(s["file"], s["line"], s["name"]) for s in prompts] == [
+        (CLASS_APP_FILE, line, "system_prompt") for line in CLASS_APP_PROMPT_LINES
+    ]

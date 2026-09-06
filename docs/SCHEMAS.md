@@ -16,7 +16,7 @@ one and you update every reader. Full prior wording is in git before commit
 | `findings.openvex.json` | — | OpenVEX, written by `emit_vex.py` |
 | `remediation.json` | 2 | per-finding advice + what grounded it |
 | `planner.json` | 2 | the check order and what chose it |
-| `evaluation.json` | 3 | scores against grading keys |
+| `evaluation.json` | 4 | scores against grading keys |
 
 ## Rules that hold across all of them
 
@@ -42,6 +42,8 @@ Closed sets. Adding a value bumps the artifact's `schema_version`.
 | `mapping.reason` | `third_party` `stdlib` `first_party` `used_but_undeclared` `unresolved` |
 | `aibom.kind` | `MODEL` `TOOL` `AGENT` `DATASET` `MCP_SERVER` |
 | `model_run.status` | `used` `unavailable` `disabled` |
+| `evaluation.system` | `agentic_auditor` `baseline_static_rules` `baseline_sbom_only` `cloud_auditor` |
+| `ground_truth.source` | `ai_drafted` `manual_review` `tool_drafted` `upstream_docs` |
 
 `LLM02` is the **2023** spelling of improper output handling; 2025 numbers it
 LLM05. Every other id is 2025.
@@ -85,6 +87,70 @@ package must leave it `null`.
 
 `verified: false` means the scorer attaches `key_unverified` to every figure. A
 run against `false` is not thesis-grade and says so.
+
+**Discovery is non-recursive, and that is a contract.** `discover_graded_apps`
+globs one level, so `grading_keys/drafts/` is invisible to it, to
+`evaluate.py`, to `fetch_repo.check_not_a_graded_app` and to `emit_vex`. That is
+what lets the auditor draft a key without enrolling the app against it. Three
+modules depend on it; changing the glob to `rglob` breaks all three silently.
+
+Drafts also carry `expected_surfaces` (what the extractor found, so a miss can
+be told from a bad find), a per-entry `code_anchor` read from the source rather
+than asked of the model, and entries sorted by `(file, line, id)`. A draft that
+lacks any of those is refused by `promote_key.py` rather than moved.
+
+**`source` is validated against the vocabulary**, not merely required: a typo
+used to be accepted and earn no qualification at all. `ai_drafted` and
+`tool_drafted` both earn `key_ai_drafted`; `tool_drafted` earns
+`key_drafted_by_scored_system` as well and may never be `verified: true`, since
+a tool cannot verify the key it wrote for itself. That qualification is about
+**validity, not quality** — it survives a human checking every entry, because
+checking cannot make the tool's own choice of what to include independent.
+
+Schema 3 widened `source`. The check is exact equality, so a version-2 key is
+refused rather than read by a scorer whose vocabulary has moved under it.
+
+## Study output, not an audit artifact
+
+`model-comparison.json` and `comparison.html`, written by
+`experiments/compare_models.py` beside the audit's artifacts. **Deliberately
+absent from the table above**, because it fails all three rules those rows
+share: it is not produced by `src/`, it is not byte-identical (the hosted arm
+takes no `seed` and `seconds` is wall clock), and it cannot be produced offline
+or without a key.
+
+It still carries `schema_version` — 1. Nothing validates it, because nothing
+reads the document back: it is written once and rendered from memory, and a
+loader with no reader would be dead code. The field is there because the shape
+has already changed once silently — two incompatible files sit in the untracked
+`experiments/results/` with nothing to tell them apart, and the next reader
+should not have to guess.
+
+```
+schema_version  repository  subjects_seen  arms
+agreements      disagreements
+not_put_to_a_model  not_examined_by_every_arm  unmeasurable_exposure
+```
+
+- **The four buckets partition `subjects_seen`**, and the producer raises if
+  they do not. Only subjects every arm actually put to its model can agree or
+  disagree; `not_put_to_a_model` holds the ones the probe settled on the text
+  alone, or where no model answered, each with a reason. Counting those as
+  agreement is how a run that consulted nobody reported "agree on 1 of 1".
+- **`not_examined_by_every_arm` takes precedence**: the planner may narrow the
+  probe per arm, and a subject one arm never saw is not comparable whatever the
+  others concluded.
+- **The one join on `Probe.detail` in the project.** `agreement.py` tells a
+  template refuted from its own text apart from one a model called safe. Both
+  are `refuted` carrying no reason — `Probe.__post_init__` forbids a reason on a
+  concluded outcome — so the sentence is the only marker. It joins on
+  `semantic_probe.STATIC_REFUTATION`, a constant `src/` owns rather than model
+  prose, and `tests/checks/test_semantic_probe_static_refutation.py` pins the
+  two together. A second such join would mean the field is carrying a
+  vocabulary and should be given one.
+- **`exposure.field_kinds_transmitted` is derived, never asserted.** It comes
+  from `prompt_kinds` — the kinds of prompt actually recorded — because the
+  planner and the probe share one seam and carry different things.
 
 ## evaluation.json
 

@@ -1,6 +1,13 @@
 """The framework names each detector looks for, defined once."""
 
 # --- Prompt surfaces -------------------------------------------------------
+
+# The key an LLM message carries its text under, in every provider's chat
+# format. Here rather than beside the detector because `checks/semantic_probe`
+# reads the same key back out to judge the text, and two copies of it is how
+# the detector and the probe come to disagree about what a message is.
+MESSAGE_CONTENT_KEY = "content"
+
 PROMPT_CLASSES = frozenset({
     "PromptTemplate", "ChatPromptTemplate", "FewShotPromptTemplate",
     "PipelinePromptTemplate", "SystemMessagePromptTemplate",

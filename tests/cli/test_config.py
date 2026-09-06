@@ -38,9 +38,9 @@ def missing_env_file(directory: Path) -> Path:
 def test_defaults_hold_exactly_the_known_settings() -> None:
     """DEFAULTS names exactly the settings the auditor understands, the two Phase 6 ones included."""
     assert sorted(config.DEFAULTS) == [
-        "AUDITOR_AI_REPORT_MODEL",
         "AUDITOR_EMBED_MODEL",
         "AUDITOR_KNOWLEDGE_DIR",
+        "AUDITOR_MAX_TREE_MB",
         "AUDITOR_MODEL",
         "AUDITOR_SERVER_URL",
         "AUDITOR_TIMEOUT_SECONDS",

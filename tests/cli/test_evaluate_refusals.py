@@ -31,7 +31,7 @@ from evaluate_helpers import (
 from evaluation.document import AGENTIC_AUDITOR
 from evaluation.harness import EVALUATION_NAME
 from evaluation_fixtures import APP, findings_document, grading_key, key_entry
-from grading_keys import GROUND_TRUTH_SUFFIX
+from keys.grading_keys import GROUND_TRUTH_SUFFIX
 
 # The staged key's filename, which the refusal has to spell for a reader.
 KEY_FILE_NAME = f"{APP}{GROUND_TRUTH_SUFFIX}"

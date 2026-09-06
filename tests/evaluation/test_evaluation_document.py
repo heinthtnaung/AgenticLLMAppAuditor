@@ -62,7 +62,7 @@ def test_no_value_anywhere_in_the_document_is_a_float() -> None:
 
 def test_the_document_states_its_schema_version() -> None:
     """A reader keys on the version, so it is in the file and not only in the code."""
-    assert build_evaluation(both_apps())["schema_version"] == SCHEMA_VERSION == 3
+    assert build_evaluation(both_apps())["schema_version"] == SCHEMA_VERSION == 4
 
 
 def test_the_system_is_carried_inside_the_record() -> None:

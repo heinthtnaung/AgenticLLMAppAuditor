@@ -11,7 +11,7 @@ failures, so it escaped the CLI as a traceback.
 Split from `test_key_check.py`, which is about the shape of the key as a whole;
 the artifacts are `test_artifact_check.py`, the read itself `test_harness.py`,
 and the source scan holding `ENTRY_FIELDS` to every real entry read is
-`test_entry_field_cover.py`. Every case here is a dict: `_check_key` is pure,
+`test_entry_field_cover.py`. Every case here is a dict: `check_key` is pure,
 so nothing needs a filesystem.
 
 Two directions, and the second is the one that matters most. That each required
@@ -26,7 +26,7 @@ from pathlib import Path
 
 import pytest
 
-from evaluation.harness import ENTRY_FIELDS, _check_key
+from evaluation.harness import ENTRY_FIELDS, check_key
 from evaluation_fixtures import grading_key, key_entry
 
 # Stands in for the path the key was read from; nothing here opens it.
@@ -43,14 +43,14 @@ MINIMAL_ENTRY = {
 def refuse(entries: list) -> str:
     """Check a key holding these entries and return the refusal it raises."""
     with pytest.raises(ValueError) as raised:
-        _check_key(grading_key(entries), KEY_FILE)
+        check_key(grading_key(entries), KEY_FILE)
     return str(raised.value)
 
 
 def test_an_entry_with_only_the_required_fields_is_accepted() -> None:
     """The positive guard: a check stricter than the schema would refuse a valid key."""
     key = grading_key([MINIMAL_ENTRY])
-    assert _check_key(key, KEY_FILE) is key
+    assert check_key(key, KEY_FILE) is key
 
 
 def test_component_is_not_a_required_entry_field() -> None:

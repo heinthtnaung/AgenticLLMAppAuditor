@@ -6,7 +6,7 @@ reader check the code against what was committed to. This file closes that gap:
 every commitment below is quoted verbatim from the proposal and answered with a
 file path or an admission.
 
-**Headline: roughly 74% of the proposal's concrete commitments are delivered.**
+**Headline: roughly 77% of the proposal's concrete commitments are delivered.**
 The engineering is further along than the research design. The largest single
 gap is not a missing module -- it is that the study's own central comparison was
 never run.
@@ -15,11 +15,10 @@ never run.
 
 **33 commitments, all of them rows in the tables below** -- Objectives,
 Methodology, Evaluation and Dissemination. Fully delivered counts 1, partial
-counts 0.5, missing counts 0. That gives **24.5 / 33 ~= 74%**, and the count is
+counts 0.5, missing counts 0. That gives **25.5 / 33 ~= 77%**, and the count is
 reproducible by anyone who adds up the tables; an earlier version of this file
 quoted 24.5/35 against 33 rows, which nobody could check.
-Last recounted 2026-09-05 after the grading key, `ComponentRef` and the two new
-AIBOM kinds landed.
+Last recounted 2026-09-05 after Objective 5 was measured.
 Counted over the engineering commitments alone it is nearer 80%; over the
 evaluation and research-design commitments alone, nearer 50%.
 
@@ -40,10 +39,18 @@ rather than on its own.
 > "The study will measure ... the **data-exposure implications** of sending
 > sensitive audit artefacts to an external inference provider."
 
-**Nothing in this repository addresses any of it.** There is no cloud
-configuration, no comparison harness, no second model path, and no measurement
-of data exposure. `grep` for `cloud`, `frontier`, or any hosted-provider client
-in `src/` returns nothing.
+**Addressed 2026-09-05, and the answer is uncomfortable.** `experiments/`
+holds the harness — outside `src/`, so the audit path's offline guarantee is
+untouched and nothing under `src/` may import it. On the single case where the
+two models could be compared, the **hosted model was more accurate**: the local
+one flagged a static template as injectable by describing what the application
+does rather than what the template is. That means the semantic probe's only
+contribution to detection is a true positive resting on a false rationale.
+Written up in `docs/REPORT.md`.
+
+Still counted **Partial**, not delivered: one app, one template, one hosted
+model, three runs. That is a data point, not the comparative study the objective
+describes.
 
 The tool is *architecturally* offline -- `src/model_client.py` is the only
 module that opens a connection, and it talks to localhost. But that is the
@@ -166,11 +173,17 @@ of them.
 | "percentage of findings containing valid code, SBOM/AIBOM, and CSAF/VEX evidence links" | Yes -- `src/evaluation/evidence.py`, as counts plus denominators (`evaluation.json` forbids float fields by design) |
 | "precision and recall of LLM surface extraction" | **Partial** -- `expected_surfaces` explains *why a finding was missed*; extraction is not scored as its own precision/recall figure |
 | "audit execution time" | Yes | `src/main.py` times each run; `docs/REPORT.md` "Audit Execution Latency" publishes the three-configuration table with a repeated measurement. |
-| Local vs cloud-hosted frontier comparison | **No** -- section 1 |
-| Data-exposure implications | **No** -- section 1 |
+| Local vs cloud-hosted frontier comparison | **Partial** -- run 2026-09-05, `experiments/compare_models.py`. Four models over two applications and seven prompt templates. The result refuses the framing: `qwen-2.5-coder-32b` (open weights, hosted) and `glm-5.2` were right, while `gpt-4o-mini` (hosted, major vendor) made the *same* error as the local 7B -- both hallucinating an interpolation point absent from the text. So the axis was capability, not open-versus-hosted. Counted half: enough to show the failure shape, not enough for a rate, and no cost or throughput comparison was attempted. |
+| Data-exposure implications | **Partial** -- the byte figure is withdrawn: it counted the planner's prompt as a probe prompt and "one request per template" was never true (3 requests for 5 templates in the saved run). The ledger now derives what was sent; the number needs a re-measure. Four things are named as **unmeasurable** rather than dressed up: retention, training use, jurisdiction, and which upstream provider served the request. And what was sent was a *public* file, so this measures the mechanism, not the exposure a private repository would incur. |
 | "qualitative usefulness of reports for a human security reviewer" | **No** -- not attempted; this is a human study, not code |
 
-### Dissemination
+#**The shipped key was removed from the repository** after these figures were
+measured. They stand as a record of a run against a key recoverable from commit
+`f9bd9ff`, and the commitment to ship evaluation materials is no longer met by
+what is on the branch. That is a deliberate change, not an oversight, and this
+document would otherwise claim otherwise.
+
+## Dissemination
 
 | Promised | Status |
 |---|---|
@@ -197,24 +210,30 @@ Worth stating, because a coverage number read alone understates the work:
 
 ## 6. What to do next, in order of what an examiner would notice
 
-Four of the five actions this file first listed were taken on 2026-09-05, which
-is why the sections above read as they do. What is left:
+Six of the seven actions this file has listed were taken on 2026-09-05. Two
+commitments are now at zero, down from four. What is left:
 
 1. **Verify the shipped grading key.** It exists and it measures — see
-   `docs/REPORT.md`, where the auditor scores 4 of 6 static and 5 of 6 with the
-   probe, against 5 of 6 for the grep baseline and 0 of 6 for SBOM-only. But it
+   `docs/REPORT.md`, where the auditor scores 3 of 8 against 4 of 8 for the grep
+   baseline and 0 of 8 for SBOM-only. But it
    is AI-drafted and `verified: false`, so every one of those figures carries
-   `key_ai_drafted` and `key_unverified`. A human reading its six entries
+   `key_ai_drafted` and `key_unverified`. A human reading its eight entries
    against `c0cf9a14` is what turns an indication into a result, and it is the
    cheapest remaining upgrade in the whole document.
-2. **Publish an execution-time figure.** The run is timed and prints its
-   duration; no number appears in `docs/REPORT.md`.
-3. **Decide whether the planner should be consequential.** It chooses the order
-   and records it, and the order changes no artifact unless `MAX_STEPS` binds.
-   Either accept that and keep the record as provenance, or let it choose what
-   to probe -- which reopens the rule that it must never subtract.
+2. **Widen Objective 5 further.** It now covers four models over two
+   applications and seven prompt templates, which is enough to show the failure
+   shape but not enough for a rate. More applications would be the next
+   increment.
+3. **The planner's *order* is still inconsequential**, though its *narrowing* is
+   not: narrowing changes `checks_narrowed` and what each check examines. Decide
+   whether the order record is worth keeping as provenance, or whether the
+   planner should also choose what to probe.
 
 Done, and where: **Objective 5** and the **RAG/AUDITABILITY substitution** are
 both now stated in `docs/REPORT.md`'s "Addendum: Methodology Deviations from
 Proposal", so neither reads as an oversight. **Task 7.2** is wired, with the
-caveat in item 3. **Audit execution time** is instrumented.
+caveat in item 3. **Audit execution time** is instrumented and published in `docs/REPORT.md`.
+**The semantic probe's rationale is fixed**: a template with no interpolation
+point is refuted statically, without a model call, so the false positive the
+Objective 5 study found is unreachable. That lowered this project's own headline
+from 5 of 6 to 4 of 6, and widening the key then took it to 3 of 8.

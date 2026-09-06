@@ -15,6 +15,7 @@ into a place to tune the tool against its own answer key.
 
 from artifacts.finding import SURFACE_SUBJECT, UNRESOLVED_OUTCOMES
 from artifacts.findings_document import ADVISORY_NOT_INGESTED, MODEL_USED
+from keys.grading_keys import DRAFTED_SOURCES, TOOL_DRAFTED
 from evaluation.grading import matches_key
 from evaluation.evidence import evidence_counts
 
@@ -31,6 +32,7 @@ QUALIFICATIONS = (
     "expected_surfaces_not_complete",
     "findings_not_complete",
     "key_ai_drafted",
+    "key_drafted_by_scored_system",
     "key_unverified",
     "model_disabled",
     "no_key_findings",
@@ -68,8 +70,14 @@ def _qualifications(key: dict, findings_document: dict, skipped: list[str]) -> l
     said = []
     if not key["verified"]:
         said.append("key_unverified")
-    if key["source"] == "ai_drafted":
+    if key["source"] in DRAFTED_SOURCES:
         said.append("key_ai_drafted")
+    if key["source"] == TOOL_DRAFTED:
+        # Additive, never a replacement for key_ai_drafted: every reader keyed
+        # on that string would otherwise stop firing on the worse case. This one
+        # says the measurement is not independent -- the system being scored
+        # chose what the key contains -- which survives a human verifying it.
+        said.append("key_drafted_by_scored_system")
     if not key["findings_complete"]:
         said.append("findings_not_complete")
     if not key["expected_surfaces_complete"]:

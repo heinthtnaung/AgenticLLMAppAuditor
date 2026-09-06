@@ -16,12 +16,22 @@ from evaluation.evidence import pooled_evidence
 # beside true_positives which counts entries, so the pool never mixes units.
 # Version 3 added `evidence` to each app score and to `totals`: how many
 # findings carry a code, SBOM or VEX evidence link, counts only.
-SCHEMA_VERSION = 3
+# Version 4 added `cloud_auditor` to SCORED_SYSTEMS. The bump is not decorative:
+# the first three systems are offline and byte-identical run to run, and a
+# cloud_auditor document is neither -- a hosted model takes no seed. A reader
+# comparing two evaluation.json files needs one field that says they are not the
+# same kind of measurement, and the version is it.
+SCHEMA_VERSION = 4
 
 # Which system produced the findings being scored. Carried inside the record,
 # not only in the filename, so a row copied into a write-up keeps its label.
 AGENTIC_AUDITOR = "agentic_auditor"
-SCORED_SYSTEMS = (AGENTIC_AUDITOR, "baseline_static_rules", "baseline_sbom_only")
+
+# The same auditor driven by a hosted model, written by `--compare-models`.
+# Its artifacts are NOT byte-identical run to run: the hosted arm has no seed.
+CLOUD_AUDITOR = "cloud_auditor"
+SCORED_SYSTEMS = (AGENTIC_AUDITOR, "baseline_static_rules", "baseline_sbom_only",
+                  CLOUD_AUDITOR)
 
 
 def _totals(scored: list[dict]) -> dict:

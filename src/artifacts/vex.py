@@ -80,7 +80,13 @@ def to_vex_statements(findings_document: dict) -> list[dict]:
     """
     grouped: dict[tuple[str, str], list[dict]] = {}
     for finding in advisory_findings(findings_document):
-        grouped.setdefault((finding["advisory_id"], finding["purl"]), []).append(finding)
+        # `or ""` and not `finding["purl"]`: a versionless component reaches
+        # here with a null purl, and sorting one against a string raises
+        # TypeError -- a traceback out of `emit_vex.py` for a document that is
+        # otherwise perfectly writable. Empty sorts first and reads as absent,
+        # which is what a missing purl is.
+        grouped.setdefault(
+            (finding["advisory_id"], finding.get("purl") or ""), []).append(finding)
     affected = [_affected(advisory, purl, group)
                 for (advisory, purl), group in sorted(grouped.items())]
     return affected + _under_investigation(findings_document["coverage"])

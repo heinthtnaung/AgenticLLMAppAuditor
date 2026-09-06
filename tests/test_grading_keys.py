@@ -14,16 +14,18 @@ line numbers nobody can reproduce.
 
 Every tree here is written into `tmp_path` and passed in as `keys_dir`, except
 the one test below that points at the repository's own folder -- and that one
-only asks whether discovery agrees with what is on disk. **Which keys ship, and
-whether they are well-formed, is `test_shipped_grading_key.py`**; one key ships
-now, so neither file may assume the folder is empty.
+only asks whether discovery agrees with what is on disk. **What a well-formed
+key must hold is `grading_key_rules.py`**, asserted over a key
+`tests/compare/test_promoted_key_shipped_rules.py` builds and promotes under
+`tmp_path`. Nothing reads the real folder for a key any more, because it has
+held none since 2026-09-06 -- and nothing here assumes it never will again.
 """
 
 from pathlib import Path
 
 import pytest
 
-from grading_keys import (
+from keys.grading_keys import (
     BASELINE_SUFFIX,
     GROUND_TRUTH_SUFFIX,
     KEYS_DIR,
@@ -35,7 +37,7 @@ from grading_keys import (
 APP = "a-graded-app"
 
 # Enough for a key to exist and parse. Discovery never reads a key's contents
-# -- the scorer does, and `harness._check_key` is where its shape is checked.
+# -- the scorer does, and `harness.check_key` is where its shape is checked.
 STUB = "{}"
 
 # A manifest that really pins something. Discovery *does* read this one: a
@@ -121,11 +123,12 @@ def test_an_empty_keys_directory_discovers_nothing(tmp_path) -> None:
 def test_the_repositorys_own_keys_directory_agrees_with_what_is_on_disk() -> None:
     """Discovery over the real folder must not raise, and must find what is really there.
 
-    It used to assert only that a tuple came back, which was true of the empty
-    folder this project then had and would stay true if discovery started
-    returning nothing at all. The pinned list of shipped apps lives in
-    `test_shipped_grading_key.py`, so it is stated in one place; here the claim
-    is only that discovery and the directory listing say the same thing.
+    It used to assert only that a tuple came back, which would stay true if
+    discovery started returning nothing at all. Nothing pins a list of shipped
+    apps now -- the folder has held none since 2026-09-06 -- so the claim is
+    that discovery and the directory listing say the same thing, whatever that
+    is. Over an empty folder what it still catches is discovery *raising*: a
+    half-added key left in the tree fails here rather than at score time.
     """
     on_disk = sorted(path.name.removesuffix(GROUND_TRUTH_SUFFIX)
                      for path in KEYS_DIR.glob(f"*{GROUND_TRUTH_SUFFIX}") if path.is_file())

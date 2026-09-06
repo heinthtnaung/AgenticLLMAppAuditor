@@ -1,6 +1,6 @@
-"""`--semantic-probe` through the real command line, and `main.probe_inputs`.
+"""`--semantic-probe` through the real command line, and `audit_run.local_model`.
 
-`probe_inputs` is the single point where a socket enters an audit: it is the one
+`local_model` is the single point where a socket enters an audit: it is the one
 place `model_client.ask` is handed to a check, and the check itself is barred
 from importing the client at all (`tests/parsing/test_offline_containment.py`).
 Everything the probe does with a model is reachable only through this function,
@@ -11,7 +11,7 @@ artifacts at all**. Every degradation the probe carefully records was
 unreachable from the command line.
 
 So the first test here is the one that matters: server down, flag on, artifacts
-still written. The rest pin the two branches of `probe_inputs` and the flag's
+still written. The rest pin the two branches of `local_model` and the flag's
 effect on `findings.json`.
 
 No server is involved. `stub_model_unavailable` makes every client call raise
@@ -21,6 +21,7 @@ these run offline like the rest of the suite.
 
 from pathlib import Path
 
+import audit_run
 import main
 import model_client
 from artifacts.findings_document import MODEL_UNAVAILABLE, MODEL_USED
@@ -85,37 +86,38 @@ def test_that_audit_records_the_refused_probe_rather_than_a_model_it_never_reach
     assert PROBE_CHECK not in document["coverage"]["checks_run"]
 
 
-# --- probe_inputs, both branches ---------------------------------------------
+# --- local_model, both branches ----------------------------------------------
 
-def test_probe_inputs_hands_back_nothing_when_the_probe_was_not_asked_for() -> None:
-    """The default. Two Nones are what make a default audit byte-identical to an old one."""
-    assert main.probe_inputs(False) == (None, None)
+def test_local_model_hands_back_nothing_when_the_probe_was_not_asked_for() -> None:
+    """The default. None is what makes a default audit byte-identical to an old one."""
+    assert audit_run.local_model(False) is None
 
 
-def test_probe_inputs_hands_over_the_client_call_and_what_it_will_be_decoded_with(
+def test_local_model_hands_over_the_client_call_and_what_it_will_be_decoded_with(
         monkeypatch) -> None:
     """The provenance block is built here, from the client, not written by hand beside it."""
     stub_model(monkeypatch)
-    ask, provenance = main.probe_inputs(True)
-    assert ask is model_client.ask
-    assert provenance == {
+    model = audit_run.local_model(True)
+    assert model["ask"] is model_client.ask
+    assert model == {
+        "ask": model_client.ask,
         "identifier": model_client.MODEL,
         "settings": model_client.DECODE_SETTINGS,
         "digest": STUB_MODEL_DIGEST,
     }
 
 
-def test_probe_inputs_records_no_digest_when_the_digest_call_is_refused(monkeypatch) -> None:
+def test_local_model_records_no_digest_when_the_digest_call_is_refused(monkeypatch) -> None:
     """A digest is a provenance nicety; the audit is not, so its absence is not fatal.
 
     `model_digest` raises `RuntimeError` with the server down. Unguarded, that
     escaped `run()` before a single artifact was written.
     """
     stub_model_unavailable(monkeypatch)
-    ask, provenance = main.probe_inputs(True)
-    assert ask is model_client.ask
-    assert provenance["digest"] is None
-    assert provenance["identifier"] == model_client.MODEL
+    model = audit_run.local_model(True)
+    assert model["ask"] is model_client.ask
+    assert model["digest"] is None
+    assert model["identifier"] == model_client.MODEL
 
 
 # --- the flag's effect on findings.json ---------------------------------------

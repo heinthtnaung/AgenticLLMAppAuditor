@@ -39,7 +39,7 @@ from conftest import TESTS_DIR
 # pass silently.
 SCANNER_FILENAME = "ast_scan.py"
 SCANNER_MODULE = TESTS_DIR / SCANNER_FILENAME
-MINIMUM_SCANNERS = 13
+MINIMUM_SCANNERS = 14
 
 # The three names the duplicate in test_workflow_scope.py actually used. If the
 # sweep stops seeing these, it has stopped seeing the scanners.

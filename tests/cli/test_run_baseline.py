@@ -54,7 +54,7 @@ def run_cli(monkeypatch: pytest.MonkeyPatch, system: str, repo_path: Path,
 
 def test_it_writes_both_artifacts_under_the_system_and_app_directories(
         tmp_path, monkeypatch) -> None:
-    """`artifacts/<system>/<app>/` is what lets three systems be scored side by side."""
+    """`artifacts/<system>/<app>/` is what lets four systems be scored side by side."""
     repo = stage_repo(tmp_path)
     artifacts_dir = tmp_path / ARTIFACTS_DIR_NAME
     assert run_cli(monkeypatch, run_baseline.STATIC_RULES, repo, artifacts_dir) == 0

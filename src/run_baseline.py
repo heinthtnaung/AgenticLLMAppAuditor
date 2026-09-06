@@ -26,12 +26,11 @@ from artifacts.findings_document import (
 from artifacts.surface import surfaces_to_json
 from baselines import sbom_only, static_rules
 from baselines.rules import RULES
-from grading_keys import GROUND_TRUTH_SUFFIX, KEYS_DIR
+from keys.grading_keys import GROUND_TRUTH_SUFFIX, KEYS_DIR
 from repo_url import SAFE_NAME
+from artifacts.names import FINDINGS_NAME, SURFACES_NAME
 
 DEFAULT_ARTIFACTS_DIR = Path("artifacts")
-FINDINGS_NAME = "findings.json"
-SURFACES_NAME = "surfaces.json"
 
 STATIC_RULES = "baseline_static_rules"
 SBOM_ONLY = "baseline_sbom_only"

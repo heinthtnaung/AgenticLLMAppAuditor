@@ -27,7 +27,7 @@ from evaluation.harness import (
     write_evaluation,
 )
 from evaluation_fixtures import APP, answered_key, grading_key
-from grading_keys import GROUND_TRUTH_SUFFIX
+from keys.grading_keys import GROUND_TRUTH_SUFFIX
 
 # A second app, named so that sorting it after `APP` is not the input order.
 OTHER_APP = "aardvark-app"

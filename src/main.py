@@ -7,32 +7,15 @@ less is a normal outcome and is reported, not treated as a failure.
 """
 
 import argparse
-import time
 import subprocess
 import sys
 from pathlib import Path
 
-from artifacts.aibom import aibom_to_json, build_aibom
-from artifacts.findings_document import findings_to_json
-from artifacts.planner_document import planner_to_json
-from artifacts.surface import surfaces_to_json
-from checks.run_checks import build_findings
-from deps.inputs import (
-    declared_ecosystems, dependencies_readable, dependency_artifacts)
-from deps import trivy_runner
-from parsing.extractor import extract_repo
-from parsing.repo_loader import local_module_names
-import model_client
+import audit_run
 import pipeline
 
-import outputs
-from outputs import (
-    AIBOM_NAME,
-    FINDINGS_NAME,
-    SURFACES_NAME,
-)
 
-# The auditor is one of three scored systems, so its artifacts live under its
+# The auditor is one of four scored systems, so its artifacts live under its
 # own name: a baseline's findings.json must not overwrite the auditor's. The
 # literal is deliberately not imported from `evaluation.document` -- that keeps
 # the evaluation package out of the auditor's imports, since the tool being
@@ -63,103 +46,90 @@ def build_parser() -> argparse.ArgumentParser:
              "is also the switch that lets the model choose the check order, "
              "recorded in planner.json",
     )
+    parser.add_argument(
+        "--draft-key", action="store_true",
+        help="after the audit, ask the LOCAL model to draft a grading key for this "
+             "app when none exists, into grading_keys/drafts/. Off by default: it "
+             "costs a model call and a default audit is meant to stay fast and "
+             "static. The draft is a starting point for a human to correct, not an "
+             "answer -- see promote_key.py",
+    )
+    parser.add_argument(
+        "--compare-models", action="store_true",
+        help="audit the tree twice, once with the local model and once with a "
+             "hosted one, draft a grading key if none exists, and score both. "
+             "IMPLIES --semantic-probe, without which the two arms make no model "
+             "calls and produce identical findings. SENDS THE AUDITED REPOSITORY'S "
+             "SOURCE to a third party: prompt templates, file paths, line numbers "
+             "and code snippets. Three of four model-driven stages follow the "
+             "hosted model; the knowledge-base embeddings stay local.",
+    )
+    parser.add_argument(
+        "--cloud-model", default=None,
+        help="the hosted model for --compare-models (default: OPENROUTER_MODEL "
+             "from the environment or .env)",
+    )
     return parser
 
 
-def probe_inputs(wanted: bool) -> tuple[object, dict | None]:
-    """The model call and its provenance for the semantic probe, or nothing.
+def _draft_key(app_dir: Path) -> None:
+    """Draft a grading key, never letting the attempt cost the run its report.
 
-    The one place an audit hands `model_client.ask` to a check. Imported here
-    rather than in `checks/semantic_probe.py`, which
-    `tests/parsing/test_offline_containment.py` bars from naming the module at
-    all -- the check stays pure and the socket stays at the edge.
+    Last stage of a run whose artifacts are already written, so every failure
+    here is a printed reason and an exit code of zero. Without this a second run
+    over the same app would raise `FileExistsError`, which `EXPECTED_FAILURES`
+    turns into exit 1 -- an audit that succeeded, reported as a failure.
+
+    Works on any tree that is pinned, not just a fetched one: a key's line
+    numbers mean nothing without the commit they were read at, and
+    `key_store.write` says exactly that when it cannot find one.
     """
-    if not wanted:
-        return None, None
     try:
-        digest = model_client.model_digest()
-    except RuntimeError:
-        # The digest is a provenance nicety; the audit is not. Asking for it
-        # unguarded meant `--semantic-probe` with the server down wrote **no
-        # artifacts at all** -- and every degradation path the probe has was
-        # unreachable through the command line. `outputs.build_remediation`
-        # guards the same call for the same reason.
-        digest = None
-    return model_client.ask, {
-        "identifier": model_client.MODEL,
-        "settings": model_client.DECODE_SETTINGS,
-        "digest": digest,
-    }
-
-
-def advisory_inputs(app_dir: Path) -> tuple[dict | None, dict | None]:
-    """Trivy's advisories indexed for the join, and the pin naming what matched.
-
-    (None, None) degrades exactly as a missing Syft does: the check is absent
-    from checks_run and coverage says advisory_data was not ingested.
-    """
-    date = trivy_runner.db_snapshot_date() if trivy_runner.is_available() else None
-    if date is None:
-        return None, None
-    report = trivy_runner.scan(app_dir)
-    return trivy_runner.advisory_index(report), trivy_runner.pin(report, date)
+        drafted = pipeline.draft_key(app_dir, audit_run.local_model(True)["ask"])
+    except pipeline.DRAFTING_FAILURES as error:
+        print(f"  no key drafted: {error}", file=sys.stderr)
+        return
+    if drafted is not None:
+        print(f"wrote {drafted}")
+        print("  a draft, not an answer: read it before scoring anything against it")
 
 
 def run(args: argparse.Namespace) -> int:
     """Audit the repository and write its artifacts. Returns the exit code.
+
+    `--compare-models` takes a different path entirely: two audits, a drafted
+    key and two scores. It is not a variation on one audit, so it does not try
+    to be one.
 
     Times itself: "audit execution time" is one of the measures the proposal
     committed to, and a wall-clock second is the only honest unit here -- the
     run shells out to Syft and Trivy and may call a local model, so CPU time
     would understate what a reader actually waits for.
     """
-    started = time.monotonic()
+    if args.compare_models:
+        # Imported here, not at module scope: `cloud_client` is the second
+        # module in `src/` that can open a socket, and an ordinary audit must
+        # not so much as construct it. The import is the flag's boundary.
+        import compare_run
+        return compare_run.run(args.repo_path, args.artifacts_dir, args.cloud_model)
     app_dir = pipeline.resolve_repo(args.repo_path)
-    scan = extract_repo(str(app_dir))
-    outputs.report_skipped_files(scan.skipped)
-    documents = {
-        SURFACES_NAME: surfaces_to_json(scan.surfaces, scan.skipped),
-        AIBOM_NAME: aibom_to_json(build_aibom(scan.surfaces)),
-    }
-
-    readable, no_bill_reason = dependencies_readable(app_dir)
-    mapping_document = None
-    if readable:
-        built, mapping_document = dependency_artifacts(
-            app_dir, scan.surfaces, declared_ecosystems(app_dir)[0])
-        documents.update(built)
-
-    advisories, advisory_pin = ((None, None) if mapping_document is None
-                                else advisory_inputs(app_dir))
-    findings_document, planner_document = build_findings(
-        str(app_dir), scan.surfaces, mapping_document, advisories, advisory_pin,
-        *probe_inputs(args.semantic_probe))
-    documents[FINDINGS_NAME] = findings_to_json(findings_document)
-    documents[outputs.PLANNER_NAME] = planner_to_json(planner_document)
-    documents.update(outputs.standard_format(findings_document))
-    # The only model call an audit makes, and the only artifact it writes into.
-    # findings.json is written above and never revisited, so the scored numbers
-    # stay static whatever the model says.
-    documents[outputs.REMEDIATION_NAME] = outputs.build_remediation(
-        findings_document, outputs.declared_language(scan.surfaces),
-        tuple(local_module_names(str(app_dir))))
-
-    app = app_dir.resolve().name
-    written = outputs.write_all(args.artifacts_dir / app, documents, app)
-    print(f"wrote {written} artifacts to {args.artifacts_dir / app}")
-
-    if no_bill_reason:
-        print(f"  no bill of materials: {no_bill_reason}", file=sys.stderr)
-    if mapping_document is not None:
-        outputs.report_coverage(mapping_document)
+    audit_run.report_pin_gap(app_dir)
+    result = audit_run.audit(app_dir, args.artifacts_dir,
+                             audit_run.local_model(args.semantic_probe))
     # A link runs the whole pipeline; a local path stays the offline audit.
     if pipeline.is_url(args.repo_path):
-        pipeline.publish(args.artifacts_dir / app, advisory_pin is not None)
+        pipeline.publish(result["artifacts"], result["advisories_read"])
+    # Asked for, never assumed. Drafting costs a model call, and a default audit
+    # is meant to be fast and to make the same artifacts whether a model was
+    # running or not. It is also the one place the model authors ground truth,
+    # which is worth a flag a reader can see in the command they typed.
+    if args.draft_key:
+        _draft_key(app_dir)
     # Printed, never written into an artifact: a duration is the one number here
     # that changes on every run, and putting it in a file would break the
     # byte-identical guarantee every artifact makes for a fact about the
     # machine rather than about the audited app.
-    print(f"audit completed in {time.monotonic() - started:.2f} seconds")
+    print(f"audit completed in {result['seconds']:.2f} seconds")
     return 0
 
 

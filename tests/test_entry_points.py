@@ -35,7 +35,7 @@ from ast_scan import module_name, parse, source_files
 from conftest import REPO_ROOT, SRC_DIR
 
 # The tool's published command surface: every module run as `python src/<path>`.
-# Nine, not six -- `ai_report.py` and `model_client.py` are commands too.
+# Nine, not the six a README section once listed -- see the docstring above.
 ENTRY_POINTS = frozenset({
     "main.py",
     "evaluate.py",
@@ -45,7 +45,7 @@ ENTRY_POINTS = frozenset({
     "index_knowledge.py",
     "fetch_repo.py",
     "model_client.py",
-    "ai_report.py",
+    "promote_key.py",
 })
 
 # How a doc spells a command, and the prefix a module path gets to become one.

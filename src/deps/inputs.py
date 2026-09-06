@@ -16,7 +16,7 @@ from deps import npm_manifest, syft_runner
 from deps.package_names import NPM, PYPI
 from deps.requirements_parser import (
     MANIFEST_NAME as PYPI_MANIFEST_NAME, manifests_present, read_requirements)
-from outputs import CYCLONEDX_NAME, MAPPING_NAME, SBOM_NAME
+from artifacts.names import CYCLONEDX_NAME, MAPPING_NAME, SBOM_NAME
 from parsing.repo_loader import local_module_names
 
 # Naming both files, not just both ecosystems: the reader has to know which two

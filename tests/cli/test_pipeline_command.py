@@ -12,8 +12,7 @@ from cli_helpers import EMPTY_SCAN, run_cli, stub_syft
 from deps.requirements_parser import MANIFEST_NAME as PYPI_MANIFEST
 from fetch_helpers import NAME, URL
 from pipeline_helpers import (
-    point_download_root, record_fetch, record_publish, stub_ai_report, stub_export,
-    stub_vex,
+    point_download_root, record_fetch, record_publish, stub_export, stub_vex,
 )
 
 # One agent surface importing langchain, so a dependency run has a real join.
@@ -24,6 +23,9 @@ agent = AgentExecutor.from_agent_and_tools(agent=None, tools=[])
 
 # What the stubbed generator finds: exactly the one declared package.
 SCAN = {"components": [{"type": "library", "name": "langchain", "version": "0.3.25"}]}
+
+# What a partial export answers: the PDF was skipped, and it says why.
+EXPORT_NOTE = "no Unicode TTF found"
 
 
 def write_app(directory: Path, with_manifest: bool) -> Path:
@@ -99,18 +101,23 @@ def test_a_local_run_still_writes_eleven_artifacts(monkeypatch, tmp_path, capsys
     assert publishes == []
 
 
-def test_a_failing_ai_report_stage_cannot_change_the_runs_exit_code(monkeypatch,
-                                                                    tmp_path) -> None:
-    """The whole claim of that stage being a bonus, held through main() rather than asserted.
+def test_a_degraded_publish_cannot_change_the_runs_exit_code(monkeypatch, tmp_path,
+                                                             capsys) -> None:
+    """Publish runs for real, degrades at both its stages, and the run still exits 0.
 
-    Publish runs for real here -- the other tests replace it with a recorder --
-    so the last stage's refusal has to travel the same path a user's would.
+    The other tests replace publish with a recorder, so its notes never travel
+    the path a user's would. Both degradations left in publish are printed
+    reasons rather than caught exceptions: nothing there swallows a failure,
+    and a vexctl that errors is fatal on purpose (test_pipeline_publish.py).
     """
     stub_syft(monkeypatch, EMPTY_SCAN)
     fetched_app(monkeypatch, tmp_path, with_manifest=False)
-    stub_vex(monkeypatch)
-    exported = stub_export(monkeypatch)
-    stub_ai_report(monkeypatch, error=ValueError("page names advisories not in the report"))
+    emitted = stub_vex(monkeypatch)
+    exported = stub_export(monkeypatch, reason=EXPORT_NOTE)
     artifacts = tmp_path / "artifacts"
     assert run_cli(monkeypatch, URL, artifacts) == 0
+    assert emitted == [], "no advisory data was read, so nothing was asked of vexctl"
     assert exported == [artifacts / NAME], "the authoritative export still ran"
+    printed = capsys.readouterr().err
+    assert "no VEX: this audit read no advisory data" in printed
+    assert f"export note: {EXPORT_NOTE}" in printed

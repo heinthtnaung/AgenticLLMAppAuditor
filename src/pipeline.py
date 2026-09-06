@@ -16,7 +16,12 @@ import json
 import sys
 from pathlib import Path
 
-import ai_report
+from artifacts.finding import OWASP_IDS
+from keys.grading_keys import GROUND_TRUTH_SUFFIX, key_path
+from parsing.extractor import extract_repo
+import fetch_repo
+from keys import key_drafting
+from keys import key_store
 import emit_vex
 import export_reports
 from fetch_repo import (
@@ -75,13 +80,12 @@ def _reused(url: str, destination: Path, pin: Path) -> Path:
 
 
 def publish(app_artifacts: Path, advisories_read: bool) -> None:
-    """Author VEX, export HTML and PDF, then format the optional AI view.
+    """Author VEX, then export HTML and PDF.
 
     Each stage degrades with a printed reason. The audit already said *why*
     advisory data was missing, so a skipped VEX is a note here, never a failure
     -- and a vexctl that is installed but errors stays a real failure, because
-    that one nobody has explained yet. The AI view comes last and never fails
-    the run at all: the authoritative report is written before it is asked for.
+    that one nobody has explained yet.
     """
     if not advisories_read:
         print("  no VEX: this audit read no advisory data, so there is nothing to state",
@@ -98,21 +102,47 @@ def publish(app_artifacts: Path, advisories_read: bool) -> None:
         print(f"wrote {path}")
     if reason:
         print(f"  export note: {reason}", file=sys.stderr)
-    _ai_report(app_artifacts)
 
 
-def _ai_report(app_artifacts: Path) -> None:
-    """Format the optional AI view, degrading like the model advice does.
+# Everything drafting a key can fail with. It is the last stage of a run whose
+# artifacts are already on disk, so none of these may change the exit code: a
+# missing pin, a second run over the same app, an unreachable model and an
+# unwritable folder are all reasons to say why and stop, never to lose a report
+# that was already produced. `FileExistsError` is an `OSError`, so it is caught
+# by the last of these rather than named twice.
+DRAFTING_FAILURES = (RuntimeError, ValueError, OSError)
 
-    A no-op when the model is unreachable or its page fails verification -- the
-    authoritative report.html is already written, so this one is a bonus, never
-    a reason for the run to fail.
+
+def draft_key(app_dir: Path, ask, keys_dir: Path | None = None) -> Path | None:
+    """Draft a grading key for a fetched tree when none exists yet.
+
+    Any pinned tree, fetched or not: a key pins line numbers to a commit, and
+    `key_store.write` refuses one that cannot name a commit -- which is the
+    honest answer for a local path this project did not fetch, and a better one
+    than never trying. Reached only through `main.py --draft-key`.
+
+    The draft goes under `grading_keys/drafts/`, which nothing discovers and git
+    ignores, so it is a file a human reads and corrects -- not an answer key the
+    tool has enrolled itself against. `key_drafting` says what that costs.
     """
-    try:
-        print(f"wrote {ai_report.format_report(app_artifacts)}")
-    # RuntimeError is an unreachable model, ValueError a page that failed
-    # verification. A missing directory or report is deliberately NOT caught:
-    # the audit wrote both moments ago, so their absence is a bug in this
-    # pipeline, not a degraded environment.
-    except (RuntimeError, ValueError) as error:
-        print(f"  no AI report: {error}", file=sys.stderr)
+    keys_dir = keys_dir or key_drafting.DRAFTED_KEYS_DIR
+    app = app_dir.resolve().name
+    already = key_store.existing(app, keys_dir)
+    if already is not None:
+        print(f"  no key drafted: {app} already has a draft at {already}", file=sys.stderr)
+        return None
+    if key_path(app, GROUND_TRUTH_SUFFIX).is_file():
+        print(f"  no key drafted: {app} already has one a human maintains",
+              file=sys.stderr)
+        return None
+    surfaces = extract_repo(str(app_dir)).surfaces
+    entries = key_drafting.draft(surfaces, ask, OWASP_IDS)
+    if not entries:
+        print("  no key drafted: the model named no defects, and an empty key would "
+              "score perfect recall over nothing", file=sys.stderr)
+        return None
+    pin = fetch_repo.pin_document(app_dir)
+    document = key_drafting.key_document(
+        app, key_drafting.anchored(entries, app_dir),
+        pin.get("upstream_commit", ""), surfaces)
+    return key_store.write(app, document, pin, keys_dir)

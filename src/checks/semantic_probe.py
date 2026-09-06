@@ -36,6 +36,7 @@ from artifacts.finding import (
 from artifacts.skipped_file import UnreadableSource
 from artifacts.surface import PROMPT_TEMPLATE, Surface
 from checks.taint import python_files
+from detectors.detector_names import MESSAGE_CONTENT_KEY
 from parsing.extractor_python import parse_file
 
 # The injected model call, the way `checks/planner.py` declares its own.
@@ -63,6 +64,16 @@ NO_ANSWER = NO_MODEL
 VULNERABLE = "VULNERABLE"
 SAFE = "SAFE"
 
+# The verdict this check reaches on its own, named because `experiments/`
+# compares against it to tell "the model said safe" from "no model was asked".
+# A copy of the sentence in two files is how the two copies start disagreeing.
+STATIC_REFUTATION = ("the template interpolates nothing: every character of it is "
+                     "fixed text, so no runtime value sits in its instructions")
+
+# An interpolation point, as `_render` writes them. A template holding none
+# cannot meet this check's criterion, whatever a model says about it.
+PLACEHOLDER = re.compile(r"\{[^{}]+\}")
+
 # `NOT VULNERABLE` contains the token and means its opposite.
 NEGATORS = frozenset({"NOT", "NON", "NO", "ISNT", "NEITHER"})
 
@@ -82,13 +93,15 @@ Template:
 {template}
 ---
 
-Decide one structural question: does this template place a value that a user or \
-an external document controls directly into instruction text, with no \
-delimiter, quoting, or system/data separation around it?
+The template's interpolation points are written as {{name}}. These are the only \
+values that vary at runtime; everything else is fixed text the author wrote.
+
+Decide one structural question about THIS TEXT, not about what the application \
+does: is one of those interpolation points placed inside instruction text with \
+no delimiter, quoting, or system/data separation around it?
 
 Answer on the first line with exactly one word: VULNERABLE or SAFE.
-On the second line give one sentence of reasoning, naming the variable if there \
-is one."""
+On the second line, one sentence, naming the interpolation point you mean."""
 
 
 def _render(node: ast.expr) -> str:
@@ -112,12 +125,23 @@ def _render(node: ast.expr) -> str:
     return "{" + node.id + "}" if isinstance(node, ast.Name) else ""
 
 
+# What can build a prompt on one line, in the order a line is read for one. A
+# call wins over the assignment holding it, and both win over a dict, so a
+# `create(messages=[{...}])` written on one line is still read as the call.
+# Ordered explicitly rather than left to `ast.walk`, whose order is an accident
+# of tree shape and would decide this silently.
+PROMPT_NODES = (ast.Call, ast.Assign, ast.Dict)
+
+
 def _node_at(tree: ast.AST, line: int) -> ast.AST | None:
-    """The prompt-building expression on one line: the call if there is one, else the assignment."""
+    """The prompt-building expression on one line: a call, else an assignment, else a dict."""
     here = [node for node in ast.walk(tree) if getattr(node, "lineno", None) == line
-            and isinstance(node, (ast.Call, ast.Assign))]
-    calls = [node for node in here if isinstance(node, ast.Call)]
-    return (calls or here or [None])[0]
+            and isinstance(node, PROMPT_NODES)]
+    for kind in PROMPT_NODES:
+        found = [node for node in here if isinstance(node, kind)]
+        if found:
+            return found[0]
+    return None
 
 
 def _only_placeholders(text: str) -> bool:
@@ -142,13 +166,34 @@ def template_text(tree: ast.AST, line: int) -> str:
     """
     node = _node_at(tree, line)
     if isinstance(node, ast.Assign):
-        return _render(node.value)
+        # A message bound to a name -- `message = {"role": ..., "content": ...}`
+        # -- is an assignment whose value is the dict the detector anchored on.
+        # Rendering the assignment would answer "", and `judge` would then say
+        # the text is not written literally at this line, about a line where it
+        # plainly is. Reading through to the message keeps the probe true.
+        return _render(node.value) if not isinstance(node.value, ast.Dict) \
+            else _message_text(node.value)
+    if isinstance(node, ast.Dict):
+        return _message_text(node)
     if not isinstance(node, ast.Call):
         return ""
     written = [_render(arg) for arg in node.args]
     written += [_render(keyword.value) for keyword in node.keywords]
     text = "".join(part for part in written if part.strip())
     return "" if _only_placeholders(text) else text
+
+
+def _message_text(node: ast.Dict) -> str:
+    """The text an inline chat message carries, or "" if it carries none.
+
+    The message dict is the surface `detectors` extracts; this reads the same
+    `content` value back so the probe judges the text that actually reaches the
+    model, rather than the whole literal with its role and its punctuation.
+    """
+    for key, value in zip(node.keys, node.values):
+        if isinstance(key, ast.Constant) and key.value == MESSAGE_CONTENT_KEY:
+            return _render(value)
+    return ""
 
 
 def _verdict_in(head: str) -> str | None:
@@ -184,6 +229,11 @@ def read_verdict(reply: object) -> tuple[str | None, str]:
     return _verdict_in(said[0]), rationale[:MAX_RATIONALE]
 
 
+def interpolates_anything(text: str) -> bool:
+    """Say whether the template has any runtime value in it at all."""
+    return bool(PLACEHOLDER.search(text))
+
+
 def _probe(surface: Surface, outcome: str, detail: str, reason: str | None = None) -> Probe:
     """Record what the model was asked about this surface and what came back."""
     return Probe(CHECK_NAME, SURFACE_SUBJECT, surface.id, outcome, detail, reason)
@@ -208,6 +258,15 @@ def judge(surface: Surface, text: str, ask: Ask) -> tuple[Finding | None, Probe]
     if not text:
         return None, _probe(surface, INCONCLUSIVE,
                             "the template's text is not written literally at this line", NO_TEXT)
+    if not interpolates_anything(text):
+        # Decided here, without asking. This check's claim is that a runtime
+        # value sits in instruction text undelimited; a template with no runtime
+        # value in it cannot meet that, so a model saying otherwise is
+        # describing the application rather than the text. Measured: on
+        # `damn-vulnerable-llm-agent` the local model called a wholly static
+        # system prompt injectable, and the hosted one correctly did not --
+        # see `docs/REPORT.md`, Objective 5.
+        return None, _probe(surface, REFUTED, STATIC_REFUTATION)
     try:
         reply = ask(RED_TEAM_PROMPT.format(template=text))
     except RuntimeError as error:

@@ -73,6 +73,32 @@ def imported_modules(tree: ast.Module) -> set[str]:
                     if isinstance(node, ast.ImportFrom) and node.module}
 
 
+def modules_importing(package: str, root: Path = SRC_DIR) -> set[str]:
+    """The modules under a tree that import a package, by its name or any submodule.
+
+    Three guards ask this question of three different packages -- chromadb, the
+    model client, the cloud client -- so the scan lives here rather than in the
+    first file that needed it.
+    """
+    return {module_name(path, root) for path in source_files(root)
+            if any(name == package or name.startswith(f"{package}.")
+                   for name in imported_modules(parse(path)))}
+
+
+def referenced_names(tree: ast.Module) -> set[str]:
+    """Return every name a module mentions -- bare, as an attribute leaf, or imported by name.
+
+    Three node kinds because one constant can be reached three ways:
+    `from checks.semantic_probe import STATIC_REFUTATION`, then the bare name;
+    or `semantic_probe.STATIC_REFUTATION` with no bare name anywhere. A guard
+    that reads only the import misses the second spelling entirely.
+    """
+    bare = {node.id for node in ast.walk(tree) if isinstance(node, ast.Name)}
+    leaves = {node.attr for node in ast.walk(tree) if isinstance(node, ast.Attribute)}
+    return bare | leaves | {alias.name for node in ast.walk(tree)
+                            if isinstance(node, ast.ImportFrom) for alias in node.names}
+
+
 def subscript_keys(tree: ast.Module, variable: str) -> set[str]:
     """Return the string keys a module subscripts one variable with, as in `key["source"]`."""
     return {node.slice.value for node in ast.walk(tree)

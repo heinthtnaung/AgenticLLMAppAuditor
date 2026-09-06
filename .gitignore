@@ -19,6 +19,13 @@ node_modules/
 # path or URL, and this repository holds no other project's source. What it
 # does commit is grading_keys/ -- this project's own hand-written keys, pins
 # and baselines about apps -- so that folder is deliberately NOT ignored.
+#
+# One subfolder of it is. `grading_keys/drafts/` holds keys the auditor wrote
+# with the local model, and a model-written answer key must never become this
+# project's committed evidence: it would be indistinguishable, after `git add`,
+# from one a human wrote. A human moving a draft up one level is what accepts
+# responsibility for it, and that move is what makes it committable.
+grading_keys/drafts/
 
 # Repositories fetched by src/fetch_repo.py, and the pins written beside them.
 # The pin is ignored too, deliberately: it is generated output about an
@@ -52,3 +59,6 @@ knowledge/*
 # AI / agent tooling (local only — not part of the submitted project)
 .claude/
 CLAUDE.md
+
+# Study outputs: contain audited source and transmitted payloads.
+experiments/results/

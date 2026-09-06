@@ -17,7 +17,7 @@ from cli_helpers import EMPTY_SCAN, stub_syft
 from dependency_fixtures import NPM_MANIFEST, PYPI_MANIFEST, TINY_PACKAGE_JSON
 from deps import syft_runner
 from deps.package_names import NPM, PYPI
-from main import declared_ecosystems, dependencies_readable
+from deps.inputs import declared_ecosystems, dependencies_readable
 
 REQUIREMENTS = "streamlit\n"
 

@@ -110,7 +110,7 @@ def _how_it_was_audited(findings_document: dict) -> list[str]:
         f"- **Surfaces considered**: {coverage['surfaces_considered']}",
         f"- **Checks that had something to examine**: {', '.join(coverage['checks_run']) or 'none'}",
         f"- **Risk classes covered**: {', '.join(coverage['risk_classes_checked']) or 'none'}",
-        f"- **Local model**: {model}",
+        f"- **Model**: {model}",
         "",
         "A check named above that reported nothing looked and found nothing, unless it appears in `checks_narrowed` -- then it looked at only some of its surfaces, and the counts there say how many. One that is "
         "absent could not look at all.",

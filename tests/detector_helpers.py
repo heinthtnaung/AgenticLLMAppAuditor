@@ -79,6 +79,27 @@ def build(role):
     return system_prompt
 '''
 
+# A class holding its prompt on itself, which is what a class-based application
+# looks like. Until `assigned_name` answered for an attribute target this whole
+# shape extracted nothing. `self.cfg` sits beside it as the attribute that must
+# stay ignored: being an attribute is not what makes a string a prompt.
+CLASS_PROMPT_SOURCE = '''
+class SupportAgent:
+    def __init__(self, user):
+        self.system_prompt = f"You are a support agent helping {user}."
+        self.cfg = "gpt-4o-mini"
+'''
+
+# The same prompt written both ways in one scope. Either line alone passes with
+# half the rule, so the pair is the regression guard: before the fix only the
+# plain variable was found, and the attribute above it produced nothing.
+PAIRED_PROMPT_SOURCE = '''
+class SupportAgent:
+    def __init__(self, user):
+        self.system_prompt = f"You are helping {user}."
+        system_prompt = f"You are helping {user}."
+'''
+
 NON_TEXT_PROMPT_SOURCE = '''
 def build():
     prompt_index = 1 + 2

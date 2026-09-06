@@ -16,7 +16,7 @@ The states, and why each is its own test:
   audit that never reached for a server at all.
 
 Every model here is a stand-in the test wrote. `PROBE_MODEL` is shaped like the
-block `main.probe_inputs` builds, so what is asserted is the shape a real run
+block `main.local_model` builds, so what is asserted is the shape a real run
 records; `tests/cli/test_main_probe.py` covers the real one.
 """
 
@@ -24,6 +24,7 @@ from artifacts.finding import INCONCLUSIVE, NOT_RUN
 from artifacts.findings_document import MODEL_DISABLED, MODEL_UNAVAILABLE, MODEL_USED
 from checks import planner, semantic_probe
 from checks.semantic_probe import NO_TEXT
+import remediation_run
 from semantic_probe_fixtures import (
     Answering,
     HIDDEN_TEMPLATE_APP,
@@ -101,7 +102,7 @@ def test_the_model_run_says_unavailable_when_the_server_refused_every_call(tmp_p
     """An unreachable server produced no model-authored content, and is not `used`.
 
     `MODEL_UNAVAILABLE` is in the vocabulary for exactly this, and both siblings
-    use it: `outputs.build_remediation` records it when `model_client` raises,
+    use it: `remediation_run.build_remediation` records it when `model_client` raises,
     and `checks/planner.py` records it when the ordering call fails. Keying on
     "were there probes" instead wrote `status: used` here, naming the model, its
     digest and its decode settings on a run where nothing was ever answered --

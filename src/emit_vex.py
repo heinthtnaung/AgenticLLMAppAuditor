@@ -29,16 +29,16 @@ from pathlib import Path
 from artifacts.sarif import DRIVER_NAME
 from artifacts.vex import (
     EMITTABLE_STATUSES, check_readable, pinned_epoch, to_vex_statements)
-from grading_keys import MANIFEST_SUFFIX, key_path
+from keys.grading_keys import MANIFEST_SUFFIX, key_path
 
 PROGRAM_NAME = "vexctl"
 TIMEOUT_SECONDS = 120
 DOCUMENT_NAME = "findings.openvex.json"
-FINDINGS_NAME = "findings.json"
 
 # Where a fetched tree's pin lives, checked after a graded app's own pin.
 # The fetcher's own constant, never a second "fetched" literal to drift from it.
 from fetch_repo import DOWNLOAD_ROOT as FETCH_ROOT
+from artifacts.names import FINDINGS_NAME
 
 DEFAULT_PATH = "/usr/bin:/bin"
 
