@@ -1,7 +1,10 @@
 """Traces an untrusted value from where it enters to where a model consumes it.
 
 Within one file, deliberately. Following a value across modules is an unbounded
-problem.
+problem. Within a file it follows a chain of any length -- see
+`parsing/taint_propagation.py`, and the over-approximation it costs -- and a
+function sees the module's names, which is how Python reads and was this
+trace's largest silent miss.
 
 **What is and is not reported when the trace gives up**, because "we could not
 follow it" and "nothing reaches the model" are different answers. Two cases are
@@ -11,9 +14,14 @@ not recognise.
 
 Two are still silent, each held by a strict xfail in
 `tests/checks/test_taint_defect.py` so neither can be quietly forgotten: a
-receiver that is not a local name (`a.b.invoke(x)`), and a value passed inside
-a container (`agent.invoke({"input": x})`). Neither should be read as a clean
-result.
+receiver that is not a local name (`a.b.invoke(x)`), and a value handed through
+a nested call (`agent.invoke(build(x))`), whose return value is not what was
+passed in. Neither should be read as a clean result.
+
+A container no longer hides a value -- `agent.invoke({"input": x})` is followed
+-- and that shape's xfail retired to `test_taint_methods.py`. The larger silence
+is still there and is not an xfail because no single snippet states it: a value
+handed to another function in the same file is not followed at all.
 """
 
 import ast
@@ -27,6 +35,7 @@ from parsing.bindings import (
 from parsing.extractor_python import parse_file
 from parsing.languages import PYTHON, language_of
 from parsing.repo_loader import list_source_files
+from parsing.taint_propagation import propagate
 
 CHECK_NAME = "untrusted_input_reaches_model"
 
@@ -167,7 +176,11 @@ def trace_file(tree: ast.AST, file: str, surfaces: list) -> tuple[list[Finding],
     followed_sources: set[str] = set()
     unsure_probes: dict[str, Probe] = {}
     for scope in scoped_call_bindings(tree):
-        tainted = {n: sources[b.line] for n, b in scope.bindings.items() if b.line in sources}
+        bound = {n: sources[b.line] for n, b in scope.bindings.items() if b.line in sources}
+        # Everything derived from a source, not just what was bound at one:
+        # real code parses and formats a value before handing it over, so one
+        # hop followed almost nothing. `taint_propagation` says what it costs.
+        tainted = propagate(scope.body, bound)
         reached = {n: sinks[b.line] for n, b in scope.bindings.items() if b.line in sinks}
         followed_sources.update(surface.id for surface in tainted.values())
         found, unsure = _judgements_in_scope(scope.body, tainted, reached)

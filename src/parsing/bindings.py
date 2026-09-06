@@ -98,15 +98,79 @@ def _bindings_in(body: list[ast.stmt]) -> dict[str, Binding]:
 
 
 def scoped_call_bindings(tree: ast.Module) -> list[Scope]:
-    """Return each scope with the names it binds, so a name is read where it was bound."""
-    scopes = (Scope(body, _bindings_in(body)) for body in _scope_bodies(tree))
+    """Return each scope with the names it can see, so a name is read where it was bound.
+
+    **A function sees the module's names too**, which is how Python reads and
+    was the trace's largest silent miss. `client = OpenAI()` at module level with
+    the source and the call inside a function -- the shape of every script-style
+    LLM app -- produced no finding *and no probe*: the sink was bound in one
+    scope and the value in another, and nothing said so.
+
+    Module names go underneath the scope's own, and a name the function writes
+    to *at all* shadows the module's -- not merely one bound to a call, which
+    is all `_bindings_in` records. Reading it that way once meant
+    `question = "a literal"` inside a function did not shadow a module-level
+    source, and a string constant was reported as untrusted input.
+    """
+    module_body, *function_bodies = _scope_bodies(tree)
+    module = _bindings_in(module_body)
+    scopes = [Scope(module_body, module)]
+    scopes += [Scope(body, _visible_in(body, module)) for body in function_bodies]
     return [scope for scope in scopes if scope.bindings]
 
 
+def _assigned_anywhere(body: list[ast.stmt]) -> set[str]:
+    """Every name this body writes to, however it writes it.
+
+    Any store counts -- an assignment, a loop variable, a `with ... as`, a
+    walrus -- because all of them make the name local, and a local name is not
+    the module's whatever it was assigned from. `_bindings_in` records only
+    names bound to a *call*, so asking it instead would let
+    `question = "a literal"` fail to shadow a module-level source and report a
+    string constant as untrusted input.
+    """
+    return {node.id for statement in body for node in ast.walk(statement)
+            if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store)}
+
+
+def _visible_in(body: list[ast.stmt], module: dict) -> dict:
+    """The names one function scope can see: its own, over the module's it does not shadow."""
+    shadowed = _assigned_anywhere(body)
+    inherited = {name: binding for name, binding in module.items() if name not in shadowed}
+    return {**inherited, **_bindings_in(body)}
+
+
+# What a value can be wrapped in and still be the value that was handed over.
+# A literal container and an f-string carry their contents to the callee
+# unchanged; a call does not, which is why one is absent from this list.
+TRANSPARENT_WRAPPERS = (ast.List, ast.Tuple, ast.Set, ast.Dict, ast.JoinedStr,
+                        ast.FormattedValue, ast.Starred)
+
+
 def argument_names(call: ast.Call) -> set[str]:
-    """Return the plain names passed to a call, positionally or by keyword."""
-    given = list(call.args) + [k.value for k in call.keywords]
-    return {a.id for a in given if isinstance(a, ast.Name)}
+    """Return the plain names passed to a call, through any literal wrapping.
+
+    `agent.invoke({"input": question})` and `create(messages=[{"content": c}])`
+    hand the value over as surely as `agent.invoke(question)` does; seeing bare
+    names only meant a dict hid it, and the miss was silent rather than a probe.
+
+    **A nested call is deliberately not walked.** In `agent.invoke(build(x))`
+    the value handed to the agent is whatever `build` returned, and calling that
+    `x` would be a different claim than the one this check makes. That shape is
+    a recorded hole, not a decided silence -- see `tests/checks/test_taint_defect.py`.
+    """
+    given = list(call.args) + [keyword.value for keyword in call.keywords]
+    return {name for argument in given for name in _names_within(argument)}
+
+
+def _names_within(node: ast.expr) -> set[str]:
+    """Every bare name this expression hands on, looking through literal wrappers only."""
+    if isinstance(node, ast.Name):
+        return {node.id}
+    if not isinstance(node, TRANSPARENT_WRAPPERS):
+        return set()
+    return {name for child in ast.iter_child_nodes(node)
+            if isinstance(child, ast.expr) for name in _names_within(child)}
 
 
 def receiver_name(call: ast.Call) -> str:

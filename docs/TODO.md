@@ -8,6 +8,7 @@ Ticked history is in git before commit `a78482c`; what shipped is in
 | Where | What |
 |---|---|
 | `checks/known_advisory.py` | A component whose version the SBOM cannot establish gets a versionless purl, but Trivy indexes advisories by versioned purl. They never join, so the component is published as **unreached** — a positive claim of safety from a version gap. |
+| `checks/taint.py` | Multi-hop propagation has no notion of a sanitiser: `safe = sanitise(q)` taints `safe` exactly as `copy = q` does, so a finding titled "reaches the model without validation" can name a value a validator was called on. Over-approximating is the right direction for a tool that reports rather than patches, but the title is a positive claim. |
 | `checks/output_handling.py` | Judges only the argument expression. `q = f"SELECT {x}"` then `execute(q)` is silent, and so is `.format_map`. Pinned by tests. |
 | `checks/output_handling.py` | `%` is judged by shape: `execute("SELECT %s" % ("lit",))` is reported, `% "lit"` is not. Arbitrary. |
 | `artifacts/aibom.py` | `_kind_of` reads Python's name tables whatever the language, so the import guards cover the Python backend only. |
@@ -19,6 +20,18 @@ Ticked history is in git before commit `a78482c`; what shipped is in
 | Scoring | Nothing version-gates `findings.json`, so a stale artifact scores silently against fresh code. |
 
 ## Open tasks
+
+- **LLM01: what the taint trace still cannot follow.** The entry
+  `tests/checks/test_taint_defect.py` cites, which did not exist until now.
+  Two shapes are recorded there as strict xfails -- a deeper receiver chain
+  (`agent.runnable.invoke(q)`) and a value through a nested call
+  (`agent.invoke(build(q))`) -- and two more are open and unrecorded in code:
+  - **Cross-function within a file.** `self._analyze(page_text)` hands the value
+    to another method and the taint stops. This is what
+    `indirect-prompt-injection-poc` needs and does not get; the LLM01 that run
+    reports comes from the semantic probe reading one line, not from dataflow.
+  - **Nothing distinguishes a sanitiser** -- now a row in Known defects, since
+    multi-hop shipped and the cost is real rather than hypothetical.
 
 - **Inline messages are matched on one key, `content`.** Every mainstream chat
   API spells it that way, but a provider that does not -- or a wrapper building

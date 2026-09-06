@@ -12,6 +12,11 @@ or two methods of one class, binding the same name are two bindings.
 `receiver_name` and `method_name` are tested as the pair they are: *which
 object* is used and *what is asked of it*. The taint check needs both, and the
 single `called_name` they replaced conflated them into a blind spot.
+
+Two of this module's questions are asked next door rather than here, because
+each is one subject and this file is long enough: what a value may be *wrapped*
+in and still be handed over is in `test_argument_wrappers.py`, and the module
+bindings a function scope inherits are in `test_bindings_scope_merge.py`.
 """
 
 import ast
@@ -152,9 +157,28 @@ def test_argument_names_returns_keyword_names() -> None:
     assert argument_names(first_call("executor(user_input=prompt)")) == {"prompt"}
 
 
-def test_argument_names_ignores_anything_that_is_not_a_plain_name() -> None:
-    """A literal, an attribute and a nested call name no variable that could be tainted."""
-    assert argument_names(first_call("executor('literal', obj.attr, inner())")) == set()
+def test_argument_names_ignores_a_literal_and_an_attribute() -> None:
+    """Neither names a variable this module could have bound, so neither can carry taint.
+
+    This test and the one below were one, called
+    `test_argument_names_ignores_anything_that_is_not_a_plain_name`. That name
+    stopped being true the day `argument_names` learned to look through literal
+    wrappers -- `executor([question])` is not a plain name either, and is now
+    followed -- so it is split into the two facts that survive, and the shapes
+    that are followed are asserted in `test_argument_wrappers.py`.
+    """
+    assert argument_names(first_call("executor('literal', obj.attr)")) == set()
+
+
+def test_argument_names_does_not_look_through_a_nested_call() -> None:
+    """`executor(inner(question))` hands over what `inner` returned, not `question`.
+
+    The one shape deliberately left unwalked now that literal wrappers are
+    walked: a container carries its contents to the callee unchanged and a call
+    does not. That the miss is never *reported* is an open defect, kept as a
+    strict xfail in `tests/checks/test_taint_defect.py`.
+    """
+    assert argument_names(first_call("executor(inner(question))")) == set()
 
 
 def test_argument_names_of_a_call_with_no_arguments_is_empty() -> None:
