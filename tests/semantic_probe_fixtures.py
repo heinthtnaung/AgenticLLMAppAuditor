@@ -94,6 +94,20 @@ F_STRING_LINE = 5
 F_STRING_VARIABLE = "{user_role}"
 F_STRING_TEMPLATE = "You are a {user_role} agent. Answer the user."
 
+# An app whose template holds no interpolation point at all: every character of
+# it is text the author wrote. The check's claim cannot be met by such a
+# template, so it is refuted from the text alone and no model is asked -- the
+# one verdict this check reaches on its own.
+STATIC_TEMPLATE_APP = '''from langchain.prompts import ChatPromptTemplate
+
+prompt = ChatPromptTemplate.from_template("You are a support agent. Answer politely.")
+'''
+
+STATIC_TEMPLATE_LINE = 3
+STATIC_TEMPLATE_SURFACE_ID = (
+    f"{FILE}:{STATIC_TEMPLATE_LINE}:PROMPT_TEMPLATE:{PROMPT_SURFACE_NAME}")
+STATIC_TEMPLATE_TEXT = "You are a support agent. Answer politely."
+
 # An LLM app with no prompt template at all: a model is offered and there is
 # still nothing to ask about, which is what `checks_run` must leave out.
 NO_PROMPT_APP = '''from langchain.agents import AgentExecutor

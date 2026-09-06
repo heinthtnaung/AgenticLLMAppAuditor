@@ -73,6 +73,20 @@ def imported_modules(tree: ast.Module) -> set[str]:
                     if isinstance(node, ast.ImportFrom) and node.module}
 
 
+def referenced_names(tree: ast.Module) -> set[str]:
+    """Return every name a module mentions -- bare, as an attribute leaf, or imported by name.
+
+    Three node kinds because one constant can be reached three ways:
+    `from checks.semantic_probe import STATIC_REFUTATION`, then the bare name;
+    or `semantic_probe.STATIC_REFUTATION` with no bare name anywhere. A guard
+    that reads only the import misses the second spelling entirely.
+    """
+    bare = {node.id for node in ast.walk(tree) if isinstance(node, ast.Name)}
+    leaves = {node.attr for node in ast.walk(tree) if isinstance(node, ast.Attribute)}
+    return bare | leaves | {alias.name for node in ast.walk(tree)
+                            if isinstance(node, ast.ImportFrom) for alias in node.names}
+
+
 def subscript_keys(tree: ast.Module, variable: str) -> set[str]:
     """Return the string keys a module subscripts one variable with, as in `key["source"]`."""
     return {node.slice.value for node in ast.walk(tree)

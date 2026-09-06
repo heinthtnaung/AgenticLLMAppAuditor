@@ -18,6 +18,7 @@ import argparse
 import json
 import sys
 import time
+from collections.abc import Callable
 from pathlib import Path
 
 SRC = Path(__file__).resolve().parents[1] / "src"
@@ -26,21 +27,38 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import cloud_client                                             # noqa: E402
 import model_client                                             # noqa: E402
+from agreement import partition                                  # noqa: E402
 from artifacts.surface import Surface                           # noqa: E402
 from checks.run_checks import build_findings                    # noqa: E402
+from artifacts.finding import CONFIRMED                          # noqa: E402
+from checks.semantic_probe import CHECK_NAME as PROBE           # noqa: E402
 from comparison_report import to_page                            # noqa: E402
 from exposure import UNMEASURABLE, Ledger                        # noqa: E402
 from parsing.extractor import extract_repo                      # noqa: E402
+from prompt_kinds import classify                                # noqa: E402
 
-PROBE = "semantic_probe"
+# A document without this is not readable: the shape changed once already, and
+# two incompatible files sit in `experiments/results/` with no way to tell them
+# apart. Study output, deliberately not one of the audit artifacts -- the hosted
+# arm has no seed and `seconds` is wall clock, so it is not byte-identical.
+SCHEMA_VERSION = 1
+
+# Every subject lands in exactly one of these, and they must sum to what was
+# seen. Named once so the check and the report cannot drift apart.
+BUCKETS = ("agreements", "disagreements", "not_put_to_a_model",
+           "not_examined_by_every_arm")
 
 
-def _arm(name: str, ask, settings: dict, repo: str, surfaces: list[Surface]) -> dict:
+def _arm(name: str, ask: Callable[[str], str], settings: dict,
+         repo: str, surfaces: list[Surface]) -> dict:
     """Run one model over the app and record what its probe concluded."""
     ledger = Ledger()
 
     def watched(prompt: str) -> str:
-        ledger.record(prompt, "probe prompt")
+        # Classified, not assumed: `build_findings` drives the planner through
+        # this same seam, and calling every prompt a probe prompt is what made
+        # a run claim it had sent template text when it had sent none.
+        ledger.record(prompt, classify(prompt))
         return ask(prompt)
 
     started = time.monotonic()
@@ -54,6 +72,9 @@ def _arm(name: str, ask, settings: dict, repo: str, surfaces: list[Surface]) -> 
         "seconds": round(elapsed, 2),
         "verdicts": {p["subject_id"]: p["outcome"] for p in probes},
         "details": {p["subject_id"]: p["detail"] for p in probes},
+        # Carried so a reader can tell "the model said safe" from "no model was
+        # asked": a concluded probe may hold no reason, so both are needed.
+        "reasons": {p["subject_id"]: p["reason"] for p in probes},
         "findings": sorted(f["finding_id"] for f in document["findings"]
                            if f["rule_id"] == PROBE),
         "exposure": ledger.summary(),
@@ -68,28 +89,35 @@ def compare(repo: str, cloud_models: list[str]) -> dict:
     for name in cloud_models:
         arms.append(_arm(name, lambda prompt, m=name: cloud_client.ask(prompt, m),
                          cloud_client.DECODE_SETTINGS, repo, surfaces))
-    subjects = sorted({s for arm in arms for s in arm["verdicts"]})
+    result = {"schema_version": SCHEMA_VERSION, "repository": repo, "arms": arms,
+              **partition(arms), "unmeasurable_exposure": list(UNMEASURABLE)}
+    _check_partition(result)
+    return result
 
-    def verdicts(subject: str) -> dict:
-        return {arm["model"]: arm["verdicts"].get(subject) for arm in arms}
 
-    unanimous = [s for s in subjects if len(set(verdicts(s).values())) == 1]
-    return {
-        "repository": repo,
-        "templates_examined": len(subjects),
-        "arms": arms,
-        "agreements": unanimous,
-        "disagreements": [{"surface": s, **verdicts(s)} for s in subjects
-                          if s not in unanimous],
-        "unmeasurable_exposure": list(UNMEASURABLE),
-    }
+def _check_partition(result: dict) -> None:
+    """Refuse a document whose buckets do not add up to the subjects seen.
+
+    The rule `evaluation.json` follows: a count cannot be published without the
+    others that give it its denominator, so a bucket silently losing a subject
+    is an error here rather than a smaller number in a report.
+    """
+    counted = sum(len(result[bucket]) for bucket in BUCKETS)
+    if counted != result["subjects_seen"]:
+        raise ValueError(f"the comparison sorted {counted} subjects but saw "
+                         f"{result['subjects_seen']}; every subject must land in "
+                         f"exactly one of {BUCKETS}")
 
 
 def _note(result: dict) -> str:
-    """One line saying what a disagreement means, or that there was none."""
+    """One line saying what the comparison established, or that it established nothing."""
+    if not result["agreements"] and not result["disagreements"]:
+        return ("**No template was put to a model, so nothing here compares them.** "
+                "Each subject was either settled before a model was asked or not seen "
+                "by every model -- see which below. This run says nothing about either model.")
     if not result["disagreements"]:
-        return "**The models agreed on every template.** Agreement is not proof of "
-    "correctness: both could be wrong the same way."
+        return ("**The models agreed on every template both were asked about.** "
+                "Agreement is not proof of correctness: both could be wrong the same way.")
     return ("**They disagree, so at most one is right.** A verdict here is a claim about "
             "the *template's structure* -- whether it drops a value into instruction text "
             "with nothing separating the two -- not about whether the application is "
@@ -97,17 +125,27 @@ def _note(result: dict) -> str:
 
 
 def _print(result: dict) -> None:
-    """Report the comparison, leading with the per-template agreement."""
-    print(f"{result['repository']}: {result['templates_examined']} prompt templates\n")
+    """Report the comparison, and what it could not compare, on the same screen."""
+    compared = len(result["agreements"]) + len(result["disagreements"])
+    print(f"{result['repository']}: {result['subjects_seen']} prompt template(s), "
+          f"{compared} put to a model\n")
     for arm in result["arms"]:
-        flagged = sum(1 for v in arm["verdicts"].values() if v == "confirmed")
-        print(f"  {arm['model']:34} {flagged} flagged, {arm['seconds']:>6.2f}s, "
-              f"{arm['exposure']['bytes_sent']} bytes sent")
-    print(f"\n  agree on {len(result['agreements'])} of {result['templates_examined']}, "
-          f"disagree on {len(result['disagreements'])}")
+        flagged = sum(1 for v in arm["verdicts"].values() if v == CONFIRMED)
+        # The request count travels with the byte count: "2970 bytes sent" alone
+        # is what let a planner prompt be read as one probe request per template.
+        print(f"  {arm['model']:34} {flagged} flagged of {len(arm['verdicts'])}, "
+              f"{arm['seconds']:>6.2f}s, {arm['exposure']['bytes_sent']} bytes over "
+              f"{arm['exposure']['requests']} request(s)")
+    # All four counts together: quoting the agreement alone would hide that
+    # nothing was compared, which is the defect this shape exists to prevent.
+    print(f"\n  agree {len(result['agreements'])}, "
+          f"disagree {len(result['disagreements'])}, "
+          f"no model asked {len(result['not_put_to_a_model'])}, "
+          f"not seen by every model {len(result['not_examined_by_every_arm'])}"
+          f"  (of {result['subjects_seen']})")
     for row in result["disagreements"]:
-        said = "  ".join(f"{m.split('/')[-1]}={v}" for m, v in row.items() if m != "surface")
-        print(f"    {row['surface']}\n      {said}")
+        said = "  ".join(f"{m.split('/')[-1]}={v}" for m, v in row["verdicts"].items())
+        print(f"    {row['subject']}\n      {said}")
 
 
 def main() -> int:
@@ -127,7 +165,9 @@ def main() -> int:
     try:
         result = compare(args.repo_path,
                          args.cloud_models or [cloud_client.default_model()])
-    except RuntimeError as error:
+    except (RuntimeError, ValueError) as error:
+        # ValueError too: `classify` and `_check_partition` raise it deliberately,
+        # and a refusal to account for a prompt is a message, not a traceback.
         print(f"error: {error}", file=sys.stderr)
         return 1
     _print(result)

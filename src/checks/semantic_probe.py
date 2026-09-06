@@ -63,6 +63,12 @@ NO_ANSWER = NO_MODEL
 VULNERABLE = "VULNERABLE"
 SAFE = "SAFE"
 
+# The verdict this check reaches on its own, named because `experiments/`
+# compares against it to tell "the model said safe" from "no model was asked".
+# A copy of the sentence in two files is how the two copies start disagreeing.
+STATIC_REFUTATION = ("the template interpolates nothing: every character of it is "
+                     "fixed text, so no runtime value sits in its instructions")
+
 # An interpolation point, as `_render` writes them. A template holding none
 # cannot meet this check's criterion, whatever a model says about it.
 PLACEHOLDER = re.compile(r"\{[^{}]+\}")
@@ -227,9 +233,7 @@ def judge(surface: Surface, text: str, ask: Ask) -> tuple[Finding | None, Probe]
         # `damn-vulnerable-llm-agent` the local model called a wholly static
         # system prompt injectable, and the hosted one correctly did not --
         # see `docs/REPORT.md`, Objective 5.
-        return None, _probe(surface, REFUTED,
-                            "the template interpolates nothing: every character of it is "
-                            "fixed text, so no runtime value sits in its instructions")
+        return None, _probe(surface, REFUTED, STATIC_REFUTATION)
     try:
         reply = ask(RED_TEAM_PROMPT.format(template=text))
     except RuntimeError as error:
