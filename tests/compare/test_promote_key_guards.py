@@ -8,11 +8,13 @@ Two refusals stand between a draft and the keys a run is scored against:
 * a key already at the top level is never overwritten, because promoting over
   one would replace the answer every published figure was measured against.
 
-The last test is the safety net for this whole family of files: `grading_keys/`
-is this project's committed evidence, so after a promotion has run to completion
-against `tmp_path`, the real folder still holds exactly the bytes it held
-before. `REAL_KEYS_DIR` is captured at import, before any test redirects the
-constant.
+The last three tests are the safety net for this whole family of files:
+`grading_keys/` is this project's committed evidence, so after a promotion has
+run to completion against `tmp_path`, the real folder still holds exactly the
+bytes it held before. It has held no key since 2026-09-06, which changes nothing
+here -- the comparison is before against after, so it fails on a file appearing
+whether or not one was there to begin with. `REAL_KEYS_DIR` is captured at
+import, before any test redirects the constant.
 """
 
 import json
@@ -38,7 +40,6 @@ from keys.grading_keys import (
     discover_graded_apps,
     key_path,
 )
-from shipped_key_fixtures import SHIPPED_APPS
 
 # The real folder, bound before any redirection, so the net below is over the
 # committed evidence and not over whatever a fixture pointed the constant at.
@@ -138,21 +139,32 @@ def test_the_draft_survives_the_refusal(keys_dir, drafts_dir) -> None:
 # --- the folder that is committed evidence -------------------------------------
 
 def test_a_promotion_writes_nothing_into_the_real_keys_folder(drafts_dir) -> None:
-    """The net under every test here: a whole promotion, and the evidence unchanged."""
+    """The net under every test here: a whole promotion, and the folder unchanged."""
     before = shipped_bytes()
     corrected_draft(drafts_dir)
     promote_key.promote(APP, drafts_dir)
     assert shipped_bytes() == before
 
 
-def test_the_real_folder_still_ships_exactly_the_keys_it_shipped(drafts_dir) -> None:
-    """Stated against discovery too: a promoted draft enrols no app in the real folder."""
+def test_a_promotion_enrols_no_app_in_the_real_keys_folder(drafts_dir) -> None:
+    """Stated against discovery too: a promoted draft must not become scoreable here.
+
+    The app promoted is `APP`, which no real key names, so this fails the moment
+    a promotion writes anywhere but where it was pointed.
+    """
+    before = discover_graded_apps(REAL_KEYS_DIR)
     corrected_draft(drafts_dir)
     promote_key.promote(APP, drafts_dir)
-    assert discover_graded_apps(REAL_KEYS_DIR) == SHIPPED_APPS
+    assert discover_graded_apps(REAL_KEYS_DIR) == before
+    assert APP not in discover_graded_apps(REAL_KEYS_DIR)
 
 
-def test_the_real_folder_is_not_empty(drafts_dir) -> None:
-    """Guard: an empty folder would make both tests above hold over nothing."""
-    assert shipped_bytes()
-    assert key_path(SHIPPED_APPS[0], GROUND_TRUTH_SUFFIX, REAL_KEYS_DIR).is_file()
+def test_the_folder_the_net_watches_is_where_a_promotion_would_land() -> None:
+    """Guard: a net over any other folder would hold however the promotion behaved.
+
+    This one takes no fixture, so nothing has redirected `KEYS_DIR`: the folder
+    the two tests above compare before against after is the same folder a
+    `promote_key` run with no redirection moves a key into.
+    """
+    assert key_path(APP, GROUND_TRUTH_SUFFIX).parent == REAL_KEYS_DIR
+    assert REAL_KEYS_DIR.is_dir()

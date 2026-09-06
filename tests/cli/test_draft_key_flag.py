@@ -27,7 +27,6 @@ from keys.grading_keys import GROUND_TRUTH_SUFFIX, discover_graded_apps, key_pat
 from keys.key_drafting import DRAFTED_KEYS_DIR as REAL_DRAFTS_DIR
 from mixed_app_fixtures import APP_NAME
 from pipeline_helpers import record_publish
-from shipped_key_fixtures import SHIPPED_APPS
 
 
 # --- without the flag, the stage is not reached -------------------------------
@@ -54,11 +53,12 @@ def test_a_default_url_run_leaves_no_key_anywhere(monkeypatch, tmp_path) -> None
     drafting_model(monkeypatch)
     published = record_publish(monkeypatch)
     artifacts = tmp_path / "artifacts"
+    before = discover_graded_apps()
     assert run_cli(monkeypatch, URL, artifacts) == 0
     assert published == [(artifacts / APP_NAME, False)], "the run reached its last stage"
     assert not drafts_dir(tmp_path).exists()
     assert not key_path(APP_NAME, GROUND_TRUTH_SUFFIX, REAL_DRAFTS_DIR).exists()
-    assert discover_graded_apps() == SHIPPED_APPS
+    assert discover_graded_apps() == before
 
 
 # --- with the flag, the pin decides and the fetcher does not -------------------

@@ -2,17 +2,22 @@
 
 The moment `promote_key` moves the pair up one level, `discover_graded_apps`
 finds it and runs are scored against it -- there is no lesser status a promoted
-key sits in. So everything `tests/test_shipped_grading_key.py` asserts about the
-keys in `grading_keys/` must already be true of whatever
-`key_promotion.refusals` was willing to let through.
+key sits in. So everything `docs/SCHEMAS.md` requires of a key in
+`grading_keys/` must already be true of whatever `key_promotion.refusals` was
+willing to let through.
 
-The field lists are **imported from that file** rather than respelled, so a rule
-tightened there reaches this one instead of passing it. A failure here is not a
-bad test: it is `key_promotion` missing a check, and the name of the failing
-test says which.
+`grading_keys/` has held no key since 2026-09-06, so this promotion is the only
+grading key the suite can read: these three files are where those rules have a
+subject at all, and it is one the test builds rather than one it finds on disk.
+
+The field lists are **imported from `grading_key_rules.py`** rather than
+respelled, so a rule tightened there reaches this file instead of passing it. A
+failure here is not a bad test: it is `key_promotion` missing a check, and the
+name of the failing test says which.
 
 The entries are `test_promoted_entries_shipped_rules.py` and the pin is
-`test_promoted_pin_shipped_rules.py`, the same split the shipped tests use.
+`test_promoted_pin_shipped_rules.py`, because one file asking all three
+questions grew past the length a reader takes in at once.
 
 The draft promoted here is the one a real run would produce -- built by
 `key_drafting.key_document` from a model entry, anchored, sorted, with the
@@ -31,8 +36,8 @@ from keys.grading_keys import (
     discover_graded_apps,
     key_path,
 )
+from grading_key_rules import REQUIRED_ENTRY_FIELDS, REQUIRED_KEY_FIELDS
 from keys.key_promotion import ANCHOR_FIELD, ENTRY_FIELDS
-from test_shipped_grading_key import REQUIRED_ENTRY_FIELDS, REQUIRED_KEY_FIELDS
 
 # What the promoted draft holds, so no assertion below passes over an empty list.
 ENTRY_COUNT = 1
@@ -64,10 +69,10 @@ def test_the_promoted_key_holds_the_entries_the_draft_had(key) -> None:
     assert key["finding_count"] == ENTRY_COUNT
 
 
-# --- what `test_shipped_grading_key.py` requires of the document --------------
+# --- what `docs/SCHEMAS.md` requires of the document --------------------------
 
 def test_the_promoted_key_carries_every_required_field(key) -> None:
-    """The thirteen `docs/SCHEMAS.md` marks required, imported from the shipped-key test."""
+    """The thirteen `docs/SCHEMAS.md` marks required, imported from `grading_key_rules`."""
     assert [field for field in REQUIRED_KEY_FIELDS if field not in key] == []
 
 

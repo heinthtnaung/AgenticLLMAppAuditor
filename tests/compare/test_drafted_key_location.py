@@ -30,10 +30,12 @@ from drafted_key_fixtures import APP, draft_into
 from fetch_repo import check_not_a_graded_app
 from keys.grading_keys import GROUND_TRUTH_SUFFIX, KEYS_DIR, discover_graded_apps
 from keys.key_drafting import DRAFTED_KEYS_DIR
-from shipped_key_fixtures import SHIPPED_APPS
 
 # The two repository-relative paths the ignore rules must treat differently.
-SHIPPED_KEY_PATH = f"{KEYS_DIR.name}/{SHIPPED_APPS[0]}{GROUND_TRUTH_SUFFIX}"
+# Neither file exists -- `grading_keys/` has held no key since 2026-09-06 and
+# the drafted one is written under `tmp_path` -- and neither needs to: the
+# patterns are matched against the paths a key *would* take.
+TOP_LEVEL_KEY_PATH = f"{KEYS_DIR.name}/{APP}{GROUND_TRUTH_SUFFIX}"
 DRAFTED_KEY_PATH = (f"{KEYS_DIR.name}/{DRAFTED_KEYS_DIR.name}/"
                     f"{APP}{GROUND_TRUTH_SUFFIX}")
 
@@ -96,10 +98,10 @@ def test_the_drafts_folder_is_gitignored() -> None:
     assert DRAFTS_PATTERN in ignore_patterns()
 
 
-def test_the_shipped_keys_folder_is_not_gitignored() -> None:
-    """The other half: `grading_keys/` itself stays tracked, so the hand-written key ships."""
+def test_a_key_at_the_top_level_is_not_gitignored() -> None:
+    """The other half: `grading_keys/` itself stays tracked, so a hand-written key ships."""
     assert [pattern for pattern in ignore_patterns()
-            if ignores(SHIPPED_KEY_PATH, pattern)] == []
+            if ignores(TOP_LEVEL_KEY_PATH, pattern)] == []
 
 
 def test_the_matcher_fires_on_a_drafted_key() -> None:
@@ -108,21 +110,18 @@ def test_the_matcher_fires_on_a_drafted_key() -> None:
             if ignores(DRAFTED_KEY_PATH, pattern)] == [DRAFTS_PATTERN]
 
 
-# --- and the shipped set is untouched by any of it ----------------------------
+# --- and the repository's own keys are untouched by any of it -----------------
 
-def test_the_repository_still_ships_exactly_the_keys_it_shipped_before(tmp_path) -> None:
-    """The assertion a drafting run must not disturb: no argument, the real folder."""
-    draft_into(tmp_path / DRAFTED_KEYS_DIR.name)
-    assert discover_graded_apps() == SHIPPED_APPS
+def test_a_drafting_run_leaves_the_repositorys_own_keys_as_they_were(tmp_path) -> None:
+    """The assertion a drafting run must not disturb: no argument, the real folder.
 
-
-def test_the_drafted_app_is_not_one_of_the_shipped_ones(tmp_path) -> None:
-    """Guard: the test above would pass by accident if the drafted name were shipped."""
-    draft_into(tmp_path / DRAFTED_KEYS_DIR.name)
-    assert APP not in SHIPPED_APPS
-
-
-def test_the_shipped_set_is_not_empty() -> None:
-    """Guard: an empty folder would make every assertion above hold over nothing."""
-    assert len(SHIPPED_APPS) >= 1
-    assert discover_graded_apps() != ()
+    Before against after, not against a list of what ships -- `grading_keys/`
+    holds no key today, and this has to fail on a draft landing there whether it
+    holds one or not. The first assertion is what stops the other two holding
+    over a drafting run that wrote nothing at all.
+    """
+    before = discover_graded_apps()
+    drafted = draft_into(tmp_path / DRAFTED_KEYS_DIR.name)
+    assert drafted.is_file(), "the draft was written, so this is a run that really happened"
+    assert discover_graded_apps() == before
+    assert APP not in discover_graded_apps()

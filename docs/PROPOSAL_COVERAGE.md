@@ -177,7 +177,13 @@ of them.
 | Data-exposure implications | **Partial** -- the byte figure is withdrawn: it counted the planner's prompt as a probe prompt and "one request per template" was never true (3 requests for 5 templates in the saved run). The ledger now derives what was sent; the number needs a re-measure. Four things are named as **unmeasurable** rather than dressed up: retention, training use, jurisdiction, and which upstream provider served the request. And what was sent was a *public* file, so this measures the mechanism, not the exposure a private repository would incur. |
 | "qualitative usefulness of reports for a human security reviewer" | **No** -- not attempted; this is a human study, not code |
 
-### Dissemination
+#**The shipped key was removed from the repository** after these figures were
+measured. They stand as a record of a run against a key recoverable from commit
+`f9bd9ff`, and the commitment to ship evaluation materials is no longer met by
+what is on the branch. That is a deliberate change, not an oversight, and this
+document would otherwise claim otherwise.
+
+## Dissemination
 
 | Promised | Status |
 |---|---|

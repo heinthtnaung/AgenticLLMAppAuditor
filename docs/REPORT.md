@@ -5,6 +5,9 @@ long-form discussion is in git before commit `c10daa0`.
 
 ## Detection
 
+**The key these figures were measured against is no longer in the repository.** It was removed deliberately; the last commit holding it is `f9bd9ff`, and `git show f9bd9ff:grading_keys/damn-vulnerable-llm-agent.ground_truth.json` recovers it. So the measurement happened and is auditable, and `python src/evaluate.py` on a clean checkout now finds no app to score. Read every number below as a record of a run, not as one you can reproduce today.
+
+
 Scored against `grading_keys/damn-vulnerable-llm-agent.ground_truth.json`, eight
 entries.
 

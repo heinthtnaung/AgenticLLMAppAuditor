@@ -152,49 +152,72 @@ unknown `AUDITOR_*` name is refused rather than ignored, so a typo is loud.
 | `OPENROUTER_API_KEY` | — | `--compare-models` only; never read by an audit |
 | `OPENROUTER_MODEL` | `z-ai/glm-5.2` | |
 
-## Worked example
+## Try it: catch a real prompt injection
 
-`damn-vulnerable-llm-agent` is a deliberately vulnerable LangChain ReAct agent,
-and the app this project is measured against.
+`indirect-prompt-injection-poc` scrapes a web page and hands the text to a
+model. Its own comments say it is vulnerable. One command:
 
 ```bash
-# 1. get it at the commit the grading key pins
-git clone https://github.com/ReversecLabs/damn-vulnerable-llm-agent.git \
-  fetched/damn-vulnerable-llm-agent
-cd fetched/damn-vulnerable-llm-agent
-git checkout c0cf9a14adad76e9d6a53c41741f625334bd9971
-cd ../.. && rm -rf fetched/damn-vulnerable-llm-agent/.git
+python src/main.py https://github.com/kamranhasan/indirect-prompt-injection-poc --semantic-probe
+```
 
-# 2. audit it
-python src/main.py fetched/damn-vulnerable-llm-agent
+The URL is fetched, pinned at its current commit, and audited — no cloning or
+checking out by hand. About 26 seconds with a local model running.
 
-# 3. score it against the shipped grading key
-python src/evaluate.py
+```
+wrote 11 artifacts to artifacts/agentic_auditor/indirect-prompt-injection-poc
+audit completed in 25.95 seconds
+```
 
-# 4. compare against the baselines
-python src/run_baseline.py baseline_static_rules fetched/damn-vulnerable-llm-agent
+Ten findings: one **LLM01** and nine **LLM03**. The LLM01 is the one worth
+reading, in `report.md`:
+
+```
+LLM01  semantic_probe  app.py:77
+  Prompt template interpolates a value into instruction text without delimiters
+  CONFIRMED: the interpolation point `{content}` is placed inside instruction
+  text with no delimiter, quoting, or system/data separation around it.
+```
+
+`app.py:77` is the line where the scraped page text reaches the model. That
+prompt is written inline as a chat-message dict — `{"role": "user", "content":
+f"...{content}"}` — with no name of its own, which is exactly the shape the
+extractor was blind to until recently.
+
+**What it does not find there, which is the honest half.** The *dataflow* to
+that line — `requests.get` → `response.text` → `soup` → `page_text`, across two
+methods, into a call whose value sits inside a list of dicts — defeats the taint
+trace. The finding above comes from a model reading one line, not from following
+the data. `docs/REPORT.md` says why.
+
+Drop `--semantic-probe` and the LLM01 disappears: the probe is the only check
+that asks a model anything, and it is off by default so an ordinary audit is
+fast and produces the same artifacts whether a model was running or not.
+
+### Scoring a run
+
+Scoring needs a grading key, and this repository ships none — see *What it
+found* below for the figures and the commit that holds the key they were
+measured against. With a key in `grading_keys/`:
+
+```bash
+python src/evaluate.py                                        # the auditor
+python src/run_baseline.py baseline_static_rules <repo>       # a baseline
 python src/evaluate.py --system baseline_static_rules
 ```
 
-Expect 6 findings and **3 of 8** matched. `--semantic-probe` adds a model's
-opinion on prompt templates; on this app it adds no finding.
-Read `artifacts/agentic_auditor/damn-vulnerable-llm-agent/report.md`.
+Or let the local model draft one for you to correct, with `--draft-key`.
 
-Three things that will silently spoil it. **Editing the app's
-`requirements.txt`** — the tree stops matching the pin and the supply-chain
-finding disappears. **Leaving `.git` in place** — git commands inside then
-resolve to the clone rather than this repo. And **pointing `main.py` at the
-artifacts directory** instead of the app: it audits that folder, finds no
-source, and writes the empty result back over the real one.
-
-`main.py` also takes the URL directly, but not for this app — the name belongs
-to a grading key, and the tool refuses to overwrite artifacts scored against
-one.
+**One thing that will silently spoil a run:** pointing `main.py` at the
+artifacts directory instead of the app. It audits that folder, finds no source,
+and writes the empty result back over the real one.
 
 ## What it found
 
-On `damn-vulnerable-llm-agent` at commit `c0cf9a14`, scored against
-`grading_keys/`:
+On `damn-vulnerable-llm-agent` at commit `c0cf9a14`, scored against a grading
+key that **is no longer in this repository** — removed deliberately, recoverable
+with `git show f9bd9ff:grading_keys/damn-vulnerable-llm-agent.ground_truth.json`.
+The run happened; it is not reproducible from a clean checkout today.
 
 | System | Matched |
 |---|---|

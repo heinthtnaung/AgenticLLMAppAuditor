@@ -29,7 +29,6 @@ from keys.grading_keys import GROUND_TRUTH_SUFFIX, discover_graded_apps, key_pat
 from keys.key_drafting import DRAFTED_KEYS_DIR as REAL_DRAFTS_DIR
 from mixed_app_fixtures import APP_NAME
 from pipeline_helpers import record_publish
-from shipped_key_fixtures import SHIPPED_APPS
 
 
 # --- a failed draft costs the run nothing -------------------------------------
@@ -94,14 +93,22 @@ def test_a_pinned_tree_is_drafted_where_the_run_was_pointed(monkeypatch, tmp_pat
 
 
 def test_the_draft_never_lands_in_the_repositorys_own_keys(monkeypatch, tmp_path) -> None:
-    """`grading_keys/` is committed evidence; a model-written key may not appear in it."""
+    """`grading_keys/` is committed evidence; a model-written key may not appear in it.
+
+    The run really drafted one -- asserted first, or the three refusals below
+    would hold over a run that never reached the stage -- and discovery over the
+    real folder is compared before against after, which fails on a key landing
+    there whether the folder held one to begin with or not.
+    """
     fetched_tree(monkeypatch, tmp_path, pinned=True)
     drafting_model(monkeypatch)
     record_publish(monkeypatch)
+    before = discover_graded_apps()
     run_cli(monkeypatch, URL, tmp_path / "artifacts", flags=DRAFT_KEY)
+    assert drafted_key(tmp_path).is_file(), "the run reached the drafting stage"
     assert not key_path(APP_NAME, GROUND_TRUTH_SUFFIX).exists()
     assert not key_path(APP_NAME, GROUND_TRUTH_SUFFIX, REAL_DRAFTS_DIR).exists()
-    assert discover_graded_apps() == SHIPPED_APPS
+    assert discover_graded_apps() == before
 
 
 def test_a_second_run_leaves_the_first_draft_exactly_as_it_was(monkeypatch, tmp_path) -> None:

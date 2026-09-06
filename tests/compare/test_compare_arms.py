@@ -37,7 +37,6 @@ from evaluation.harness import EVALUATION_NAME
 from keys.grading_keys import GROUND_TRUTH_SUFFIX, discover_graded_apps, key_path
 from mixed_app_fixtures import APP_NAME, PYTHON_FILE, write_mixed_app
 from outputs import FINDINGS_NAME, REMEDIATION_NAME
-from shipped_key_fixtures import SHIPPED_APPS
 
 CLOUD_MODEL = "vendor/some-hosted-model"
 COMMIT = "d" * 40
@@ -145,10 +144,17 @@ def test_the_hosted_arm_is_not_written_beside_the_local_one(monkeypatch, tmp_pat
 
 def test_the_drafted_key_landed_in_the_folder_nothing_discovers(monkeypatch,
                                                                 tmp_path) -> None:
-    """The draft is written where it was pointed, and the repository's own keys are untouched."""
+    """The draft is written where it was pointed, and the repository's own keys are untouched.
+
+    Discovery is compared before against after rather than to a list of what
+    ships: `grading_keys/` holds no key today, and a draft landing there has to
+    fail this whether it holds one or not.
+    """
+    before = discover_graded_apps()
     compare(monkeypatch, tmp_path)
     assert key_path(APP_NAME, GROUND_TRUTH_SUFFIX, drafts_dir(tmp_path)).is_file()
-    assert discover_graded_apps() == SHIPPED_APPS
+    assert discover_graded_apps() == before
+    assert APP_NAME not in discover_graded_apps()
 
 
 # --- both arms are scored, each as itself -------------------------------------

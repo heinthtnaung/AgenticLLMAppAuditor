@@ -2,9 +2,9 @@
 
 The companion of `test_promoted_key_shipped_rules.py`, split off it because one
 file doing both jobs grew past the length a reader takes in at once. The rules
-and the field list come from `tests/test_shipped_grading_key.py`: a promoted
-entry is a shipped entry, and the two files may not disagree about what that
-requires.
+and the field list come from `grading_key_rules.py`, which states what
+`docs/SCHEMAS.md` requires of any entry: a promoted entry is an entry a run is
+scored against, so it is held to all of it.
 
 `test_the_promoted_key_holds_the_entries_the_draft_had` is the guard that stops
 every loop here passing over an empty findings list; it lives in the companion
@@ -15,9 +15,9 @@ import pytest
 from artifacts.repo_path import is_repo_relative_posix
 from artifacts.surface import SURFACE_KINDS
 from drafted_key_fixtures import promote_one_draft, promoted_document
+from grading_key_rules import CODE_ANCHOR_LENGTH, OWASP_IDS, REQUIRED_ENTRY_FIELDS
 from keys.grading_keys import GROUND_TRUTH_SUFFIX
 from test_promoted_key_shipped_rules import ENTRY_COUNT
-from test_shipped_grading_key import CODE_ANCHOR_LENGTH, OWASP_IDS, REQUIRED_ENTRY_FIELDS
 
 
 @pytest.fixture

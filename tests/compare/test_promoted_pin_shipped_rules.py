@@ -1,8 +1,8 @@
 """The pin a promoted key ships beside it, held to a shipped pin's rules.
 
-`tests/test_shipped_grading_pin.py` is the authority and its field lists are
-imported: a promoted manifest is a graded app's manifest, and the one place the
-two producers differ -- `framework` and `language`, which a fetcher cannot know
+`grading_key_rules.py` is the authority and its field lists are imported: a
+promoted manifest is a graded app's manifest, and the one place the two
+producers differ -- `framework` and `language`, which a fetcher cannot know
 -- is exactly what `key_promotion` refuses a draft for. That refusal and this
 requirement are the same rule seen from both ends, which is why this file exists
 rather than being taken on trust.
@@ -12,14 +12,14 @@ from pathlib import Path
 
 import pytest
 from drafted_key_fixtures import APP, promote_one_draft, promoted_document
-from keys.grading_keys import GROUND_TRUTH_SUFFIX, MANIFEST_SUFFIX
-from test_shipped_grading_pin import (
+from grading_key_rules import (
     COMMIT_LENGTH,
     GRADED_PIN_FIELDS,
     HTTPS_PREFIX,
     PIN_ROLES,
     REQUIRED_PIN_FIELDS,
 )
+from keys.grading_keys import GROUND_TRUTH_SUFFIX, MANIFEST_SUFFIX
 
 
 @pytest.fixture

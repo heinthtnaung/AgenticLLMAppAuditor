@@ -126,6 +126,13 @@ Ticked history is in git before commit `a78482c`; what shipped is in
   hallucination scores. Whether a better prompt -- one that explains what each
   class means rather than listing the ids -- closes that gap is the cheapest
   experiment left on this feature, and nobody has run it.
-- **The grading key is AI-drafted and unverified.** Every figure carries
-  `key_ai_drafted` and `key_unverified` until a human checks its eight entries
-  against commit `c0cf9a14`. Cheapest remaining upgrade in the project.
+- **No grading key ships.** The one that did was removed on 2026-09-06;
+  `git show f9bd9ff:grading_keys/damn-vulnerable-llm-agent.ground_truth.json`
+  recovers it. Every figure in `docs/REPORT.md` was measured against it, so none
+  of them is reproducible from a clean checkout, and `src/evaluate.py` refuses
+  rather than scoring zero. Writing or restoring a key is what makes the
+  measurement claim true again.
+- **A key can no longer be held to the one rule that made it independent.**
+  `grading_keys/README.md` records it: at least one entry should sit where no
+  extracted surface does, or recall is measured over the tool's own inventory.
+  The test that held it needed a real key as its subject and went with it.
