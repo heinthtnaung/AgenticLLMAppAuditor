@@ -29,7 +29,7 @@ from drafted_key_fixtures import (
     corrected_draft,
     redirect_keys_dir,
 )
-from grading_keys import (
+from keys.grading_keys import (
     GROUND_TRUTH_SUFFIX,
     MANIFEST_SUFFIX,
     TOOL_DRAFTED,

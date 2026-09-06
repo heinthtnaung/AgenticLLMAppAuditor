@@ -23,11 +23,11 @@ import json
 
 import pytest
 
-import key_drafting
-import key_store
+from keys import key_drafting
+from keys import key_store
 from drafted_key_fixtures import APP, COMMIT, ENTRY, PIN
 from evaluation.harness import KEY_SCHEMA_VERSION, check_key
-from grading_keys import (
+from keys.grading_keys import (
     GROUND_TRUTH_SUFFIX,
     KEY_SOURCES,
     MANIFEST_SUFFIX,

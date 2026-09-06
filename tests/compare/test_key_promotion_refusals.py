@@ -20,7 +20,7 @@ documents, and the fixtures build both.
 
 from drafted_key_fixtures import ANCHORED_ENTRY, ENTRY, fit_key, fit_pin
 from evaluation.grading import line_window
-from key_promotion import (
+from keys.key_promotion import (
     ANCHOR_FIELD,
     GRADED_PIN_FIELDS,
     REQUIRED_URL_SCHEME,

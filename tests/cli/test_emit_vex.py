@@ -15,7 +15,7 @@ import emit_vex
 from advisory_fixtures import ADVISORY_PURL, DB_UPDATED_AT
 from artifacts.vex import AFFECTED, NO_FIX, pinned_epoch
 from emit_vex import document_id, product_iri
-from grading_keys import MANIFEST_SUFFIX
+from keys.grading_keys import MANIFEST_SUFFIX
 from vex_fixtures import PINNED_EPOCH, PRODUCT
 
 # A real Trivy database date, with the nine fractional digits Go writes and

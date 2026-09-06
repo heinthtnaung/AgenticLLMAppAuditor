@@ -12,7 +12,7 @@ be.
 
 import json
 
-from grading_keys import GROUND_TRUTH_SUFFIX, MANIFEST_SUFFIX, key_path
+from keys.grading_keys import GROUND_TRUTH_SUFFIX, MANIFEST_SUFFIX, key_path
 
 # What ships today, pinned so the tests over it cannot go quiet. An empty folder
 # was the old normal and would make every one of them vacuous, so it is asserted

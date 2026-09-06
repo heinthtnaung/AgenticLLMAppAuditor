@@ -15,7 +15,7 @@ into a place to tune the tool against its own answer key.
 
 from artifacts.finding import SURFACE_SUBJECT, UNRESOLVED_OUTCOMES
 from artifacts.findings_document import ADVISORY_NOT_INGESTED, MODEL_USED
-from grading_keys import DRAFTED_SOURCES, TOOL_DRAFTED
+from keys.grading_keys import DRAFTED_SOURCES, TOOL_DRAFTED
 from evaluation.grading import matches_key
 from evaluation.evidence import evidence_counts
 

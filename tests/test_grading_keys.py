@@ -23,7 +23,7 @@ from pathlib import Path
 
 import pytest
 
-from grading_keys import (
+from keys.grading_keys import (
     BASELINE_SUFFIX,
     GROUND_TRUTH_SUFFIX,
     KEYS_DIR,

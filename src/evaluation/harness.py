@@ -18,11 +18,10 @@ from pathlib import Path
 
 from evaluation.document import AGENTIC_AUDITOR, build_evaluation
 from evaluation.scorer import score_app
-from grading_keys import (
+from artifacts.names import FINDINGS_NAME, SURFACES_NAME
+from keys.grading_keys import (
     GROUND_TRUTH_SUFFIX, KEY_SOURCES, TOOL_DRAFTED, key_path)
 
-FINDINGS_NAME = "findings.json"
-SURFACES_NAME = "surfaces.json"
 EVALUATION_NAME = "evaluation.json"
 
 # What `scorer.py` reads off a key. Listed here, at the I/O edge, so a

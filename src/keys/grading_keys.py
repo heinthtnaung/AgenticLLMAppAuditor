@@ -21,7 +21,10 @@ nothing to score, which is a different thing from a broken checkout.
 import json
 from pathlib import Path
 
-KEYS_DIR = Path(__file__).resolve().parents[1] / "grading_keys"
+# parents[2], not [1]: this module lives in `src/keys/`, so the repository
+# root is two levels up. A move that changed this silently pointed the whole
+# project at a folder that does not exist.
+KEYS_DIR = Path(__file__).resolve().parents[2] / "grading_keys"
 
 # Who wrote a key. Closed, and consulted at runtime rather than only in a test:
 # `scorer` compared against a bare literal and `harness` validated the field's

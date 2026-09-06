@@ -40,13 +40,17 @@ GROUND_TRUTH_NAME = "ground_truth.json"
 # The module that locates every grading key. It was `corpus_paths` until the
 # pinned corpus was removed; the name is spelled once here because the guard
 # below is vacuous against a module that does not exist.
-KEYS_PACKAGE = "grading_keys"
+# The package, not the module: `keys/` holds the locator and the three
+# drafting modules, and `modules_importing` matches a package or any
+# submodule -- so naming the package guards all four where naming
+# `grading_keys` guarded one.
+KEYS_PACKAGE = "keys"
 
 # A planted module, to prove the matcher below fires on a real violation.
 PLANTED_FILE = "planted.py"
 PLANTED_READER = 'MISSES = json.loads(open("evaluation.json").read())\n'
 PLANTED_IMPORT = "from evaluation.scorer import score_app\n"
-PLANTED_KEYS_IMPORT = "from grading_keys import GROUND_TRUTH_SUFFIX, key_path\n"
+PLANTED_KEYS_IMPORT = "from keys.grading_keys import GROUND_TRUTH_SUFFIX, key_path\n"
 
 
 def scored_trees() -> list[Path]:
@@ -129,9 +133,10 @@ def test_the_keys_module_this_guard_names_really_exists() -> None:
     This assertion was written as `scored_modules_importing("corpus_paths")`
     and kept passing after that module became `grading_keys` -- silently
     guarding nothing. The name is checked against the filesystem so the rename
-    fails here instead.
+    fails here instead, and it did: `grading_keys` became the `keys/` package
+    and this failed rather than going quiet.
     """
-    assert (SRC_DIR / f"{KEYS_PACKAGE}.py").is_file()
+    assert (SRC_DIR / KEYS_PACKAGE).is_dir()
 
 
 def test_no_scored_module_imports_the_grading_key_locator() -> None:

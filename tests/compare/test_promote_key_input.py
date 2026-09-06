@@ -16,7 +16,7 @@ success case here also demonstrates that redirection working.
 import re
 from pathlib import Path
 
-import key_drafting
+from keys import key_drafting
 import promote_key
 import pytest
 from drafted_key_fixtures import (
@@ -27,7 +27,7 @@ from drafted_key_fixtures import (
     fit_key,
     redirect_keys_dir,
 )
-from grading_keys import GROUND_TRUTH_SUFFIX, MANIFEST_SUFFIX, key_path
+from keys.grading_keys import GROUND_TRUTH_SUFFIX, MANIFEST_SUFFIX, key_path
 
 # What a text editor leaves behind when a save is interrupted: not JSON.
 HALF_SAVED = '{"app": "some-fetched-app", "findings": ['

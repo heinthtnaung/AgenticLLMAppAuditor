@@ -17,10 +17,10 @@ finds it where a hand-written key's manifest would be.
 import json
 
 import emit_vex
-import grading_keys
-import key_store
+from keys import grading_keys
+from keys import key_store
 from drafted_key_fixtures import APP, COMMIT, PIN, UPSTREAM_URL, draft_into
-from grading_keys import MANIFEST_SUFFIX, key_path
+from keys.grading_keys import MANIFEST_SUFFIX, key_path
 
 # What the fetcher records about a tree, and what a drafted pin must carry over.
 PIN_FIELDS = ("upstream_url", "upstream_commit", "upstream_commit_date")

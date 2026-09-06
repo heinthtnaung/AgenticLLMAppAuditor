@@ -22,14 +22,14 @@ import json
 from pathlib import Path
 
 from artifacts.surface import TOOL_CALL, Surface
-from grading_keys import (
+from keys.grading_keys import (
     GROUND_TRUTH_SUFFIX, KEYS_DIR, MANIFEST_SUFFIX, key_path)
-from key_drafting import DRAFTED_KEYS_DIR
+from keys.key_drafting import DRAFTED_KEYS_DIR
 from parsing.languages import PYTHON
 import fetch_repo
-import grading_keys
-import key_drafting
-import key_store
+from keys import grading_keys
+from keys import key_drafting
+from keys import key_store
 import promote_key
 
 APP = "some-fetched-app"

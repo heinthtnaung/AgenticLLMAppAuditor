@@ -27,7 +27,7 @@ for directory in (SRC_DIR, TESTS_DIR):
 
 from parsing.extractor import extract_repo  # noqa: E402
 from artifacts.surface import surfaces_to_json  # noqa: E402
-import key_drafting  # noqa: E402
+from keys import key_drafting  # noqa: E402
 
 
 def scan_to_json(repo_path: str) -> str:

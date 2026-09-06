@@ -17,11 +17,11 @@ import sys
 from pathlib import Path
 
 from artifacts.finding import OWASP_IDS
-from grading_keys import GROUND_TRUTH_SUFFIX, key_path
+from keys.grading_keys import GROUND_TRUTH_SUFFIX, key_path
 from parsing.extractor import extract_repo
 import fetch_repo
-import key_drafting
-import key_store
+from keys import key_drafting
+from keys import key_store
 import emit_vex
 import export_reports
 from fetch_repo import (

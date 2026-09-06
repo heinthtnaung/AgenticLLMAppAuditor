@@ -15,7 +15,7 @@ import pytest
 from artifacts.repo_path import is_repo_relative_posix
 from artifacts.surface import SURFACE_KINDS
 from drafted_key_fixtures import promote_one_draft, promoted_document
-from grading_keys import GROUND_TRUTH_SUFFIX
+from keys.grading_keys import GROUND_TRUTH_SUFFIX
 from test_promoted_key_shipped_rules import ENTRY_COUNT
 from test_shipped_grading_key import CODE_ANCHOR_LENGTH, OWASP_IDS, REQUIRED_ENTRY_FIELDS
 

@@ -33,22 +33,14 @@ import model_client
 from reporting import remediation_report
 from reporting import report
 
-# Every per-app artifact name, in one place, because three modules join paths
-# from them and two copies is how the two copies start disagreeing.
-SURFACES_NAME = "surfaces.json"
-AIBOM_NAME = "aibom.json"
-SBOM_NAME = "sbom.json"
-CYCLONEDX_NAME = "sbom.cyclonedx.json"
-MAPPING_NAME = "mapping.json"
-FINDINGS_NAME = "findings.json"
-
-# Which order the checks ran in and what chose it. Read by nothing --
-# see `docs/SCHEMAS.md`; it exists so a reader can ask who decided.
-PLANNER_NAME = "planner.json"
-SARIF_NAME = "findings.sarif.json"
-REMEDIATION_NAME = "remediation.json"
-REPORT_NAME = "report.md"
-REMEDIATION_REPORT_NAME = "remediation.md"
+# The names live in `artifacts/names.py`: `deps/inputs.py` and three commands
+# read them too, and a leaf package importing this module for a filename made
+# the dependency point the wrong way. Re-exported here because sixteen modules
+# already import them from this one.
+from artifacts.names import (                                    # noqa: E402
+    AIBOM_NAME, CYCLONEDX_NAME, FINDINGS_NAME, MAPPING_NAME, PLANNER_NAME,
+    REMEDIATION_NAME, REMEDIATION_REPORT_NAME, REPORT_NAME, SARIF_NAME,
+    SBOM_NAME, SURFACES_NAME)
 
 
 def report_skipped_files(skipped: list[SkippedFile]) -> None:

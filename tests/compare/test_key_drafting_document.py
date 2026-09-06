@@ -23,7 +23,7 @@ that six empty placeholders could not pass.
 import json
 
 from drafted_key_fixtures import APP, COMMIT, ENTRY
-from key_drafting import key_document
+from keys.key_drafting import key_document
 from mixed_app_fixtures import (
     MIXED_APP_SURFACES, PYTHON_FILE, TYPESCRIPT_FILE, write_mixed_app)
 from parsing.extractor import extract_repo

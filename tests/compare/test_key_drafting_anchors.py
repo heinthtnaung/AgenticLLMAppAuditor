@@ -15,7 +15,7 @@ lengths are asserted as literals, because "the first 60 characters" and "the
 whole line" are the same assertion on any line shorter than 60.
 """
 
-from key_drafting import CODE_ANCHOR_LENGTH, anchored
+from keys.key_drafting import CODE_ANCHOR_LENGTH, anchored
 
 FILE = "agent.py"
 

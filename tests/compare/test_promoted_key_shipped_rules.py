@@ -25,13 +25,13 @@ from pathlib import Path
 import pytest
 from drafted_key_fixtures import APP, promote_one_draft, promoted_document
 from evaluation.harness import KEY_SCHEMA_VERSION, check_key
-from grading_keys import (
+from keys.grading_keys import (
     GROUND_TRUTH_SUFFIX,
     KEY_SOURCES,
     discover_graded_apps,
     key_path,
 )
-from key_promotion import ANCHOR_FIELD, ENTRY_FIELDS
+from keys.key_promotion import ANCHOR_FIELD, ENTRY_FIELDS
 from test_shipped_grading_key import REQUIRED_ENTRY_FIELDS, REQUIRED_KEY_FIELDS
 
 # What the promoted draft holds, so no assertion below passes over an empty list.

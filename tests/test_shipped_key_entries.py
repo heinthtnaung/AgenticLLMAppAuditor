@@ -31,7 +31,7 @@ reach costs recall it never should have measured. It was dropped, and a
 re-derivation of the same key would put it straight back.
 """
 
-from grading_keys import GROUND_TRUTH_SUFFIX
+from keys.grading_keys import GROUND_TRUTH_SUFFIX
 from shipped_key_fixtures import SHIPPED_APPS, read
 
 APP = "damn-vulnerable-llm-agent"

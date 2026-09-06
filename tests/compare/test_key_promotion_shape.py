@@ -12,7 +12,7 @@ claim, and it is the reason the check exists.
 """
 
 from drafted_key_fixtures import ANCHORED_ENTRY, fit_key, fit_pin
-from key_promotion import ENTRY_FIELDS, refusals
+from keys.key_promotion import ENTRY_FIELDS, refusals
 
 # What a hand edit removes: the fields the checks and the scorer subscript.
 JOIN_FIELD = "file"

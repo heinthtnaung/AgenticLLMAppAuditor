@@ -16,9 +16,9 @@ import shutil
 import sys
 from pathlib import Path
 
-from grading_keys import GROUND_TRUTH_SUFFIX, KEYS_DIR, MANIFEST_SUFFIX, key_path
-import key_drafting
-import key_promotion
+from keys.grading_keys import GROUND_TRUTH_SUFFIX, KEYS_DIR, MANIFEST_SUFFIX, key_path
+from keys import key_drafting
+from keys import key_promotion
 
 # What the command may fail with that is the user's to fix, reported as a
 # message rather than a traceback.

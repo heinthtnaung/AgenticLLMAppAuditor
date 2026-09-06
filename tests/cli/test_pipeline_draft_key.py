@@ -22,13 +22,13 @@ written into `tmp_path`.
 from pathlib import Path
 
 import fetch_repo
-import key_drafting
+from keys import key_drafting
 import model_client
 from cli_helpers import (
     EMPTY_SCAN, STUB_ADVICE, run_cli, stub_model, stub_model_unavailable, stub_syft)
 from fetch_helpers import COMMIT, COMMIT_DATE, URL
-from grading_keys import GROUND_TRUTH_SUFFIX, discover_graded_apps, key_path
-from key_drafting import DRAFTED_KEYS_DIR as REAL_DRAFTS_DIR
+from keys.grading_keys import GROUND_TRUTH_SUFFIX, discover_graded_apps, key_path
+from keys.key_drafting import DRAFTED_KEYS_DIR as REAL_DRAFTS_DIR
 from mixed_app_fixtures import APP_NAME, PYTHON_FILE, write_mixed_app
 from pipeline_helpers import point_download_root, record_fetch, record_publish
 from shipped_key_fixtures import SHIPPED_APPS

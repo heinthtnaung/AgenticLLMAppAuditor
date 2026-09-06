@@ -11,7 +11,7 @@ import pytest
 
 import fetch_repo
 from fetch_helpers import NAME, URL, download_root, install_fake_git
-from grading_keys import GROUND_TRUTH_SUFFIX
+from keys.grading_keys import GROUND_TRUTH_SUFFIX
 
 GRADED_APP = "a-graded-app"
 GRADED_URL = f"https://github.com/someone/{GRADED_APP}"

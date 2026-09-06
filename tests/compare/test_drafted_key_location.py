@@ -28,8 +28,8 @@ from fnmatch import fnmatch
 from conftest import REPO_ROOT
 from drafted_key_fixtures import APP, draft_into
 from fetch_repo import check_not_a_graded_app
-from grading_keys import GROUND_TRUTH_SUFFIX, KEYS_DIR, discover_graded_apps
-from key_drafting import DRAFTED_KEYS_DIR
+from keys.grading_keys import GROUND_TRUTH_SUFFIX, KEYS_DIR, discover_graded_apps
+from keys.key_drafting import DRAFTED_KEYS_DIR
 from shipped_key_fixtures import SHIPPED_APPS
 
 # The two repository-relative paths the ignore rules must treat differently.

@@ -26,10 +26,10 @@ from evaluation_fixtures import (
     key_entry,
     surfaces_document,
 )
-from grading_keys import (
+from keys.grading_keys import (
     AI_DRAFTED, DRAFTED_SOURCES, GROUND_TRUTH_SUFFIX, MANUAL_REVIEW,
     TOOL_DRAFTED, key_path)
-from key_drafting import DRAFTED_KEYS_DIR
+from keys.key_drafting import DRAFTED_KEYS_DIR
 
 # The two strings a drafted key's figures travel with, and the one the worse
 # case adds. Spelled here so a rename in `scorer.py` fails this file loudly.

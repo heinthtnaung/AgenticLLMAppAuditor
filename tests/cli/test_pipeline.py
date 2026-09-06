@@ -11,11 +11,11 @@ import pytest
 
 import json
 
-import grading_keys
+from keys import grading_keys
 import pipeline
 from fetch_helpers import COMMIT, NAME, URL
 from fetch_repo import manifest_path
-from grading_keys import GROUND_TRUTH_SUFFIX
+from keys.grading_keys import GROUND_TRUTH_SUFFIX
 from pipeline_helpers import plant_tree, point_download_root, record_fetch, write_pin
 
 # A name a grading key owns, for the reuse-collision guard. Planted by the test:

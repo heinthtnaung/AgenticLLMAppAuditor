@@ -27,7 +27,7 @@ from pathlib import Path
 
 from artifacts.surface import Surface
 from checks.advise import Ask
-from grading_keys import KEYS_DIR, TOOL_DRAFTED
+from keys.grading_keys import KEYS_DIR, TOOL_DRAFTED
 
 # Beside the keys, and invisible to every path that looks for one. Three things
 # make that true and all three are load-bearing:

@@ -19,7 +19,7 @@ from pathlib import Path
 
 import fetch_repo
 from fetch_helpers import COMMIT, COMMIT_DATE, NAME, URL, download_root, install_fake_git
-from grading_keys import MANIFEST_SUFFIX
+from keys.grading_keys import MANIFEST_SUFFIX
 
 # Every field the pin carries, named here so adding or dropping one is a test
 # change a reader can see rather than a silent schema drift.

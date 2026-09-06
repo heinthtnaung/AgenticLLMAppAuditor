@@ -27,14 +27,14 @@ from pathlib import Path
 import cloud_client
 import compare_run
 import fetch_repo
-import key_drafting
+from keys import key_drafting
 import main
 import model_client
 import pipeline
 from cli_helpers import stub_knowledge
 from evaluation.document import AGENTIC_AUDITOR, CLOUD_AUDITOR
 from evaluation.harness import EVALUATION_NAME
-from grading_keys import GROUND_TRUTH_SUFFIX, discover_graded_apps, key_path
+from keys.grading_keys import GROUND_TRUTH_SUFFIX, discover_graded_apps, key_path
 from mixed_app_fixtures import APP_NAME, PYTHON_FILE, write_mixed_app
 from outputs import FINDINGS_NAME, REMEDIATION_NAME
 from shipped_key_fixtures import SHIPPED_APPS

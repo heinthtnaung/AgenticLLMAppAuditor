@@ -18,7 +18,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from grading_keys import GROUND_TRUTH_SUFFIX, MANIFEST_SUFFIX, key_path
+from keys.grading_keys import GROUND_TRUTH_SUFFIX, MANIFEST_SUFFIX, key_path
 from repo_url import REQUIRED_SCHEME, destination_name, validated_url
 
 PROGRAM_NAME = "git"

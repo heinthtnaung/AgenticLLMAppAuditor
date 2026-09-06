@@ -19,8 +19,8 @@ import json
 import re
 from pathlib import Path
 
-import grading_keys
-import key_promotion
+from keys import grading_keys
+from keys import key_promotion
 import promote_key
 import pytest
 from drafted_key_fixtures import (
@@ -32,7 +32,7 @@ from drafted_key_fixtures import (
     fit_pin,
     redirect_keys_dir,
 )
-from grading_keys import (
+from keys.grading_keys import (
     GROUND_TRUTH_SUFFIX,
     MANUAL_REVIEW,
     discover_graded_apps,

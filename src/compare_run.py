@@ -25,12 +25,12 @@ from artifacts.finding import OWASP_IDS
 from evaluation.document import AGENTIC_AUDITOR, CLOUD_AUDITOR
 from evaluation.harness import score_apps, write_evaluation
 from parsing.extractor import extract_repo
-from grading_keys import GROUND_TRUTH_SUFFIX, key_path
+from keys.grading_keys import GROUND_TRUTH_SUFFIX, key_path
 import audit_run
 import cloud_client
 import fetch_repo
-import key_drafting
-import key_store
+from keys import key_drafting
+from keys import key_store
 import pipeline
 
 # Both arms' artifacts, kept apart so neither overwrites the other and each is

@@ -14,7 +14,7 @@ takes the whole pin rather than the commit alone.
 import json
 from pathlib import Path
 
-from grading_keys import GROUND_TRUTH_SUFFIX, MANIFEST_SUFFIX, key_path
+from keys.grading_keys import GROUND_TRUTH_SUFFIX, MANIFEST_SUFFIX, key_path
 
 # What a drafted pin records. `role` is the fetcher's, because that is what
 # actually happened: a tree was fetched for audit and a key drafted over it.

@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 from drafted_key_fixtures import APP, promote_one_draft, promoted_document
-from grading_keys import GROUND_TRUTH_SUFFIX, MANIFEST_SUFFIX
+from keys.grading_keys import GROUND_TRUTH_SUFFIX, MANIFEST_SUFFIX
 from test_shipped_grading_pin import (
     COMMIT_LENGTH,
     GRADED_PIN_FIELDS,

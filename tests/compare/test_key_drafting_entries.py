@@ -13,7 +13,7 @@ is involved -- which is also what lets a test assert what the prompt contained.
 
 from artifacts.finding import OWASP_IDS
 from artifacts.surface import PROMPT_TEMPLATE, TOOL_CALL, Surface
-from key_drafting import MAX_SURFACES, PROMPT, draft
+from keys.key_drafting import MAX_SURFACES, PROMPT, draft
 from parsing.languages import PYTHON
 
 FILE = "agent.py"
