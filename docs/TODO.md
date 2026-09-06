@@ -120,6 +120,13 @@ Ticked history is in git before commit `a78482c`; what shipped is in
   reasoning.
 - **The sandbox for `probe_injection` was refused.** Reasons in
   `docs/REPORT.md`; two are about coherence, not cost.
+- **A drafted key fails at classification, not detection.** Measured twice: 3 of
+  12 entries sit on lines the auditor found independently and describe them
+  correctly, but every entry is labelled `LLM06`. `matches_key` joins on
+  `owasp_id`, so a right location under a wrong class scores what a
+  hallucination scores. Whether a better prompt -- one that explains what each
+  class means rather than listing the ids -- closes that gap is the cheapest
+  experiment left on this feature, and nobody has run it.
 - **The grading key is AI-drafted and unverified.** Every figure carries
   `key_ai_drafted` and `key_unverified` until a human checks its eight entries
   against commit `c0cf9a14`. Cheapest remaining upgrade in the project.

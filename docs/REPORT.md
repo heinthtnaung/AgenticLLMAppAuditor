@@ -376,43 +376,59 @@ One run, no seed on the hosted side. Quote it as a sample.
 
 ## The auto-drafted grading key, measured
 
-`--compare-models` drafts a key with the local model when none exists. Run once
-against `damn-vulnerable-llm-agent` at `c0cf9a14` -- a run the tool now refuses,
-because that app has a shipped key -- here is what it produced:
+`--draft-key` asks the local model for a grading key when none exists. Run twice
+against `damn-vulnerable-llm-agent` at `c0cf9a14`, months of code changes apart,
+it produced the same shape both times:
 
 | | |
 |---|---|
 | Entries drafted | 12 |
 | OWASP classes used | `LLM06` for all 12 |
 | Files named | `transaction_db.py` (8), `utils.py` (4) |
-| Matched by the local arm | 0 of 12 |
-| Matched by the hosted arm | 0 of 12 |
+| `main.py` entries | none |
+| Matched | 0 of 12 |
 
-All twelve entries name surfaces the extractor really found, so the grounding
-filter added afterwards keeps all twelve: the key is wrong in its judgements,
-not in its coordinates, and no filter over coordinates can catch that.
+**The failure is classification, not detection, and that is not what the first
+reading of this said.** Three of the twelve sit on lines the auditor found
+independently, and describe them correctly:
 
-**The key is not merely circular. It is noise.** It stamped one risk class on
-every entry, never opened `main.py` -- where the prompt injection and the
-discarded agent trace actually are -- and agreed with nothing, including the
-audit run by the same model that wrote it. The shipped key -- itself
-`ai_drafted` and `verified: false`, but written against the app's source and
-revised under review -- finds 3 of 8 on the same tree.
+| The draft says | The auditor says | Line |
+|---|---|---|
+| `LLM06` "SQL Injection Vulnerability" | `LLM02` `unsafe_query_construction` | `transaction_db.py:62` |
+| `LLM06` "SQL Injection Vulnerability" | `LLM02` `unsafe_query_construction` | `transaction_db.py:76` |
+| `LLM06` "Unsafe YAML Loading" | `LLM03` `undeclared_dependency` | `utils.py:75` |
 
-The failure is worth naming precisely, because it is not the one predicted. The
-risk anticipated was a *flattering* key: a model marking its own homework and
-scoring well. What happened instead is that the drafting task and the auditing
-task are different enough that the same model fails them differently, so the
-score collapses to zero rather than inflating. Either way the number measures
-nothing about the tool, which is what `key_drafted_by_scored_system` exists to
-say on every figure such a key produces.
+`transaction_db.py:62` really is SQL injection. `utils.py:75` really is an unsafe
+YAML load. The model located real defects and then stamped every one of the
+twelve `LLM06` -- excessive agency -- which is the wrong class for all three.
+`grading.matches_key` joins on `owasp_id`, so a correct location under a wrong
+class scores exactly what a hallucination scores: nothing.
 
-**It stays in the tool because it was asked for**, it is behind a flag, and its
-output is self-describing. It is not a substitute for the shipped key, nothing
-in this report is scored against it, and drafting is now refused outright for
-any app that already has one -- the first run of this feature overwrote
-`artifacts/agentic_auditor/evaluation.json`, replacing the 3-of-8 figure with a
-0-of-12 measured against the drafted key.
+That distinction is the result. It is not that a local model cannot see defects;
+it is that it cannot apply *this taxonomy*, and a key is a taxonomy claim before
+it is a location claim. Calling the output noise, as an earlier draft of this
+section did, was too kind to the tool and too harsh on the model.
+
+Two things follow. The grounding filter keeps all twelve, because every entry
+names a surface the extractor really found -- a filter over coordinates cannot
+catch an error of class. And the anticipated risk was the opposite one: a
+*flattering* key, a model marking its own homework and scoring well. What
+happens instead is that drafting and auditing are different enough tasks that
+the same model fails them differently, so the score collapses to zero rather
+than inflating. Either way the number says nothing about the tool, which is what
+`key_drafted_by_scored_system` exists to put on every figure such a key
+produces.
+
+For comparison, the shipped key -- itself `ai_drafted` and `verified: false`,
+but written against the app's source and revised under review -- finds 3 of 8 on
+the same tree.
+
+**It stays in the tool because it was asked for**, behind a flag, writing into
+`grading_keys/drafts/` which nothing discovers and git ignores, and refused
+outright for an app that already has a key. Nothing in this report is scored
+against one. The first version of the feature overwrote
+`artifacts/agentic_auditor/evaluation.json` -- replacing the 3-of-8 figure with
+a 0-of-12 measured against the draft -- which is why the refusal exists.
 
 ## Threats to validity
 
