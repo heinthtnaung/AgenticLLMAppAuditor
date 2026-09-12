@@ -17,8 +17,36 @@ Ticked history is in git before commit `a78482c`; what shipped is in
 | `coverage.checks_run` | Means "was dispatched" for a graph check and "found a subject" for the edge check, so a model can move the probe between them. Strict xfail. |
 | `evaluation.json` | `model_disabled` fires on `unavailable` too, collapsing "turned off" and "unreachable". |
 | Scoring | Nothing version-gates `findings.json`, so a stale artifact scores silently against fresh code. |
+| `web/run_jobs.py` | One audit at a time: a second request is refused with 409 rather than queued. Two concurrent runs would race between the "already fetched?" check and the clone, and two over one app would overwrite `artifacts/<app>/` mid-write. A queue is the real answer. |
+| `web/downloads.py` | Artifacts are keyed on the app name, not on the run, so a second audit of one URL writes over the first one's files. A superseded run reports `artifacts_current: false` and its downloads are refused with 409 rather than serving the newer bytes under the older timestamp -- which is honest but total: those files are simply not recoverable. Keying artifacts on the run would fix it and would change `--artifacts-dir`'s meaning for the CLI too. |
+| `web/run_jobs.py` | An audit cannot be stopped once it starts. The page shows progress and no cancel, because a cooperative cancel raising through `progress.stage` would be swallowed by five `except` clauses in `src/` (`export_reports.py`, `main.py`, `retrieval/retrieve.py`, `remediation_run.py`, `checks/planner.py`) and reported as a user-fixable refusal -- a cancel silently becoming a partial success. Doing it properly needs a `stop_requested` field beside `status` and an AST sweep over those clauses. |
+| `POST /api/audit` | **No authentication**, and same-origin gives it none: it removes a browser's protection *of other sites*, not of this one. Loopback is the only thing between it and a clone-anything endpoint. |
+| `frontend/` | Ticking **Compare models** sends the audited source to a third party. `main.py` puts that behind a flag on the grounds that a flag is something a reader sees in the command they typed; a checkbox is weaker, and the page states the cost rather than the design pretending otherwise. |
+| `tests/test_web_framework_containment.py` | The sweep names `fastapi`, `starlette`, `uvicorn`, `http.server` and `socketserver`, but `ast_scan.imported_modules` records `from http import server` as plain `http`, so that one spelling evades it. Naming `http` would also forbid `http.client` — the outbound half, which is `test_offline_containment.py`'s subject, not this one. Closing it properly needs a second scanner. The file's docstring lists exactly which spellings it does and does not name. |
+| `tests/web/test_import_path_bootstrap.py` | Counts two directories (`web/`, `src/`) in two import orders. A wrapper module that inserted some *third* directory would go unmeasured. The narrower half of this is closed: the probe now reads `web/*.py` off disk and asserts every module in the folder was loaded, so a module no import chain reaches is named rather than silently left out of the counts. |
+| `tests/web/jsx_sweep.py` | Comments are stripped before the accessor sweep runs, so an accessor written inside one is ignored -- intended, since a comment naming `src/artifacts/finding.py` was reported as the field `finding.py` -- but so is the rest of any line where a bare `//` opens what is not a comment. String literals and a scheme's `://` are exempted, both because the page really writes them; `and//or` in prose would still hide the accessors after it. The per-record floors in `test_jsx_record_fields.py` and `test_jsx_coverage_fields.py` are what bound the loss. |
+| The whole suite | **Nothing in it can see a rendered page.** Three defects shipped green and were caught only by a screenshot: a wave layer painted behind an ancestor's background (a descendant at a negative `z-index` does), tints twice as strong as intended, and a `1fr` grid track that overflowed the viewport. A `className`-to-bundle join cannot see any of them. Three of the mechanisms *are* guardable textually and should be, shrinking this row rather than leaving it as a blanket excuse: no `background` on the wave layer's ancestors with a non-negative `z-index` on it; the same custom properties in all three `tokens.css` blocks; `minmax(0, ...)` on every flexible track in the top bar. What genuinely needs an eye after that is tone, contrast and overflow. |
+| `frontend/` | The page no longer says the endpoint is unauthenticated. The panel saying so was removed at the user's request; `README.md` and the `POST /api/audit` row above still record it, but for a security tool the operator is now told less by the thing they are looking at. |
+| `frontend/src/useRun.js` | Two `setState` calls run synchronously inside an effect (the resets when a run id changes), which `oxlint` flags as cascading renders. They are correct -- clearing is what stops a previous run's data showing under a new one -- but the clean form derives the value instead of resetting it, and that is a hook refactor. `frontend/.oxlintrc.json` now ignores `dist/`, so these are the only warnings left and they are visible. |
+| `frontend/dist/` | Build output is committed, so a source edit without `npm run build` in the same change serves a stale page. `tests/web/test_built_page_shipped.py` puts a floor under it -- every static `className` literal in the JSX must appear in the built bundle, and every asset `index.html` names must exist -- and `tests/web/test_jsx_advisory_vocabulary.py` covers the braced ones that sweep skips by design, by deriving the tone class stems from the source and requiring a rule for each. Still slipping through: a reworded string, a class name *removed* from the JSX, a changed handler, and a CSS-only edit that touches no class name -- the sweep runs source to bundle, so it cannot see what the source no longer says. An mtime check would be the real answer and cannot be used: `git clone` writes `dist/` before `src/`, so every source file comes out newer on a fresh checkout. |
+
+| `frontend/` + `src/main.py` | A `--compare-models` run announces no stages: `main.run` threads `on_stage` into the ordinary audit but not into `compare_run.run`, so the progress panel stays empty and every stage shows as never reached. Threading it would announce `fetch`…`write` twice, once per arm, which breaks the page's assumption that announcements are a prefix of `STAGES` -- so the real fix is a per-arm shape, not another argument. |
 
 ## Open tasks
+
+- **The web UI's remaining polish.** Built: downloads of every file a run wrote,
+  the SQLite run history with its own page, live stage progress, timestamps,
+  light/dark, and a risk-class filter over the findings. Not built, and each is
+  a line rather than a plan:
+  - **Stop a running audit**, and `DELETE /api/runs/{id}` to forget one. Both
+    are in Known defects above with the reason the first is not trivial.
+  - **A queue** instead of the 409, which is the honest answer to one-at-a-time.
+  - **Search and sort the history.** It is capped at `HISTORY_LIST_LIMIT` newest
+    first with no paging, so a long history is simply not reachable from the
+    page.
+  - **Render more than two artifacts.** The remediation advice and the SARIF and
+    OpenVEX documents are downloadable but not shown; `report.md` is still the
+    thing to read.
 
 - **LLM01: what the taint trace still cannot follow.** The entry
   `tests/checks/test_taint_defect.py` cites, which did not exist until now.
@@ -60,9 +88,13 @@ Ticked history is in git before commit `a78482c`; what shipped is in
   and the advice prompt beside it is not.
 - Tests import private helpers where a public path exists; the study's tests add
   `_arm`, `_note` and `_check_partition`, whose only public path opens sockets.
-- Many files sit over the ~200-line rule -- 31 under `tests/`, plus
-  `src/checks/semantic_probe.py` (284). `tests/semantic_probe_fixtures.py` (240)
-  grew here, by sharing the static-refutation app rather than copying it.
+- Many files sit over the ~200-line rule -- **39 under `tests/` and 11 under
+  `src/`**, plus `web/history_store.py` at exactly 201. The largest is
+  `src/checks/semantic_probe.py` (317). The web layer's tests are most of the
+  growth: 8 of the `tests/web/` files added with the background job, the history
+  and the UI guards are over 200. Counted on 2026-09-09, and recounted in the same change
+  that made the earlier figure wrong -- which is the whole argument for counting
+  rather than quoting.
 
 - **Objective 5 needs repeating, and one of its figures is withdrawn.**
   - The exposure byte count is gone from `docs/REPORT.md`: it counted the

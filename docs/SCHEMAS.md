@@ -176,3 +176,219 @@ denominator beside it.
 
 Miss reasons: `no_check_for_risk_class`, `surface_not_extracted`,
 `checked_and_silent`, `probe_unresolved`.
+
+## A view, not an artifact
+
+The result envelope, built by `web/run_jobs.py`. It used to be the whole body of
+`POST /api/audit`; since the audit became a background job it is the `result`
+key of a run record (below), unchanged in every other respect. **Deliberately
+absent from the table above**, and for a sharper reason than the study output:
+this one is never written to disk as itself. It lives inside an HTTP reply and,
+serialised, inside one column of the run history; no loader validates it.
+
+It carries `schema_version` -- **2**, `web/run_record.py::REPLY_SCHEMA_VERSION`,
+one constant for everything under `/api/`. It went to 2 when the endpoint
+stopped blocking: the seven keys below did not change, the protocol around them
+did, and the number exists to tell a page which protocol it is talking to. **The
+page that reads it is built separately into `frontend/dist/` and committed**, so
+an ordinary checkout can serve a stale bundle against a fresh server.
+
+Keys: `schema_version`, `app`, `artifacts_dir`, `seconds`, `advisories_read`,
+`findings`, `surfaces`. All seven always present, exactly as before.
+
+| Field | Type | Meaning |
+|---|---|---|
+| `schema_version` | int | 2. The same constant the enclosing run record carries; the two are equal by construction and a difference is a defect, not a case to handle. |
+| `app` | string | The audited tree's directory name, as `audit_run.audit` resolved it. |
+| `artifacts_dir` | string | Where the audit really wrote, relative to the server's working directory. Read back from the run, never re-derived. |
+| `seconds` | float | The audit's own timer. **Not the run record's `seconds`**: `audit_run.audit` starts counting after the repository is resolved, so a clone sits in the difference between the two. |
+| `advisories_read` | bool | Whether advisory data was read at all. `false` means the supply-chain check had nothing to join against -- a gap, not a clean bill. |
+| `findings` | object \| null | `findings.json`, verbatim. |
+| `surfaces` | object \| null | `surfaces.json`, verbatim. |
+
+- **The two documents are passed through unmodified.** `web/artifacts_read.py`
+  parses the file and returns it: it re-keys nothing, drops nothing, adds
+  nothing and validates nothing away, so each document's own `schema_version`
+  arrives intact.
+- **`null` means the audit did not write that artifact. That is not an empty
+  one.** "No findings" is a result; "no `findings.json`" is a gap. Rendering the
+  two the same way would let a run that *could not look* read as a run that
+  looked and found nothing clean, which is the failure mode this whole tool
+  exists to make visible. `frontend/src/components/MissingArtifact.jsx` is the
+  branch that says it out loud.
+- **The seven keys are frozen on purpose.** `ResultsDashboard.jsx` reads four of
+  them and was not touched when the endpoint became a job.
+- **No determinism claim.** `seconds` is wall clock and `artifacts_dir` resolves
+  against the server's working directory, so two identical audits produce two
+  different envelopes.
+
+## The run record
+
+What `POST /api/audit`, `GET /api/runs/{run_id}` and `GET /api/runs` answer with.
+Not an artifact either, and for a fourth reason beyond the envelope's three: it
+is a statement about a *job*, not about an audited app.
+
+**One shape, not two.** The 202 body is this record at the moment of acceptance
+-- status `running`, everything not yet established `null`, `stages` empty,
+`result` null -- and a poll returns the same keys later in the same run's life.
+A page needs one parser. The list endpoint carries the **summary form**, which
+is these fields without `result` or `schema_version`; that is the only variation,
+and it exists because `result` holds two whole artifacts and fifty of them is
+not a view.
+
+| Call | Answers |
+|---|---|
+| `POST /api/audit` | **202** and the record. `400` for a refusal from `AuditRequest.refusals()`, before any row is written. `409` while another run is in flight. `422` for a body pydantic rejects. |
+| `GET /api/runs/{run_id}` | **200** and the record. `404` for an id no row carries, and for an id that is not 32 lowercase hex characters -- "no run has that id" is true of both, and checking the shape keeps a request-supplied string out of a filesystem join. |
+| `GET /api/runs` | **200** and `{schema_version, stored_run_count, runs}`. |
+| `GET /api/stages` | **200** and `{schema_version, stages}` -- the whole vocabulary, in order, so the page can show what has *not* happened without restating it in JavaScript. |
+
+A tool refusal is no longer an HTTP status. `main.EXPECTED_FAILURES` -- an
+unreachable URL, a name a grading key owns, a tree over the size cap -- is
+raised *after* the 202, so it lands as `status: failed` and `error`, carrying the
+same sentence the command line would have printed. The `400` that remains is the
+request rules only.
+
+### Fields
+
+**Every key is always present**; absence is spelled `null`, never a missing key
+-- the same choice `web/artifacts_read.py` makes for a document the audit did
+not write.
+
+| Field | Type | `null` means |
+|---|---|---|
+| `schema_version` | int | never null. 2. Top level of each body; list rows do not repeat it. |
+| `run_id` | string | never null. `uuid4().hex` -- 32 lowercase hex characters. |
+| `repo_url` | string | never null. What was asked for, as asked. The only fact known at acceptance. |
+| `options` | object | never null. Exactly `AuditRequest`'s fields, so a re-run is exact. |
+| `status` | string | never null. One of `RUN_STATUSES`. |
+| `started_at` | string | never null. ISO 8601 UTC, seconds precision. |
+| `finished_at` | string \| null | the run is still going. Never "finished at an unknown time". |
+| `seconds` | float \| null | the run is still going. The **whole job**, acceptance to terminal status -- not `result.seconds`, which times the audit alone. |
+| `stages` | array of string | never null. `[]` means nothing has been announced yet, which is not "no stages ran". Announcement order, values from `progress.STAGES`. |
+| `app` | string \| null | the tree has not been resolved yet, or the run failed before it was. **Never guessed from the URL's last segment** -- a guess in a history list is a fact-shaped guess. |
+| `artifacts_dir` | string \| null | no directory has been named. Read back from the run, never re-derived. |
+| `artifacts_present` | bool | never null. Computed **per request**: the directory exists and holds at least one downloadable name. Coarse on purpose -- not a claim that every artifact is there, and the download endpoint answers per file. Always `false` when `artifacts_dir` is null. |
+| `artifacts_current` | bool | never null. Computed per request. `false` when a **later run wrote to the same directory**: artifacts are keyed on the app name, not on the run, so two audits of one URL share `artifacts/<system>/<app>/`. Downloads are refused with 409 when this is false, rather than serving a newer run's bytes under an older run's timestamp. |
+| `finding_count` | int \| null | **no `findings.json` stands behind it** -- still running, failed, or finished without the document. It is not `0`. Copied from the document's own `finding_count`, never recounted. |
+| `surface_count` | int \| null | the same, from `surfaces.json`'s own count. |
+| `error` | string \| null | the run did not fail. Non-null exactly when `status == failed`. |
+| `result` | object \| null | the run has not finished. Non-null exactly when `status == finished`. Absent from list rows by design. |
+
+`stored_run_count` on the list body is the **total rows in the store**, not
+`len(runs)`: the list is capped at `HISTORY_LIST_LIMIT` newest-first, ordered by
+`(started_at DESC, run_id)` so the order is total. A reader comparing the two is
+how they learn the history is longer than the page shows.
+
+### Vocabulary
+
+Closed, named in `web/run_record.py` beside the record, the way `OWASP_IDS` and
+`PROBE_OUTCOMES` are named beside `Finding`. Adding a value bumps
+`REPLY_SCHEMA_VERSION`.
+
+| Field | Values |
+|---|---|
+| `status` | `running`, `finished`, `failed` |
+| `stages[]` | `fetch`, `surfaces`, `dependencies`, `advisories`, `checks`, `advice`, `write`, `publish` -- `progress.STAGES`, in that order |
+
+**`cancelled` is deliberately not a status.** Nothing can write it until a cancel
+endpoint exists, and a value no producer writes is a branch every reader carries
+for ever against a case that cannot happen -- the same reason `artifacts/vex.py`
+refuses `not_affected`.
+
+**A `running` row is only true inside the process that owns it.** A server that
+stops mid-run would otherwise leave a row saying `running` for ever, and a
+history view spinning on it -- a gap rendered as work in progress. The store
+reconciles on open: every `running` row becomes `failed` with the reason named.
+
+### Invariants, all testable
+
+- `status == finished` **iff** `result` is non-null.
+- `status == failed` **iff** `error` is non-null.
+- `status == running` **iff** `finished_at` is null **iff** `seconds` is null.
+- `schema_version == result.schema_version` whenever `result` is non-null.
+- `artifacts_dir` null implies `artifacts_present` false.
+
+The first three are enforced twice: by `RunRecord.__post_init__` and again as
+`CHECK` constraints on the table, so a row that cannot be true cannot be stored.
+
+## A store, not an artifact
+
+`runs/history.sqlite3`, written by `web/history_store.py` with the standard
+library's `sqlite3` and no new dependency. The first durable state this project
+owns that is not an artifact, so it is worth saying what it is not: not JSON,
+not byte-identical, not produced by `src/`, and not read by any phase. `src/`
+does not know it exists and the command line's behaviour is unchanged -- an
+audit run from a terminal writes no row.
+
+**Not under `artifacts/`.** Everything there is a documented artifact with a
+schema and a byte-identical guarantee, and `/artifacts/` is what
+`--artifacts-dir` names; a mutable database would be a new kind of object in a
+directory a reader has already learned. `runs/` is gitignored.
+
+**Its version is its own.** `PRAGMA user_version` holds
+`history_store.STORE_SCHEMA_VERSION` -- **1** -- and it is unrelated to
+`REPLY_SCHEMA_VERSION`: one versions a file, the other versions a wire. A `meta`
+table was the alternative and was refused for the reason that *is* the point of
+the mechanism: a table must be **found** before it can be read, so `SELECT ...
+FROM meta` raises `no such table` on exactly the files whose schema you are
+trying to detect. `PRAGMA user_version` answers `0` for any SQLite file ever
+written, which makes "0 means not ours, or not initialised" a total answer
+rather than an exception. SQLite forbids a bound parameter in a PRAGMA value, so
+the number is interpolated from the constant and may never come from a request.
+
+### Table `runs`
+
+One column per durable field of the run record, plus `envelope`.
+`artifacts_present` and `artifacts_current` are **not** columns -- they are
+computed at read time, because a stored flag about the filesystem becomes a lie
+the moment someone cleans `artifacts/`, and a stale claim that a run's evidence
+is present is the shape of failure this tool exists to expose.
+
+`stages` and `options` are JSON text rather than tables of their own: both are
+read whole and never queried by their parts, `stages`' order is its entire
+content, and `options` must round-trip *exactly* -- a column per option would
+silently drop an option added to `AuditRequest` later, which is the trap
+`PASS_THROUGH_FLAGS` exists to avoid. Both are written with `sort_keys=True` so
+the stored text is stable.
+
+`envelope` is what keeps a past run viewable after `artifacts/` is cleaned, which
+is why a row is never deleted for having lost its files. **Byte-identity with
+the artifact files is not claimed**: the envelope is stored compact and sorted,
+the files are written `indent=2, sort_keys=True`. Equality is of content after
+parsing. The list query names its columns and never selects `envelope`.
+
+### What opening must do
+
+`sqlite3.connect()` **creates the file**, exactly as `chromadb.PersistentClient`
+does -- which is why `src/retrieval/store.py` checks for an index before opening
+a client. This store copies that shape, `create: bool = False` and all.
+
+| On open | The store |
+|---|---|
+| file absent, `create=False` | refuses, **without connecting** |
+| file absent, `create=True` | creates it, sets `user_version`, creates the table. The only path that may write a new file. |
+| `user_version` matches | uses it, then reconciles stale `running` rows |
+| `user_version` differs | **refuses**, naming the path, the version found, the version expected, and that the file must be moved aside |
+| not a SQLite file, or unreadable | refuses, wrapping `sqlite3.DatabaseError` with the path |
+
+It never migrates and never deletes. That is the grading key's precedent
+verbatim: a version-2 key is refused rather than read by a scorer whose
+vocabulary has moved under it, and a run record read by a store whose columns
+have moved is the same mistake with worse consequences, because the reader here
+is a page showing a person a security result.
+
+**The refusal is fatal at startup, and deliberately not survivable.** A missing
+Syft degrades to no bill of materials, because the rest of the audit is still
+true. A broken history store cannot degrade: a finished run's findings now
+*live* in it, so `GET /api/runs/{id}` would be an endpoint the server advertises
+and cannot serve. It is opened once, when `web/api.py` is imported.
+
+**Threads.** The audit runs on a background thread and requests are answered on
+a threadpool, so a `sqlite3.Connection` is never shared: each operation opens
+its own connection to the path the store holds.
+
+**What it retains.** Every repository URL anyone audited through this server, and
+the findings of every finished run, in a file that outlives `artifacts/`. The
+endpoints have no authentication, so that history is readable by anything that
+can reach the port.

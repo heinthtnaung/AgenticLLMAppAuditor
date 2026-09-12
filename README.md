@@ -344,10 +344,102 @@ Three things worth knowing before quoting a result:
 test asserts both directions. The cloud client itself now lives in `src/`,
 because `--compare-models` needs it — see Guarantees for what that costs.
 
+## Web UI
+
+A browser front end over the same audit, for people who would rather not use a
+terminal. **Optional and not part of the tool**: the server lives in `web/`,
+outside `src/`, and nothing under `src/` imports it.
+
+```bash
+pip install -r requirements.txt   # one file; it carries fastapi and uvicorn
+python web/serve.py               # then open http://127.0.0.1:8000
+```
+
+That is the whole thing. **One server, one origin, no Node.** Python serves both
+the page and the API, so the page fetches a relative path and there is **no CORS
+at all** — not a permissive policy, none.
+
+**Start it with `serve.py`, not with `uvicorn` directly.** `uvicorn web.api:app`
+runs the same application, but the bind address then sits on a command line
+where `--host 0.0.0.0` is one word away — and that word publishes an
+unauthenticated endpoint that will clone any URL it is handed. `serve.py` pins
+loopback in code where a test asserts it, and runs from the repo root so an
+audited app's artifacts land in this repo's ignored directories rather than
+beside wherever you happened to be.
+
+The built page is committed under `frontend/dist/`. Build output in git is not
+normally right, but here it is the deliverable: it is what makes the two
+commands above enough. If it is ever missing, the server still starts and the
+browser gets a page saying so and how to build it, rather than a 404.
+
+### For developers
+
+Node is needed to *change* the UI, never to run it. After editing anything under
+`frontend/src/`, rebuild the static files Python serves:
+
+```bash
+cd frontend && npm install && npm run build
+```
+
+Commit `frontend/dist/` in the same change — a source edit without its rebuild
+leaves the served page stale, and nothing but this sentence will tell you.
+For a live-reloading loop, `npm run dev` serves the UI on `:5173` and proxies
+`/api` to the Python server on `:8000` (`frontend/vite.config.js`); that proxy
+is a development convenience and exists in no built page. `uvicorn web.api:app`
+is the same application if you want uvicorn's own flags — with the caveat above
+about which flag not to reach for.
+
+**Read this before binding it anywhere but loopback.** `POST /api/audit` makes
+the server clone a repository you name, run Syft, Trivy and a local model over
+it, and write to disk. **There is no authentication.** CORS does not protect it
+— a cross-origin form POST still reaches the handler; only the reply is hidden.
+`web/serve.py` binds `127.0.0.1` as a named constant that a test asserts, and
+that is where it should stay. The GETs make it worse than a single endpoint
+would: `GET /api/runs` hands back every repository anyone has audited through
+this server and the findings of every finished run, and `GET /api/artifacts/...`
+hands back the files. The run history outlives `artifacts/`, so it is the
+longest-lived thing here and it has no authentication either. With **Compare models** ticked it also sends the
+audited repository's source to a third party, exactly as `--compare-models`
+does from the command line.
+
+### What the page does
+
+- **Shows the audit advancing.** A POST returns a run id immediately and the
+  page polls, so a long audit shows `fetch → surfaces → dependencies →
+  advisories → checks → advice → write → publish` rather than a spinner. The
+  stage names come from `GET /api/stages`, which serves
+  `src/reporting/progress.py`'s own vocabulary -- the page does not restate it.
+- **Keeps every run.** `runs/history.sqlite3` (stdlib `sqlite3`, no new
+  dependency) records each run started from the browser: its URL, its options,
+  its timestamps, its counts, and the whole result. The **History** page lists
+  them and opens any one, and a finished run stays readable after `artifacts/`
+  is cleaned. Runs from the command line are not recorded -- `src/` does not
+  know the store exists.
+- **Hands back every file.** All sixteen names a run can write are downloadable
+  individually or as one archive. Only names `src/artifacts/names.py` owns are
+  served, joined to the run's own directory, and **always as an attachment** --
+  `report.html` is rendered from the audited repository's strings, so serving it
+  inline would run that content as script in this server's origin.
+- **Renders two artifacts, unmodified.** `findings.json` and `surfaces.json` are
+  contracts with their own `schema_version`, and reshaping them for a browser
+  would invent an artifact nobody documents. `report.md` on disk is still the
+  thing to read; the findings are filterable by risk class.
+- **Light or dark**, defaulting to whatever the machine asks for until you
+  choose, and remembered per browser once you do.
+
+Two facts the page states rather than hides. A **missing** artifact is not an
+empty one, so a count with no document behind it shows a dash and never `0`. And
+because artifacts are keyed on the app name rather than on the run, a second
+audit of one URL overwrites the first one's files: the older run then reports
+`artifacts_current: false` and its downloads are refused, rather than serving
+newer bytes under an older timestamp.
+
 ## Where everything lives
 
 ```
 src/          the auditor
+web/          the optional HTTP wrapper — not the tool
+frontend/     the React UI it serves; dist/ is built output, committed on purpose
 tests/        its tests, mirroring src/ package for package
 docs/         what it does, what it found, what is left
 experiments/  the local-vs-hosted study — not the tool
@@ -402,6 +494,13 @@ lands in `artifacts/`.
 - **Never executes the audited app.** `test_no_mutation.py` hashes the tree
   before and after; `test_no_write_commands.py` refuses write-capable
   subprocesses.
+- **Nothing under `src/` accepts a connection.** The HTTP wrapper is in `web/`,
+  binds loopback, and is started by hand. `src/` may not import it, and no
+  module under `src/` may import a server framework at all — two sweeps, one per
+  clause. (`web/` importing `src/` is the intended direction, so nothing asserts
+  it.) The same arrangement `experiments/` has, and for the same reason: a
+  listening socket inside `src/` would make the sweep below false in fact while
+  leaving it green, because it names import spellings rather than behaviour.
 - **An audit opens no socket** except to local Ollama. Two modules under `src/`
   can connect and the set is exact: `model_client.py` reaches Ollama on this
   machine, and `cloud_client.py` reaches OpenRouter — constructed only when
