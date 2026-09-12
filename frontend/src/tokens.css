@@ -1,0 +1,151 @@
+/* Design tokens, dark and light.
+
+   Dark-first, because that is what the reference design is and what a security
+   dashboard is usually read in. Three blocks on purpose: `:root` is the
+   complete dark palette, the media query hands a light one to a viewer whose
+   system asks for it, and the `[data-theme]` blocks come last so the toggle
+   wins in both directions. Every value that differs is redefined in each -- a
+   token defined in one block and not the other is how a theme ends up with
+   black text on a black card. */
+:root {
+  color-scheme: dark;
+
+  --page: #0b0e14;
+  --card-raised: #1b212c;
+  --line: #232a36;
+  --line-soft: #1c222c;
+
+  --ink: #e6edf3;
+  --ink-soft: #9aa4b2;
+  --ink-faint: #6e7885;
+
+  --accent: #58a6ff;
+  --accent-strong: #79b8ff;
+  --accent-soft: #10233d;
+  --accent-line: #1f3b5f;
+  --on-accent: #06101d;
+
+  /* Severity, from the advisory database's own words. Muted enough to read as
+     a report rather than an alarm, distinct enough to scan. */
+  --crit: #f85149;
+  --crit-soft: #2b1416;
+  --crit-line: #4a1f22;
+  --high: #ff9f4a;
+  --high-soft: #2b1d0f;
+  --high-line: #48310f;
+  --mid: #d3b04a;
+  --mid-soft: #262009;
+  --mid-line: #423714;
+  --low: #3fb950;
+  --low-soft: #0f2417;
+  --low-line: #1d3d27;
+  --none: #8b949e;
+  --none-soft: #1b212c;
+  --none-line: #2b3340;
+
+  --veil: rgba(255, 255, 255, 0.04);
+  --panel: rgba(13, 17, 23, 0.62);
+
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+  --wave-a: rgba(88, 166, 255, 0.14);
+  --wave-b: rgba(63, 185, 80, 0.10);
+  --wave-c: rgba(248, 81, 73, 0.08);
+
+  --radius: 10px;
+  --radius-sm: 6px;
+  --gap: 16px;
+
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--ink);
+  background: var(--page);
+  line-height: 1.55;
+}
+
+/* The light palette, for a viewer whose system asks for it and who has not
+   chosen dark explicitly. Not merely inverted: the severity ramp is rebuilt so
+   the same five states stay distinguishable on white. */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
+
+    --page: #f6f8fa;
+      --card-raised: #f6f8fa;
+    --line: #d8dee4;
+    --line-soft: #e6eaef;
+
+    --ink: #1c2128;
+    --ink-soft: #57606a;
+    --ink-faint: #7d868f;
+
+    --accent: #0b62d0;
+    --accent-strong: #084ba3;
+    --accent-soft: #eaf2fd;
+    --accent-line: #c6dcf8;
+    --on-accent: #ffffff;
+
+    --crit: #b3261e;
+    --crit-soft: #fdecea;
+    --crit-line: #f3ccc8;
+    --high: #9a5b00;
+    --high-soft: #fdf2e3;
+    --high-line: #f2ddba;
+    --mid: #7a5c00;
+    --mid-soft: #fbf5df;
+    --mid-line: #ecdfb4;
+    --low: #1a7f37;
+    --low-soft: #e9f6ec;
+    --low-line: #c4e6cd;
+    --none: #57606a;
+    --none-soft: #f0f3f6;
+    --none-line: #d8dee4;
+
+      --wave-a: rgba(11, 98, 208, 0.09);
+    --wave-b: rgba(26, 127, 55, 0.06);
+    --wave-c: rgba(179, 38, 30, 0.05);
+    --veil: rgba(27, 33, 40, 0.04);
+    --panel: rgba(255, 255, 255, 0.72);
+  }
+}
+
+/* The toggle, last so it beats the system preference either way. */
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --page: #f6f8fa;
+  --card-raised: #f6f8fa;
+  --line: #d8dee4;
+  --line-soft: #e6eaef;
+
+  --ink: #1c2128;
+  --ink-soft: #57606a;
+  --ink-faint: #7d868f;
+
+  --accent: #0b62d0;
+  --accent-strong: #084ba3;
+  --accent-soft: #eaf2fd;
+  --accent-line: #c6dcf8;
+  --on-accent: #ffffff;
+
+  --crit: #b3261e;
+  --crit-soft: #fdecea;
+  --crit-line: #f3ccc8;
+  --high: #9a5b00;
+  --high-soft: #fdf2e3;
+  --high-line: #f2ddba;
+  --mid: #7a5c00;
+  --mid-soft: #fbf5df;
+  --mid-line: #ecdfb4;
+  --low: #1a7f37;
+  --low-soft: #e9f6ec;
+  --low-line: #c4e6cd;
+  --none: #57606a;
+  --none-soft: #f0f3f6;
+  --none-line: #d8dee4;
+
+  --wave-a: rgba(11, 98, 208, 0.09);
+  --wave-b: rgba(26, 127, 55, 0.06);
+  --wave-c: rgba(179, 38, 30, 0.05);
+  --veil: rgba(27, 33, 40, 0.04);
+  --panel: rgba(255, 255, 255, 0.72);
+}

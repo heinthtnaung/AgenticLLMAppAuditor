@@ -1,0 +1,118 @@
+/* The chrome a reader clicks that is not the form: the two page tabs, the
+   theme switch, the buttons and the filter pills. The form is in
+   `forms.css`. */
+
+/* --- Nav ----------------------------------------------------------------- */
+.nav { display: flex; align-items: center; gap: 4px; }
+.nav__link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 11px;
+  font-size: 0.9rem;
+  font-weight: 520;
+  color: var(--ink-soft);
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+}
+.nav__link:hover { color: var(--ink); background: var(--card-raised); }
+.nav__link--here {
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-color: var(--accent-line);
+}
+
+/* --- Buttons ------------------------------------------------------------- */
+.form__actions { margin-top: 20px; }
+.run {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 11px 20px;
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--on-accent);
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-decoration: none;
+}
+.run:hover:not(:disabled) { background: var(--accent-strong); border-color: var(--accent-strong); }
+.run:disabled { opacity: 0.5; cursor: not-allowed; }
+.run--secondary {
+  color: var(--accent);
+  background: var(--card-raised);
+  border-color: var(--accent-line);
+}
+.run--secondary:hover:not(:disabled) { background: var(--accent-soft); }
+
+.spinner {
+  width: 14px; height: 14px;
+  border: 2px solid color-mix(in srgb, var(--on-accent) 30%, transparent);
+  border-top-color: var(--on-accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* --- Filters ------------------------------------------------------------- */
+.filters { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.filter {
+  padding: 5px 11px;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  background: var(--card-raised);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.filter:hover { color: var(--ink); border-color: var(--accent-line); }
+.filter--on { color: var(--on-accent); background: var(--accent); border-color: var(--accent); }
+
+/* --- Theme switch -------------------------------------------------------- */
+/* Two states and no label. The accessible name is on the button, so removing
+   the text costs a sighted reader a word and a screen reader nothing. */
+.switch {
+  position: relative;
+  width: 46px;
+  height: 26px;
+  flex: none;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card-raised);
+  cursor: pointer;
+}
+.switch:hover { border-color: var(--accent-line); }
+.switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.switch__knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  color: var(--page);
+  background: var(--ink-soft);
+  transition: transform 0.18s ease, background 0.18s ease;
+}
+.switch__knob .icon { width: 12px; height: 12px; }
+.switch--on { background: var(--accent-soft); border-color: var(--accent-line); }
+.switch--on .switch__knob { transform: translateX(20px); background: var(--accent); }
+
+/* The knob slide is the one moving part; a reader who asked for less motion
+   still needs to see which side it is on, so only the transition goes. */
+@media (prefers-reduced-motion: reduce) {
+  .switch__knob { transition: none; }
+}
+
+/* --- The one button that starts a run ------------------------------------ */
+.form__actions--centre { display: flex; justify-content: center; }
+.run--large { padding: 14px 44px; font-size: 1rem; }

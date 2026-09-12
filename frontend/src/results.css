@@ -1,0 +1,179 @@
+/* A run's output: the findings table, the surfaces, the vulnerable
+   dependencies, the stage feed and the downloads. */
+
+/* --- Pills --------------------------------------------------------------- */
+.tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 620;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+.tag--crit { background: var(--crit-soft); color: var(--crit); border-color: var(--crit-line); }
+.tag--high { background: var(--high-soft); color: var(--high); border-color: var(--high-line); }
+.tag--mid  { background: var(--mid-soft);  color: var(--mid);  border-color: var(--mid-line); }
+.tag--low  { background: var(--low-soft);  color: var(--low);  border-color: var(--low-line); }
+.tag--none,
+.tag--rule { background: var(--none-soft); color: var(--none); border-color: var(--none-line); }
+
+/* --- Tables -------------------------------------------------------------- */
+.table-scroll { overflow-x: auto; margin: 0 -22px -20px; padding: 0 22px; }
+.table { width: 100%; border-collapse: collapse; font-size: 0.87rem; }
+.table th {
+  text-align: left;
+  font-size: 0.72rem;
+  font-weight: 620;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-faint);
+  border-bottom: 1px solid var(--line);
+  padding: 0 14px 9px 0;
+  white-space: nowrap;
+}
+.table td {
+  padding: 11px 14px 11px 0;
+  border-bottom: 1px solid var(--line-soft);
+  vertical-align: top;
+}
+.table tr:last-child td { border-bottom: none; }
+.row--clickable { cursor: pointer; }
+.row--clickable:hover td { background: var(--card-raised); }
+
+/* Model-written prose under the finding it belongs to, spanning the row. */
+.table td.prose {
+  padding: 0 0 12px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.prose__block {
+  margin: 0;
+  padding: 10px 13px;
+  background: var(--card-raised);
+  border-left: 2px solid var(--line);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+.prose__label {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 640;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 3px;
+}
+
+/* --- Stage feed ---------------------------------------------------------- */
+.stages { list-style: none; margin: 0; padding: 0; }
+.stage__name { flex: 1 1 auto; min-width: 0; }
+.stage {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 9px 0;
+  font-size: 0.88rem;
+  border-top: 1px solid var(--line-soft);
+}
+.stage:first-child { border-top: none; }
+.stage__mark {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  flex: none;
+  border-radius: 7px;
+  font-size: 0.8rem;
+  background: var(--card-raised);
+  border: 1px solid var(--line);
+}
+.stage--done { color: var(--ink); }
+.stage--done .stage__mark { color: var(--low); border-color: var(--low-line); background: var(--low-soft); }
+.stage--working { color: var(--accent); font-weight: 560; }
+.stage--working .stage__mark { color: var(--accent); border-color: var(--accent-line); background: var(--accent-soft); }
+.stage--working .stage__mark span { display: block; animation: spin 1.2s linear infinite; }
+.stage--pending { color: var(--ink-faint); }
+.stage--unreached { color: var(--ink-faint); text-decoration: line-through; }
+
+/* --- Timestamps ---------------------------------------------------------- */
+.stamps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+  margin: 0 0 18px;
+  font-size: 0.86rem;
+}
+.stamps__label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 640;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 2px;
+}
+
+/* --- Downloads ----------------------------------------------------------- */
+.downloads {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
+  gap: 7px;
+  margin-bottom: 16px;
+}
+.download {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 12px;
+  font-size: 0.84rem;
+  text-decoration: none;
+  color: var(--ink);
+  background: var(--card-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+.download:hover { border-color: var(--accent); color: var(--accent); }
+.download__name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.download__size { color: var(--ink-faint); font-size: 0.76rem; flex: none; }
+
+/* --- Vulnerable dependencies no surface reaches -------------------------- */
+.vulns {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+  /* Scrolls rather than paginates: a real scan carries 79 of these, and the
+     point of the section is that the whole list is there if you look. */
+  max-height: 25rem;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+.vuln {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 12px;
+  padding: 10px 13px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.vuln:last-child { border-bottom: none; }
+.vuln__purl { flex: 1 1 15rem; word-break: break-all; }
+.vuln__advisories { display: flex; flex-wrap: wrap; gap: 4px; }
+.vuln__advisories .tag { font-size: 0.7rem; }
+
+/* --- Severity bars ------------------------------------------------------- */
+.bars { display: flex; flex-direction: column; gap: 12px; }
+.bar__head { display: flex; justify-content: space-between; font-size: 0.82rem; margin-bottom: 5px; }
+.bar__count { font-weight: 640; }
+.bar__track { height: 6px; border-radius: 999px; background: var(--card-raised); overflow: hidden; }
+.bar__fill { height: 100%; border-radius: 999px; }
+.bar--crit .bar__fill { background: var(--crit); }
+.bar--high .bar__fill { background: var(--high); }
+.bar--mid  .bar__fill { background: var(--mid); }
+.bar--low  .bar__fill { background: var(--low); }
+.bar--none .bar__fill { background: var(--none); }
+
+.checks { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 14px; }
+.nowrap { white-space: nowrap; }
