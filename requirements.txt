@@ -65,3 +65,32 @@ fpdf2==2.8.8
 # usage telemetry unless told not to. Measured with every socket refused:
 # importing, opening, indexing and querying attempt no connection at all.
 chromadb==1.5.9
+
+# --- The optional web UI (web/) ---
+# NOT a fifth exception to the stdlib-first rule, and deliberately not numbered
+# as one. The four above are each justified by something the auditor cannot do
+# without. These are a convenience wrapper over a tool that is complete without
+# them: `python src/main.py <repo>` needs none of them, and none of the nine
+# commands imports fastapi.
+#
+# Worth stating plainly, because it was the argument for keeping them in a file
+# of their own and it does not survive contact with the facts: chromadb above
+# already requires uvicorn and httpx, so `pip install -r requirements.txt` has
+# been installing two of these three all along. That is what the chromadb note
+# means by "and a web server". A separate file was never keeping them off an
+# examiner's machine -- it was only keeping them out of the record. Exactly one
+# package here is new, and it is fastapi.
+#
+# Installing them changes no guarantee this project makes. The boundary is about
+# imports, not about what is on disk: `tests/test_web_framework_containment.py`
+# asserts that no module under `src/` imports a server framework at all, and
+# `tests/test_web_containment.py` that `src/` never imports `web/`. Both hold
+# whether or not these are installed.
+#
+# Pinned exactly, for the same reason everything above is: a version that moves
+# under an examiner is a build that does not reproduce. The pins are tighter
+# than chromadb's own floors (uvicorn>=0.18.3, httpx unbounded), which is the
+# point of naming them here rather than inheriting whatever it resolves to.
+fastapi==0.121.2
+uvicorn==0.38.0
+httpx==0.28.1
