@@ -19,6 +19,7 @@ from pathlib import Path
 from artifacts.finding import OWASP_IDS
 from keys.grading_keys import GROUND_TRUTH_SUFFIX, key_path
 from parsing.extractor import extract_repo
+from reporting import progress
 import fetch_repo
 from keys import key_drafting
 from keys import key_store
@@ -38,7 +39,8 @@ def is_url(argument: str) -> bool:
     return argument.strip().startswith(f"{REQUIRED_SCHEME}://")
 
 
-def resolve_repo(argument: str) -> Path:
+def resolve_repo(argument: str,
+                 on_stage: progress.StageListener | None = None) -> Path:
     """A local path as it is; a link fetched, or reused when fetched before.
 
     Reuse writes nothing, so `fetch_repo`'s rule that a fetch never writes over
@@ -46,6 +48,7 @@ def resolve_repo(argument: str) -> Path:
     without the other keeps `fetch`'s own refusal.
     """
     if not is_url(argument):
+        progress.stage("fetch", "a local path, nothing fetched", on_stage)
         return Path(argument)
     checked = validated_url(argument)
     name = destination_name(checked)
@@ -55,8 +58,12 @@ def resolve_repo(argument: str) -> Path:
     destination = DOWNLOAD_ROOT / name
     pin = manifest_path(DOWNLOAD_ROOT, name)
     if destination.is_dir() and pin.is_file():
-        return _reused(checked, destination, pin)
-    return fetch(checked)
+        reused = _reused(checked, destination, pin)
+        progress.stage("fetch", f"reused {reused.name}", on_stage)
+        return reused
+    fetched = fetch(checked)
+    progress.stage("fetch", f"cloned {fetched.name}", on_stage)
+    return fetched
 
 
 def _reused(url: str, destination: Path, pin: Path) -> Path:
@@ -79,7 +86,8 @@ def _reused(url: str, destination: Path, pin: Path) -> Path:
     return destination
 
 
-def publish(app_artifacts: Path, advisories_read: bool) -> None:
+def publish(app_artifacts: Path, advisories_read: bool,
+            on_stage: progress.StageListener | None = None) -> None:
     """Author VEX, then export HTML and PDF.
 
     Each stage degrades with a printed reason. The audit already said *why*
@@ -100,6 +108,7 @@ def publish(app_artifacts: Path, advisories_read: bool) -> None:
     exported, reason = export_reports.export_all(app_artifacts)
     for path in exported:
         print(f"wrote {path}")
+    progress.stage("publish", f"{len(exported)} reports exported", on_stage)
     if reason:
         print(f"  export note: {reason}", file=sys.stderr)
 

@@ -13,6 +13,7 @@ from pathlib import Path
 
 import audit_run
 import pipeline
+from reporting import progress
 
 
 # The auditor is one of four scored systems, so its artifacts live under its
@@ -94,31 +95,42 @@ def _draft_key(app_dir: Path) -> None:
         print("  a draft, not an answer: read it before scoring anything against it")
 
 
-def run(args: argparse.Namespace) -> int:
-    """Audit the repository and write its artifacts. Returns the exit code.
+def run(args: argparse.Namespace,
+        on_stage: progress.StageListener | None = None) -> dict:
+    """Audit the repository and write its artifacts. Returns what it produced.
+
+    The result dict -- app name, artifacts directory, whether advisories were
+    read, wall clock -- not an exit code. `main` turns it into one. A caller
+    that is not a command line needs to know *where the artifacts went*, and
+    re-deriving that means duplicating `audit_run`'s own naming or resolving
+    the repository a second time.
 
     `--compare-models` takes a different path entirely: two audits, a drafted
     key and two scores. It is not a variation on one audit, so it does not try
-    to be one.
+    to be one -- but it keeps this promise, returning the local arm's result,
+    because a caller that cannot tell which path ran cannot handle two shapes.
 
     Times itself: "audit execution time" is one of the measures the proposal
     committed to, and a wall-clock second is the only honest unit here -- the
     run shells out to Syft and Trivy and may call a local model, so CPU time
     would understate what a reader actually waits for.
     """
+    # Handed down, never chosen here: the command line passes none and prints,
+    # the web wrapper passes one and shows an audit advancing. Neither knows
+    # about the other.
     if args.compare_models:
         # Imported here, not at module scope: `cloud_client` is the second
         # module in `src/` that can open a socket, and an ordinary audit must
         # not so much as construct it. The import is the flag's boundary.
         import compare_run
         return compare_run.run(args.repo_path, args.artifacts_dir, args.cloud_model)
-    app_dir = pipeline.resolve_repo(args.repo_path)
+    app_dir = pipeline.resolve_repo(args.repo_path, on_stage)
     audit_run.report_pin_gap(app_dir)
     result = audit_run.audit(app_dir, args.artifacts_dir,
-                             audit_run.local_model(args.semantic_probe))
+                             audit_run.local_model(args.semantic_probe), on_stage)
     # A link runs the whole pipeline; a local path stays the offline audit.
     if pipeline.is_url(args.repo_path):
-        pipeline.publish(result["artifacts"], result["advisories_read"])
+        pipeline.publish(result["artifacts"], result["advisories_read"], on_stage)
     # Asked for, never assumed. Drafting costs a model call, and a default audit
     # is meant to be fast and to make the same artifacts whether a model was
     # running or not. It is also the one place the model authors ground truth,
@@ -130,14 +142,15 @@ def run(args: argparse.Namespace) -> int:
     # byte-identical guarantee every artifact makes for a fact about the
     # machine rather than about the audited app.
     print(f"audit completed in {result['seconds']:.2f} seconds")
-    return 0
+    return result
 
 
 def main() -> int:
     """Audit a repository. Returns the process exit code."""
     args = build_parser().parse_args()
     try:
-        return run(args)
+        run(args)
+        return 0
     except (*EXPECTED_FAILURES, subprocess.SubprocessError) as error:
         print(f"error: {error}", file=sys.stderr)
         return 1

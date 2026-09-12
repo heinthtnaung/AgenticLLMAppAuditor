@@ -12,7 +12,8 @@ from cli_helpers import EMPTY_SCAN, run_cli, stub_syft
 from deps.requirements_parser import MANIFEST_NAME as PYPI_MANIFEST
 from fetch_helpers import NAME, URL
 from pipeline_helpers import (
-    point_download_root, record_fetch, record_publish, stub_export, stub_vex,
+    NO_LISTENER, point_download_root, record_fetch, record_publish, stub_export,
+    stub_vex,
 )
 
 # One agent surface importing langchain, so a dependency run has a real join.
@@ -52,7 +53,7 @@ def test_a_link_publishes_once_with_no_advisory_pin(monkeypatch, tmp_path) -> No
     publishes = record_publish(monkeypatch)
     artifacts = tmp_path / "artifacts"
     assert run_cli(monkeypatch, URL, artifacts) == 0
-    assert publishes == [(artifacts / NAME, False)]
+    assert publishes == [(artifacts / NAME, False, NO_LISTENER)]
 
 
 def test_a_link_publishes_with_advisories_read_when_a_pin_exists(monkeypatch,
@@ -64,7 +65,7 @@ def test_a_link_publishes_with_advisories_read_when_a_pin_exists(monkeypatch,
     publishes = record_publish(monkeypatch)
     artifacts = tmp_path / "artifacts"
     assert run_cli(monkeypatch, URL, artifacts) == 0
-    assert publishes == [(artifacts / NAME, True)]
+    assert publishes == [(artifacts / NAME, True, NO_LISTENER)]
 
 
 def test_a_local_path_never_publishes(monkeypatch, tmp_path) -> None:

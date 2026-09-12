@@ -28,7 +28,7 @@ from fetch_helpers import URL
 from keys.grading_keys import GROUND_TRUTH_SUFFIX, discover_graded_apps, key_path
 from keys.key_drafting import DRAFTED_KEYS_DIR as REAL_DRAFTS_DIR
 from mixed_app_fixtures import APP_NAME
-from pipeline_helpers import record_publish
+from pipeline_helpers import NO_LISTENER, record_publish
 
 
 # --- a failed draft costs the run nothing -------------------------------------
@@ -41,7 +41,7 @@ def test_a_tree_with_no_pin_is_audited_published_and_left_unkeyed(monkeypatch,
     published = record_publish(monkeypatch)
     artifacts = tmp_path / "artifacts"
     assert run_cli(monkeypatch, URL, artifacts, flags=DRAFT_KEY) == 0
-    assert published == [(artifacts / APP_NAME, False)]
+    assert published == [(artifacts / APP_NAME, False, NO_LISTENER)]
     assert not drafted_key(tmp_path).exists()
 
 
@@ -74,7 +74,7 @@ def test_an_unreachable_model_costs_the_run_neither_its_reports_nor_its_exit_cod
     published = record_publish(monkeypatch)
     artifacts = tmp_path / "artifacts"
     assert run_cli(monkeypatch, URL, artifacts, flags=DRAFT_KEY) == 0
-    assert published == [(artifacts / APP_NAME, False)]
+    assert published == [(artifacts / APP_NAME, False, NO_LISTENER)]
     assert "no key drafted" in capsys.readouterr().err
     assert not drafted_key(tmp_path).exists()
 

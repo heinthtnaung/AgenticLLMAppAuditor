@@ -108,8 +108,15 @@ def score_both(app: str, local_dir: Path) -> None:
         print(f"  scored {system}: {path}")
 
 
-def run(repo_path: str, artifacts_dir: Path, cloud_model: str | None = None) -> int:
-    """Fetch, draft a key, audit twice, publish both, and score both."""
+def run(repo_path: str, artifacts_dir: Path, cloud_model: str | None = None) -> dict:
+    """Fetch, draft a key, audit twice, publish both, and score both.
+
+    Returns the **local** arm's result, so this path keeps the same promise
+    `main.run` makes on every other path: a caller that is not a command line
+    gets the app name and where its artifacts went. The local arm is the one
+    that answers to `--artifacts-dir`; the hosted arm is the comparison, and
+    what it found is printed rather than returned.
+    """
     cloud_client.reset_exposure()
     app_dir = pipeline.resolve_repo(repo_path)
     audit_run.report_pin_gap(app_dir)
@@ -131,7 +138,7 @@ def run(repo_path: str, artifacts_dir: Path, cloud_model: str | None = None) -> 
         print("\nscoring both arms against the drafted key")
         score_both(app, artifacts_dir)
     _summarise(local_result, cloud_result, key)
-    return 0
+    return local_result
 
 
 def _summarise(local_result: dict, cloud_result: dict, key: Path | None) -> None:
