@@ -169,6 +169,42 @@ def pin_document(app_dir: Path) -> dict:
         return {}
 
 
+def _pinned_commit(pin: Path) -> str:
+    """The commit a pin names, refusing a file that cannot say.
+
+    **Two failures, not one**, and neither may be a traceback: a pin is
+    hand-editable -- `grading_keys/<app>.manifest.json` is written by a person,
+    and it is the fallback `_pin_for` uses -- so unreadable json and readable
+    json that is not an object are both ordinary states of the file. `.get` on a
+    list raised `AttributeError`, which is *not* a `ValueError`, so a caller
+    catching this function's own refusals caught the first and not the second.
+    Both are `ValueError` now, which is what `main.EXPECTED_FAILURES` already
+    turns into a printed reason rather than a crash.
+    """
+    try:
+        document = json.loads(pin.read_text(encoding="utf-8"))
+    # `OSError` beside the parse error, which is what `pin_document` ten lines
+    # above already does for this same file: a pin that cannot be *opened* --
+    # permissions, a directory, a dangling link -- fails the tree check exactly
+    # as a pin that cannot be parsed does, and both callers were chosen for
+    # `ValueError`. Catching only the parse error left the other as a traceback.
+    except (OSError, json.JSONDecodeError) as error:
+        raise ValueError(f"{pin.name} cannot be read as json: {error}. It pins the "
+                         "commit this tree is checked against, so it cannot be "
+                         "skipped -- fix the file") from error
+    if not isinstance(document, dict):
+        raise ValueError(f"{pin.name} holds {type(document).__name__}, not a json "
+                         "object, so it names no commit for this tree")
+    # The *field*, not just the document. Guarding the root and returning
+    # whatever the member holds moves the traceback one frame: `upstream_commit:
+    # 12345` came back an int and `wanted[:12]` in the caller was a `TypeError`,
+    # which escapes both `main.EXPECTED_FAILURES` and `source_routes._pin_note`.
+    # `grading_keys._pinned_commit` has had the right line for the same field
+    # all along.
+    commit = document.get("upstream_commit", "")
+    return commit if isinstance(commit, str) else ""
+
+
 def check_tree_matches_pin(app_dir: Path) -> str:
     """Refuse an audit of a tree that no longer matches the commit its manifest pins.
 
@@ -188,7 +224,7 @@ def check_tree_matches_pin(app_dir: Path) -> str:
     pin = _pin_for(app_dir)
     if pin is None:
         return ""
-    wanted = json.loads(pin.read_text()).get("upstream_commit", "")
+    wanted = _pinned_commit(pin)
     if not (app_dir / HISTORY_DIR).is_dir():
         return (f"{app_dir.name} is pinned to {wanted[:12]} and carries no history, "
                 "so the tree cannot be checked against it")

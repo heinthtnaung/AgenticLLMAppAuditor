@@ -47,12 +47,23 @@ def db_snapshot_date(cache_dir: Path | None = None) -> str | None:
     """Return the database's own build date, or None when no database is cached.
 
     None is a normal answer that degrades the audit, exactly as a missing Syft
-    does: the check does not run, and coverage says so.
+    does: the check does not run, and coverage says so. **So every way of
+    failing to read it answers None**, not only the file being absent. This is
+    on the audit path, the file is written by a third-party tool into a cache
+    directory a setting points at, and the three states that are not "absent" --
+    unopenable, unparseable, readable and the wrong shape -- all reached
+    `main.EXPECTED_FAILURES` as `PermissionError` or `AttributeError` and
+    crashed a run whose findings were already correct.
     """
     metadata = (cache_dir or default_cache_dir()) / "db" / "metadata.json"
     if not metadata.is_file():
         return None
-    return json.loads(metadata.read_text(encoding="utf-8")).get("UpdatedAt")
+    try:
+        document = json.loads(metadata.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    read = document.get("UpdatedAt") if isinstance(document, dict) else None
+    return read if isinstance(read, str) else None
 
 
 def scan(app_dir: Path, cache_dir: Path | None = None) -> dict:

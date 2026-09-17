@@ -41,6 +41,15 @@ REQUIRED_ENTRY_FIELDS = (
     "llm_surface",
 )
 
+# The four the schema marks optional and nullable on an entry, read off the
+# "Entry fields" paragraph of today's `docs/SCHEMAS.md` -- the mirror of the
+# eight above. A check that *required* one of these would be stricter than the
+# schema. Being optional and being typed are different claims: `line_end` is
+# the one of the four that also has a type rule, `harness.NULLABLE_TYPED_ENTRY_
+# FIELDS`, which says what it may hold when it is there and nothing about
+# whether it must be.
+OPTIONAL_ENTRY_FIELDS = ("surface_name", "component", "detection", "line_end")
+
 # A code anchor is the first 60 characters of the trimmed source text at `line`.
 # `key_drafting` has the same number; this one is the schema's, so the producer
 # can be compared against it instead of taken on trust.

@@ -25,6 +25,7 @@ from keys import key_drafting
 from keys import key_store
 import emit_vex
 import export_reports
+from repo_url import canonical_url
 from fetch_repo import (
     DOWNLOAD_ROOT, check_not_a_graded_app, fetch, manifest_path)
 from repo_url import REQUIRED_SCHEME, destination_name, validated_url
@@ -77,7 +78,16 @@ def _reused(url: str, destination: Path, pin: Path) -> Path:
     # .get throughout: a hand-edited or truncated pin is refused with this
     # message rather than a KeyError traceback.
     held = record.get("upstream_url")
-    if held != url:
+    # Compared canonically, because `destination_name` already is: a pin written
+    # as `.../repo` must match a request for `.../repo.git`, since both resolve
+    # to this one directory. Two owners' same-named repositories still differ.
+    # `isinstance`, not `is None`: comparing raw strings refused a non-string pin
+    # for free -- `123 != "https://..."` -- and routing both sides through
+    # `canonical_url` took that for granted, so `123.rstrip("/")` became an
+    # `AttributeError` on the audit path where a named refusal used to be. A
+    # guard that makes a comparison smarter must keep what the comparison was
+    # doing by accident.
+    if not isinstance(held, str) or canonical_url(held) != canonical_url(url):
         raise ValueError(
             f"{destination} holds {held or 'an unreadable pin'}, not {url}; "
             "remove that directory and its pin to fetch this one")

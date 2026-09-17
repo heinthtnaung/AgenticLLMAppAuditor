@@ -79,19 +79,20 @@ def _post(url: str, payload: dict, model: str) -> dict:
         raise RuntimeError(f"model server at {url} sent invalid json: {error}") from error
 
 
-def ask(prompt: str) -> str:
+def ask(prompt: str, model: str = MODEL) -> str:
     """Send one prompt to the local model server and return its text reply.
 
-    One model, `MODEL`. A `model=` parameter lived here for the AI-formatted
-    report, which asked a different local model; that feature is gone and
-    nothing else ever passed it. `embed` and `model_digest` still take theirs,
-    because an embedding model genuinely is a different model.
+    `model` defaults to `MODEL` and is named by a run that chose one of the
+    models this machine has pulled. The parameter existed once for the
+    AI-formatted report, was removed when that feature went, and is back for a
+    reason of its own -- the artifact records which model answered, so the
+    caller has to be able to say.
     """
     if not prompt.strip():
         raise ValueError("prompt must not be empty")
     body = _post(SERVER_URL, {
-        "model": MODEL, "prompt": prompt, "stream": False, "options": DECODE_SETTINGS,
-    }, MODEL)
+        "model": model, "prompt": prompt, "stream": False, "options": DECODE_SETTINGS,
+    }, model)
     if "response" not in body:
         raise RuntimeError(f"model server reply had no 'response' field: {body}")
     return body["response"]
@@ -114,14 +115,12 @@ def embed(texts: list[str], model: str = EMBED_MODEL) -> list[list[float]]:
     return vectors
 
 
-def model_digest(model: str = MODEL) -> str | None:
-    """Return the model's content digest, so a mutable tag is not the only record.
+def list_models() -> list[dict]:
+    """Every model this machine has pulled, as the server reports them.
 
-    One of the models compared is literally `:latest`, so a run recorded by tag
-    alone is repeatable only until someone re-pulls. Read from the server's tag
-    listing, which is where Ollama reports it -- `/api/show` does not. Still
-    localhost, still offline. None when the model is not listed, rather than an
-    error: an unrecorded digest is honest, a wrong one is not.
+    Raises `RuntimeError` when the server cannot be reached, like everything
+    else here -- a caller that wants "unreachable" as an answer rather than a
+    failure catches it, exactly as `audit_run.local_model` already does.
     """
     listing_url = _endpoint("tags")
     try:
@@ -130,7 +129,50 @@ def model_digest(model: str = MODEL) -> str | None:
     except (urllib.error.HTTPError, OSError, json.JSONDecodeError) as error:
         raise RuntimeError(
             f"cannot reach the local model server at {listing_url}: {error}") from error
-    for listed in body.get("models", []):
+    # Reached the server and could not read it -- a third state, reported as the
+    # same refusal because the answer is the same: nothing is known about what
+    # is pulled. Without this, a body that is not an object raised
+    # `AttributeError` and a `models` that is not a list reached every caller as
+    # something to iterate, which is a crash one frame further on.
+    #
+    # **Every entry is checked, and one bad entry refuses the whole listing.**
+    # Dropping the unreadable ones and returning the rest would answer `[]` for
+    # a server that holds models -- "answered and holds nothing" where the truth
+    # is "answered and none of it could be read". Worse, callers decide whether
+    # the configured model is pulled by looking in this list, so a partial
+    # listing says *not pulled* about a model that is.
+    unreadable = RuntimeError(
+        f"the local model server at {listing_url} answered something that is "
+        "not a model listing, so nothing is known about what it holds")
+    if not isinstance(body, dict):
+        raise unreadable
+    listed = body.get("models", [])
+    if not isinstance(listed, list):
+        raise unreadable
+    # The entry *and* the field the caller orders on. Checking the entry and not
+    # `name` is the same "root but not the member" mistake one tier down:
+    # `model_routes._named` sorts on `model["name"] or ""`, so a numeric name was
+    # a `TypeError` out of the one endpoint whose job is to say whether the model
+    # server is usable.
+    if not all(isinstance(entry, dict) and isinstance(entry.get("name"), str)
+               for entry in listed):
+        raise unreadable
+    return listed
+
+
+def model_digest(model: str = MODEL) -> str | None:
+    """Return the model's content digest, so a mutable tag is not the only record.
+
+    One of the models compared is literally `:latest`, so a run recorded by tag
+    alone is repeatable only until someone re-pulls. Read from the server's tag
+    listing, which is where Ollama reports it -- `/api/show` does not. Still
+    localhost, still offline. None when the model is not listed, rather than an
+    error: an unrecorded digest is honest, a wrong one is not.
+
+    Reads the same listing `list_models` returns rather than parsing `/api/tags`
+    a second time: two copies of one format is how the two copies disagree.
+    """
+    for listed in list_models():
         if listed.get("name") == model:
             return listed.get("digest")
     return None

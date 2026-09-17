@@ -13,6 +13,11 @@ anchored entries and a pin naming the framework and language, which is what
 `promote_key` accepts. `redirect_keys_dir` is how those tests get a destination
 that is not the real folder.
 
+The last two functions are the pair of questions a hand-edited key is asked:
+what promotion said about it, and what the scorer says about the same document.
+Shared for the reason everything else here is -- two copies of `scorer_sentence`
+would drift about which placeholder to strip.
+
 Nothing here writes outside the directory a test hands it. `grading_keys/` is
 never touched; `test_drafted_key_location.py` and
 `test_promote_key_guards.py` are what hold that.
@@ -22,9 +27,12 @@ import json
 from pathlib import Path
 
 from artifacts.surface import TOOL_CALL, Surface
+from evaluation.harness import check_key
+from guarded_read import refusal_from
 from keys.grading_keys import (
     GROUND_TRUTH_SUFFIX, KEYS_DIR, MANIFEST_SUFFIX, key_path)
 from keys.key_drafting import DRAFTED_KEYS_DIR
+from keys.key_promotion import refusals
 from parsing.languages import PYTHON
 import fetch_repo
 from keys import grading_keys
@@ -85,6 +93,40 @@ def fit_pin(**corrections: str) -> dict:
     """A drafted pin with the framework and language a human fills in at promotion."""
     return {**key_store.manifest(APP, PIN), "framework": FRAMEWORK,
             "language": LANGUAGE, **corrections}
+
+
+# --- asking promotion, and asking the scorer the same question ------------------
+#
+# Both files that drive a hand-edited key through `refusals` need these, and two
+# copies of `scorer_sentence` is how the two copies come to disagree about which
+# placeholder to strip.
+
+# A path of the caller's own. `_scorer_refusal` passes a placeholder of its own
+# and strips it from the front of the message, so taking this off the front of
+# `check_key`'s message leaves exactly the string `refusals` must report --
+# without any test depending on which placeholder the module happens to use.
+ASKED_AS = Path("a hand-edited key")
+
+
+def reported(key: dict, pin: dict | None = None) -> list[str]:
+    """What `refusals` said about this pair, failing with the class of anything that escaped.
+
+    Deliberately not `pytest.raises`: the claim is the opposite one. Every
+    defect in this class was an exception reaching a caller written for a
+    different class, so the failure message names what escaped.
+    """
+    try:
+        return refusals(key, fit_pin() if pin is None else pin)
+    except Exception as escaped:  # noqa: BLE001 - the class that escapes is the defect
+        raise AssertionError(f"refusals raised {type(escaped).__name__} instead of "
+                             f"reporting: {escaped}") from escaped
+
+
+def scorer_sentence(key: dict) -> str:
+    """The sentence the scorer itself refuses this key with, its path taken off the front."""
+    raised = refusal_from(lambda: check_key(key, ASKED_AS), "check_key")
+    assert isinstance(raised, ValueError), f"check_key raised {type(raised).__name__}"
+    return str(raised).removeprefix(f"{ASKED_AS} ")
 
 
 def _dump(path: Path, document: dict) -> None:

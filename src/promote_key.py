@@ -25,14 +25,39 @@ from keys import key_promotion
 EXPECTED_FAILURES = (FileNotFoundError, FileExistsError, ValueError)
 
 
-def _read(path: Path) -> dict:
-    """One JSON document, refusing an unreadable one by name."""
+def _read(path: Path) -> object:
+    """One JSON document, refusing an unreadable one by name.
+
+    `object`, not `dict`: json holds lists and scalars too, which is exactly why
+    `_object` exists below. A `-> dict` here would be a promise the function
+    cannot keep, and the caller that believed it raised `AttributeError`.
+    """
     try:
         return json.loads(path.read_text(encoding="utf-8"))
+    # Absence stays its own answer, because "write the draft first" is different
+    # advice from "fix the draft". Everything else that stops the file opening
+    # joins the parse error: this reads the same hand-edited pair
+    # `key_draft_store` serves, and `EXPECTED_FAILURES` lists `ValueError`, not
+    # `PermissionError`.
     except FileNotFoundError:
         raise FileNotFoundError(f"{path} does not exist") from None
-    except json.JSONDecodeError as error:
-        raise ValueError(f"{path} is not readable json: {error}") from error
+    except (OSError, json.JSONDecodeError) as error:
+        raise ValueError(f"{path} cannot be read as json: {error}") from error
+
+
+def _object(path: Path) -> dict:
+    """One json *object*, refusing a document that is readable and the wrong shape.
+
+    `_read` guards the open and the parse; this guards what came back. Without
+    it a draft holding `[]` reached `key_document.get("verified")` as an
+    `AttributeError`, which `EXPECTED_FAILURES` does not list -- the same fault
+    one clause over from the one this file already refuses by name.
+    """
+    document = _read(path)
+    if not isinstance(document, dict):
+        raise ValueError(f"{path} holds {type(document).__name__}, not a json object, "
+                         "so it is not a grading key or a manifest")
+    return document
 
 
 def _refuse_if_shipped(app: str) -> None:
@@ -44,13 +69,32 @@ def _refuse_if_shipped(app: str) -> None:
             "Move the existing one aside first if that is really what you want.")
 
 
-def promote(app: str, drafts_dir: Path | None = None) -> Path:
-    """Move a draft and its pin up a level, or refuse and say what to fix first."""
+def _named(key_document: dict) -> str:
+    """Who a key says checked it, in brackets, or nothing when it does not say."""
+    claimed = key_document.get("verified_by")
+    return f" ({claimed})" if claimed else ""
+
+
+def promote(app: str, drafts_dir: Path | None = None,
+            accept_verification: bool = False) -> Path:
+    """Move a draft and its pin up a level, or refuse and say what to fix first.
+
+    `accept_verification` is required when the draft claims a human checked it.
+    That claim can be recorded through the web UI, which has no authentication,
+    and promotion is the moment it starts bounding a figure someone publishes --
+    so a local human says so here rather than inheriting it silently.
+    """
     drafts_dir = drafts_dir or key_drafting.DRAFTED_KEYS_DIR
     draft = key_path(app, GROUND_TRUTH_SUFFIX, drafts_dir)
     pin = key_path(app, MANIFEST_SUFFIX, drafts_dir)
-    key_document, pin_document = _read(draft), _read(pin)
+    key_document, pin_document = _object(draft), _object(pin)
     _refuse_if_shipped(app)
+    if key_document.get("verified") and not accept_verification:
+        raise ValueError(
+            f"{draft} claims a human verified it{_named(key_document)}, and that "
+            "claim can be recorded through an endpoint with no authentication. "
+            "Promoting it makes it bound a published figure, so pass "
+            "--accept-verification to say you stand behind it.")
     said = key_promotion.refusals(key_document, pin_document)
     if said:
         raise ValueError(f"{draft} is not ready to be a grading key:\n  - "
@@ -66,6 +110,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Promote a corrected drafted grading key so runs are scored against it.")
     parser.add_argument("app", help="the app whose draft to promote")
+    parser.add_argument(
+        "--accept-verification", action="store_true",
+        help="promote a draft that claims a human verified it. Required because "
+             "that claim can be made through the web UI, which has no "
+             "authentication, and promotion is where it starts bounding a "
+             "published figure.")
     return parser
 
 
@@ -73,13 +123,19 @@ def main() -> int:
     """Promote one draft. Returns the process exit code."""
     args = build_parser().parse_args()
     try:
-        promoted = promote(args.app)
+        promoted = promote(args.app, accept_verification=args.accept_verification)
     except EXPECTED_FAILURES as error:
         print(f"error: {error}", file=sys.stderr)
         return 1
     print(f"promoted {promoted}")
-    print("  source and verified are unchanged on purpose: a key the tool drafted "
-          "keeps saying so until you decide otherwise")
+    # One line per field, because they are two different facts and a reader who
+    # skims takes the first sentence for both.
+    print("  source is unchanged: checking the entries cannot make the tool's "
+          "own choice of what to include independent of the tool, so every "
+          "figure this key bounds still says it was drafted")
+    print("  verified is unchanged too: promotion carries the draft's own answer "
+          "through rather than ticking it, and --accept-verification is what "
+          "lets a draft claiming a human check past")
     return 0
 
 

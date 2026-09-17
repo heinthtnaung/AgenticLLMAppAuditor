@@ -18,6 +18,7 @@ snippets in the advice prompts. That is the audited app's source going to a
 third party, and it is why this is a flag and not a default.
 """
 
+import json
 import sys
 from pathlib import Path
 
@@ -108,20 +109,22 @@ def score_both(app: str, local_dir: Path) -> None:
         print(f"  scored {system}: {path}")
 
 
-def run(repo_path: str, artifacts_dir: Path, cloud_model: str | None = None) -> dict:
+def run(repo_path: str, artifacts_dir: Path, cloud_model: str | None = None,
+        local_model_name: str | None = None) -> dict:
     """Fetch, draft a key, audit twice, publish both, and score both.
 
-    Returns the **local** arm's result, so this path keeps the same promise
-    `main.run` makes on every other path: a caller that is not a command line
-    gets the app name and where its artifacts went. The local arm is the one
-    that answers to `--artifacts-dir`; the hosted arm is the comparison, and
-    what it found is printed rather than returned.
+    Returns the local arm's four keys with the hosted arm under `comparison`,
+    which is the shape `main.run` promises on every path. The local arm is the
+    one that answers to `--artifacts-dir`; the hosted arm writes to
+    `CLOUD_ARTIFACTS_DIR` and is the comparison.
     """
     cloud_client.reset_exposure()
     app_dir = pipeline.resolve_repo(repo_path)
     audit_run.report_pin_gap(app_dir)
     app = app_dir.resolve().name
-    local, cloud = audit_run.local_model(), cloud_arm(cloud_model)
+    # The local arm honours `--model` like every other path: without this it
+    # audited with the configured model while the command line said otherwise.
+    local, cloud = audit_run.local_model(True, local_model_name), cloud_arm(cloud_model)
 
     print(f"drafting a grading key for {app} with {local['identifier']}")
     key = ensure_key(app, app_dir, local)
@@ -138,7 +141,11 @@ def run(repo_path: str, artifacts_dir: Path, cloud_model: str | None = None) -> 
         print("\nscoring both arms against the drafted key")
         score_both(app, artifacts_dir)
     _summarise(local_result, cloud_result, key)
-    return local_result
+    # Both arms, not just the one `--artifacts-dir` named. The hosted arm was
+    # audited, published and scored and then thrown away here, so nothing but
+    # this function's own printed summary ever saw it -- which is why the web
+    # UI has never been able to show a comparison it ran.
+    return {**local_result, "comparison": cloud_result}
 
 
 def _summarise(local_result: dict, cloud_result: dict, key: Path | None) -> None:
@@ -148,10 +155,36 @@ def _summarise(local_result: dict, cloud_result: dict, key: Path | None) -> None
     if key is None:
         print("no scores: no grading key was drafted")
     else:
-        print(f"key    {key}  (tool_drafted, verified: false)")
+        # Read off the key rather than spelled: `source` and `verified` are two
+        # independent fields, and a draft a human has since checked says so.
+        print(f"key    {key}  ({_standing(key)})")
     print("\nThe two arms differ in the planner's order, the semantic probe and the "
           "advice. The knowledge-base embeddings are local in both.")
     _report_exposure()
+
+
+def _standing(key: Path) -> str:
+    """What a key says about itself: who chose the entries, and whether one was read.
+
+    Guarded, though the key was drafted moments ago: `draft_key` returns a key
+    that already existed just as readily as one it wrote, so this can be a file
+    a person has edited since. Both faults are `ValueError`, which `main` prints
+    as a reason -- a bare read meant the *summary line*, printed after both
+    audits had already succeeded, could end the run in a traceback.
+
+    Spelled locally rather than importing `harness._read`, which is private to
+    the scorer. That is the fifth copy of this guard in `src/`; `docs/TODO.md`
+    records that it belongs in one module.
+    """
+    try:
+        document = json.loads(key.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise ValueError(f"{key} cannot be read as json: {error}") from error
+    if not isinstance(document, dict):
+        raise ValueError(f"{key} holds {type(document).__name__}, not a json object, "
+                         "so it is not a grading key")
+    checked = "verified" if document.get("verified") else "unverified"
+    return f"{document.get('source')}, {checked}"
 
 
 def _report_exposure() -> None:

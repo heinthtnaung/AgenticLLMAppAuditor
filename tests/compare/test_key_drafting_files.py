@@ -162,7 +162,20 @@ def test_the_source_it_writes_is_in_the_closed_vocabulary() -> None:
 
 
 def test_a_drafted_document_never_claims_to_have_been_verified() -> None:
-    """A tool cannot verify the key it wrote, so the field is false at the producer."""
+    """At the moment this runs nobody has read the entries, so `false` is the true answer.
+
+    Not because the pairing is forbidden -- since 2026-09-16 `tool_drafted` with
+    `verified: true` is a legal document, and the editor's verify route is how a
+    human records the check afterwards. The claim here is about the producer:
+    the drafter writes no claim it is not in a position to make.
+
+    **That makes this test load-bearing in a way it was not before.**
+    `harness.check_key` used to refuse the pairing outright, so a drafter that
+    wrote `true` would have produced a key nothing could score. The guard is
+    gone, so this assertion is now the only thing standing between the tool and
+    a key it verified for itself -- and such a key would be accepted everywhere,
+    losing `key_unverified` on a document no human ever opened.
+    """
     document = key_drafting.key_document(APP, [ENTRY], COMMIT)
     assert (document["verified"], document["verified_by"], document["verified_date"]) \
         == (False, None, None)

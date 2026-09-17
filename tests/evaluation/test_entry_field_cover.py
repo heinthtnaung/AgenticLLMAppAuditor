@@ -17,6 +17,16 @@ union `ENTRY_FIELDS | GUARDED_ENTRY_FIELDS` is what it is held to. The narrower
 scorer-only subset stays beside it: that one pins the *crashable* set, which is
 what `_check_entry` must require, while the union pins the *known* set.
 
+**Every classification here is about *presence*, and none of it is about
+type.** Crashable means "subscripted unguarded, so an absent one raises";
+guarded means "read behind a `.get()`, so an absent one is fine". Neither says
+anything about what the field may *hold*, which is why `line_end` -- guarded,
+and therefore correctly outside both tuples -- still reached
+`grading.line_window`'s `last + LINE_TOLERANCE` as a string and crashed there.
+Type is `harness.TYPED_ENTRY_FIELDS` and `NULLABLE_TYPED_ENTRY_FIELDS`, and
+`tests/evaluation/test_key_entry_line_end.py` is the file that holds it. A
+field passing every scan below is not a field the scorer can safely read.
+
 A second scan holds the second tuple to its own criterion -- subscripted, but
 only after a `.get()` test -- by pinning it to the *intersection* of the two
 scans of `grading.py`. Without that, padding `GUARDED_ENTRY_FIELDS` with a new

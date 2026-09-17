@@ -40,6 +40,10 @@ from semantic_probe_fixtures import APP_NAME, PROMPT_LINE, PROMPT_SURFACE_ID, wr
 
 PROBE_FLAG = ("--semantic-probe",)
 
+# What `local_model` hands back, as a whole set: a block that lost `digest`
+# would still satisfy the field-by-field checks below.
+BLOCK_FIELDS = {"ask", "identifier", "settings", "digest"}
+
 # A verdict, so the probe has something to conclude from. It is also what the
 # advice call answers, since one stub stands in for one client.
 VULNERABLE_REPLY = "VULNERABLE\nThe {question} value lands inside the instructions."
@@ -95,16 +99,23 @@ def test_local_model_hands_back_nothing_when_the_probe_was_not_asked_for() -> No
 
 def test_local_model_hands_over_the_client_call_and_what_it_will_be_decoded_with(
         monkeypatch) -> None:
-    """The provenance block is built here, from the client, not written by hand beside it."""
+    """The provenance block is built here, from the client, not written by hand beside it.
+
+    `ask` is no longer the client function itself: it is that function with the
+    chosen model bound, so the two halves are asserted separately -- what is
+    called, and what it was bound with. `tests/cli/test_model_choice.py` holds
+    what a *named* model does to the same two.
+    """
     stub_model(monkeypatch)
     model = audit_run.local_model(True)
-    assert model["ask"] is model_client.ask
-    assert model == {
-        "ask": model_client.ask,
+    assert model["ask"].func is model_client.ask
+    assert model["ask"].keywords == {"model": model_client.MODEL}
+    assert {name: model[name] for name in ("identifier", "settings", "digest")} == {
         "identifier": model_client.MODEL,
         "settings": model_client.DECODE_SETTINGS,
         "digest": STUB_MODEL_DIGEST,
     }
+    assert set(model) == BLOCK_FIELDS
 
 
 def test_local_model_records_no_digest_when_the_digest_call_is_refused(monkeypatch) -> None:
@@ -115,7 +126,7 @@ def test_local_model_records_no_digest_when_the_digest_call_is_refused(monkeypat
     """
     stub_model_unavailable(monkeypatch)
     model = audit_run.local_model(True)
-    assert model["ask"] is model_client.ask
+    assert model["ask"].func is model_client.ask
     assert model["digest"] is None
     assert model["identifier"] == model_client.MODEL
 

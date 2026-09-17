@@ -13,6 +13,7 @@ now that a second network client exists in `src/`.
 
 import sys
 import time
+from functools import partial
 from pathlib import Path
 
 from artifacts.aibom import aibom_to_json, build_aibom
@@ -114,23 +115,29 @@ def audit(app_dir: Path, artifacts_dir: Path, model: dict | None = None,
             "seconds": time.monotonic() - started}
 
 
-def local_model(wanted: bool = True) -> dict | None:
+def local_model(wanted: bool = True, name: str | None = None) -> dict | None:
     """The local model and what an artifact should record about it, or None.
 
     Lives here because both entry points need it: `main` for an ordinary audit
     and `compare_run` for the local arm. Two copies of this dict in two modules
     had to agree, and nothing checked that they did.
+
+    `name` is a model this machine has pulled, or None for the configured one.
+    Whichever answers is what the artifact records, so a run that names one is
+    as reproducible as a run that does not.
     """
     if not wanted:
         return None
+    identifier = name or model_client.MODEL
     try:
-        digest = model_client.model_digest()
+        digest = model_client.model_digest(identifier)
     except RuntimeError:
         # The digest is a provenance nicety; the audit is not. Asking for it
         # unguarded meant `--semantic-probe` with the server down wrote **no
         # artifacts at all**.
         digest = None
-    return {"ask": model_client.ask, "identifier": model_client.MODEL,
+    return {"ask": partial(model_client.ask, model=identifier),
+            "identifier": identifier,
             "settings": model_client.DECODE_SETTINGS, "digest": digest}
 
 
