@@ -102,11 +102,15 @@ should not happen is an examiner discovering it by diffing the two lists.
 > **reproducible demo applications**, and evaluation materials."
 
 These were built and then removed on 2026-09-04 (`docs/TODO.md`, "Corpus
-removal"). **`grading_keys/` no longer ships empty**: one key was added on
-2026-09-05 for `damn-vulnerable-llm-agent`, pinned to upstream `c0cf9a14` and
-cloned by URL, so measurement is possible again without this project carrying
-someone else's code. It is AI-drafted and unverified, so every figure it
-produces is qualified `key_ai_drafted` and `key_unverified`. The scoring machinery
+removal"). A key for `damn-vulnerable-llm-agent` was added on 2026-09-05,
+pinned to upstream `c0cf9a14` and cloned by URL — and **removed again on
+2026-09-06**, so `grading_keys/` ships only its README. This section said
+otherwise until 2026-09-17, which is the kind of staleness the document is
+supposed to catch: `git ls-files grading_keys/` is the check, and
+`git show f9bd9ff:grading_keys/damn-vulnerable-llm-agent.ground_truth.json`
+recovers the key every figure in `docs/REPORT.md` was measured against. Two
+drafts sit under the gitignored `grading_keys/drafts/`, which discovery does not
+see, so nothing is scored against them. The scoring machinery
 (`src/evaluation/`, `src/baselines/`) is intact and tested against synthetic
 data, and `docs/REPORT.md` Appendix A preserves the pins the published figures
 were measured against -- so the numbers stay falsifiable by anyone willing to
@@ -189,7 +193,7 @@ document would otherwise claim otherwise.
 |---|---|
 | Academic research report | Partial -- `docs/REPORT.md` is a repository document with the measured results; the submitted academic report is separate work |
 | Supervisor demonstration | Deliverable -- `python src/main.py <url>` runs the whole pipeline |
-| Code repository with prototype, schemas, **reproducible demo applications**, evaluation materials | **Downgraded 2026-09-06.** Partial -- the demo applications were removed (section 3). What ships instead is a **grading key** for a public app, pinned to upstream `c0cf9a14` and cloned by URL: `grading_keys/damn-vulnerable-llm-agent.*`. That restores measurement without shipping someone else's code, but it is AI-drafted and `verified: false`, so every figure it produces is qualified. |
+| Code repository with prototype, schemas, **reproducible demo applications**, evaluation materials | **Downgraded 2026-09-06.** Partial -- the demo applications were removed (section 3), and so was the grading key that briefly replaced them. What ships is the prototype, the schemas, the evaluation machinery and `docs/REPORT.md`'s pins; **no key**, so none of its published figures is reproducible from a clean checkout until someone writes or restores one. `evaluate.py` refuses rather than scoring zero, which is what keeps that gap visible instead of reporting it as a result. |
 
 ---
 
@@ -213,13 +217,20 @@ Worth stating, because a coverage number read alone understates the work:
 Six of the seven actions this file has listed were taken on 2026-09-05. Two
 commitments are now at zero, down from four. What is left:
 
-1. **Verify the shipped grading key.** It exists and it measures — see
-   `docs/REPORT.md`, where the auditor scores 3 of 8 against 4 of 8 for the grep
-   baseline and 0 of 8 for SBOM-only. But it
-   is AI-drafted and `verified: false`, so every one of those figures carries
-   `key_ai_drafted` and `key_unverified`. A human reading its eight entries
-   against `c0cf9a14` is what turns an indication into a result, and it is the
-   cheapest remaining upgrade in the whole document.
+1. **Restore a grading key, then check it.** `docs/REPORT.md`'s figures — the
+   auditor at 3 of 8 against 4 of 8 for the grep baseline and 0 of 8 for
+   SBOM-only — were measured against a key that no longer ships, so the first
+   step is a key on disk again, not a review of one. After that, checking it is
+   the cheapest remaining upgrade in this document, and since 2026-09-17 there
+   is somewhere to record the check: a drafted key may now be `verified`, which
+   schema 3 refused, and the web editor's verify route or a hand edit records
+   it. **Be clear what that buys.** It clears one qualification,
+   `key_unverified`. A key this tool drafted keeps `key_ai_drafted` and
+   `key_drafted_by_scored_system` however carefully it is read, because those
+   are about who *chose* the entries — so a verified draft is still not the
+   independent measurement the proposal's evaluation wanted. Two of the three
+   are closed only by a key a human **wrote**, which is the work this action
+   actually names.
 2. **Widen Objective 5 further.** It now covers four models over two
    applications and seven prompt templates, which is enough to show the failure
    shape but not enough for a rate. More applications would be the next

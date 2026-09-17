@@ -72,6 +72,55 @@ from a check in the right-hand box.
 commentary, which is why it is a flag, why the draft lands where nothing
 discovers it, and why every figure such a key produces is qualified.
 
+## A grading key, from drafted to scored against
+
+`--draft-key` is where the flowchart above stops, and it is the *start* of this
+one. Nothing discovers a draft, so nothing is scored against one until a human
+moves it.
+
+```mermaid
+flowchart LR
+    DRAFT["key_drafting<br/>--draft-key"] --> D[["grading_keys/drafts/&lt;app&gt;.*<br/>tool_drafted, verified: false"]]
+    D --> EDIT["web key editor<br/>PUT /api/keys/{app}"]
+    EDIT --> D
+    D --> V["POST /api/keys/{app}/verify<br/>a human checked the entries"]
+    V --> D2[["still tool_drafted<br/>verified: true"]]
+    D --> PROMOTE["promote_key.py &lt;app&gt;"]
+    D2 --> PROMOTEV["promote_key.py &lt;app&gt;<br/>--accept-verification"]
+    PROMOTE --> K[["grading_keys/&lt;app&gt;.*<br/>discovery finds it"]]
+    PROMOTEV --> K
+    K --> SCORE["evaluate.py<br/>score, and qualify every figure"]
+```
+
+**Four things this path refuses, and each is the reason a step exists.**
+
+*An edit may not move the key's standing.* A save cannot change `source`,
+`verified`, `verified_by` or `verified_date`, because `tool_drafted` +
+`verified: false`, `tool_drafted` + `verified: true` and `manual_review` +
+`verified: true` are all valid documents — so a save free to move the *pair*
+would pass every check there is while laundering a drafted key into one that
+reads as human-authored.
+
+*An edit may not type an anchor.* `file`, `line` and `code_anchor` are
+quotations from source the browser has not read. An entry the draft never held
+counts as typing one: appending a well-formed entry with a fabricated anchor
+passes every downstream check, so promotion would publish ground truth quoting
+a line nobody looked at.
+
+*Verifying is not promoting, and clears one qualification.* `source` says who
+**chose** the entries; `verified` says whether a human **read** them. Verifying
+clears `key_unverified` and nothing else, so a verified draft still carries
+`key_ai_drafted` and `key_drafted_by_scored_system` and can never read as an
+independent measurement. Two of the three are closed only by a key a human
+*wrote*.
+
+*Promotion will not inherit a web claim silently.* The verify route has no
+authentication, and promotion is the moment the claim starts bounding a
+published figure — so a verified draft needs `--accept-verification`, which is a
+local human saying they stand behind it. What that flag cannot do is leave a
+trace in the key it admits: the promoted file is byte-indistinguishable from one
+verified by hand-editing it, which `docs/TODO.md` records.
+
 ## The checks
 
 Run inside a bounded LangGraph loop, one check per step, capped at
@@ -111,10 +160,10 @@ no socket, counting attempts rather than successes.
 Nine entry points. The first audits; the rest each do one thing to what an audit
 produced, so none of them is on the audit path.
 
-- `python src/main.py <repo>`: Audit; `--semantic-probe`, `--draft-key`, `--compare-models`
+- `python src/main.py <repo>`: Audit; `--semantic-probe`, `--draft-key`, `--compare-models`, `--model` (name a pulled local model; `findings.json` records whichever answered, so a named one is as reproducible as the default)
 - `python src/evaluate.py`: Score against `grading_keys/`
 - `python src/run_baseline.py <system>`: Run a comparison baseline
-- `python src/promote_key.py <app>`: Accept a corrected drafted key
+- `python src/promote_key.py <app>`: Accept a corrected drafted key; `--accept-verification` when the draft claims a human checked it
 - `python src/emit_vex.py <artifacts>`: OpenVEX, via vexctl
 - `python src/export_reports.py <dir>`: HTML and PDF
 - `python src/index_knowledge.py`: Build the advice knowledge base
@@ -133,6 +182,7 @@ Each is asserted by a test, not just described here.
 | Boundary | What holds it |
 |---|---|
 | **Four modules start a process** — `syft_runner`, `trivy_runner`, `fetch_repo`, the vexctl launcher — and each may start one named program | `test_no_write_commands.py` |
+| **One of those four is now reachable from an unauthenticated GET.** `GET /api/runs/{id}/source` asks `fetch_repo.check_tree_matches_pin` whether the tree still matches its pin, which runs `git status` when the tree carries `.git` — a tool-fetched tree never does, a locally audited clone does. Bounded: `git` only, in the tree's own directory, output read and never executed. Named because "a GET only reads" is the assumption it breaks | `tests/web/test_source_pin_notes.py` |
 | **Nothing under `src/` accepts a connection** — the HTTP wrapper lives in `web/`, binds loopback, and is started by hand | `test_web_containment.py` (nothing in `src/` imports `web/`), `test_web_framework_containment.py` (no `src/` module imports a server framework), `tests/web/test_server_settings.py` (the bind address, and that no CORS policy exists — it skips without the web extra) |
 | **Two modules in `src/` open a connection**, as an exact set: `model_client.py` to local Ollama, and `cloud_client.py` to a hosted model, constructed only under `--compare-models` | `test_offline_containment.py` |
 | **An audit attempts no socket** beyond Ollama | `test_offline.py`, counting attempts rather than successes |
