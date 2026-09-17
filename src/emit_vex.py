@@ -26,6 +26,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+from artifacts.names import VEX_NAME
 from artifacts.sarif import DRIVER_NAME
 from artifacts.vex import (
     EMITTABLE_STATUSES, check_readable, pinned_epoch, to_vex_statements)
@@ -33,7 +34,9 @@ from keys.grading_keys import MANIFEST_SUFFIX, key_path
 
 PROGRAM_NAME = "vexctl"
 TIMEOUT_SECONDS = 120
-DOCUMENT_NAME = "findings.openvex.json"
+# The name lives in `artifacts/names.py` with every other artifact's, so the
+# web UI's download list and this writer cannot drift apart.
+DOCUMENT_NAME = VEX_NAME
 
 # Where a fetched tree's pin lives, checked after a graded app's own pin.
 # The fetcher's own constant, never a second "fetched" literal to drift from it.

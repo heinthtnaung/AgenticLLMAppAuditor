@@ -127,6 +127,18 @@ def js_advisories() -> dict:
     }
 
 
+# A mapping that joined no component to any surface, which is the state the
+# unreached list is computed from -- and a real one: `security-agent-testbed`
+# carries advisories on 79 components with no LLM surface to reach any of them.
+NOTHING_REACHED = {"entries": []}
+
+
+def unreached_items(advisories: dict | None = None) -> list[dict]:
+    """The `advisory_unreached_components` list as `known_advisory` builds it."""
+    return known_advisory.unreached_components(
+        NOTHING_REACHED, js_advisories() if advisories is None else advisories)
+
+
 def advisory_document(*findings: Finding) -> dict:
     """A findings document pinned to an advisory snapshot, as the VEX emitter reads it."""
     surfaces = {finding.surface_id for finding in findings}

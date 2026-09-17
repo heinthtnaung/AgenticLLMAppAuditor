@@ -36,6 +36,24 @@ def validated_url(url: str) -> str:
     return text
 
 
+def canonical_url(url: str) -> str:
+    """One spelling of a repository URL, for deciding whether two name the same one.
+
+    `https://host/owner/repo` and `https://host/owner/repo.git` are one
+    repository, and `destination_name` already treats them as one by stripping
+    the suffix -- so a pin written under one spelling must match a request in
+    the other. Without this the directory said "same repo" while the pin said
+    "different repo", and a re-audit was refused for a repository already
+    correctly fetched.
+
+    A trailing slash and the suffix only. Nothing about the host or the path is
+    normalised: two owners with the same repository name are still two
+    repositories, which is the collision the pin exists to catch.
+    """
+    trimmed = url.rstrip("/")
+    return trimmed[: -len(GIT_SUFFIX)] if trimmed.endswith(GIT_SUFFIX) else trimmed
+
+
 def destination_name(url: str) -> str:
     """Derive the directory name from the URL's last segment, refusing an unsafe one."""
     tail = urllib.parse.urlparse(url).path.rstrip("/").rsplit("/", 1)[-1]

@@ -11,6 +11,7 @@ Nothing here clones, launches a process or reaches a model: Syft, the fetch and
 every model call are replaced at their seams.
 """
 
+import json
 from pathlib import Path
 
 import pytest
@@ -37,11 +38,31 @@ DRAFTING_MARKER = key_drafting.PROMPT.splitlines()[0]
 # One entry on the tool call the mixed app really carries, so the model names a
 # defect the extractor found and the draft is not refused as ungrounded.
 TOOL_LINE = 7
-DRAFTED_REPLY = (
-    '[{"id": "K-01", "file": "%s", "line": %d, "owasp_id": "LLM06", '
-    '"llm_surface": "TOOL_CALL", "surface_name": "ShellTool", "component": null, '
-    '"detection": "static", "title": "A shell tool", "description": "why"}]'
-) % (PYTHON_FILE, TOOL_LINE)
+
+
+def an_entry(entry_id: object) -> dict:
+    """One drafted entry on that tool call, labelled however the model labelled it."""
+    return {"id": entry_id, "file": PYTHON_FILE, "line": TOOL_LINE, "owasp_id": "LLM06",
+            "llm_surface": "TOOL_CALL", "surface_name": "ShellTool", "component": None,
+            "detection": "static", "title": "A shell tool", "description": "why"}
+
+
+DRAFTED_REPLY = json.dumps([an_entry("K-01")])
+
+# The two ids a model can answer with that ended a successful run in a traceback:
+# one surface named twice, one entry labelled `1` and one labelled `"K-02"`.
+# `key_document` sorts on `(file, line, id)`, so the pair reached `sorted` and
+# raised `TypeError` -- which is in neither `pipeline.DRAFTING_FAILURES` nor
+# `main.EXPECTED_FAILURES`. **No hand edit anywhere: a model reply is enough**,
+# which is what separates this from every other shape in this family.
+NUMERIC_ID = 1
+LABELLED_ID = "K-02"
+MIXED_ID_REPLY = json.dumps([an_entry(NUMERIC_ID), an_entry(LABELLED_ID)])
+
+# The same two entries, both labelled: the off position that says what the drop
+# is about. Two entries on one surface is a promotion refusal, not a drafting
+# one, so both of these must survive.
+BOTH_LABELLED_REPLY = json.dumps([an_entry("K-01"), an_entry(LABELLED_ID)])
 
 
 def drafts_dir(tmp_path: Path) -> Path:
@@ -54,14 +75,20 @@ def drafted_key(tmp_path: Path) -> Path:
     return key_path(APP_NAME, GROUND_TRUTH_SUFFIX, drafts_dir(tmp_path))
 
 
-def drafting_model(monkeypatch: pytest.MonkeyPatch) -> list[str]:
-    """Answer the drafting question with one entry and everything else with advice."""
+def drafting_model(monkeypatch: pytest.MonkeyPatch,
+                   reply: str = DRAFTED_REPLY) -> list[str]:
+    """Answer the drafting question with `reply` and everything else with advice.
+
+    The reply is a parameter because what a *model* can answer with is now a
+    subject of its own: `MIXED_ID_REPLY` is a legal reply that used to end the
+    run in a traceback.
+    """
     seen: list[str] = []
 
     def answer(prompt: str, model: str | None = None) -> str:
         """Record the prompt, then reply as the model the run expects."""
         seen.append(prompt)
-        return DRAFTED_REPLY if DRAFTING_MARKER in prompt else STUB_ADVICE
+        return reply if DRAFTING_MARKER in prompt else STUB_ADVICE
 
     stub_model(monkeypatch)
     monkeypatch.setattr(model_client, "ask", answer)

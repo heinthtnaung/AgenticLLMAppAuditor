@@ -10,12 +10,13 @@ URL, so no project-owned path holds it.
 app by placing a key here under the same name `main.py` wrote its artifacts
 under.
 
-**Having no keys at all is normal**, and one key ships. `damn-vulnerable-llm-agent`
-was added on 2026-09-05, AI-drafted and unverified; the pinned corpus this project
-once carried was removed on 2026-09-04 (see `docs/REPORT.md` Appendix A for
-the pins the published numbers were measured against). Discovery therefore
-returns nothing rather than raising -- a folder with no keys means there is
-nothing to score, which is a different thing from a broken checkout.
+**Having no keys at all is normal, and none ships.** `damn-vulnerable-llm-agent`
+was added on 2026-09-05, AI-drafted and unverified, and removed again on
+2026-09-06; the pinned corpus this project once carried went on 2026-09-04 (see
+`docs/REPORT.md` Appendix A for the pins the published numbers were measured
+against). Discovery therefore returns nothing rather than raising -- a folder
+with no keys means there is nothing to score, which is a different thing from a
+broken checkout.
 """
 
 import json
@@ -36,11 +37,15 @@ TOOL_DRAFTED = "tool_drafted"
 UPSTREAM_DOCS = "upstream_docs"
 KEY_SOURCES = (AI_DRAFTED, MANUAL_REVIEW, TOOL_DRAFTED, UPSTREAM_DOCS)
 
-# No human wrote either, so both are unverified drafts. `TOOL_DRAFTED` is the
-# narrower and worse case: the key was written by the very system it then
-# scores, so the measurement is circular and stays circular even after a human
-# checks every entry -- verifying a key does not make the tool's own choice of
-# what to put in it independent.
+# No human chose the entries of either. `TOOL_DRAFTED` is the narrower and worse
+# case: the key was written by the very system it then scores, so the
+# measurement is circular and **stays circular even after a human checks every
+# entry** -- verifying a key does not make the tool's own choice of what to put
+# in it independent. That is why `verified` is orthogonal to this list rather
+# than an exit from it: a `TOOL_DRAFTED` key may be verified (legal since
+# 2026-09-16, recorded through the web editor's verify route), and it still
+# earns both `key_ai_drafted` and `key_drafted_by_scored_system`. Verifying
+# clears exactly one qualification, `key_unverified`.
 DRAFTED_SOURCES = (AI_DRAFTED, TOOL_DRAFTED)
 
 GROUND_TRUTH_SUFFIX = ".ground_truth.json"

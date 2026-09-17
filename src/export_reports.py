@@ -22,13 +22,11 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from fpdf import FPDF
 
+from artifacts.names import HTML_SUFFIX, MARKDOWN_SUFFIX, PDF_SUFFIX
 from reporting import markdown_html
 
 REPORT_STEM = "report"
 REMEDIATION_STEM = "remediation"
-MARKDOWN_SUFFIX = ".md"
-HTML_SUFFIX = ".html"
-PDF_SUFFIX = ".pdf"
 
 TITLES = {REPORT_STEM: "Audit report", REMEDIATION_STEM: "How to fix what was found"}
 

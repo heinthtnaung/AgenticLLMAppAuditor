@@ -121,6 +121,11 @@ produced, so none of them is on the audit path.
 - `python src/fetch_repo.py <url>`: Fetch and pin, without auditing
 - `python src/model_client.py`: Check the local model answers
 
+`python web/serve.py` is a tenth way in and deliberately not on that list: it is
+a wrapper over the first command, not a command of its own, and it lives outside
+`src/` because a module there may neither accept a connection nor name the
+command that starts it.
+
 ## Boundaries
 
 Each is asserted by a test, not just described here.
@@ -128,6 +133,7 @@ Each is asserted by a test, not just described here.
 | Boundary | What holds it |
 |---|---|
 | **Four modules start a process** — `syft_runner`, `trivy_runner`, `fetch_repo`, the vexctl launcher — and each may start one named program | `test_no_write_commands.py` |
+| **Nothing under `src/` accepts a connection** — the HTTP wrapper lives in `web/`, binds loopback, and is started by hand | `test_web_containment.py` (nothing in `src/` imports `web/`), `test_web_framework_containment.py` (no `src/` module imports a server framework), `tests/web/test_server_settings.py` (the bind address, and that no CORS policy exists — it skips without the web extra) |
 | **Two modules in `src/` open a connection**, as an exact set: `model_client.py` to local Ollama, and `cloud_client.py` to a hosted model, constructed only under `--compare-models` | `test_offline_containment.py` |
 | **An audit attempts no socket** beyond Ollama | `test_offline.py`, counting attempts rather than successes |
 | **The audited tree is never written to** | `test_no_mutation.py`, hashing it before and after |

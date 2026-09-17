@@ -19,11 +19,13 @@ from pathlib import Path
 from artifacts.finding import OWASP_IDS
 from keys.grading_keys import GROUND_TRUTH_SUFFIX, key_path
 from parsing.extractor import extract_repo
+from reporting import progress
 import fetch_repo
 from keys import key_drafting
 from keys import key_store
 import emit_vex
 import export_reports
+from repo_url import canonical_url
 from fetch_repo import (
     DOWNLOAD_ROOT, check_not_a_graded_app, fetch, manifest_path)
 from repo_url import REQUIRED_SCHEME, destination_name, validated_url
@@ -38,7 +40,8 @@ def is_url(argument: str) -> bool:
     return argument.strip().startswith(f"{REQUIRED_SCHEME}://")
 
 
-def resolve_repo(argument: str) -> Path:
+def resolve_repo(argument: str,
+                 on_stage: progress.StageListener | None = None) -> Path:
     """A local path as it is; a link fetched, or reused when fetched before.
 
     Reuse writes nothing, so `fetch_repo`'s rule that a fetch never writes over
@@ -46,6 +49,7 @@ def resolve_repo(argument: str) -> Path:
     without the other keeps `fetch`'s own refusal.
     """
     if not is_url(argument):
+        progress.stage("fetch", "a local path, nothing fetched", on_stage)
         return Path(argument)
     checked = validated_url(argument)
     name = destination_name(checked)
@@ -55,8 +59,12 @@ def resolve_repo(argument: str) -> Path:
     destination = DOWNLOAD_ROOT / name
     pin = manifest_path(DOWNLOAD_ROOT, name)
     if destination.is_dir() and pin.is_file():
-        return _reused(checked, destination, pin)
-    return fetch(checked)
+        reused = _reused(checked, destination, pin)
+        progress.stage("fetch", f"reused {reused.name}", on_stage)
+        return reused
+    fetched = fetch(checked)
+    progress.stage("fetch", f"cloned {fetched.name}", on_stage)
+    return fetched
 
 
 def _reused(url: str, destination: Path, pin: Path) -> Path:
@@ -70,7 +78,16 @@ def _reused(url: str, destination: Path, pin: Path) -> Path:
     # .get throughout: a hand-edited or truncated pin is refused with this
     # message rather than a KeyError traceback.
     held = record.get("upstream_url")
-    if held != url:
+    # Compared canonically, because `destination_name` already is: a pin written
+    # as `.../repo` must match a request for `.../repo.git`, since both resolve
+    # to this one directory. Two owners' same-named repositories still differ.
+    # `isinstance`, not `is None`: comparing raw strings refused a non-string pin
+    # for free -- `123 != "https://..."` -- and routing both sides through
+    # `canonical_url` took that for granted, so `123.rstrip("/")` became an
+    # `AttributeError` on the audit path where a named refusal used to be. A
+    # guard that makes a comparison smarter must keep what the comparison was
+    # doing by accident.
+    if not isinstance(held, str) or canonical_url(held) != canonical_url(url):
         raise ValueError(
             f"{destination} holds {held or 'an unreadable pin'}, not {url}; "
             "remove that directory and its pin to fetch this one")
@@ -79,7 +96,8 @@ def _reused(url: str, destination: Path, pin: Path) -> Path:
     return destination
 
 
-def publish(app_artifacts: Path, advisories_read: bool) -> None:
+def publish(app_artifacts: Path, advisories_read: bool,
+            on_stage: progress.StageListener | None = None) -> None:
     """Author VEX, then export HTML and PDF.
 
     Each stage degrades with a printed reason. The audit already said *why*
@@ -100,6 +118,7 @@ def publish(app_artifacts: Path, advisories_read: bool) -> None:
     exported, reason = export_reports.export_all(app_artifacts)
     for path in exported:
         print(f"wrote {path}")
+    progress.stage("publish", f"{len(exported)} reports exported", on_stage)
     if reason:
         print(f"  export note: {reason}", file=sys.stderr)
 

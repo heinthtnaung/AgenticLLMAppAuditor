@@ -1,0 +1,171 @@
+/* Design tokens, dark and light.
+
+   Dark-first, because that is what the reference design is and what a security
+   dashboard is usually read in. Three blocks on purpose: `:root` is the
+   complete dark palette, the media query hands a light one to a viewer whose
+   system asks for it, and the `[data-theme]` blocks come last so the toggle
+   wins in both directions. Every value that differs is redefined in each -- a
+   token defined in one block and not the other is how a theme ends up with
+   black text on a black card. */
+:root {
+  color-scheme: dark;
+
+  --page: #070b11;
+  --card-raised: #121a25;
+  --line: #1f2a38;
+  --line-soft: #18212c;
+
+  --ink: #e8f0f7;
+  --ink-soft: #94a3b5;
+  /* 4.96 on `--card-raised`, 5.59 on `--page`. Measured, because every use of
+     this token is small text -- field labels, placeholders, card hints, file
+     sizes, pending stages -- so the threshold is WCAG AA's 4.5 for normal text
+     and not the 3.0 a large heading would get. The value this replaced was
+     4.18 on the page and 3.71 on a card. */
+  --ink-faint: #7b8a9b;
+
+  --accent: #22d3ee;
+  --accent-strong: #67e8f9;
+  --accent-soft: #072b34;
+  --accent-line: #14505f;
+  --on-accent: #03151a;
+
+  /* Severity, from the advisory database's own words. Muted enough to read as
+     a report rather than an alarm, distinct enough to scan. */
+  --crit: #ff5f57;
+  --crit-soft: #2c1315;
+  --crit-line: #5a1f22;
+  --high: #ffa23a;
+  --high-soft: #2c1d0d;
+  --high-line: #573312;
+  --mid: #e3c04a;
+  --mid-soft: #272008;
+  --mid-line: #4d3d13;
+  --low: #3ddc84;
+  --low-soft: #0c2418;
+  --low-line: #1c4530;
+  --none: #8b98a8;
+  --none-soft: #161e28;
+  --none-line: #2a3543;
+
+  --source-mark: #f0883e;
+  --on-source-mark: #1b1205;
+
+  --veil: rgba(148, 210, 238, 0.05);
+  --panel: rgba(10, 15, 22, 0.66);
+  /* Behind the run overlay. Its own token rather than a literal, so the
+     light palette below can carry a weaker one -- a scrim dark enough to
+     read a card against on a dark page is heavier than a light page needs. */
+  --scrim: rgba(2, 5, 9, 0.78);
+
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+  --wave-a: rgba(34, 211, 238, 0.13);
+  --wave-b: rgba(61, 220, 132, 0.09);
+  --wave-c: rgba(255, 95, 87, 0.07);
+
+  --radius: 10px;
+  --radius-sm: 6px;
+  --gap: 16px;
+
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--ink);
+  background: var(--page);
+  line-height: 1.55;
+}
+
+/* The light palette, for a viewer whose system asks for it and who has not
+   chosen dark explicitly. Not merely inverted: the severity ramp is rebuilt so
+   the same five states stay distinguishable on white. */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
+
+    --page: #eef3f8;
+    --card-raised: #ffffff;
+    --line: #cfd9e4;
+    --line-soft: #e2e9f1;
+
+    --ink: #101a24;
+    --ink-soft: #4a5766;
+    --ink-faint: #5f6d7d;
+
+    --accent: #0e7490;
+    --accent-strong: #155e75;
+    --accent-soft: #e2f7fb;
+    --accent-line: #9fe3ef;
+    --on-accent: #ffffff;
+
+    --crit: #a71d16;
+    --crit-soft: #fdeceb;
+    --crit-line: #f0c4c1;
+    --high: #8a4f00;
+    --high-soft: #fdf1e0;
+    --high-line: #efd7ae;
+    --mid: #6d5200;
+    --mid-soft: #faf3d9;
+    --mid-line: #e7d8a6;
+    --low: #116b2c;
+    --low-soft: #e4f6e9;
+    --low-line: #b6e2c3;
+    --none: #4a5766;
+    --none-soft: #eef2f7;
+    --none-line: #cfd9e4;
+
+    --wave-a: rgba(14, 116, 144, 0.10);
+    --wave-b: rgba(17, 107, 44, 0.06);
+    --wave-c: rgba(167, 29, 22, 0.05);
+    --source-mark: #d96a0b;
+    --on-source-mark: #ffffff;
+
+    --veil: rgba(16, 26, 36, 0.045);
+    --panel: rgba(255, 255, 255, 0.78);
+    --scrim: rgba(8, 18, 28, 0.48);
+  }
+}
+
+/* The toggle, last so it beats the system preference either way. */
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --page: #eef3f8;
+  --card-raised: #ffffff;
+  --line: #cfd9e4;
+  --line-soft: #e2e9f1;
+
+  --ink: #101a24;
+  --ink-soft: #4a5766;
+  --ink-faint: #5f6d7d;
+
+  --accent: #0e7490;
+  --accent-strong: #155e75;
+  --accent-soft: #e2f7fb;
+  --accent-line: #9fe3ef;
+  --on-accent: #ffffff;
+
+  --crit: #a71d16;
+  --crit-soft: #fdeceb;
+  --crit-line: #f0c4c1;
+  --high: #8a4f00;
+  --high-soft: #fdf1e0;
+  --high-line: #efd7ae;
+  --mid: #6d5200;
+  --mid-soft: #faf3d9;
+  --mid-line: #e7d8a6;
+  --low: #116b2c;
+  --low-soft: #e4f6e9;
+  --low-line: #b6e2c3;
+  --none: #4a5766;
+  --none-soft: #eef2f7;
+  --none-line: #cfd9e4;
+
+  --wave-a: rgba(14, 116, 144, 0.10);
+  --wave-b: rgba(17, 107, 44, 0.06);
+  --wave-c: rgba(167, 29, 22, 0.05);
+  --source-mark: #d96a0b;
+  --on-source-mark: #ffffff;
+
+  --veil: rgba(16, 26, 36, 0.045);
+  --panel: rgba(255, 255, 255, 0.78);
+  --scrim: rgba(8, 18, 28, 0.48);
+}

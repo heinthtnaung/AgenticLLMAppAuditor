@@ -449,3 +449,21 @@ The earlier corpus (`vuln-app-1-support-agent`, `oss-app-langgraphjs-starter`,
 baseline 5 of 6 against the auditor's 2 of 6 — were measured against a tool that
 had no LLM02, AUDITABILITY or probe check, and are not comparable with the
 table above.
+
+### The key's provenance, and what verifying it would and would not change
+
+Every figure above was measured against a key whose `source` is `tool_drafted`
+and whose `verified` is `false`, so all of them carry three qualifications:
+`key_ai_drafted`, `key_drafted_by_scored_system` and `key_unverified`.
+
+Since 2026-09-16 a human can record having checked such a key — the pairing
+`tool_drafted` + `verified: true` is legal, and the web editor's
+`POST /api/keys/{app}/verify` is where the check is recorded. **It would clear
+`key_unverified` and nothing else.** `key_drafted_by_scored_system` would still
+stand, because it is about validity rather than quality: reading every entry
+confirms the entries, and cannot make the tool's own choice of *which lines were
+candidates* independent of the tool. The circularity in "Threats to validity"
+above is therefore not something verification answers, and no figure here should
+be requoted as though it were.
+
+Two of the three qualifications are closed only by a key a human *wrote*.

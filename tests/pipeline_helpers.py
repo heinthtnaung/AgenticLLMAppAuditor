@@ -16,7 +16,20 @@ import emit_vex
 import export_reports
 import fetch_repo
 import pipeline
+from reporting import progress
 from fetch_helpers import COMMIT, COMMIT_DATE, NAME, SOURCE_FILE, SOURCE_TEXT, URL
+
+# One recorded call to the publish stage, argument for argument. The progress
+# listener is recorded too, not dropped: a stage signature that gains a
+# parameter fails on the arity, and one that reorders the parameters it already
+# has fails on the recorded value -- which nothing would catch if the double
+# kept only the two arguments it used to take.
+PublishCall = tuple[Path, bool, progress.StageListener | None]
+
+# What the command line hands the publish stage as its listener: nothing. Named
+# rather than left as a bare `None`, because the third element of a recorded
+# call is unreadable without it.
+NO_LISTENER = None
 
 
 def point_download_root(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Path:
@@ -57,13 +70,14 @@ def write_pin(root: Path, url: str = URL, name: str = NAME) -> Path:
         root, fetch_repo.manifest(name, url, COMMIT, COMMIT_DATE))
 
 
-def record_publish(monkeypatch: pytest.MonkeyPatch) -> list[tuple[Path, bool]]:
-    """Replace the publish stage with a recorder of (app_artifacts, advisories_read)."""
-    calls: list[tuple[Path, bool]] = []
+def record_publish(monkeypatch: pytest.MonkeyPatch) -> list[PublishCall]:
+    """Replace the publish stage with a recorder of every argument it is handed."""
+    calls: list[PublishCall] = []
 
-    def fake_publish(app_artifacts: Path, advisories_read: bool) -> None:
+    def fake_publish(app_artifacts: Path, advisories_read: bool,
+                     on_stage: progress.StageListener | None = None) -> None:
         """Record what the pipeline asked to publish, and publish nothing."""
-        calls.append((app_artifacts, advisories_read))
+        calls.append((app_artifacts, advisories_read, on_stage))
 
     monkeypatch.setattr(pipeline, "publish", fake_publish)
     return calls
