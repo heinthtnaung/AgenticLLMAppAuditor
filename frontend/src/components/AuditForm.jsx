@@ -1,8 +1,8 @@
 import OptionsMenu from "./OptionsMenu.jsx";
 
-/** The target, the flags beside it, and the button that runs them. */
+/** The target, who is running it, the options, and the button. */
 export default function AuditForm({ values, onChange, onSubmit, running }) {
-  const ready = values.url.trim().length > 0;
+  const ready = values.url.trim().length > 0 && values.auditor.trim().length > 0;
 
   return (
     <form
@@ -19,23 +19,40 @@ export default function AuditForm({ values, onChange, onSubmit, running }) {
         disk, which is a far larger permission than cloning a public repository.
       </p>
 
-      {/* The options sit beside the field rather than under it, so the whole
-          request is one row. The menu keeps its own width; the repository takes
-          the rest. */}
-      <div className="target">
-        <label className="field field--grow">
-          <span className="field__label">Repository</span>
-          <input
-            className="field__input field__input--large"
-            type="text"
-            placeholder="https://github.com/owner/app.git"
-            value={values.url}
-            disabled={running}
-            onChange={(event) => onChange("url", event.target.value)}
-          />
-        </label>
-        <OptionsMenu values={values} onChange={onChange} disabled={running} />
-      </div>
+      <label className="field">
+        <span className="field__label">Auditor</span>
+        <input
+          className="field__input"
+          type="text"
+          required
+          placeholder="who is running this audit"
+          value={values.auditor}
+          disabled={running}
+          onChange={(event) => onChange("auditor", event.target.value)}
+        />
+        {/* Recorded with the run and shown on the report, and deliberately in
+            no artifact: two people auditing one commit still produce
+            byte-identical files. The server has no authentication, so this is
+            a claim about who ran it, not proof of one. */}
+        <p className="field__note">
+          Kept with the run and shown on its report. It goes into no artifact,
+          so the files an audit writes stay identical whoever runs it.
+        </p>
+      </label>
+
+      <label className="field">
+        <span className="field__label">Repository</span>
+        <input
+          className="field__input field__input--large"
+          type="text"
+          placeholder="https://github.com/owner/app"
+          value={values.url}
+          disabled={running}
+          onChange={(event) => onChange("url", event.target.value)}
+        />
+      </label>
+
+      <OptionsMenu values={values} onChange={onChange} disabled={running} />
 
       <div className="form__actions form__actions--centre">
         <button className="run run--large" type="submit" disabled={!ready || running}>

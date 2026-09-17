@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import PageHead from "./components/PageHead.jsx";
+import RepositoryLink from "./components/RepositoryLink.jsx";
 import TopBar from "./components/TopBar.jsx";
 import AuditPage, { INITIAL } from "./pages/AuditPage.jsx";
 import HistoryPage from "./pages/HistoryPage.jsx";
@@ -18,12 +19,6 @@ const HEADS = {
     title: "Past runs",
     line: "Every audit started from this server, newest first. A finished run "
         + "keeps its findings even after its files are cleaned from disk.",
-  },
-  run: {
-    title: "Report",
-    line: "What one audit found, the stages it went through, and every file "
-        + "it wrote. A finished run keeps its findings even after its files "
-        + "are cleaned from disk.",
   },
 };
 
@@ -47,6 +42,8 @@ export default function App() {
     return () => { watching = false; };
   }, []);
 
+  // The run page renders its own head, because the head carries a button that
+  // needs the record this component has not fetched.
   const head = HEADS[route.page];
   return (
     <div className="shell">
@@ -58,7 +55,7 @@ export default function App() {
       </div>
       <TopBar page={route.page} />
       <main className={`content${route.page === "run" ? " content--wide" : ""}`}>
-        <PageHead title={head.title}>{head.line}</PageHead>
+        {head && <PageHead title={head.title}>{head.line}</PageHead>}
         {route.page === "history" && <HistoryPage />}
         {route.page === "run" && (
           <RunPage runId={route.runId} stages={stages}
@@ -72,6 +69,7 @@ export default function App() {
           <AuditPage key={JSON.stringify(prefill)} stages={stages} prefill={prefill} />
         )}
       </main>
+      <RepositoryLink />
     </div>
   );
 }

@@ -40,8 +40,28 @@
   cursor: pointer;
   text-decoration: none;
 }
-.run:hover:not(:disabled) { background: var(--accent-strong); border-color: var(--accent-strong); }
+/* Lifts on hover and glows in the accent, which is the one control on the page
+   that starts work. `transition` names its properties so the colour change on
+   a theme toggle is not animated too. */
+.run {
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+.run:hover:not(:disabled) {
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+  transform: translateY(-1px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2),
+              0 6px 18px -8px var(--accent);
+}
+.run:active:not(:disabled) { transform: none; }
+.run:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .run:disabled { opacity: 0.5; cursor: not-allowed; }
+
+@media (prefers-reduced-motion: reduce) {
+  .run { transition: none; }
+  .run:hover:not(:disabled) { transform: none; }
+}
 .run--secondary {
   color: var(--accent);
   background: var(--card-raised);
@@ -77,12 +97,19 @@
 /* --- Theme switch -------------------------------------------------------- */
 /* Two states and no label. The accessible name is on the button, so removing
    the text costs a sighted reader a word and a screen reader nothing. */
+/* Laid out, not positioned. The knob used to be absolute with a `top`, a `left`
+   and a `translateX` that all had to agree with the track's width, height and
+   border -- five numbers, and they drifted. Now the padding box *is* the track
+   interior: `box-sizing: border-box` means it measures 46 - 2 borders - 2
+   padding = 40 wide, so a 20px knob travels exactly 20px and can only ever
+   land flush inside either end. */
 .switch {
-  position: relative;
+  display: flex;
+  align-items: center;
   width: 46px;
   height: 26px;
   flex: none;
-  padding: 0;
+  padding: 2px;
   border: 1px solid var(--line);
   border-radius: 999px;
   background: var(--card-raised);
@@ -91,13 +118,11 @@
 .switch:hover { border-color: var(--accent-line); }
 .switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .switch__knob {
-  position: absolute;
-  top: 2px;
-  left: 2px;
   display: grid;
   place-items: center;
   width: 20px;
   height: 20px;
+  flex: none;
   border-radius: 50%;
   color: var(--page);
   background: var(--ink-soft);
@@ -105,14 +130,106 @@
 }
 .switch__knob .icon { width: 12px; height: 12px; }
 .switch--on { background: var(--accent-soft); border-color: var(--accent-line); }
+/* 40px of interior minus a 20px knob. Derived from the two numbers above,
+   so a change to either is visible here rather than silently off by a few. */
 .switch--on .switch__knob { transform: translateX(20px); background: var(--accent); }
 
 /* The knob slide is the one moving part; a reader who asked for less motion
    still needs to see which side it is on, so only the transition goes. */
 @media (prefers-reduced-motion: reduce) {
   .switch__knob { transition: none; }
+  /* The spinner too. It is the one motion a reader who asked for none could
+     not escape -- and since 2026-09-17 it turns *inside* the run overlay, in
+     front of an entrance animation that is carefully gated. */
+  .spinner { animation: none; }
 }
 
 /* --- The one button that starts a run ------------------------------------ */
 .form__actions--centre { display: flex; justify-content: center; }
 .run--large { padding: 14px 44px; font-size: 1rem; }
+
+/* --- Model status -------------------------------------------------------- */
+.topbar__end { display: flex; align-items: center; gap: 12px; }
+.model {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 11px;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: default;
+}
+.model__label { max-width: 14rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* One rule per state the pill can be in, including the one where the server
+   is up but the model an audit would ask for is not pulled -- online, and
+   still worth a warning. */
+.model--down { color: var(--crit); border-color: var(--crit-line); }
+.model--incomplete { color: var(--mid); border-color: var(--mid-line); }
+.model--up { color: var(--ink-soft); }
+.model--asking { color: var(--ink-faint); }
+
+@media (max-width: 720px) { .model__label { display: none; } }
+
+/* A file input is unstylable, so the label is the button and the input is
+   hidden from sight without being hidden from a screen reader. */
+.visually-hidden {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.run--busy { opacity: 0.6; cursor: progress; }
+
+/* --- A folded-away list -------------------------------------------------- */
+.disclose {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 12px;
+  margin-bottom: 12px;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 550;
+  color: var(--ink-soft);
+  background: var(--card-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.disclose:hover { color: var(--ink); border-color: var(--accent-line); }
+.disclose:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* Inline above a table rather than filling the card: the rail's version is
+   a full-width control, this one sits with the filter pills. */
+.disclose--inline { width: auto; }
+.disclose__mark { color: var(--ink-faint); transition: transform 0.15s ease; }
+.disclose__mark--open { transform: rotate(180deg); }
+
+@media (prefers-reduced-motion: reduce) { .disclose__mark { transition: none; } }
+
+/* --- A corner link to the source ----------------------------------------- */
+/* Fixed bottom-right, above the wave layer and clear of the sticky rails. */
+.source-link {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  color: var(--on-source-mark);
+  background: var(--source-mark);
+  border: none;
+  border-radius: 50%;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  transition: transform 0.15s ease;
+}
+.source-link:hover { transform: translateY(-2px); }
+.source-link:focus-visible { outline: 3px solid var(--source-mark); outline-offset: 3px; }
+.source-link .icon { width: 1.6em; height: 1.6em; }
+
+@media (prefers-reduced-motion: reduce) { .source-link { transition: none; } }

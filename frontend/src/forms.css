@@ -34,81 +34,74 @@
 .field__input:disabled { opacity: 0.6; }
 .field__note { margin: 7px 0 0; font-size: 0.8rem; color: var(--ink-faint); }
 
-/* --- Options ------------------------------------------------------------- */
-.option {
-  display: flex;
-  gap: 11px;
-  align-items: flex-start;
-  padding: 12px 0;
-  border-top: 1px solid var(--line-soft);
+/* --- Options as tags ----------------------------------------------------- */
+.options { margin-bottom: 18px; }
+.tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.pick {
+  padding: 9px 16px;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 550;
+  color: var(--ink-soft);
+  background: var(--card-raised);
+  border: 1px solid var(--line);
+  border-radius: 999px;
   cursor: pointer;
 }
-.option:first-of-type { border-top: none; padding-top: 0; }
-.option input { margin: 3px 0 0; width: 16px; height: 16px; accent-color: var(--accent); }
-.option__name { font-weight: 550; font-size: 0.9rem; }
-.option__why { margin: 3px 0 0; color: var(--ink-faint); font-size: 0.82rem; max-width: 68ch; }
-
-/* --- Target row ---------------------------------------------------------- */
-/* The repository takes the room; the options keep a fixed width beside it. */
-.target { display: flex; align-items: flex-end; gap: 12px; margin-bottom: 4px; }
-.field--grow { flex: 1 1 auto; min-width: 0; margin-bottom: 0; }
-.field__input--large { padding: 13px 15px; font-size: 1.02rem; }
-.field__input--small { padding: 9px 11px; font-size: 0.85rem; }
-
-@media (max-width: 640px) {
-  .target { flex-direction: column; align-items: stretch; }
+.pick:hover:not(:disabled) { color: var(--ink); border-color: var(--accent-line); }
+.pick:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.pick:disabled { opacity: 0.55; cursor: not-allowed; }
+.pick--on {
+  color: var(--on-accent);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.options__fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-left: 2px solid var(--accent);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background: var(--card-raised);
 }
 
-/* --- Options menu -------------------------------------------------------- */
-.menu { position: relative; flex: none; }
-.menu__button {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  min-width: 11rem;
-  padding: 13px 14px;
-  font: inherit;
-  font-size: 0.92rem;
+/* --- Key editor ---------------------------------------------------------- */
+.entry { padding: 16px 0; border-top: 1px solid var(--line-soft); }
+.entry:first-of-type { border-top: none; }
+.entry__where { font-size: 0.8rem; color: var(--ink-faint); margin-bottom: 12px; }
+
+/* --- What a tag costs, on hover ------------------------------------------ */
+/* Shown on focus as well as hover, so it is reachable from the keyboard. The
+   same sentence is in `aria-label`, because a generated box is not announced. */
+.pick { position: relative; }
+.pick::after {
+  content: attr(data-tip);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  z-index: 10;
+  width: max-content;
+  max-width: 17rem;
+  padding: 9px 11px;
+  font-size: 0.78rem;
+  font-weight: 450;
+  line-height: 1.45;
+  text-align: left;
+  white-space: normal;
   color: var(--ink);
   background: var(--card-raised);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
-  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  transform: translateX(-50%);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.12s ease;
 }
-.menu__button:hover:not(:disabled) { border-color: var(--accent-line); }
-.menu__button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.menu__button:disabled { opacity: 0.6; cursor: not-allowed; }
-.menu__summary { flex: 1 1 auto; text-align: left; }
-.menu__count {
-  padding: 1px 7px;
-  font-size: 0.74rem;
-  font-weight: 650;
-  color: var(--on-accent);
-  background: var(--accent);
-  border-radius: 999px;
-}
-.menu__mark { color: var(--ink-faint); transition: transform 0.15s ease; }
-.menu__mark--open { transform: rotate(180deg); }
+.pick:hover::after,
+.pick:focus-visible::after { opacity: 1; visibility: visible; }
 
-.menu__panel {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  z-index: 20;
-  width: min(30rem, calc(100vw - 3rem));
-  padding: 14px 16px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--panel);
-  backdrop-filter: blur(18px);
-}
-.menu__nested {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--line-soft);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .menu__mark { transition: none; }
-}
-
+@media (prefers-reduced-motion: reduce) { .pick::after { transition: none; } }

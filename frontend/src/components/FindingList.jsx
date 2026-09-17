@@ -1,4 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import ExpandAll from "./ExpandAll.jsx";
+import FindingAdvice from "./FindingAdvice.jsx";
+import { fetchArtifactJson } from "../api.js";
+import { useExpanded } from "../useExpanded.js";
 
 // How each risk class reads. **A reading aid, not a rating.** This tool never
 // assigns its own severity -- a severity here is always a quotation from an
@@ -27,6 +31,11 @@ const ALL = "all";
 // How the finding was reached. `static` repeats byte for byte on every run;
 // `probe` means a model was consulted and it may not.
 const DETECTION_LABEL = { static: "static", probe: "model probe" };
+
+// The document that holds "how to fix it", read on demand rather than carried
+// in the reply: the envelope's keys are frozen, and this is one artifact of
+// sixteen the download route already serves.
+const REMEDIATION = "remediation.json";
 
 /** Where a finding sits, as `file:line`, or the component when it has no line. */
 function location(finding) {
@@ -79,9 +88,41 @@ function Filters({ findings, chosen, onChoose }) {
   );
 }
 
-/** Every finding, with the model's reasoning where it wrote any. */
-export default function FindingList({ findings, probes }) {
+/** Every advice entry a run wrote, keyed by the finding it is about. */
+function useAdvice(runId) {
+  const [advice, setAdvice] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let watching = true;
+    fetchArtifactJson(runId, REMEDIATION)
+      .then((document) => {
+        if (!watching) return;
+        setAdvice(Object.fromEntries(
+          (document.advice ?? []).map((entry) => [entry.finding_id, entry])));
+        setLoading(false);
+      })
+      // A run that wrote no remediation document is a run with no advice, not a
+      // broken page: the rows still open and say so.
+      .catch(() => { if (watching) { setAdvice({}); setLoading(false); } });
+    return () => { watching = false; };
+  }, [runId]);
+
+  return { advice, loading };
+}
+
+/** Every finding, with the model's reasoning and, on click, how to fix it. */
+export default function FindingList({ findings, probes, runId }) {
   const [chosen, setChosen] = useState(ALL);
+  const { advice, loading } = useAdvice(runId);
+  const shown = chosen === ALL
+    ? findings
+    : findings.filter((finding) => finding.owasp_id === chosen);
+  // Above the early return below, with every other hook: an empty list would
+  // otherwise render one fewer hook than a filled one, which React refuses the
+  // moment the list stops being empty. Keyed on what is on screen, so "show
+  // every fix" means the filtered rows and not the hidden ones.
+  const rows = useExpanded(shown.map((finding) => finding.finding_id));
   if (!findings.length) {
     return (
       <p className="empty">
@@ -99,17 +140,17 @@ export default function FindingList({ findings, probes }) {
       .map((probe) => [probe.probe_id, probe.detail]),
   );
 
-  const shown = chosen === ALL
-    ? findings
-    : findings.filter((finding) => finding.owasp_id === chosen);
-
   return (
     <>
       <Filters findings={findings} chosen={chosen} onChoose={setChosen} />
+      <ExpandAll allOpen={rows.allOpen} onToggle={rows.toggleAll} noun="fix" />
       <div className="table-scroll">
         <table className="table">
           <thead>
-            <tr><th>Risk</th><th>Check</th><th>Title</th><th>Where</th><th>How</th></tr>
+            <tr>
+              <th>Risk</th><th>Check</th><th>Title</th><th>Where</th>
+              <th>How</th><th />
+            </tr>
           </thead>
           <tbody>
             {shown.map((finding) => {
@@ -117,22 +158,43 @@ export default function FindingList({ findings, probes }) {
                 ["Narrative", finding.narrative],
                 ["Probe", rationale[finding.probe_id]],
               ].filter(([, text]) => text);
+              const expanded = rows.isOpen(finding.finding_id);
               return [
-                <tr key={finding.finding_id}>
+                <tr key={finding.finding_id} className="row--clickable"
+                    aria-expanded={expanded}
+                    onClick={() => rows.toggle(finding.finding_id)}>
                   <td><span className={`tag tag--${RISK_TONE[finding.owasp_id] ?? "none"}`}>
                     {finding.owasp_id}
                   </span></td>
                   <td><span className="tag tag--rule">{finding.rule_id}</span></td>
-                  <td>{finding.title}</td>
+                  <td>
+                    {finding.title}
+                    {/* Nine advisory findings share one title and differ only by
+                        the CVE, so the id that distinguishes them is shown. */}
+                    {finding.advisory_id && (
+                      <span className="finding__advisory mono">{finding.advisory_id}</span>
+                    )}
+                  </td>
                   <td className="mono">{location(finding)}</td>
                   <td>{DETECTION_LABEL[finding.detection] ?? finding.detection}</td>
+                  <td className="row__action">
+                    <span className="details">{expanded ? "Hide" : "How to fix"}</span>
+                  </td>
                 </tr>,
                 prose.length ? (
                   <tr key={`${finding.finding_id}-prose`}>
-                    <td className="prose" colSpan={5}>
+                    <td className="prose" colSpan={6}>
                       {prose.map(([label, text]) => (
                         <Prose key={label} label={label} text={text} />
                       ))}
+                    </td>
+                  </tr>
+                ) : null,
+                expanded ? (
+                  <tr key={`${finding.finding_id}-advice`}>
+                    <td className="prose" colSpan={6}>
+                      <FindingAdvice advice={advice?.[finding.finding_id]}
+                                     loading={loading} />
                     </td>
                   </tr>
                 ) : null,

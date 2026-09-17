@@ -1,4 +1,5 @@
 import Icon from "./Icon.jsx";
+import ModelStatus from "./ModelStatus.jsx";
 import ThemeToggle from "./ThemeToggle.jsx";
 import { AUDIT, HISTORY, navigate } from "../router.js";
 
@@ -38,7 +39,10 @@ export default function TopBar({ page }) {
         </nav>
 
         {/* Top right, on its own so the nav stays centred on the brand. */}
-        <ThemeToggle />
+        <div className="topbar__end">
+          <ModelStatus />
+          <ThemeToggle />
+        </div>
       </div>
     </header>
   );

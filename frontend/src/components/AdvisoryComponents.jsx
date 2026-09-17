@@ -148,20 +148,6 @@ export default function AdvisoryComponents({ coverage }) {
             of this tool — but they are real, and an ordinary dependency scanner
             would flag every one.
           </p>
-          <div className="bars">
-            {present.map((severity) => (
-              <div key={severity} className={`bar--${TONE[severity] ?? "none"}`}>
-                <div className="bar__head">
-                  <span>{severity}</span>
-                  <span className="bar__count">{counts[severity]}</span>
-                </div>
-                <div className="bar__track">
-                  <div className="bar__fill"
-                       style={{ width: `${(counts[severity] / total) * 100}%` }} />
-                </div>
-              </div>
-            ))}
-          </div>
           <div className="filters">
             <button type="button" className={`filter${only === ALL ? " filter--on" : ""}`}
                     onClick={() => setOnly(ALL)}>

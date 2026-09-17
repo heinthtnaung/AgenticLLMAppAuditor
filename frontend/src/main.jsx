@@ -6,6 +6,7 @@ import './surfaces.css'
 import './controls.css'
 import './forms.css'
 import './results.css'
+import './overlay.css'
 import App from './App.jsx'
 
 createRoot(document.getElementById('root')).render(

@@ -4,12 +4,18 @@
 
 /* --- Cards --------------------------------------------------------------- */
 .card {
+  position: relative;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 20px 22px;
   margin-bottom: var(--gap);
   background: var(--panel);
   backdrop-filter: blur(14px);
+  /* Depth, in two cheap parts rather than a heavy shadow: a hairline of light
+     along the top edge, and a soft drop below. Flat bordered boxes are most of
+     what makes a page read as a framework default. */
+  box-shadow: inset 0 1px 0 var(--veil), 0 1px 2px rgba(0, 0, 0, 0.18),
+              0 8px 24px -16px rgba(0, 0, 0, 0.5);
 }
 .card__title { margin: 0 0 4px; font-size: 1rem; font-weight: 620; }
 .card__hint { margin: 0 0 16px; color: var(--ink-faint); font-size: 0.85rem; }
@@ -63,10 +69,6 @@
   line-height: 1.1;
 }
 
-/* --- Two columns, where there is something for both ---------------------- */
-.split { display: grid; grid-template-columns: minmax(0, 1.9fr) minmax(0, 1fr); gap: 12px; }
-@media (max-width: 980px) { .split { grid-template-columns: 1fr; } }
-
 /* --- Shared small pieces ------------------------------------------------- */
 .empty {
   padding: 22px;
@@ -103,7 +105,9 @@
 /* The numbers and the files sit either side of the report and follow the
    scroll: they are what a reader keeps referring back to while reading down the
    findings, and scrolling them away costs a trip back up the page. */
-.content--wide { max-width: 1560px; }
+/* The report uses the window. A cap left dead gutters either side on a wide
+   screen while the middle column between two rails did the squeezing. */
+.content--wide { max-width: none; }
 
 .report {
   display: grid;
@@ -116,13 +120,18 @@
 .report__main { min-width: 0; }
 .report__rail {
   position: sticky;
-  top: var(--gap);
+  z-index: 1;
+  /* Below the bar's own height, so a rail scrolls to rest under it. */
+  top: calc(var(--gap) * 4);
   min-width: 0;
   /* Its own scroll when the rail is taller than the window -- sixteen download
      tiles are, on a short screen -- so sticky cannot clip the end of it. */
   max-height: calc(100vh - var(--gap) * 2);
   overflow-y: auto;
 }
+/* A column with a gap rather than zeroed margins: the rail holds more than
+   one card now, and they were touching. */
+.report__rail { display: flex; flex-direction: column; gap: var(--gap); }
 .report__rail .card { margin-bottom: 0; }
 .stats--rail { display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 0; }
 

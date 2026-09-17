@@ -1,113 +1,122 @@
-import { useEffect, useRef, useState } from "react";
-import Icon from "./Icon.jsx";
+import { useEffect, useState } from "react";
+import { fetchModelStatus } from "../api.js";
 
 // Each option costs something -- a model call, a network round trip, a file
-// written -- and the menu still says what, because these are off by default for
-// reasons a user should be able to see rather than guess. Folding them into a
-// dropdown shortens the form; it must not shorten the reasons.
+// written -- and the tags still carry that, because these are off by default
+// for reasons a reader should be able to see rather than guess. As three tags
+// the reason moves to the tooltip and the note below; it is not dropped.
 const OPTIONS = [
   {
     key: "semantic_probe",
     name: "Semantic probe",
-    why: "Asks the local model to judge each prompt template for injection. " +
-         "The only check that consults a model about a finding; off by default " +
-         "so an ordinary audit is fast and produces the same artifacts either way.",
+    // One line, and it names the cost rather than the feature: that is what a
+    // reader is deciding about, and it is why these are off by default.
+    why: "Asks the local model to judge each prompt template. Slower, and needs "
+       + "Ollama running.",
   },
   {
     key: "draft_key",
     name: "Draft a grading key",
-    why: "Has the local model draft a grading key for a human to correct. " +
-         "Measured: it locates real defects and misclassifies them, so read it " +
-         "before scoring anything against it.",
+    why: "Drafts a key for a human to correct. Measured: it finds real defects "
+       + "and misclassifies them, so read it before scoring anything.",
   },
   {
     key: "compare_models",
     name: "Compare models",
-    why: "Audits twice, local against hosted, and scores both. Sends the " +
-         "audited repository's source to a third party and needs an API key.",
+    why: "Audits twice, local against hosted. Sends the audited source to a "
+       + "third party and needs an API key.",
   },
 ];
+
+/** Which pulled model this run uses, or the configured one. */
+function ModelField({ value, onChange, disabled }) {
+  const [status, setStatus] = useState(null);
+
+  useEffect(() => {
+    let watching = true;
+    fetchModelStatus()
+      .then((found) => { if (watching) setStatus(found); })
+      .catch(() => { if (watching) setStatus(null); });
+    return () => { watching = false; };
+  }, []);
+
+  const models = status?.models ?? [];
+  const offline = status !== null && !status.reachable;
+
+  return (
+    <label className="field field--last">
+      <span className="field__label">Local model</span>
+      <select className="field__input" value={value} disabled={disabled || offline}
+              onChange={(event) => onChange("model", event.target.value)}>
+        <option value="">
+          {status ? `${status.configured_model} (configured)` : "the configured model"}
+        </option>
+        {models
+          .filter((model) => model.name !== status?.configured_model)
+          .map((model) => (
+            <option key={model.name} value={model.name}>{model.name}</option>
+          ))}
+      </select>
+      <p className="field__note">
+        {offline
+          ? "The local model server is not answering, so the models it holds "
+            + "cannot be listed. The audit will use the configured model."
+          : "Only models this machine has already pulled. findings.json records "
+            + "whichever answered. Artifacts are keyed on the app name, not the "
+            + "run — auditing one app with a second model overwrites the first "
+            + "run's files."}
+      </p>
+    </label>
+  );
+}
 
 /** Which model the hosted arm uses. Only meaningful with comparison on. */
 function CloudModelField({ value, onChange, disabled }) {
   return (
-    <div className="menu__nested">
-      <label className="field field--last">
-        <span className="field__label">Cloud model (optional)</span>
-        <input
-          className="field__input field__input--small"
-          type="text"
-          placeholder="z-ai/glm-5.2"
-          value={value}
-          disabled={disabled}
-          onChange={(event) => onChange("cloud_model", event.target.value)}
-        />
-        <p className="field__note">
-          Leave blank to use OPENROUTER_MODEL from the backend&rsquo;s environment.
-        </p>
-      </label>
-    </div>
+    <label className="field field--last">
+      <span className="field__label">Cloud model (optional)</span>
+      <input className="field__input" type="text" placeholder="z-ai/glm-5.2"
+             value={value} disabled={disabled}
+             onChange={(event) => onChange("cloud_model", event.target.value)} />
+      <p className="field__note">
+        Leave blank to use OPENROUTER_MODEL from the backend&rsquo;s environment.
+      </p>
+    </label>
   );
 }
 
-/** What the closed button says: never a bare count with nothing chosen. */
-function summarise(chosen) {
-  if (!chosen.length) return "All off";
-  if (chosen.length === 1) return chosen[0].name;
-  return `${chosen.length} options`;
-}
-
-/** The three flags as a multi-select dropdown beside the repository field. */
+/** The three options as tags, and the fields the chosen ones need. */
 export default function OptionsMenu({ values, onChange, disabled }) {
-  const [open, setOpen] = useState(false);
-  const box = useRef(null);
-
-  // A dropdown that only closes by pressing its own button is a trap. Both
-  // listeners are removed with the panel, so nothing is bound while it is shut.
-  useEffect(() => {
-    if (!open) return undefined;
-    const away = (event) => {
-      if (!box.current?.contains(event.target)) setOpen(false);
-    };
-    const escape = (event) => { if (event.key === "Escape") setOpen(false); };
-    document.addEventListener("mousedown", away);
-    document.addEventListener("keydown", escape);
-    return () => {
-      document.removeEventListener("mousedown", away);
-      document.removeEventListener("keydown", escape);
-    };
-  }, [open]);
-
-  const chosen = OPTIONS.filter((option) => values[option.key]);
+  // A model is only consulted by one of these, so the picker appears with them
+  // rather than standing alone offering something nothing would use.
+  const consultsAModel = OPTIONS.some((option) => values[option.key]);
 
   return (
-    <div className="menu" ref={box}>
+    <div className="options">
       <span className="field__label">Options</span>
-      <button type="button" className="menu__button" disabled={disabled}
-              aria-expanded={open} onClick={() => setOpen(!open)}>
-        <span className="menu__summary">{summarise(chosen)}</span>
-        {chosen.length > 0 && <span className="menu__count">{chosen.length}</span>}
-        <Icon name="chevron" className={open ? "menu__mark menu__mark--open" : "menu__mark"} />
-      </button>
+      <div className="tags">
+        {OPTIONS.map((option) => (
+          // `data-tip` rather than `title`: the native tooltip waits about a
+          // second and this is the sentence the choice turns on. The same text
+          // rides in `aria-label`, since a CSS tooltip is not announced.
+          <button key={option.key} type="button" data-tip={option.why}
+                  disabled={disabled}
+                  aria-pressed={Boolean(values[option.key])}
+                  aria-label={`${option.name}. ${option.why}`}
+                  className={`pick${values[option.key] ? " pick--on" : ""}`}
+                  onClick={() => onChange(option.key, !values[option.key])}>
+            {option.name}
+          </button>
+        ))}
+      </div>
+      <p className="field__note">
+        All off by default: an ordinary audit calls no model and opens no
+        socket. Hover a tag for what it costs.
+      </p>
 
-      {open && (
-        <div className="menu__panel" role="group" aria-label="Audit options">
-          {OPTIONS.map((option) => (
-            <label className="option" key={option.key}>
-              <input
-                type="checkbox"
-                checked={values[option.key]}
-                disabled={disabled}
-                onChange={(event) => onChange(option.key, event.target.checked)}
-              />
-              <span>
-                <span className="option__name">{option.name}</span>
-                <p className="option__why">{option.why}</p>
-              </span>
-            </label>
-          ))}
-          {/* After the list, not inside it: the list is one checkbox per flag,
-              and a branch on one member's key would make it something else. */}
+      {consultsAModel && (
+        <div className="options__fields">
+          <ModelField value={values.model} onChange={onChange} disabled={disabled} />
           {values.compare_models && (
             <CloudModelField value={values.cloud_model} onChange={onChange}
                              disabled={disabled} />

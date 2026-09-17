@@ -118,6 +118,12 @@ reasons.
 
 ```bash
 python src/promote_key.py <app>
+
+# If you recorded a human check on the draft -- in the web editor, or by hand --
+# promotion refuses it until you say you stand behind that claim. The web route
+# has no authentication, and promoting is where the claim starts bounding a
+# published figure.
+python src/promote_key.py <app> --accept-verification
 ```
 
 **Grounding the advice (optional, once).** Builds a local knowledge base from a
@@ -420,10 +426,15 @@ does from the command line.
   served, joined to the run's own directory, and **always as an attachment** --
   `report.html` is rendered from the audited repository's strings, so serving it
   inline would run that content as script in this server's origin.
-- **Renders two artifacts, unmodified.** `findings.json` and `surfaces.json` are
+- **Renders the artifacts unmodified.** `findings.json` and `surfaces.json` are
   contracts with their own `schema_version`, and reshaping them for a browser
-  would invent an artifact nobody documents. `report.md` on disk is still the
-  thing to read; the findings are filterable by risk class.
+  would invent an artifact nobody documents, so the page reads them as they are
+  and the findings are filterable by risk class. Since 2026-09-17 a file viewer
+  opens any of the run's own files from the download list -- json pretty-printed,
+  markdown and text as written, the exported HTML in a frame granted nothing.
+  The two PDFs are the exception and are refused by name before a byte is read:
+  every reply from the download route is an attachment, so there is nothing a
+  frame could display.
 - **Light or dark**, defaulting to whatever the machine asks for until you
   choose, and remembered per browser once you do.
 

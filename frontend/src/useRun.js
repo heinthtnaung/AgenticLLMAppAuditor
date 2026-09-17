@@ -7,12 +7,11 @@
 
 import { useEffect, useState } from "react";
 import { fetchListing, fetchRun } from "./api.js";
+import { RUNNING } from "./runStatus.js";
 
 // Often enough that the stage list feels live, rarely enough that a minutes-long
 // audit is not thousands of requests.
 const POLL_MS = 1000;
-
-const RUNNING = "running";
 
 /** One run, re-read while it is going. Returns `{ record, error }`. */
 export function useRun(runId) {

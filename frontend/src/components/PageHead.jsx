@@ -1,8 +1,11 @@
-/** What this page is, in a title and one line. */
-export default function PageHead({ title, children }) {
+/** What this page is, in a title and one line, with any action beside it. */
+export default function PageHead({ title, action, children }) {
   return (
     <div className="head">
-      <h1 className="head__title">{title}</h1>
+      <div className="head__row">
+        <h1 className="head__title">{title}</h1>
+        {action}
+      </div>
       {children && <p className="head__subtitle">{children}</p>}
     </div>
   );

@@ -1,16 +1,18 @@
 import AdvisoryComponents from "./AdvisoryComponents.jsx";
+import ComparisonCard from "./ComparisonCard.jsx";
 import FindingList from "./FindingList.jsx";
 import MissingArtifact from "./MissingArtifact.jsx";
 import SurfaceList from "./SurfaceList.jsx";
 
 /** The findings, or the reason there are none to show. */
-function FindingsCard({ document, unreached }) {
+function FindingsCard({ document, unreached, runId }) {
   return (
     <div className="card">
       <h2 className="card__title">Findings</h2>
       <p className="card__hint">
         Each carries the risk class, the check that produced it, and where it
-        sits. A probe finding shows the reasoning the model gave.
+        sits. <strong>Click a row for how to fix it.</strong> A probe finding
+        also shows the reasoning the model gave.
       </p>
       {/* Without this, "no findings" beside a repository carrying vulnerable
           packages reads as a clean bill. A finding here means a vulnerable
@@ -29,23 +31,24 @@ function FindingsCard({ document, unreached }) {
         </p>
       )}
       {document
-        ? <FindingList findings={document.findings} probes={document.probes} />
+        ? <FindingList findings={document.findings} probes={document.probes}
+                       runId={runId} />
         : <MissingArtifact name="findings.json" />}
     </div>
   );
 }
 
 /** What the checks ran over. */
-function SurfacesCard({ document }) {
+function SurfacesCard({ document, runId }) {
   return (
     <div className="card">
       <h2 className="card__title">LLM surfaces</h2>
       <p className="card__hint">
         What the checks ran over. A defect at a line no surface covers is one
-        this tool cannot reach.
+        this tool cannot reach. <strong>Click a row to see the line.</strong>
       </p>
       {document
-        ? <SurfaceList surfaces={document.surfaces} />
+        ? <SurfaceList surfaces={document.surfaces} runId={runId} />
         : <MissingArtifact name="surfaces.json" />}
     </div>
   );
@@ -77,7 +80,7 @@ function CoverageCard({ checks, artifactsDir }) {
 }
 
 /** What the audit produced: the counts, the findings, and what it looked at. */
-export default function ResultsDashboard({ result }) {
+export default function ResultsDashboard({ result, runId }) {
   const findings = result.findings;
   const surfaces = result.surfaces;
   const checksRun = findings?.coverage?.checks_run;
@@ -91,12 +94,11 @@ export default function ResultsDashboard({ result }) {
 
   return (
     <>
-      <FindingsCard document={findings} unreached={unreached ?? 0} />
+      <ComparisonCard result={result} />
+      <FindingsCard document={findings} unreached={unreached ?? 0} runId={runId} />
       <AdvisoryComponents coverage={findings?.coverage} />
-      <div className="split">
-        <SurfacesCard document={surfaces} />
-        <CoverageCard checks={checks} artifactsDir={result.artifacts_dir} />
-      </div>
+      <SurfacesCard document={surfaces} runId={runId} />
+      <CoverageCard checks={checks} artifactsDir={result.artifacts_dir} />
     </>
   );
 }

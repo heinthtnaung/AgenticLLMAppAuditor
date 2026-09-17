@@ -1,3 +1,5 @@
+import { RUNNING } from "../runStatus.js";
+
 // What each stage is, in words. Keyed by the vocabulary the server serves, and
 // falling back to the stage's own name -- a stage added in `src/` should show
 // up as itself rather than disappear from the list.
@@ -16,7 +18,6 @@ const DONE = "done";
 const WORKING = "working";
 const PENDING = "pending";
 const UNREACHED = "unreached";
-const RUNNING = "running";
 
 const MARK = { [DONE]: "\u2713", [WORKING]: "\u27f3", [PENDING]: "\u00b7", [UNREACHED]: "\u00b7" };
 

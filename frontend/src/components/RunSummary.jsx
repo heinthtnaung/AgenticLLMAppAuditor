@@ -1,28 +1,10 @@
 import DownloadPanel from "./DownloadPanel.jsx";
 import ResultsDashboard from "./ResultsDashboard.jsx";
+import RunStamps from "./RunStamps.jsx";
 import StageProgress from "./StageProgress.jsx";
 import StatRail from "./StatRail.jsx";
-import { seconds, when } from "../format.js";
+import { FINISHED } from "../runStatus.js";
 import { useListing } from "../useRun.js";
-
-const FINISHED = "finished";
-
-/** When a run started and finished, and how long the whole job took. */
-function Stamps({ record }) {
-  return (
-    <div className="stamps">
-      <div><span className="stamps__label">Started</span> {when(record.started_at)}</div>
-      <div><span className="stamps__label">Finished</span> {when(record.finished_at)}</div>
-      {/* Two durations, and they are not the same fact: the job includes
-          resolving the repository, the audit's own timer starts after it. */}
-      <div><span className="stamps__label">Whole job</span> {seconds(record.seconds)}</div>
-      {record.result && (
-        <div><span className="stamps__label">Audit itself</span>
-          {" "}{seconds(record.result.seconds)}</div>
-      )}
-    </div>
-  );
-}
 
 /** Every file the run left on disk, in the rail. */
 function DownloadCard({ record, listing }) {
@@ -59,7 +41,7 @@ export default function RunSummary({ record, stages }) {
         <div className="card">
           <h2 className="card__title">{record.app ?? record.repo_url}</h2>
           <p className="card__hint mono">{record.repo_url}</p>
-          <Stamps record={record} />
+          <RunStamps record={record} />
           <StageProgress stages={stages} announced={record.stages}
                          status={record.status} />
           {record.error && (
@@ -69,11 +51,21 @@ export default function RunSummary({ record, stages }) {
             </p>
           )}
         </div>
-        {record.result && <ResultsDashboard result={record.result} />}
+        {record.result && <ResultsDashboard result={record.result}
+                                            runId={record.run_id} />}
+        {/* No rendered-report card. `report.html` and `remediation.html` are
+            two of the sixteen files the run wrote, and the Download panel now
+            opens any of them -- a card that framed those two alone was a second
+            way to read a subset of what the file list already holds. */}
       </div>
 
       <aside className="report__rail report__rail--files">
         {finished && <DownloadCard record={record} listing={listing} />}
+        {/* No evidence panel. Attaching a file changed no finding by design, so
+            the page offered an upload whose only effect was on the page --
+            `POST /api/runs/{id}/uploads` and the record's `uploads` field are
+            untouched and still tested, so nothing was demolished to hide the
+            control. */}
       </aside>
     </div>
   );

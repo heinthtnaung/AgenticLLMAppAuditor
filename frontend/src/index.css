@@ -72,14 +72,28 @@ code, .mono { font-family: var(--mono); font-size: 0.86em; }
 }
 
 /* A background that cannot be stopped is a problem for some readers, and this
-   one carries no information -- so the tint stays and the movement goes. */
+   one carries no information -- so the tint stays and the movement goes.
+   `:nth-child(n)` matches every span and is *deliberately* there: the three
+   rules above are `.waves span:nth-child(1..3)`, specificity (0,2,1), and a
+   bare `.waves span` is (0,1,1) -- so the plainer selector lost the cascade and
+   the waves went on drifting for a reader who had asked them not to, under a
+   comment saying they stopped. A media query adds no specificity of its own. */
 @media (prefers-reduced-motion: reduce) {
-  .waves span { animation: none; }
+  .waves span:nth-child(n) { animation: none; }
 }
 
 /* Full width, inset just enough for the corners to read, and no bottom rule:
    the bar floats over the wave layer rather than dividing the page. */
-.topbar { position: relative; z-index: 1; padding: 12px 12px 0; }
+/* Sticky, and above the wave layer and the sticky report rails: the bar is
+   the one thing that must stay reachable while reading down a long report. The
+   veil below it is translucent, so the blur is what keeps it legible over
+   whatever scrolls under it. */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  padding: 12px 12px 0;
+}
 .topbar__inner {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
@@ -135,3 +149,13 @@ code, .mono { font-family: var(--mono); font-size: 0.86em; }
   font-size: 0.9rem;
   max-width: 74ch;
 }
+
+.head__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.head__actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
