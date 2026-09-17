@@ -9,12 +9,12 @@ zero keys is normal, and the run says there is nothing to score rather than
 writing an evaluation over no apps.
 
 A third refusal is about a file that is present and misshapen: a key whose
-entry is short a field, or an artifact short one the scorer reads. Both used to
-raise a bare `KeyError` from inside `scorer.py`, and `KeyError` is not one of
-`evaluate.py`'s `EXPECTED_FAILURES` -- so the project's own evaluation command
-answered a typo with a traceback. The shapes themselves are checked in
-`tests/evaluation/`; what is asserted here is the end of that path, which is
-the exit code and the single line on stderr.
+entry is short a field or holds one of the wrong *type*, or an artifact short
+one the scorer reads. Each used to escape `scorer.py` as a bare `KeyError` or
+`TypeError`, and neither is one of `evaluate.py`'s `EXPECTED_FAILURES` -- so
+the project's own evaluation command answered a typo with a traceback. The
+shapes themselves are checked in `tests/evaluation/`; what is asserted here is
+the end of that path, which is the exit code and the single line on stderr.
 
 The keys directory is written by `evaluate_helpers` under `tmp_path` and passed
 in with `--keys-dir`; nothing here reads the real `grading_keys/`.
@@ -35,6 +35,11 @@ from keys.grading_keys import GROUND_TRUTH_SUFFIX
 
 # The staged key's filename, which the refusal has to spell for a reader.
 KEY_FILE_NAME = f"{APP}{GROUND_TRUTH_SUFFIX}"
+
+# A line number typed as text, which is the *type* half of the same fault: the
+# field is present, so the shape check passed it and `grading.line_window` added
+# three to a string. One quote-pair, in the field a human retypes most.
+TEXT_LINE = "4"
 
 
 def key_with_a_malformed_entry() -> dict:
@@ -172,3 +177,31 @@ def test_an_artifact_short_of_a_field_names_the_file_and_the_field(
     artifacts_dir = stage_artifacts(tmp_path, findings=findings_with_no_probes())
     run_evaluate(monkeypatch, artifacts_dir, keys_dir=keys_dir)
     assert f"{APP}/findings.json is missing probes" in capsys.readouterr().err
+
+
+# --- the same file, with a field present and of the wrong type -----------------
+
+def key_with_a_text_line() -> dict:
+    """A key whose one entry names its line as text rather than as a number."""
+    return grading_key([key_entry(line=TEXT_LINE)])
+
+
+def test_a_key_whose_line_is_text_exits_one(tmp_path, monkeypatch) -> None:
+    """The refusal above checked presence and stopped; this is the type beside it.
+
+    The exit code is the assertion rather than the message: `TypeError` is not
+    one of `EXPECTED_FAILURES`, so before the check it left `main()` without
+    returning at all -- which errors this test instead of failing it.
+    """
+    keys_dir = stage_keys(tmp_path, key=key_with_a_text_line())
+    assert run_evaluate(monkeypatch, stage_artifacts(tmp_path), keys_dir=keys_dir) == 1
+
+
+def test_a_text_line_is_reported_with_the_entry_it_sits_in(
+        tmp_path, monkeypatch, capsys) -> None:
+    """One `error:` line naming the entry and the field, from the scoring path itself."""
+    keys_dir = stage_keys(tmp_path, key=key_with_a_text_line())
+    run_evaluate(monkeypatch, stage_artifacts(tmp_path), keys_dir=keys_dir)
+    error = capsys.readouterr().err
+    assert error.startswith("error: ")
+    assert "findings[0]" in error and "line" in error

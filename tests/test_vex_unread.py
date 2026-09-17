@@ -69,6 +69,11 @@ UPSTREAM_PATH = "vex/"
 ALLOWED_TO_NAME_VEX = frozenset({
     # The emitter, which runs `vexctl` and writes `findings.openvex.json`.
     "emit_vex.py",
+    # Constants and nothing else. It holds the output filename so the one
+    # spelling serves both the emitter and the web UI's download list -- the
+    # emitter now imports it from here rather than keeping a second copy. It
+    # opens nothing, reads nothing, and names no path into `vex/`.
+    "artifacts/names.py",
     # Counts the findings carrying `advisory_id` -- the field `artifacts/vex.py`
     # branches on -- under the metric name `with_vex_evidence`. It reads no
     # document and names no path into `vex/`.

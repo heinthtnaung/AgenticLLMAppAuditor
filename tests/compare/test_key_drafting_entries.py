@@ -7,11 +7,22 @@ those may raise: an unreadable reply means no entries, and
 `compare_run.ensure_key` refuses to write an empty key rather than scoring
 perfect recall over nothing.
 
+The last section is the other half of that: a reply it *can* read, naming a
+surface it was never shown or labelling an entry with a number. The parity
+between the four fields that rule bounds is asserted against the rule itself --
+`id` was the one it did not bound. What that cost is `test_drafted_key_ids.py`.
+
 The `ask` here is a plain function the test writes, so no client and no server
 is involved -- which is also what lets a test assert what the prompt contained.
 """
 
+import json
+
+import pytest
+
 from artifacts.finding import OWASP_IDS
+from ast_scan import get_call_keys, parse
+from conftest import SRC_DIR
 from artifacts.surface import PROMPT_TEMPLATE, TOOL_CALL, Surface
 from keys.key_drafting import MAX_SURFACES, PROMPT, draft
 from parsing.languages import PYTHON
@@ -139,3 +150,56 @@ def test_the_prompt_is_the_one_the_module_declares() -> None:
     ask, seen = answering(ARRAY)
     draft(surfaces(), ask, OWASP_IDS)
     assert seen[0].startswith(PROMPT.split("{", 1)[0])
+
+
+# --- what makes an entry grounded, field by field -----------------------------
+
+# Every way one entry fails to be grounded, by the field that fails it. A table
+# rather than four tests, because the claim is **parity**: `id` is bounded like
+# the other three, and was not until a model reply labelled an entry `1` and the
+# `(file, line, id)` sort raised `TypeError` out of a finished run. The off
+# position is the first test in this file: the same entry, unmodified, is kept.
+UNGROUNDED = {
+    "owasp_id": {"owasp_id": "LLM99"},
+    "file": {"file": "a-file-the-extractor-never-saw.py"},
+    "line": {"line": 999},
+    "id": {"id": 1},
+}
+
+# The module the guard reads the rule's fields off, rather than trusting the
+# table above.
+KEY_DRAFTING_SOURCE = SRC_DIR / "keys" / "key_drafting.py"
+
+# One surface named twice, one entry labelled and one not. The reply that cost a
+# finished run its drafted key.
+MIXED_IDS = [{"id": 1}, {"id": "K-02"}]
+
+
+def an_entry(**overrides) -> dict:
+    """The entry above as a dict, with whichever fields a test replaces."""
+    return {**json.loads(ENTRY), **overrides}
+
+
+def reply_holding(*entries: dict) -> str:
+    """A model reply naming these entries, in the array shape the prompt asks for."""
+    return json.dumps([an_entry(**entry) for entry in entries])
+
+
+@pytest.mark.parametrize("field", list(UNGROUNDED))
+def test_an_entry_the_rule_cannot_ground_is_dropped(field: str) -> None:
+    """Each field in turn: a risk class nobody named, a surface nobody found, a number for a label."""
+    assert drafted(reply_holding(UNGROUNDED[field])) == []
+
+
+def test_a_surface_named_twice_keeps_only_the_entry_that_was_labelled() -> None:
+    """The measured reply, at the level that drops it rather than the one that sorted it.
+
+    Dropped rather than renamed: an entry the model labelled with a number is an
+    entry it did not label, and `K-04` invented for it names nothing.
+    """
+    assert [entry["id"] for entry in drafted(reply_holding(*MIXED_IDS))] == ["K-02"]
+
+
+def test_every_field_the_grounding_rule_reads_has_a_row_in_that_table() -> None:
+    """Read off `_is_grounded` itself, so a fifth field cannot be added without a case."""
+    assert get_call_keys(parse(KEY_DRAFTING_SOURCE), "entry") == set(UNGROUNDED)

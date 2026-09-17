@@ -59,6 +59,17 @@ unverified key is qualified in `evaluation.json` rather than reported plain.
 Drafting a key with a tool and verifying it are two different facts, and this
 project keeps them apart on purpose.
 
+**So a tool-drafted key may be verified**, and since 2026-09-16 that is a legal
+document rather than a refused one. Recording the check clears exactly one
+qualification, `key_unverified`. It does **not** clear `key_ai_drafted` or
+`key_drafted_by_scored_system`: reading every entry confirms the entries, and
+cannot make the tool's own choice of which lines were candidates independent of
+the tool — which is the rule in the next section, and the reason a verified
+draft is still not the same thing as a key a human wrote. Record the check in
+the web editor (`POST /api/keys/{app}/verify`) or by hand; either way
+`promote_key.py` needs `--accept-verification` before it will publish it,
+because the web route has no authentication.
+
 ## One rule nothing enforces any more
 
 **At least one entry should sit at a line no extracted surface covers.**

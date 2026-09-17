@@ -4,53 +4,27 @@ One of the models compared is literally `:latest`, which names a different build
 after the next pull, so a run recorded by tag alone is repeatable only until
 someone re-pulls. The digest comes from the server's tag listing, which is where
 Ollama reports it. The transport is replaced here; no test reaches a server.
+
+**This file drives the whole chain, transport included.** The listing itself,
+and the claim that `model_digest` reads it rather than parsing `/api/tags` a
+second time, are `test_model_client_listing.py` -- which forbids the transport
+in order to say so. The fake server they share is `tests/model_server_stub.py`:
+four copies of one fake response is how the four copies come to disagree.
 """
 
-import json
 import urllib.error
-import urllib.request
 
 import pytest
 
 import model_client
+from model_server_stub import DIGEST, refuse, serve, serve_text
 
 OTHER_MODEL = "llama3:latest"
-# Bare hex, as Ollama's /api/tags really reports it -- this module builds the
-# server's own reply, so a prefixed value here would test a shape no server sends.
-DIGEST = "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
-
-
-class FakeResponse:
-    """The smallest object `urlopen` can return that `model_digest` will read."""
-
-    def __init__(self, body: bytes) -> None:
-        """Hold the bytes the client will parse."""
-        self.body = body
-
-    def __enter__(self) -> "FakeResponse":
-        """Support the `with urlopen(...)` the client uses."""
-        return self
-
-    def __exit__(self, *exc_info: object) -> bool:
-        """Leave any exception to propagate."""
-        return False
-
-    def read(self) -> bytes:
-        """Return the recorded body."""
-        return self.body
 
 
 def stub_listing(monkeypatch, body: object) -> list[str]:
     """Serve a fixed tag listing and return the list the requested URL lands in."""
-    asked = []
-
-    def fake_urlopen(url, timeout=None):
-        """Record the URL and answer with the given listing instead of sending it."""
-        asked.append(url)
-        return FakeResponse(json.dumps(body).encode())
-
-    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
-    return asked
+    return serve(monkeypatch, body)
 
 
 def listing_with(*names: str) -> dict:
@@ -98,11 +72,7 @@ def test_a_listed_model_with_no_digest_yields_none(monkeypatch) -> None:
 
 def refuse_with(monkeypatch, error: Exception) -> None:
     """Make the transport fail the way an unreachable or broken server does."""
-    def fake_urlopen(url, timeout=None):
-        """Raise instead of answering."""
-        raise error
-
-    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    refuse(monkeypatch, error)
 
 
 def test_an_unreachable_server_raises_and_names_the_listing_url(monkeypatch) -> None:
@@ -123,10 +93,6 @@ def test_an_http_error_from_the_server_is_reported_the_same_way(monkeypatch) -> 
 
 def test_a_listing_that_is_not_json_is_reported_the_same_way(monkeypatch) -> None:
     """Invalid json is a broken server, not a model without a digest."""
-    def fake_urlopen(url, timeout=None):
-        """Answer with something no json parser will read."""
-        return FakeResponse(b"not json at all")
-
-    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    serve_text(monkeypatch, b"not json at all")
     with pytest.raises(RuntimeError, match="cannot reach the local model server"):
         model_client.model_digest()

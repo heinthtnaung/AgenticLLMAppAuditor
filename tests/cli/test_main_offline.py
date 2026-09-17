@@ -72,7 +72,10 @@ def audit(monkeypatch, tmp_path: Path, flags: tuple[str, ...] = ()) -> Path:
     artifacts = tmp_path / "artifacts"
     args = main.build_parser().parse_args(
         [str(repo), "--artifacts-dir", str(artifacts), *flags])
-    assert main.run(args) == 0
+    # `run` returns what the audit produced, not an exit code -- `main` turns it
+    # into one. Asserting the artifacts directory is stronger than asserting a
+    # zero: it fails if the audit wrote somewhere the caller did not ask for.
+    assert main.run(args)["artifacts"] == artifacts / repo.name
     return artifacts
 
 

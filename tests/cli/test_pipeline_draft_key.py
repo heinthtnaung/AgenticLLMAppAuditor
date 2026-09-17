@@ -21,14 +21,17 @@ publish, Syft and both model calls are replaced at their seams, and the app is
 written into `tmp_path`.
 """
 
+import json
+
 from cli_helpers import run_cli, stub_model_unavailable
 from draft_key_helpers import (
-    DRAFT_KEY, drafted_key, drafting_model, drafting_prompts, fetched_tree)
+    DRAFT_KEY, LABELLED_ID, MIXED_ID_REPLY, drafted_key, drafting_model,
+    drafting_prompts, fetched_tree)
 from fetch_helpers import URL
 from keys.grading_keys import GROUND_TRUTH_SUFFIX, discover_graded_apps, key_path
 from keys.key_drafting import DRAFTED_KEYS_DIR as REAL_DRAFTS_DIR
 from mixed_app_fixtures import APP_NAME
-from pipeline_helpers import record_publish
+from pipeline_helpers import NO_LISTENER, record_publish
 
 
 # --- a failed draft costs the run nothing -------------------------------------
@@ -41,7 +44,7 @@ def test_a_tree_with_no_pin_is_audited_published_and_left_unkeyed(monkeypatch,
     published = record_publish(monkeypatch)
     artifacts = tmp_path / "artifacts"
     assert run_cli(monkeypatch, URL, artifacts, flags=DRAFT_KEY) == 0
-    assert published == [(artifacts / APP_NAME, False)]
+    assert published == [(artifacts / APP_NAME, False, NO_LISTENER)]
     assert not drafted_key(tmp_path).exists()
 
 
@@ -74,7 +77,7 @@ def test_an_unreachable_model_costs_the_run_neither_its_reports_nor_its_exit_cod
     published = record_publish(monkeypatch)
     artifacts = tmp_path / "artifacts"
     assert run_cli(monkeypatch, URL, artifacts, flags=DRAFT_KEY) == 0
-    assert published == [(artifacts / APP_NAME, False)]
+    assert published == [(artifacts / APP_NAME, False, NO_LISTENER)]
     assert "no key drafted" in capsys.readouterr().err
     assert not drafted_key(tmp_path).exists()
 
@@ -121,3 +124,38 @@ def test_a_second_run_leaves_the_first_draft_exactly_as_it_was(monkeypatch, tmp_
     first = drafted_key(tmp_path).read_bytes()
     assert run_cli(monkeypatch, URL, artifacts, flags=DRAFT_KEY) == 0
     assert drafted_key(tmp_path).read_bytes() == first
+
+
+# --- a reply the model can legally give, which used to cost the run everything ---
+
+# What survives `MIXED_ID_REPLY`: the entry the model really labelled. The other
+# one it labelled `1`, and `key_document` sorts on `(file, line, id)`.
+KEPT_IDS = [LABELLED_ID]
+
+
+def test_a_reply_labelling_an_entry_with_a_number_still_exits_zero(monkeypatch,
+                                                                   tmp_path) -> None:
+    """The docstring of this file, held against the one failure a *model* can cause.
+
+    `TypeError` out of that sort is in neither `pipeline.DRAFTING_FAILURES` nor
+    `main.EXPECTED_FAILURES`, so this reply ended the whole command in a
+    traceback -- after the audit had succeeded and the reports had been
+    published. No hand edit anywhere: the model answering is enough.
+    """
+    fetched_tree(monkeypatch, tmp_path, pinned=True)
+    drafting_model(monkeypatch, reply=MIXED_ID_REPLY)
+    record_publish(monkeypatch)
+    assert run_cli(monkeypatch, URL, tmp_path / "artifacts", flags=DRAFT_KEY) == 0
+
+
+def test_that_run_still_publishes_and_still_writes_its_draft(monkeypatch,
+                                                             tmp_path) -> None:
+    """The exit code alone would pass over a run that published nothing and drafted nothing."""
+    fetched_tree(monkeypatch, tmp_path, pinned=True)
+    drafting_model(monkeypatch, reply=MIXED_ID_REPLY)
+    published = record_publish(monkeypatch)
+    artifacts = tmp_path / "artifacts"
+    run_cli(monkeypatch, URL, artifacts, flags=DRAFT_KEY)
+    assert published == [(artifacts / APP_NAME, False, NO_LISTENER)]
+    written = json.loads(drafted_key(tmp_path).read_text(encoding="utf-8"))
+    assert [entry["id"] for entry in written["findings"]] == KEPT_IDS

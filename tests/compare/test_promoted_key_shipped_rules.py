@@ -27,8 +27,18 @@ hand. A hostile draft is a different question and these files do not ask it.
 
 from pathlib import Path
 
+import promote_key
 import pytest
-from drafted_key_fixtures import APP, promote_one_draft, promoted_document
+from drafted_key_fixtures import (
+    APP,
+    DRAFTS_NAME,
+    corrected_draft,
+    fit_key,
+    promote_one_draft,
+    promoted_document,
+    redirect_keys_dir,
+)
+from keys import key_drafting
 from evaluation.harness import KEY_SCHEMA_VERSION, check_key
 from keys.grading_keys import (
     GROUND_TRUTH_SUFFIX,
@@ -42,6 +52,14 @@ from keys.key_promotion import ANCHOR_FIELD, ENTRY_FIELDS
 # What the promoted draft holds, so no assertion below passes over an empty list.
 ENTRY_COUNT = 1
 SURFACE_COUNT = 1
+
+# A draft somebody recorded a check on before promoting it, which is the state
+# the web editor's verify route leaves one in. The date is the one the route
+# stamped, not one this test invents a meaning for.
+CHECKED_BY = "Quokka Reviewer"
+CHECKED_ON = "2026-09-16"
+CHECKED_KEY = {**fit_key(), "verified": True, "verified_by": CHECKED_BY,
+               "verified_date": CHECKED_ON}
 
 
 @pytest.fixture
@@ -96,10 +114,42 @@ def test_the_promoted_key_declares_a_known_source(key) -> None:
     assert key["source"] in KEY_SOURCES
 
 
-def test_the_promoted_key_does_not_claim_to_be_verified(key) -> None:
-    """A tool cannot verify the key it wrote for itself, and promotion is not a review."""
+def test_promotion_invents_no_verification_claim(key) -> None:
+    """The drafter wrote no claim, and promoting is not a review, so none appears.
+
+    Narrower than it used to read. This said "a tool cannot verify the key it
+    wrote for itself", which was a general rule and is no longer true: since
+    2026-09-16 `tool_drafted` with `verified: true` is a legal document, and the
+    editor's verify route is how a human records having read the entries. What
+    is still true, and is what this holds, is that promotion carries the field
+    through rather than setting it -- the test below is the other direction.
+    """
     assert key["verified"] is False
     assert key["verified_by"] is None and key["verified_date"] is None
+
+
+def test_promotion_carries_a_recorded_verification_through_unchanged(
+        monkeypatch, tmp_path) -> None:
+    """The direction the name above implies and nothing held: a checked draft stays checked.
+
+    Promotion moves the document; it neither invents a claim nor resets one. A
+    promotion that quietly cleared `verified` would discard the one fact the
+    verify route exists to record, and every figure scored against the key would
+    go on carrying `key_unverified` with nobody able to say why.
+
+    `--accept-verification` is what lets it past, because the claim can be made
+    through an endpoint with no authentication -- `test_promote_key_verification.py`
+    is where that gate is the subject.
+    """
+    keys_dir = redirect_keys_dir(monkeypatch, tmp_path)
+    drafts_dir = keys_dir / DRAFTS_NAME
+    corrected_draft(drafts_dir, key=CHECKED_KEY)
+    promote_key.promote(APP, drafts_dir, accept_verification=True)
+    promoted = promoted_document(keys_dir, GROUND_TRUTH_SUFFIX)
+    assert promoted["verified"] is True
+    assert promoted["verified_by"] == CHECKED_BY
+    assert promoted["verified_date"] == CHECKED_ON
+    assert promoted["source"] == key_drafting.SOURCE
 
 
 def test_the_promoted_key_lists_its_findings_in_the_documented_order(key) -> None:

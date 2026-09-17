@@ -62,3 +62,4 @@ CLAUDE.md
 
 # Study outputs: contain audited source and transmitted payloads.
 experiments/results/
+runs/

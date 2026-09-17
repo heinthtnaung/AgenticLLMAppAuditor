@@ -120,8 +120,19 @@ def draft(surfaces: list[Surface], ask: Ask,
 
 def _is_grounded(entry: dict, shown: set[tuple[str, int]],
                  risk_classes: tuple[str, ...]) -> bool:
-    """True when the entry names a surface that was shown and a risk class that exists."""
+    """True when the entry names a surface that was shown, a real risk class, and an id.
+
+    `id` is bounded here like the other three, and for a sharper reason: it is
+    the third element of the `(file, line, id)` sort two lines below, so a reply
+    naming one surface twice with ids `1` and `"K-02"` -- the very shape
+    `_colliding_pairs` exists to refuse -- raised `TypeError` out of `sorted`.
+    That is in neither `pipeline.DRAFTING_FAILURES` nor `main.EXPECTED_FAILURES`,
+    so `--draft-key` ended in a traceback *after* the audit had succeeded and
+    every artifact was already on disk. Dropped rather than coerced: an entry the
+    model labelled with a number is an entry it did not label.
+    """
     return (entry.get("owasp_id") in risk_classes
+            and isinstance(entry.get("id"), str)
             and (entry.get("file"), entry.get("line")) in shown)
 
 

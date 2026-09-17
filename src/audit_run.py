@@ -13,6 +13,7 @@ now that a second network client exists in `src/`.
 
 import sys
 import time
+from functools import partial
 from pathlib import Path
 
 from artifacts.aibom import aibom_to_json, build_aibom
@@ -56,29 +57,40 @@ def _dependency_documents(app_dir: Path, surfaces: list) -> tuple[dict, dict | N
     return built, mapping_document, no_bill_reason
 
 
-def audit(app_dir: Path, artifacts_dir: Path, model: dict | None = None) -> dict:
+def audit(app_dir: Path, artifacts_dir: Path, model: dict | None = None,
+          on_stage: progress.StageListener | None = None) -> dict:
     """Audit one tree and write its artifacts. Returns what the caller must report.
 
     `model` is `{"ask", "identifier", "settings", "digest"}` or None. None is an
     ordinary audit: no model call, no socket, and `findings.json` byte-identical
     to every previous run. One model drives the planner, the semantic probe and
     the advice, so an arm's artifacts name the model that actually produced them.
+
+    `on_stage` is handed in the same way, and for the same reason: this module
+    chooses neither a model nor an audience. With None it prints its progress
+    and nothing else changes.
     """
     started = time.monotonic()
     scan = extract_repo(str(app_dir))
     progress.report_skipped_files(scan.skipped)
+    progress.stage("surfaces", f"{len(scan.surfaces)} found", on_stage)
     documents = {
         SURFACES_NAME: surfaces_to_json(scan.surfaces, scan.skipped),
         AIBOM_NAME: aibom_to_json(build_aibom(scan.surfaces)),
     }
     built, mapping_document, no_bill_reason = _dependency_documents(app_dir, scan.surfaces)
     documents.update(built)
+    progress.stage("dependencies",
+                   no_bill_reason or f"{len(built)} documents", on_stage)
 
     advisories, advisory_pin = ((None, None) if mapping_document is None
                                 else advisory_inputs(app_dir))
+    progress.stage("advisories",
+                   "read" if advisory_pin is not None else "none read", on_stage)
     probe = (model["ask"], _probe_provenance(model)) if model else (None, None)
     findings_document, planner_document = build_findings(
         str(app_dir), scan.surfaces, mapping_document, advisories, advisory_pin, *probe)
+    progress.stage("checks", f"{findings_document['finding_count']} findings", on_stage)
     documents[FINDINGS_NAME] = findings_to_json(findings_document)
     documents[outputs.PLANNER_NAME] = planner_to_json(planner_document)
     documents.update(outputs.standard_format(findings_document))
@@ -88,9 +100,11 @@ def audit(app_dir: Path, artifacts_dir: Path, model: dict | None = None) -> dict
     documents[outputs.REMEDIATION_NAME] = remediation_run.build_remediation(
         findings_document, remediation_run.declared_language(scan.surfaces),
         tuple(local_module_names(str(app_dir))), model)
+    progress.stage("advice", "built" if model else "no model", on_stage)
 
     app = app_dir.resolve().name
     written = outputs.write_all(artifacts_dir / app, documents, app)
+    progress.stage("write", f"{written} artifacts", on_stage)
     print(f"wrote {written} artifacts to {artifacts_dir / app}")
     if no_bill_reason:
         print(f"  no bill of materials: {no_bill_reason}", file=sys.stderr)
@@ -101,23 +115,29 @@ def audit(app_dir: Path, artifacts_dir: Path, model: dict | None = None) -> dict
             "seconds": time.monotonic() - started}
 
 
-def local_model(wanted: bool = True) -> dict | None:
+def local_model(wanted: bool = True, name: str | None = None) -> dict | None:
     """The local model and what an artifact should record about it, or None.
 
     Lives here because both entry points need it: `main` for an ordinary audit
     and `compare_run` for the local arm. Two copies of this dict in two modules
     had to agree, and nothing checked that they did.
+
+    `name` is a model this machine has pulled, or None for the configured one.
+    Whichever answers is what the artifact records, so a run that names one is
+    as reproducible as a run that does not.
     """
     if not wanted:
         return None
+    identifier = name or model_client.MODEL
     try:
-        digest = model_client.model_digest()
+        digest = model_client.model_digest(identifier)
     except RuntimeError:
         # The digest is a provenance nicety; the audit is not. Asking for it
         # unguarded meant `--semantic-probe` with the server down wrote **no
         # artifacts at all**.
         digest = None
-    return {"ask": model_client.ask, "identifier": model_client.MODEL,
+    return {"ask": partial(model_client.ask, model=identifier),
+            "identifier": identifier,
             "settings": model_client.DECODE_SETTINGS, "digest": digest}
 
 

@@ -26,6 +26,12 @@ commit `8c3f9f6`.
 | — | Two parsing blindspots closed: a prompt held on `self`, and a chat-message dict written inline. Each made class-based and framework-free apps invisible to the prompt detector. |
 | — | The taint trace follows a chain of any length, sees the module's names from inside a function, and looks through literal containers. Two of those were silent misses, not gaps. |
 | — | `src/keys/`, `artifacts/names.py`, and `outputs.py` split by job: 177 lines doing four things became 57 doing one. |
+| — | A web UI, in `web/` and `frontend/`, outside `src/` and imported by nothing in it. One FastAPI process serves both the built page and the API, so there is no CORS at all; the built page is committed, so running it needs Python and no Node. It renders `findings.json` and `surfaces.json` unmodified — a view, not a twelfth artifact. |
+| — | The audit became a background job the page polls, so a run shows its stages advancing. `src/reporting/progress.py` gained `stage()` and a listener **handed in as an argument** — the CLI passes none and only gained stderr lines. |
+| — | The web layer gained durable state of its own: `runs/history.sqlite3`, stdlib `sqlite3`, versioned by `PRAGMA user_version`, refusing rather than migrating. A History page lists past runs and reopens any one; a finished run stays readable after `artifacts/` is cleaned. `src/` does not know it exists, so a CLI audit writes no row. |
+| — | Every file a run writes is downloadable, individually or as one archive, by allowlist only and always as an attachment. `artifacts/names.py` grew from the audit's eleven to all sixteen names, and `emit_vex.py` and `export_reports.py` now import theirs from it instead of keeping their own. |
+| — | Light and dark, plus the machine's own preference, with every colour routed through a token so no palette can reach a value the other cannot. |
+| — | A drafted grading key can be corrected in the browser, and a human check recorded on it. `source` is frozen and `verified` moves through a route of its own, so the pair can never travel together into a key that reads as human-authored. |
 
 ## Decisions that still bind
 
@@ -62,3 +68,16 @@ commit `8c3f9f6`.
 - **Key drafting ran on every URL audit** for one commit, then went behind
   `--draft-key`: a default run should be fast and produce the same artifacts
   whether a model was running or not.
+- **"A tool-drafted key may never be verified"** was overturned on 2026-09-16.
+  `harness.check_key` refused `tool_drafted` + `verified: true` outright, which
+  conflated who *chose* the entries with whether a human had *read* them. The
+  cost was concrete: a person who had checked every entry could say so only by
+  editing `source`, which erases `key_drafted_by_scored_system` -- dropping the
+  warning that matters to record a weaker one. The pairing is now legal, no
+  schema version bumped (the valid set only widened, and an old reader refuses
+  by name), and the scorer needed no change: verifying clears `key_unverified`
+  alone, so a verified drafted key still carries both drafting qualifications
+  and can never read as an independent measurement. Recorded through
+  `POST /api/keys/{app}/verify` in the web editor; `promote_key.py` will not
+  publish such a draft without `--accept-verification`, because that claim is
+  made through an endpoint with no authentication.

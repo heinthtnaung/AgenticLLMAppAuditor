@@ -1,0 +1,107 @@
+/* The audit form: its fields, the row that puts the repository and the
+   options side by side, and the multi-select menu those options live in.
+   The rest of the controls are in `controls.css`. */
+
+/* --- Form ---------------------------------------------------------------- */
+.field { display: block; margin-bottom: 16px; }
+.field--last { margin-bottom: 0; }
+.field__label {
+  display: block;
+  font-size: 0.76rem;
+  font-weight: 620;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 7px;
+}
+.field__input {
+  width: 100%;
+  padding: 11px 13px;
+  font: inherit;
+  font-family: var(--mono);
+  font-size: 0.88rem;
+  color: var(--ink);
+  background: var(--card-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+.field__input::placeholder { color: var(--ink-faint); }
+.field__input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.field__input:disabled { opacity: 0.6; }
+.field__note { margin: 7px 0 0; font-size: 0.8rem; color: var(--ink-faint); }
+
+/* --- Options as tags ----------------------------------------------------- */
+.options { margin-bottom: 18px; }
+.tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.pick {
+  padding: 9px 16px;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 550;
+  color: var(--ink-soft);
+  background: var(--card-raised);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.pick:hover:not(:disabled) { color: var(--ink); border-color: var(--accent-line); }
+.pick:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.pick:disabled { opacity: 0.55; cursor: not-allowed; }
+.pick--on {
+  color: var(--on-accent);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.options__fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-left: 2px solid var(--accent);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background: var(--card-raised);
+}
+
+/* --- Key editor ---------------------------------------------------------- */
+.entry { padding: 16px 0; border-top: 1px solid var(--line-soft); }
+.entry:first-of-type { border-top: none; }
+.entry__where { font-size: 0.8rem; color: var(--ink-faint); margin-bottom: 12px; }
+
+/* --- What a tag costs, on hover ------------------------------------------ */
+/* Shown on focus as well as hover, so it is reachable from the keyboard. The
+   same sentence is in `aria-label`, because a generated box is not announced. */
+.pick { position: relative; }
+.pick::after {
+  content: attr(data-tip);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  z-index: 10;
+  width: max-content;
+  max-width: 17rem;
+  padding: 9px 11px;
+  font-size: 0.78rem;
+  font-weight: 450;
+  line-height: 1.45;
+  text-align: left;
+  white-space: normal;
+  color: var(--ink);
+  background: var(--card-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  transform: translateX(-50%);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.12s ease;
+}
+.pick:hover::after,
+.pick:focus-visible::after { opacity: 1; visibility: visible; }
+
+@media (prefers-reduced-motion: reduce) { .pick::after { transition: none; } }

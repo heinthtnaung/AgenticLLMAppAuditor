@@ -19,6 +19,7 @@ from pathlib import Path
 from keys import key_drafting
 import promote_key
 import pytest
+from guarded_read import UNPARSEABLE
 from drafted_key_fixtures import (
     APP,
     DRAFTS_NAME,
@@ -34,6 +35,16 @@ HALF_SAVED = '{"app": "some-fetched-app", "findings": ['
 
 # The exit codes `main` returns, spelled once.
 FAILED, SUCCEEDED = 1, 0
+
+# The two facts the command prints after a promotion, matched by their openings
+# rather than transcribed whole. They are two lines because they are two
+# independent fields: `source` says who chose the entries, `verified` whether a
+# human read them, and since 2026-09-16 a draft may arrive with the second set.
+SOURCE_UNCHANGED = "source is unchanged"
+VERIFIED_UNCHANGED = "verified is unchanged"
+
+# Named in the same breath, because it is what let a checked draft past.
+ACCEPT_FLAG = "--accept-verification"
 
 
 @pytest.fixture
@@ -65,10 +76,16 @@ def test_a_missing_file_is_refused_by_name(tmp_path) -> None:
 
 
 def test_unparseable_json_is_refused_by_name(tmp_path) -> None:
-    """A half-saved key is a syntax problem, and the message says so rather than raising deep."""
+    """A half-saved key is a syntax problem, and the message says so rather than raising deep.
+
+    The sentence is `guarded_read.UNPARSEABLE`, which four readers across three
+    test trees now assert. It changed when the same clause started catching
+    `OSError` -- a file with no read permission *is* readable json -- and a
+    literal here would have been the fourth copy to re-anchor by hand.
+    """
     broken = tmp_path / f"{APP}{GROUND_TRUTH_SUFFIX}"
     broken.write_text(HALF_SAVED, encoding="utf-8")
-    with pytest.raises(ValueError, match="is not readable json"):
+    with pytest.raises(ValueError, match=UNPARSEABLE):
         promote_key._read(broken)
 
 
@@ -127,11 +144,39 @@ def test_a_promotion_from_the_default_drafts_folder_succeeds(keys_dir, monkeypat
     assert key_path(APP, GROUND_TRUTH_SUFFIX, keys_dir).is_file()
 
 
+def promotion_output(monkeypatch, capsys) -> str:
+    """Promote the default draft and return what the command printed."""
+    corrected_draft(key_drafting.DRAFTED_KEYS_DIR)
+    monkeypatch.setattr("sys.argv", ["promote_key.py", APP])
+    assert promote_key.main() == SUCCEEDED
+    return capsys.readouterr().out
+
+
 def test_the_command_says_the_drafted_source_was_kept(keys_dir, monkeypatch,
                                                       capsys) -> None:
     """Whoever promotes a key is told the qualification survived, since nothing else says so."""
-    corrected_draft(key_drafting.DRAFTED_KEYS_DIR)
-    monkeypatch.setattr("sys.argv", ["promote_key.py", APP])
-    promote_key.main()
-    printed = capsys.readouterr().out
-    assert "source and verified are unchanged" in printed
+    printed = promotion_output(monkeypatch, capsys)
+    assert SOURCE_UNCHANGED in printed
+    assert "drafted" in printed
+
+
+def test_the_command_says_verification_carries_through_rather_than_being_ticked(
+        keys_dir, monkeypatch, capsys) -> None:
+    """The second fact, asserted as its own: one sentence for both used to cover a gap.
+
+    `source` and `verified` are independent fields now, and the command prints a
+    line for each. The old assertion matched a single phrase naming both, which
+    stayed true through a rewording that stopped saying anything about
+    `verified` at all -- a green test pinning one fact and claiming two.
+    """
+    printed = promotion_output(monkeypatch, capsys)
+    assert VERIFIED_UNCHANGED in printed
+    assert ACCEPT_FLAG in printed
+
+
+def test_the_two_facts_are_printed_on_lines_of_their_own(keys_dir, monkeypatch,
+                                                         capsys) -> None:
+    """Why there are two: a reader who skims takes the first sentence for both fields."""
+    lines = [line for line in promotion_output(monkeypatch, capsys).splitlines()
+             if SOURCE_UNCHANGED in line or VERIFIED_UNCHANGED in line]
+    assert len(lines) == 2

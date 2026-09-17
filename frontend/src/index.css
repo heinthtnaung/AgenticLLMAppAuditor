@@ -1,0 +1,161 @@
+/* The page's frame: the reset, the top bar, the content column, the wave
+   layer behind them and each page's heading. The surfaces that sit in it are
+   in `surfaces.css`; the palette is in `tokens.css`. */
+* { box-sizing: border-box; }
+
+/* No background here: `:root` carries the ground. A fill on `body` would
+   paint over the wave layer below, which is what a negative z-index cannot
+   escape -- so the waves sit at 0 and everything else at 1 instead. */
+body { margin: 0; min-height: 100vh; }
+
+code, .mono { font-family: var(--mono); font-size: 0.86em; }
+
+.icon { width: 1.05em; height: 1.05em; flex: none; }
+.icon--unknown { display: inline-block; border: 1px dotted var(--crit); border-radius: 2px; }
+
+/* --- Shell --------------------------------------------------------------- */
+/* `:root` carries the one opaque ground. Every surface above it -- the bar, the
+   cards, the menu -- is a translucent veil blurred over that ground and the
+   wave layer, so the page reads as one depth rather than stacked panels. */
+.shell { display: flex; flex-direction: column; min-height: 100vh; min-width: 0; }
+
+/* --- Waves --------------------------------------------------------------- */
+/* Three soft ellipses drifting behind everything. Fixed rather than scrolled, so
+   the page does not appear to slide over a pattern, and `pointer-events: none`
+   keeps the layer from swallowing a click. Tinted from tokens, so it follows the
+   theme instead of being a colour of its own.
+   `z-index: 0` with the bar and the content at 1 -- **not** `-1`: a descendant
+   at a negative index paints behind its ancestor's background, so with a fill
+   on `body` the whole layer was invisible. */
+.waves {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.waves span {
+  position: absolute;
+  display: block;
+  border-radius: 45%;
+  filter: blur(60px);
+  will-change: transform;
+}
+.waves span:nth-child(1) {
+  width: 70vw; height: 55vh; top: -14vh; left: -12vw;
+  background: var(--wave-a);
+  animation: drift-a 44s ease-in-out infinite alternate;
+}
+.waves span:nth-child(2) {
+  width: 60vw; height: 50vh; bottom: -18vh; right: -10vw;
+  background: var(--wave-b);
+  animation: drift-b 58s ease-in-out infinite alternate;
+}
+.waves span:nth-child(3) {
+  width: 46vw; height: 40vh; top: 32vh; left: 38vw;
+  background: var(--wave-c);
+  animation: drift-c 72s ease-in-out infinite alternate;
+}
+
+/* Slow and small: the movement should be noticeable only if you look for it. */
+@keyframes drift-a {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to   { transform: translate3d(6vw, 5vh, 0) scale(1.12); }
+}
+@keyframes drift-b {
+  from { transform: translate3d(0, 0, 0) scale(1.08); }
+  to   { transform: translate3d(-7vw, -4vh, 0) scale(1); }
+}
+@keyframes drift-c {
+  from { transform: translate3d(0, 0, 0) scale(1); opacity: 0.75; }
+  to   { transform: translate3d(-5vw, 7vh, 0) scale(1.15); opacity: 1; }
+}
+
+/* A background that cannot be stopped is a problem for some readers, and this
+   one carries no information -- so the tint stays and the movement goes.
+   `:nth-child(n)` matches every span and is *deliberately* there: the three
+   rules above are `.waves span:nth-child(1..3)`, specificity (0,2,1), and a
+   bare `.waves span` is (0,1,1) -- so the plainer selector lost the cascade and
+   the waves went on drifting for a reader who had asked them not to, under a
+   comment saying they stopped. A media query adds no specificity of its own. */
+@media (prefers-reduced-motion: reduce) {
+  .waves span:nth-child(n) { animation: none; }
+}
+
+/* Full width, inset just enough for the corners to read, and no bottom rule:
+   the bar floats over the wave layer rather than dividing the page. */
+/* Sticky, and above the wave layer and the sticky report rails: the bar is
+   the one thing that must stay reachable while reading down a long report. The
+   veil below it is translucent, so the blur is what keeps it legible over
+   whatever scrolls under it. */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  padding: 12px 12px 0;
+}
+.topbar__inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  padding: 12px 22px;
+  border-radius: var(--radius);
+  background: var(--veil);
+  backdrop-filter: blur(10px);
+}
+/* Three columns rather than `space-between`, so the pages sit in the true
+   centre of the bar instead of the middle of whatever is left over. */
+.topbar__inner > :last-child { justify-self: end; }
+
+.brand { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.brand__mark { width: 1.35em; height: 1.35em; color: var(--accent); }
+.brand__name {
+  font-weight: 640;
+  font-size: 0.95rem;
+  letter-spacing: -0.01em;
+  /* Truncate rather than widen the bar: a long name should lose its tail,
+     not push the page into a horizontal scroll. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.content {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 26px 28px 64px;
+}
+
+@media (max-width: 720px) {
+  .topbar { padding: 8px 8px 0; }
+  /* One row still, but the brand may drop its wordmark and the gaps close. */
+  .topbar__inner { gap: 12px 16px; padding: 12px 16px; }
+  .brand__name { display: none; }
+  .content { padding: 18px 16px 48px; }
+}
+
+/* --- Page head ----------------------------------------------------------- */
+.head { margin-bottom: 22px; }
+.head__title { margin: 0; font-size: 1.35rem; font-weight: 640; letter-spacing: -0.015em; }
+.head__subtitle {
+  margin: 6px 0 0;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  max-width: 74ch;
+}
+
+.head__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.head__actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }

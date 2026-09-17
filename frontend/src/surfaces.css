@@ -1,0 +1,150 @@
+/* The surfaces a page is built from: cards, the headline stat cards, the two
+   and three column arrangements, and the small shared pieces -- notices, the
+   caveat block, the status dots. Frame in `index.css`. */
+
+/* --- Cards --------------------------------------------------------------- */
+.card {
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 20px 22px;
+  margin-bottom: var(--gap);
+  background: var(--panel);
+  backdrop-filter: blur(14px);
+  /* Depth, in two cheap parts rather than a heavy shadow: a hairline of light
+     along the top edge, and a soft drop below. Flat bordered boxes are most of
+     what makes a page read as a framework default. */
+  box-shadow: inset 0 1px 0 var(--veil), 0 1px 2px rgba(0, 0, 0, 0.18),
+              0 8px 24px -16px rgba(0, 0, 0, 0.5);
+}
+.card__title { margin: 0 0 4px; font-size: 1rem; font-weight: 620; }
+.card__hint { margin: 0 0 16px; color: var(--ink-faint); font-size: 0.85rem; }
+/* --- Stat cards ---------------------------------------------------------- */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: var(--gap);
+}
+.stat {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  background: var(--panel);
+  backdrop-filter: blur(14px);
+}
+/* The reference design's accent stripe. The tone is a fact about the *category*
+   -- which kind of number this is -- and never about the value: `Findings`
+   keeps its stripe at zero. A tone derived from the value would be this tool
+   rating its own findings, which it does not do. */
+.stat::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2px;
+  background: var(--stat-tone, var(--accent));
+}
+.stat--high { --stat-tone: var(--high); }
+.stat--low  { --stat-tone: var(--low); }
+
+.stat__row { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.stat__label { font-size: 0.8rem; color: var(--ink-soft); }
+.stat__chip {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border-radius: 8px;
+  color: var(--stat-tone, var(--accent));
+  border: 1px solid var(--line);
+}
+.stat__value {
+  margin-top: 8px;
+  font-size: 1.7rem;
+  font-weight: 660;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+/* --- Shared small pieces ------------------------------------------------- */
+.empty {
+  padding: 22px;
+  text-align: center;
+  color: var(--ink-faint);
+  font-size: 0.88rem;
+}
+.caveat {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+.notice {
+  padding: 13px 15px;
+  border-radius: var(--radius-sm);
+  font-size: 0.88rem;
+  margin-bottom: var(--gap);
+  border: 1px solid;
+}
+.notice--error { background: var(--crit-soft); border-color: var(--crit-line); color: var(--crit); }
+.notice--wait  { background: var(--accent-soft); border-color: var(--accent-line); color: var(--accent); }
+.notice__detail { display: block; margin-top: 7px; font-size: 0.85rem; color: var(--ink-soft); }
+
+.dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; }
+.dot--crit { background: var(--crit); }
+.dot--mid  { background: var(--mid); }
+.dot--low  { background: var(--low); }
+.dot--none { background: var(--none); }
+
+/* --- The report's three columns ------------------------------------------ */
+/* The numbers and the files sit either side of the report and follow the
+   scroll: they are what a reader keeps referring back to while reading down the
+   findings, and scrolling them away costs a trip back up the page. */
+/* The report uses the window. A cap left dead gutters either side on a wide
+   screen while the middle column between two rails did the squeezing. */
+.content--wide { max-width: none; }
+
+.report {
+  display: grid;
+  grid-template-columns: 210px minmax(0, 1fr) 300px;
+  gap: var(--gap);
+  /* `start`, or a sticky child has nothing to stick within: a stretched grid
+     item is already as tall as the row. */
+  align-items: start;
+}
+.report__main { min-width: 0; }
+.report__rail {
+  position: sticky;
+  z-index: 1;
+  /* Below the bar's own height, so a rail scrolls to rest under it. */
+  top: calc(var(--gap) * 4);
+  min-width: 0;
+  /* Its own scroll when the rail is taller than the window -- sixteen download
+     tiles are, on a short screen -- so sticky cannot clip the end of it. */
+  max-height: calc(100vh - var(--gap) * 2);
+  overflow-y: auto;
+}
+/* A column with a gap rather than zeroed margins: the rail holds more than
+   one card now, and they were touching. */
+.report__rail { display: flex; flex-direction: column; gap: var(--gap); }
+.report__rail .card { margin-bottom: 0; }
+.stats--rail { display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 0; }
+
+/* Below this the rails stop being rails: the files go under the report and the
+   numbers go back to a row across the top, which is what they were. */
+@media (max-width: 1180px) {
+  .report { grid-template-columns: minmax(0, 1fr); }
+  .report__rail {
+    position: static;
+    max-height: none;
+    overflow: visible;
+    order: -1;
+  }
+  .report__rail--files { order: 1; }
+  .stats--rail { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+}

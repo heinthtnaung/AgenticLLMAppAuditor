@@ -149,12 +149,22 @@ def test_the_sbom_records_the_stubbed_generator(monkeypatch, tmp_path) -> None:
     assert [c["name"] for c in document["components"]] == ["langchain"]
 
 
-def test_run_returns_zero_when_called_directly(monkeypatch, tmp_path) -> None:
-    """`run` is the unit that does the work; it reports success with 0, not None."""
+def test_run_returns_what_the_audit_produced(monkeypatch, tmp_path) -> None:
+    """`run` is the unit that does the work, and it answers with the work, not a code.
+
+    It returned 0 once, which is what a command line needs and nothing else
+    does. A caller that is not a command line -- the web wrapper is the first --
+    has to know where the artifacts went, and re-deriving that means copying
+    `audit_run`'s own naming or resolving the repository a second time. `main`
+    turns this into the exit code.
+    """
     stub_syft(monkeypatch, STUB_GENERATOR_OUTPUT)
     repo = write_app(tmp_path)
     args = build_parser().parse_args([str(repo), "--artifacts-dir", str(tmp_path / "out")])
-    assert run(args) == 0
+    produced = run(args)
+    assert produced["app"] == repo.name
+    assert produced["artifacts"] == tmp_path / "out" / repo.name
+    assert produced["seconds"] >= 0
 
 
 def test_no_subprocess_is_started(monkeypatch, tmp_path) -> None:

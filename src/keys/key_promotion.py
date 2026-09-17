@@ -13,6 +13,16 @@ about. In particular `source` and `verified` are left exactly as they are:
 `key_drafted_by_scored_system` is meant to survive promotion, because a human
 correcting entries does not undo the tool having chosen which lines were
 candidates. Clearing it is a separate, deliberate edit.
+
+**A draft may now arrive already verified**, which it could not before
+2026-09-16: `tool_drafted` with `verified: true` is a legal document, and the web
+editor's verify route is how a human records the check. Promotion still moves
+neither field -- but that claim can be made through an endpoint with no
+authentication, and promotion is the moment it starts bounding a published
+figure, so `promote_key.py` refuses a verified draft unless a local human passes
+`--accept-verification`. Verifying clears `key_unverified` alone; both drafting
+qualifications go on firing, so a verified draft still cannot read as an
+independent measurement.
 """
 
 from itertools import combinations
@@ -101,18 +111,31 @@ def _malformed_entries(key: dict) -> list[str]:
 
 
 def _miscounted(key: dict) -> list[str]:
-    """The count fields a human deleting an entry leaves behind."""
-    return [f"{count} says {key.get(count)} but {items} holds {len(key.get(items, []))}"
+    """The count fields a human deleting an entry leaves behind.
+
+    `len()` only where there is a list: `expected_surfaces: 5` is a hand edit
+    away and `len(5)` is a `TypeError`, not a refusal. A non-list counts as
+    zero, which is what `check_key` will refuse by name a moment later.
+    """
+    return [f"{count} says {key.get(count)} but {items} holds {_length(key.get(items))}"
             for count, items in (("finding_count", "findings"),
                                  ("expected_surface_count", "expected_surfaces"))
-            if key.get(count) != len(key.get(items, []))]
+            if key.get(count) != _length(key.get(items))]
+
+
+def _length(items: object) -> int:
+    """How many entries a field holds, counting anything that is not a list as none."""
+    return len(items) if isinstance(items, list) else 0
 
 
 def _pin_refusals(pin: dict) -> list[str]:
     """What the pin must carry beyond the fields a fetched manifest already has."""
     said = []
+    # `isinstance` before `len`: a pin is hand-written, and `upstream_commit: 12345`
+    # is `len(int)` -- a `TypeError` where this function's whole job is to say
+    # what is wrong with the pin.
     commit = pin.get("upstream_commit", "")
-    if len(commit) != COMMIT_LENGTH or not commit.isalnum():
+    if not isinstance(commit, str) or len(commit) != COMMIT_LENGTH or not commit.isalnum():
         said.append(f"the manifest's upstream_commit is not {COMMIT_LENGTH} alphanumeric "
                     "characters; an unpinned key makes EVERY graded app unscoreable, "
                     "because discovery refuses the whole folder")
@@ -120,7 +143,8 @@ def _pin_refusals(pin: dict) -> list[str]:
     if missing:
         said.append(f"the manifest names no {' or '.join(missing)}; both are human "
                     "judgements about the app and a draft cannot supply them")
-    if not pin.get("upstream_url", "").startswith(REQUIRED_URL_SCHEME):
+    url = pin.get("upstream_url", "")
+    if not isinstance(url, str) or not url.startswith(REQUIRED_URL_SCHEME):
         said.append(f"the manifest's upstream_url is not an {REQUIRED_URL_SCHEME} link, "
                     "so the VEX product identity built from it would be malformed")
     return said
@@ -129,9 +153,11 @@ def _pin_refusals(pin: dict) -> list[str]:
 def _scorer_refusal(key: dict) -> list[str]:
     """What a scoring run would refuse this key for, asked of the scorer itself.
 
-    Reuse rather than reimplementation: schema version, the `source` vocabulary,
-    the tool-drafted/verified pairing and the per-entry fields are all already
-    enforced at score time, and a second copy here would drift from them.
+    Reuse rather than reimplementation: schema version, the `source` vocabulary
+    and the per-entry fields are all already enforced at score time, and a second
+    copy here would drift from them. The tool-drafted/verified pairing used to be
+    on that list and is not enforced anywhere now -- `verified` says whether a
+    human read the entries, which is orthogonal to who chose them.
     """
     try:
         check_key(key, Path("the promoted key"))
@@ -143,13 +169,25 @@ def _scorer_refusal(key: dict) -> list[str]:
 def refusals(key: dict, pin: dict) -> list[str]:
     """Every reason this draft is not yet a grading key, in the order to fix them.
 
+    **The scorer's own check runs first**, because it is the only one here that
+    walks *into* the document. Everything below assumes `findings` is a list of
+    objects and that the fields it reads hold the types they should; a key that
+    is an object with a member of the wrong shape -- `findings: "xy"`, a list of
+    numbers, `null` -- got past the root guard in `key_draft_store` and crashed
+    in `_malformed_entries` before `check_key` could name the fault it already
+    knows. A guard that validates the root and nothing under it is a guard that
+    moves the traceback one frame.
+
     Malformed entries are reported alone: every check after them subscripts the
     fields they are missing, so running those too would raise rather than report.
     """
+    misread = _scorer_refusal(key)
+    if misread:
+        return misread
     malformed = _malformed_entries(key)
     if malformed:
         return [f"entries are missing required fields: {'; '.join(malformed)}"]
-    said = _scorer_refusal(key) + _miscounted(key) + _pin_refusals(pin)
+    said = _miscounted(key) + _pin_refusals(pin)
     unanchored = _entries_without_anchors(key)
     if unanchored:
         said.append(f"{len(unanchored)} entries carry no {ANCHOR_FIELD} ({', '.join(unanchored[:4])}"
