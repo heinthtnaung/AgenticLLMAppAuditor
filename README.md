@@ -423,9 +423,14 @@ does from the command line.
   know the store exists.
 - **Hands back every file.** All sixteen names a run can write are downloadable
   individually or as one archive. Only names `src/artifacts/names.py` owns are
-  served, joined to the run's own directory, and **always as an attachment** --
-  `report.html` is rendered from the audited repository's strings, so serving it
-  inline would run that content as script in this server's origin.
+  served, joined to the run's own directory, and **always as an attachment**.
+  That last rule is defence in depth and the honest reason is worth stating:
+  `report.html` is built from the audited repository's strings, but
+  `markdown_html.py` escapes every tag and `tests/test_markdown_html_escaping.py`
+  pins that with a real script tag and an `onerror` image -- so this is not
+  load-bearing against the reports as they are. It is load-bearing against that
+  escaping being relaxed one module away, which is the kind of change nobody
+  would think to re-check a download route for.
 - **Renders the artifacts unmodified.** `findings.json` and `surfaces.json` are
   contracts with their own `schema_version`, and reshaping them for a browser
   would invent an artifact nobody documents, so the page reads them as they are
@@ -435,8 +440,45 @@ does from the command line.
   The two PDFs are the exception and are refused by name before a byte is read:
   every reply from the download route is an attachment, so there is nothing a
   frame could display.
+- **Covers the page while a run goes, then moves out of the way.** Clicking
+  Audit raises a fixed panel carrying the stage list, and the moment the run
+  finishes the page navigates to that run's own report. Only a *finished* run
+  moves it: a failed one is reported beside the URL that produced it, because
+  navigating off a failure before it is read is how a reason gets lost. The
+  panel cannot be dismissed -- an audit cannot be cancelled, so closing it
+  would hide a run that carries on -- and offers one exit, a link to the run's
+  page, which renders a running run and keeps polling.
+- **Opens any file it wrote.** The download list is two controls per row: the
+  name opens the file on the page, the arrow saves it. Json is pretty-printed,
+  markdown and text are shown as written, the exported HTML goes in a frame
+  granted nothing. The two PDFs are refused by suffix *before* a byte is
+  fetched, because every reply from the download route is an attachment and
+  there is nothing a frame could display.
+- **Corrects a drafted grading key, and records a human check on it.** Drafts
+  under `grading_keys/drafts/` only -- the published keys are what scoring runs
+  against, and an unauthenticated endpoint that could rewrite those would let
+  anyone who reaches the port rewrite this project's own measurements. A save
+  may not move the key's standing or type an anchor; recording a check is a
+  route of its own, so `source` stays frozen and the pair can never be flipped
+  together. Verifying clears one qualification, `key_unverified`, and no other.
+- **Shows the line a surface names**, read from the tree as it is now, with the
+  reply saying whether that tree could be checked against its pin rather than
+  implying it was.
+- **Says whether the local model server is up**, and which of the models it has
+  pulled an audit would use. Unreachable is an answer: the endpoint replies 200
+  either way, and `models: null` (could not ask) is kept distinct from
+  `models: []` (asked, holds nothing).
+- **Requires an auditor name**, kept with the run and shown on its report, and
+  deliberately in **no artifact** -- so two people auditing one commit still
+  produce byte-identical files.
 - **Light or dark**, defaulting to whatever the machine asks for until you
   choose, and remembered per browser once you do.
+
+`POST`/`GET /api/runs/{id}/uploads` attach a file to a run as evidence and are
+live, tested, and reachable by nothing on the page: the panel that used to
+exercise them was removed on 2026-09-17. They change no finding -- nothing under
+`src/` reads them -- but that leaves a write endpoint with no UI behind it, which
+`docs/TODO.md` carries as an open decision with both options named.
 
 Two facts the page states rather than hides. A **missing** artifact is not an
 empty one, so a count with no document behind it shows a dash and never `0`. And
