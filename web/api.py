@@ -45,8 +45,13 @@ for _importable in (Path(__file__).resolve().parent,
 
 import downloads                                              # noqa: E402
 import history_store                                          # noqa: E402
+import key_routes                                             # noqa: E402
+import key_verify_route                                       # noqa: E402
+import model_routes                                           # noqa: E402
 import page                                                   # noqa: E402
 import run_routes                                             # noqa: E402
+import source_routes                                          # noqa: E402
+import uploads                                                # noqa: E402
 from run_jobs import Registry                                 # noqa: E402
 from run_record import REPLY_SCHEMA_VERSION                    # noqa: E402
 
@@ -62,6 +67,14 @@ REGISTRY = Registry(STORE)
 
 run_routes.register(app, REGISTRY)
 downloads.register(app, STORE)
+model_routes.register(app)
+key_routes.register(app)
+# Mounted here rather than from inside `key_routes`, even though it is the same
+# feature: this is the one route that writes `verified` into a grading key, and
+# a reader auditing what this server exposes reads this list.
+key_verify_route.register(app)
+uploads.register(app, STORE)
+source_routes.register(app, STORE)
 
 # Last, so a route added under `/api/` is not shadowed by the catch-all.
 # Measured, because the obvious claim is wrong: reversing this does *not* break

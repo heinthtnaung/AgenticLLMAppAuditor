@@ -41,6 +41,8 @@ class AuditOptions(BaseModel):
     """The JSON body the page posts, mirroring the command line's options."""
 
     url: str
+    auditor: str = ""
+    model: str = ""
     semantic_probe: bool = False
     draft_key: bool = False
     compare_models: bool = False
@@ -53,12 +55,15 @@ def register(app: FastAPI, registry: Registry) -> None:
     @app.post("/api/audit", status_code=ACCEPTED)
     def audit(options: AuditOptions) -> dict:
         """Accept one audit and answer with the run that will do it."""
-        asked = AuditRequest(**options.model_dump())
-        refused = asked.refusals()
+        named = options.model_dump()
+        auditor = named.pop("auditor")
+        asked = AuditRequest(**named)
+        # Two rule sets, one refusal list: what may be audited, and who says so.
+        refused = asked.refusals() + run_record.auditor_refusals(auditor)
         if refused:
             raise HTTPException(status_code=REFUSED, detail="; ".join(refused))
         try:
-            return _body(registry.store, registry.start(asked))
+            return _body(registry.store, registry.start(asked, auditor))
         except Busy as busy:
             raise HTTPException(status_code=ALREADY_RUNNING, detail=str(busy)) from busy
 

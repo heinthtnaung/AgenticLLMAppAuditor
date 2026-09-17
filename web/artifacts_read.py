@@ -36,7 +36,14 @@ def read_documents(app_artifacts: Path) -> dict:
 
 
 def _read(path: Path) -> dict | None:
-    """One artifact, or None when the audit did not write it."""
+    """One artifact, or None when the audit did not write it.
+
+    The bare `json.loads` is deliberate, unlike the guarded reads in
+    `key_draft_store`: an artifact is written by this tool moments earlier and
+    is not hand-editable, and the one caller is `run_jobs._finish`, under the
+    broad catch that turns anything unexpected into a *failed run* naming the
+    exception. A guard here would report the same fact twice.
+    """
     if not path.is_file():
         return None
     return json.loads(path.read_text(encoding="utf-8"))

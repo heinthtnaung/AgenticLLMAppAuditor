@@ -27,7 +27,7 @@ from run_record import (
 # meta` raises on exactly the files whose schema you are trying to detect.
 # The pragma answers 0 for any SQLite file ever written, which makes "0 means
 # not ours, or not initialised" a total answer instead of an exception.
-STORE_SCHEMA_VERSION = 1
+STORE_SCHEMA_VERSION = 2
 
 # Anchored to the repository, the way `page.py` anchors the built page -- not
 # relative to the working directory. `api.py` opens the store when it is
@@ -54,6 +54,7 @@ _SCHEMA = f"""
 CREATE TABLE runs (
     run_id        TEXT PRIMARY KEY,
     repo_url      TEXT NOT NULL,
+    auditor       TEXT NOT NULL,
     options       TEXT NOT NULL,
     started_at    TEXT NOT NULL,
     status        TEXT NOT NULL CHECK (status IN ({','.join(f"'{s}'" for s in RUN_STATUSES)})),
@@ -65,6 +66,7 @@ CREATE TABLE runs (
     finding_count INTEGER,
     surface_count INTEGER,
     error         TEXT,
+    uploads       TEXT NOT NULL,
     envelope      TEXT,
     CHECK ((status = 'finished') = (envelope IS NOT NULL)),
     CHECK ((status = 'failed') = (error IS NOT NULL)),
@@ -162,7 +164,8 @@ def open_store(directory: Path | None = None, create: bool = False) -> HistorySt
         raise StoreRefused(
             f"{path} is a run history at version {found}, and this code reads "
             f"version {STORE_SCHEMA_VERSION}. It is never migrated and never "
-            "deleted: move that file aside to start a new one.")
+            "deleted -- that file is untouched and still readable with any "
+            "sqlite3 client. Move it aside to start a new one.")
     store = HistoryStore(path)
     _reconcile(store)
     return store

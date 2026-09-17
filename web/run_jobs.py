@@ -23,6 +23,7 @@ from history_store import HistoryStore
 import main
 import run_record
 from audit_request import AuditRequest
+from evaluation.document import AGENTIC_AUDITOR, CLOUD_AUDITOR
 from run_record import FAILED, FINISHED, RunRecord
 
 # What a user can fix, told as a failed run rather than a crash. Identical to
@@ -49,14 +50,18 @@ class Registry:
         with self._guard:
             return self._active
 
-    def start(self, asked: AuditRequest) -> RunRecord:
+    def start(self, asked: AuditRequest, auditor: str) -> RunRecord:
         """Accept one audit and begin it. Raises `Busy` when one is already going.
 
         Two concurrent runs over one URL race between the "already fetched?"
         check and the clone, and two over one app overwrite `artifacts/<app>/`
         mid-write. Nothing in the CLI ever had to be reentrant.
         """
-        record = run_record.started(asked.url.strip(), asdict(asked))
+        # The name is a record field and not an option, so it is handed in
+        # separately: options are what was audited and how, and replaying them
+        # must not replay who ran it.
+        record = run_record.started(asked.url.strip(), auditor.strip(),
+                                    asdict(asked))
         with self._guard:
             if self._active is not None:
                 raise Busy(
@@ -93,11 +98,19 @@ class Registry:
             self._finish(accepted, stages, started, produced)
         except REFUSALS as refusal:
             self._fail(accepted, stages, started, str(refusal))
-        except Exception as unexpected:            # noqa: BLE001 - see below
+        except BaseException as unexpected:        # noqa: BLE001 - see below
             # Deliberately broad, and the only broad catch here. A worker thread
-            # that dies with an exception leaves the run saying `running` for
-            # ever and the guard held; a failed run naming the exception is the
-            # honest outcome. The traceback still reaches the server's stderr.
+            # that dies leaves the run saying `running` for ever -- the `finally`
+            # frees the slot, but nothing rewrites the row until the store is
+            # next opened. A failed run naming the exception is the honest
+            # outcome. The traceback still reaches the server's stderr.
+            #
+            # `BaseException`, not `Exception`, and that is not belt-and-braces:
+            # `argparse` calls `sys.exit` on a value it cannot parse, and
+            # `SystemExit` is not an `Exception`. A request whose model name
+            # began with `-` wedged a row at `running` this way. The request is
+            # refused before it gets here now; this is what stops the *next*
+            # such escape being a row nobody can clear.
             self._fail(accepted, stages, started, f"{type(unexpected).__name__}: {unexpected}")
         finally:
             with self._guard:
@@ -109,11 +122,8 @@ class Registry:
         documents = read_documents(produced["artifacts"])
         envelope = {
             "schema_version": run_record.REPLY_SCHEMA_VERSION,
-            "app": produced["app"],
-            "artifacts_dir": str(produced["artifacts"]),
-            "seconds": produced["seconds"],
-            "advisories_read": produced["advisories_read"],
-            **documents,
+            **_arm(produced, documents),
+            "comparison": _comparison(produced["comparison"]),
         }
         self.store.save(_with(
             accepted, status=FINISHED, finished_at=run_record.now(),
@@ -132,6 +142,33 @@ class Registry:
         self.store.save(_with(
             accepted, status=FAILED, finished_at=run_record.now(),
             seconds=time.monotonic() - started, stages=stages, error=reason))
+
+
+def _arm(result: dict, documents: dict) -> dict:
+    """One audited arm as the envelope's shape: four scalars and two documents."""
+    return {
+        "app": result["app"],
+        "artifacts_dir": str(result["artifacts"]),
+        "seconds": result["seconds"],
+        "advisories_read": result["advisories_read"],
+        **documents,
+    }
+
+
+def _comparison(cloud: dict | None) -> dict | None:
+    """The hosted arm, or None when only one arm ran.
+
+    `system` where the envelope carries `schema_version`: one constant repeated
+    inside one reply is a disagreement waiting to be handled. **Both** names
+    come from `evaluation.document` -- the arm's own and the one it is compared
+    with -- so the page never has to spell either, which is the defect this
+    project already has on record about the JSX rebuilding an id `src/` owns.
+    None means one arm ran, never that a second arm found nothing.
+    """
+    if cloud is None:
+        return None
+    return {"system": CLOUD_AUDITOR, "compared_with": AGENTIC_AUDITOR,
+            **_arm(cloud, read_documents(cloud["artifacts"]))}
 
 
 def _with(record: RunRecord, **changed) -> RunRecord:

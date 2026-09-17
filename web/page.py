@@ -65,7 +65,8 @@ def page(path: str) -> Response:
         raise HTTPException(
             status_code=NO_SUCH_ENDPOINT,
             detail="no such API endpoint; the API is POST /api/audit, "
-                   "GET /api/runs, GET /api/stages and GET /api/artifacts")
+                   "GET /api/runs, GET /api/stages, GET /api/model, "
+                   "GET /api/keys and GET /api/artifacts")
     if not INDEX.is_file():
         return HTMLResponse(_NO_BUILD, status_code=NO_BUILD_YET)
     asked_for = DIST / path
