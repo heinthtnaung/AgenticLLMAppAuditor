@@ -28,7 +28,7 @@ from run_jobs import Busy, Registry
 from run_record import FINISHED, RunRecord
 
 from .audit_stub import (
-    URL, UNEXPECTED_ERROR, hold_the_audit, open_a_store, stub_the_audit,
+    AUDITOR,    URL, UNEXPECTED_ERROR, hold_the_audit, open_a_store, stub_the_audit,
     wait_for_the_worker)
 
 # The sentence a refusal carries. `ValueError` is one of `main.EXPECTED_FAILURES`,
@@ -61,13 +61,13 @@ class StoreThatFailsOnce:
 
 
 def a_request() -> AuditRequest:
-    """One audit the page asked for."""
+    """One audit the page asked for. The name travels beside it, not inside it."""
     return AuditRequest(url=URL)
 
 
 def run_to_completion(registry: Registry) -> tuple[RunRecord, dict | None]:
     """Start one audit, wait for the worker, and read back what it stored."""
-    accepted = registry.start(a_request())
+    accepted = registry.start(a_request(), AUDITOR)
     wait_for_the_worker(registry)
     stored = registry.store.get(accepted.run_id)
     assert stored is not None, "the registry accepted a run it did not store"
@@ -78,10 +78,10 @@ def test_a_second_audit_while_one_is_in_flight_is_refused(monkeypatch, tmp_path)
     """One at a time: two would race over the same fetch and the same artifacts directory."""
     let_it_finish = hold_the_audit(monkeypatch, tmp_path)
     registry = Registry(open_a_store(tmp_path))
-    registry.start(a_request())
+    registry.start(a_request(), AUDITOR)
     try:
         with pytest.raises(Busy, match="already running"):
-            registry.start(a_request())
+            registry.start(a_request(), AUDITOR)
     finally:
         let_it_finish.set()
     wait_for_the_worker(registry)
@@ -121,7 +121,7 @@ def test_a_store_that_refuses_the_first_write_does_not_wedge_the_slot(monkeypatc
     stub_the_audit(monkeypatch, tmp_path)
     registry = Registry(StoreThatFailsOnce(open_a_store(tmp_path)))
     with pytest.raises(SaveRefused):
-        registry.start(a_request())
+        registry.start(a_request(), AUDITOR)
     assert registry.active_run_id() is None
 
 
@@ -131,6 +131,6 @@ def test_the_request_after_an_unwritable_store_is_not_refused_as_busy(monkeypatc
     stub_the_audit(monkeypatch, tmp_path)
     registry = Registry(StoreThatFailsOnce(open_a_store(tmp_path)))
     with pytest.raises(SaveRefused):
-        registry.start(a_request())
+        registry.start(a_request(), AUDITOR)
     record, _ = run_to_completion(registry)
     assert record.status == FINISHED

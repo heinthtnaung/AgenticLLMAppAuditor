@@ -24,6 +24,9 @@ from history_store import HISTORY_LIST_LIMIT, HistoryStore, open_store
 from run_record import RunRecord
 
 URL = "https://example.invalid/owner/demo-app"
+# Who asked for the run. Required since the wire version went to 3, so every
+# record built here carries one.
+AUDITOR = "Quokka Reviewer"
 OPTIONS = {"url": URL, "semantic_probe": False}
 ARTIFACTS = "artifacts/agentic_auditor/demo-app"
 OTHER_ARTIFACTS = "artifacts/agentic_auditor/another-app"
@@ -47,8 +50,8 @@ def a_store(tmp_path: Path) -> HistoryStore:
 
 def running(run_id: str, started_at: str = LATE) -> RunRecord:
     """One accepted run."""
-    return RunRecord(run_id=run_id, repo_url=URL, options=dict(OPTIONS),
-                     started_at=started_at)
+    return RunRecord(run_id=run_id, repo_url=URL, auditor=AUDITOR,
+                     options=dict(OPTIONS), started_at=started_at)
 
 
 def finished(run_id: str, started_at: str = LATE,

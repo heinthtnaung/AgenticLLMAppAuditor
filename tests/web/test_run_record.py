@@ -6,6 +6,12 @@ forms built from it; the `CHECK` constraints that refuse the same three
 combinations a second time are `test_history_rows.py`, and the trip through
 SQLite text is `test_run_record_columns.py`.
 
+**The auditor's four refusals are not here.** They moved into
+`run_record.auditor_refusals`, which the request path and this record now share,
+so they are exercised once in `test_auditor_refusals.py` -- against the rules and
+against the record together. What stays here is the record's own three: the
+closed status vocabulary and the two iffs.
+
 No fastapi here: `run_record.py` and `history_store.py` are both free of it on
 purpose, so this file runs on a clean checkout with no web extra installed.
 """
@@ -20,8 +26,12 @@ from run_record import (
     RunRecord, body, started, summary)
 
 # The version everything under `/api/` carries, pinned as a literal beside the
-# constant it must equal. Imported alone it would agree with itself.
-EXPECTED_REPLY_SCHEMA_VERSION = 2
+# constant it must equal. Imported alone it would agree with itself. It went to
+# 3 when a run gained a **required** `auditor`: an old page posts a body without
+# one and the server answers 400, which is the case this number exists to
+# announce. The `comparison` key added alongside it would not have earned a bump
+# on its own -- an old bundle ignores a key it does not know.
+EXPECTED_REPLY_SCHEMA_VERSION = 3
 
 # The closed vocabulary, spelled out. Three values and not four: `cancelled`
 # lands with a cancel endpoint, not before one.
@@ -31,7 +41,10 @@ EXPECTED_STATUSES = ("running", "finished", "failed")
 UNKNOWN_STATUS = "cancelled"
 
 URL = "https://example.invalid/owner/demo-app"
-OPTIONS = {"url": URL, "semantic_probe": True, "draft_key": False,
+AUDITOR = "Quokka Reviewer"
+# Exactly `AuditRequest`'s fields, which is what the column really holds -- and
+# the name is deliberately not among them: `options` is what a re-run replays.
+OPTIONS = {"url": URL, "model": "", "semantic_probe": True, "draft_key": False,
            "compare_models": False, "cloud_model": ""}
 
 # Two announced stages, in order, because the order is the whole content.
@@ -51,7 +64,7 @@ RUN_ID_LENGTH = 32
 
 def a_running_record() -> RunRecord:
     """One accepted run, with nothing established yet."""
-    return RunRecord(run_id="a" * RUN_ID_LENGTH, repo_url=URL,
+    return RunRecord(run_id="a" * RUN_ID_LENGTH, repo_url=URL, auditor=AUDITOR,
                      options=dict(OPTIONS), started_at=WHEN)
 
 
@@ -109,29 +122,41 @@ def test_a_terminal_run_with_no_finish_time_is_refused() -> None:
 
 # --- what `started` establishes -----------------------------------------------
 
-def test_an_accepted_run_is_running_and_knows_only_its_url() -> None:
+def test_an_accepted_run_is_running_and_knows_only_what_was_asked_for() -> None:
     """The 202 body: everything not yet established is null, and `stages` is empty."""
-    record = started(URL, OPTIONS)
+    record = started(URL, AUDITOR, OPTIONS)
     assert (record.status, record.repo_url, record.stages) == ("running", URL, [])
     assert (record.app, record.artifacts_dir, record.finding_count) == (None, None, None)
 
 
+def test_an_accepted_run_records_who_asked_for_it_beside_the_options() -> None:
+    """The second fact known at acceptance, and it is a field rather than an option.
+
+    Both halves, because the separation is the point: the record carries the
+    name, and the options a re-run replays do not -- so replaying them cannot
+    re-run the audit as someone else.
+    """
+    record = started(URL, AUDITOR, OPTIONS)
+    assert record.auditor == AUDITOR
+    assert "auditor" not in record.options
+
+
 def test_an_accepted_run_carries_a_32_character_lowercase_hex_id() -> None:
     """`uuid4().hex`, which the routes then check a request-supplied id against."""
-    run_id = started(URL, OPTIONS).run_id
+    run_id = started(URL, AUDITOR, OPTIONS).run_id
     assert len(run_id) == RUN_ID_LENGTH
     assert set(run_id) <= set("0123456789abcdef")
 
 
 def test_two_accepted_runs_do_not_share_an_id() -> None:
     """Non-vacuity for the id above: a constant would satisfy the shape check."""
-    assert started(URL, OPTIONS).run_id != started(URL, OPTIONS).run_id
+    assert started(URL, AUDITOR, OPTIONS).run_id != started(URL, AUDITOR, OPTIONS).run_id
 
 
 def test_the_options_are_copied_and_not_held() -> None:
     """A re-run must be exact, so the record may not alias the caller's dict."""
     asked = dict(OPTIONS)
-    record = started(URL, asked)
+    record = started(URL, AUDITOR, asked)
     asked["semantic_probe"] = False
     assert record.options["semantic_probe"] is True
 
@@ -158,6 +183,14 @@ def test_a_summary_keeps_every_other_field_the_detail_carries() -> None:
     kept = summary(full)
     assert set(kept) == set(full) - SUMMARY_DROPS
     assert all(kept[key] == full[key] for key in kept)
+
+
+def test_both_served_forms_name_who_asked_for_the_run() -> None:
+    """The history list is where the name is read, so it survives the summary that builds it."""
+    full = body(a_finished_record(), artifacts_present=True, artifacts_current=True,
+                result=ENVELOPE_TEXT)
+    assert full["auditor"] == AUDITOR
+    assert summary(full)["auditor"] == AUDITOR
 
 
 def test_the_module_names_the_moment_it_writes_to_the_second() -> None:

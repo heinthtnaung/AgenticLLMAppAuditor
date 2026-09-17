@@ -17,6 +17,15 @@ dark-only tokens are *exactly* those four. A new colour token added to the dark
 block alone fails here, and so does deleting one of the four without updating
 the constant.
 
+**Declared once per block, too, which is the other way an edit lands wrong.**
+`--scrim` -- the ground behind the run overlay -- was added to all three blocks
+by line number, after a plain string replace matched the wrong one: `"  --panel:"`
+is a substring of `"    --panel:"`, so the indented copy inside the media query
+answered a search meant for the dark block. The failure that leaves is a token
+defined *twice* in one block and missing from another, and the name-set
+comparisons below cannot see the first half of it -- a set keeps one of two
+identical names. So the declarations are counted as well as compared.
+
 **"Identical" means declaration for declaration, not byte for byte.** The
 system-light copy sits inside a media query and is indented one level deeper, so
 the two are compared as ordered `(token, value)` pairs. That is the property
@@ -53,6 +62,11 @@ NON_COLOUR_TOKENS = frozenset({"--gap", "--mono", "--radius", "--radius-sm"})
 
 # The token whose absence from one block is the defect this file exists for.
 REGRESSED_TOKEN = "--panel"
+
+# The ground behind the run overlay, named for the reason above: it was written
+# into the three blocks by line number rather than by matching, so the parity
+# the general sweeps check over a diff is checked here over the token itself.
+OVERLAY_TOKEN = "--scrim"
 
 # A floor under each block, so a parse that read nothing cannot pass every set
 # comparison below. 36 dark and 32 light today.
@@ -103,6 +117,20 @@ def test_the_token_the_transparent_cards_came_from_is_in_every_block() -> None:
     """Named, because the general sweep above is a check that passes over an empty set."""
     for selector in (DARK_BLOCK, SYSTEM_LIGHT_BLOCK, CHOSEN_LIGHT_BLOCK):
         assert REGRESSED_TOKEN in tokens(selector), selector
+
+
+def test_the_token_behind_the_run_overlay_is_in_every_block() -> None:
+    """The light palettes carry a weaker scrim, so all three have to define one."""
+    for selector in (DARK_BLOCK, SYSTEM_LIGHT_BLOCK, CHOSEN_LIGHT_BLOCK):
+        assert OVERLAY_TOKEN in tokens(selector), selector
+
+
+def test_no_block_declares_the_same_token_twice() -> None:
+    """The edit-by-anchor hazard: a set comparison keeps one of two identical names."""
+    for selector in (DARK_BLOCK, SYSTEM_LIGHT_BLOCK, CHOSEN_LIGHT_BLOCK):
+        declared = [name for name, _ in palette(selector)]
+        twice = sorted({name for name in declared if declared.count(name) > 1})
+        assert twice == [], f"{selector}: {twice}"
 
 
 def test_the_only_tokens_the_dark_block_keeps_to_itself_are_the_named_ones() -> None:

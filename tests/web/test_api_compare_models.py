@@ -23,11 +23,14 @@ into a finished run carrying the documented envelope.
 
 Nothing here calls a model, opens a socket or clones anything: `main.run` is
 replaced by the recorder in `audit_stub.py`, which answers with the shape the
-real one answers with -- the LOCAL arm's result, because the hosted arm is the
-comparison and is printed rather than returned. That is also why the flag is
-asserted on the parsed command line rather than inferred: a stub that ran an
-ordinary audit would pass every status check below while the checkbox did
-nothing.
+real one answers with -- the local arm's result, with the hosted arm under
+`comparison`. That is also why the flag is asserted on the parsed command line
+rather than inferred: a stub that ran an ordinary audit would pass every status
+check below while the checkbox did nothing.
+
+What the comparison key *holds* is `test_api_comparison_envelope.py`. This file
+stays what it was: the run finishes rather than failing after the upload, and
+the flag the browser ticked is the flag the command line got.
 
 The whole file skips without the server packages: with no fastapi there is
 no endpoint to post to.
@@ -50,10 +53,11 @@ from .audit_stub import (                          # noqa: E402
 # The hosted model the page names, spelled the way OpenRouter spells one.
 CLOUD_MODEL = "vendor/some-hosted-model"
 
-# The seven keys the result carries, documents included: absent, they come back
-# as None rather than as missing keys.
+# The eight keys the result carries, documents included: absent, they come back
+# as None rather than as missing keys. `comparison` is the eighth, and what it
+# holds when a second arm really ran is `test_api_comparison_envelope.py`.
 EXPECTED_RESULT_KEYS = {"schema_version", "app", "artifacts_dir", "seconds",
-                        "advisories_read", "findings", "surfaces"}
+                        "advisories_read", "findings", "surfaces", "comparison"}
 
 
 def compare_through_the_endpoint(client: TestClient, cloud_model: str = "") -> dict:
@@ -71,7 +75,7 @@ def test_a_comparison_finishes_rather_than_failing(monkeypatch, tmp_path) -> Non
 
 
 def test_a_comparison_answers_the_documented_envelope(monkeypatch, tmp_path) -> None:
-    """The same seven keys an ordinary audit answers with: one path, one shape."""
+    """The same eight keys an ordinary audit answers with: one path, one shape."""
     stub_the_audit(monkeypatch, tmp_path)
     client, _ = client_over(tmp_path)
     assert set(compare_through_the_endpoint(client)["result"]) == EXPECTED_RESULT_KEYS

@@ -36,7 +36,7 @@ from outputs import FINDINGS_NAME                  # noqa: E402
 from run_record import FAILED, FINISHED, RunRecord  # noqa: E402
 
 from .api_stubs import client_over, read_run       # noqa: E402
-from .audit_stub import URL, artifacts_dir_for     # noqa: E402
+from .audit_stub import AUDITOR, URL, artifacts_dir_for   # noqa: E402
 
 FINDING_COUNT = 4
 
@@ -64,8 +64,8 @@ def plant_findings(tmp_path: Path) -> Path:
 def a_finished_row(run_id: str, artifacts_dir: str | None,
                    started_at: str = LATE) -> RunRecord:
     """One finished run, stored directly so its directory and its time can be chosen."""
-    accepted = RunRecord(run_id=run_id, repo_url=URL, options={"url": URL},
-                         started_at=started_at)
+    accepted = RunRecord(run_id=run_id, repo_url=URL, auditor=AUDITOR,
+                         options={"url": URL}, started_at=started_at)
     return replace(accepted, status=FINISHED, finished_at=LATE, seconds=1.0,
                    app="demo-app", artifacts_dir=artifacts_dir,
                    finding_count=FINDING_COUNT, surface_count=6)

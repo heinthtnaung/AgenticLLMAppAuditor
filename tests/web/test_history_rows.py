@@ -26,6 +26,9 @@ from history_store import HistoryStore, open_store
 from run_record import RunRecord
 
 URL = "https://example.invalid/owner/demo-app"
+# Who asked for the run. Required since the wire version went to 3, so every
+# record built here carries one.
+AUDITOR = "Quokka Reviewer"
 OPTIONS = {"url": URL, "semantic_probe": False}
 ARTIFACTS = "artifacts/agentic_auditor/demo-app"
 # One timestamp, at the precision `run_record.now()` writes: seconds.
@@ -33,10 +36,18 @@ LATE = "2026-09-09T12:00:00+00:00"
 
 ENVELOPE = {"schema_version": 2, "app": "demo-app"}
 
+# One attached file, as `web/uploads.py` records one. Stored with the run rather
+# than in a table of its own, which is why it is a column here at all.
+ATTACHMENT = {"upload_id": "e" * 32, "name": "evidence.txt", "bytes": 12,
+              "sha256": "f" * 64}
+
 # The columns a hand-written INSERT names, when the point is to get past
-# `RunRecord` and meet the table's own constraints.
-_RAW_COLUMNS = ("run_id, repo_url, options, started_at, status, finished_at, "
-                "stages, error, envelope")
+# `RunRecord` and meet the table's own constraints. `uploads` is among them
+# because the column is NOT NULL: `[]` is a fact the endpoint can always
+# establish -- nothing was attached -- and never a gap, so a row that omitted it
+# would be refused for that rather than for the constraint under test.
+_RAW_COLUMNS = ("run_id, repo_url, auditor, options, started_at, status, "
+                "finished_at, stages, error, uploads, envelope")
 
 
 def a_store(tmp_path: Path) -> HistoryStore:
@@ -46,8 +57,8 @@ def a_store(tmp_path: Path) -> HistoryStore:
 
 def running(run_id: str, started_at: str = LATE) -> RunRecord:
     """One accepted run."""
-    return RunRecord(run_id=run_id, repo_url=URL, options=dict(OPTIONS),
-                     started_at=started_at)
+    return RunRecord(run_id=run_id, repo_url=URL, auditor=AUDITOR,
+                     options=dict(OPTIONS), started_at=started_at)
 
 
 def finished(run_id: str, started_at: str = LATE,
@@ -69,9 +80,10 @@ def insert_raw(store: HistoryStore, **values) -> None:
 
 def raw_values(**changed) -> dict:
     """A row that satisfies every constraint, so one field at a time can break it."""
-    return {"run_id": "c" * 32, "repo_url": URL, "options": "{}", "started_at": LATE,
-            "status": "running", "finished_at": None, "stages": "[]",
-            "error": None, "envelope": None, **changed}
+    return {"run_id": "c" * 32, "repo_url": URL, "auditor": AUDITOR,
+            "options": "{}", "started_at": LATE, "status": "running",
+            "finished_at": None, "stages": "[]", "error": None,
+            "uploads": "[]", "envelope": None, **changed}
 
 
 # --- one row in, one row out ---------------------------------------------------
@@ -136,8 +148,29 @@ def test_a_status_outside_the_vocabulary_is_refused_by_the_table(tmp_path) -> No
         insert_raw(store, **raw_values(status="cancelled", finished_at=LATE))
 
 
+def test_a_row_with_no_attachment_list_at_all_is_refused_by_the_table(tmp_path) -> None:
+    """`uploads` is NOT NULL: nothing attached is `[]`, which is a fact and not a gap.
+
+    The distinction every nullable column here exists for, applied in reverse.
+    `finding_count` is null when no document stands behind it; an attachment
+    list always has a document behind it, because the endpoint is the only thing
+    that can add one.
+    """
+    store = a_store(tmp_path)
+    with pytest.raises(sqlite3.IntegrityError):
+        insert_raw(store, **raw_values(uploads=None))
+
+
 def test_a_row_that_breaks_nothing_is_accepted(tmp_path) -> None:
-    """Non-vacuity: the four refusals above are about the constraints, not about the INSERT."""
+    """Non-vacuity: the refusals above are about the constraints, not about the INSERT."""
     store = a_store(tmp_path)
     insert_raw(store, **raw_values())
     assert store.count() == 1
+
+
+def test_an_attached_file_survives_the_round_trip(tmp_path) -> None:
+    """The third JSON column, stored and read back: the upload route saves the whole record."""
+    store = a_store(tmp_path)
+    attached = replace(finished("a" * 32), uploads=[ATTACHMENT])
+    store.save(attached, ENVELOPE)
+    assert store.get(attached.run_id)[0].uploads == [ATTACHMENT]

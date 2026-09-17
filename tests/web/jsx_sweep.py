@@ -1,11 +1,12 @@
 """Reads what the page reads: every `record.field` the JSX binds, as text.
 
-Shared by the two files that sweep those accessors against the real records --
+Shared by the three files that sweep those accessors against the real records --
 `test_jsx_record_fields.py` for the findings, surfaces and run-record shapes,
-and `test_jsx_coverage_fields.py` for the coverage block the advisory section
-renders. It was one file until the two jobs together ran past the size a reader
-should have to scroll; the sweep lives here so the two cannot drift apart, and
-the reasoning about what a sweep proves stays in the files that assert it.
+`test_jsx_coverage_fields.py` for the coverage block the advisory section
+renders, and `test_jsx_envelope_fields.py` for the result envelope and the two
+arms of a comparison. It was one file until the jobs together ran past the size
+a reader should have to scroll; the sweep lives here so they cannot drift apart,
+and the reasoning about what a sweep proves stays in the files that assert it.
 
 Optional chaining is matched -- `record?.status` and `coverage?.checks_run` are
 both written that way -- and so are names in rendered prose, which adds a

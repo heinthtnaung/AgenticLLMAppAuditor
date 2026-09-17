@@ -9,10 +9,21 @@ defect the dash in `ResultsDashboard` exists to avoid. It answers `unreached`
 for any status but `running` now, and this file is that fix's test.
 
 **It runs the page's own code.** Everything above the component in
-`StageProgress.jsx` is plain JavaScript with no import at all, so it is lifted
-whole and evaluated under node -- and the *call* is lifted too, from the one line
-in the component that makes it, so a reordering of `stateOf`'s parameters cannot
-leave this file quietly passing against the old order.
+`StageProgress.jsx` is lifted and evaluated under node -- and the *call* is
+lifted too, from the one line in the component that makes it, so a reordering of
+`stateOf`'s parameters cannot leave this file quietly passing against the old
+order.
+
+**One import is resolved by the lift, and exactly one.** The status vocabulary
+moved out of the five modules that each spelled it into
+`frontend/src/runStatus.js`, which this component now imports `RUNNING` from.
+That module is plain JavaScript with no import of its own, so its source is
+prepended with `export ` stripped and the component's import line removed --
+the value still comes from the module the component really reads. The
+assertion narrowed from "no import at all" to "no import but that one" and no
+further: its real job is a React or browser import the lift cannot stand in
+for, and `test_a_helper_that_imports_anything_else_is_refused` plants one to
+show it still fires.
 
 **Both vocabularies come from the code that owns them.** The stages are
 `reporting.progress.STAGES`, which is what `GET /api/stages` serves, and the
@@ -46,6 +57,7 @@ from run_record import FINISHED, RUN_STATUSES, RUNNING
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 COMPONENT = REPO_ROOT / "frontend" / "src" / "components" / "StageProgress.jsx"
+VOCABULARY = REPO_ROOT / "frontend" / "src" / "runStatus.js"
 
 NODE = shutil.which("node")
 pytestmark = pytest.mark.skipif(NODE is None, reason="node is not installed")
@@ -58,6 +70,19 @@ FIRST_COMPONENT = re.compile(r"^(?:export default )?function [A-Z]", re.MULTILIN
 # The one line in the component that calls the helper, lifted so the probe below
 # passes the arguments in the component's own order and not in one written here.
 STATE_CALL = re.compile(r"const state = (stateOf\([^)]*\));")
+
+# Any import line, and the one the lift can resolve by inlining the module it
+# names. Matched as a whole line so a second name added to the same import is
+# still recognised, and anything else -- `react`, a browser module -- is not.
+IMPORT_LINE = re.compile(r"^import .*$", re.MULTILINE)
+VOCABULARY_IMPORT = re.compile(r'import \{[^}]*\} from "\.\./runStatus\.js";')
+
+# What turns the shared module into plain script: it exports its constants, and
+# a lifted `export` is a syntax error outside a module.
+EXPORT_KEYWORD = re.compile(r"^export ", re.MULTILINE)
+
+# Planted below, because the narrowed guard above is an empty list either way.
+IMPORT_THE_LIFT_CANNOT_RESOLVE = 'import { useState } from "react";'
 
 # A local-path audit ends at `write`: nothing is fetched from a URL and nothing
 # is published, so the last stage is the one that must not read as pending.
@@ -73,14 +98,29 @@ def component() -> str:
     return COMPONENT.read_text(encoding="utf-8")
 
 
+def unresolvable_imports(text: str) -> list[str]:
+    """Every import line the lift cannot stand in for -- the vocabulary is the one it can."""
+    return [line for line in IMPORT_LINE.findall(text)
+            if not VOCABULARY_IMPORT.fullmatch(line.strip())]
+
+
+def vocabulary() -> str:
+    """The shared status module as a plain script: its own source, `export` stripped."""
+    text = VOCABULARY.read_text(encoding="utf-8")
+    assert unresolvable_imports(text) == [], f"{VOCABULARY.name} now imports something itself"
+    return EXPORT_KEYWORD.sub("", text)
+
+
 def helpers() -> str:
-    """The component's plain-JavaScript half: everything above the component itself."""
+    """The component's liftable half: its own plain JavaScript, vocabulary inlined."""
     found = FIRST_COMPONENT.search(component())
     assert found, f"{COMPONENT.name} has no component after its helpers"
     lifted = component()[:found.start()]
-    assert "import " not in lifted, "the helpers now import something node cannot resolve"
+    assert unresolvable_imports(lifted) == [], "the helpers now import something node cannot resolve"
+    assert VOCABULARY_IMPORT.search(lifted), (
+        f"{COMPONENT.name} no longer reads the status vocabulary this lift inlines")
     assert "stateOf" in lifted, f"{COMPONENT.name} no longer declares stateOf above itself"
-    return lifted
+    return vocabulary() + VOCABULARY_IMPORT.sub("", lifted)
 
 
 def state_call() -> str:
@@ -94,6 +134,13 @@ def word(name: str) -> str:
     """The value of a `const NAME = "..."` in the component, or name what is missing."""
     found = re.search(rf'const {name} = "([^"]*)";', component())
     assert found, f"{COMPONENT.name} declares no string constant {name}"
+    return found.group(1)
+
+
+def status_word(name: str) -> str:
+    """The value of a status constant, read from the module that now owns the vocabulary."""
+    found = re.search(rf'const {name} = "([^"]*)";', vocabulary())
+    assert found, f"{VOCABULARY.name} declares no string constant {name}"
     return found.group(1)
 
 
@@ -173,8 +220,25 @@ def test_an_announced_stage_stays_done_on_a_run_that_did_not_finish(tmp_path) ->
 # --- the probe really ran the component ----------------------------------------
 
 def test_the_status_the_page_branches_on_is_the_one_the_server_writes() -> None:
-    """One literal in two languages, bound the way `GET /api/stages` binds the stages."""
-    assert word("RUNNING") == RUNNING
+    """The probe's own soundness: the word inlined above is the word the server writes.
+
+    `test_jsx_run_status_vocabulary.py` owns the whole three-word vocabulary and
+    holds it against `RUN_STATUSES`. This is the one value this file's programs
+    branch on, so it is checked where it is used.
+    """
+    assert status_word("RUNNING") == RUNNING
+
+
+def test_a_helper_that_imports_anything_else_is_refused() -> None:
+    """The narrowed tripwire, planted: only the vocabulary import may be inlined."""
+    planted = f'{IMPORT_THE_LIFT_CANNOT_RESOLVE}\nimport {{ RUNNING }} from "../runStatus.js";'
+    assert unresolvable_imports(planted) == [IMPORT_THE_LIFT_CANNOT_RESOLVE]
+
+
+def test_the_lift_really_inlined_the_module_the_component_imports() -> None:
+    """Non-vacuity: a prepend of nothing would leave every program above undefined."""
+    assert f'const RUNNING = "{RUNNING}";' in helpers()
+    assert "import " not in helpers()
 
 
 def test_the_probe_read_a_state_for_every_stage_the_server_serves(tmp_path) -> None:

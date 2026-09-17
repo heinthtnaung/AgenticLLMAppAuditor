@@ -7,6 +7,16 @@ name="pacakge" />` rendered an empty `<svg>`, which is a typo nobody finds.
 Two halves are asserted here, and the second is what makes the first safe to
 rely on.
 
+**There are two tables, and a name may be in either.** `PATHS` holds the line
+icons and `MARKS` holds the filled brand marks, kept apart because the
+difference is real -- a 20-unit stroke against a 24-unit filled path nobody here
+drew. This file reads both through `icon_tables.icon_names`, since the question
+it asks is "can the component draw this name", which is true of either table.
+What keeps them apart is `test_jsx_icon_marks.py`'s subject, not this one's.
+Reading only `PATHS` is what this file used to do, and it reported the GitHub
+mark as a name no icon set has -- a genuine second source of names, found by the
+check rather than by a person.
+
 **The names asked for.** Swept out of the JSX as text, from three spellings the
 components really use: `<Icon name="download" />`, the literals inside a
 `name={...}` expression (`name={dark ? "dark" : "light"}`), and the `icon`
@@ -31,17 +41,12 @@ the page asks for.
 """
 
 import re
-from pathlib import Path
 
+from .icon_tables import FRONTEND_SRC, ICON, icon_names, icon_source
 from .jsx_sweep import strip_comments
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-FRONTEND_SRC = REPO_ROOT / "frontend" / "src"
-ICON = FRONTEND_SRC / "components" / "Icon.jsx"
-
-# The path table, and one `<Icon ... />` element with its attributes.
-PATHS_BLOCK = re.compile(r"const PATHS = \{(.*?)\n\};", re.DOTALL)
-PATHS_KEY = re.compile(r"^\s*([A-Za-z_]\w*):", re.MULTILINE)
+# One `<Icon ... />` element with its attributes. The tables themselves are read
+# by `icon_tables.py`, which both icon files share.
 ICON_ELEMENT = re.compile(r"<Icon\s([^>]*?)/>", re.DOTALL)
 
 # The name an element asks for: a literal, or an expression that may hold some.
@@ -69,24 +74,10 @@ MINIMUM_NAMES_ASKED = 8
 NAME_THAT_DOES_NOT_EXIST = "pacakge"
 
 
-def icon_source() -> str:
-    """The icon component's own source, with its comments stripped."""
-    return strip_comments(ICON.read_text(encoding="utf-8"))
-
-
 def stylesheets() -> str:
     """Every stylesheet the page ships, concatenated: the classes are looked up here."""
     return "\n".join(sheet.read_text(encoding="utf-8")
                      for sheet in sorted(FRONTEND_SRC.rglob("*.css")))
-
-
-def icon_names() -> set[str]:
-    """Every name the icon set has a path for."""
-    block = PATHS_BLOCK.search(icon_source())
-    assert block, f"{ICON.name} declares no PATHS table"
-    keys = set(PATHS_KEY.findall(block.group(1)))
-    assert keys, f"{ICON.name}'s PATHS table has no entry this test can read"
-    return keys
 
 
 def names_asked_in(text: str, where: str) -> list[tuple[str, str]]:
@@ -183,7 +174,7 @@ def test_the_fallback_says_which_name_was_missing() -> None:
 # --- and the reverse direction, which holds now -------------------------------
 
 def test_every_icon_the_set_defines_is_one_the_page_renders() -> None:
-    """No dead entry in the table: every path is one some component asks for.
+    """No dead entry in either table: every path is one some component asks for.
 
     Held as a live assertion since `auto` and `clock` were deleted -- `auto` was
     the third position of the old three-state theme control and `clock` never

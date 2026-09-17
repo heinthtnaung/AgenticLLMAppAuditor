@@ -29,11 +29,25 @@ from run_jobs import Registry
 
 URL = "https://example.invalid/owner/demo-app"
 
+# Who asked for the run. Required on every request since `REPLY_SCHEMA_VERSION`
+# went to 3, so it is spelled once here rather than in each of the eight modules
+# that post an audit. A test about the name itself names its own.
+AUDITOR = "Quokka Reviewer"
+
 # What a stubbed audit says it produced, in the shape `audit_run.audit` returns
 # and `web/run_jobs.py` subscripts. `artifacts` is under tmp_path, so a test
 # that read it back would read its own tree and never the repository's.
 APP = "demo-app"
 RUN_SECONDS = 0.5
+
+# The hosted arm of a `--compare-models` run, which `main.run` returns under
+# `comparison` and an ordinary audit returns as None. Its own app name and its
+# own duration, so a comparison that echoed the local arm is visible rather than
+# plausible. The directory is deliberately not named after
+# `evaluation.document.CLOUD_AUDITOR`: the envelope's `system` must come from
+# `run_jobs`, and a stub that spelled that word would let it come from here.
+CLOUD_APP = "demo-app-hosted"
+CLOUD_RUN_SECONDS = 1.25
 
 # An error class deliberately absent from `main.EXPECTED_FAILURES`, so a test
 # can tell a translated refusal from a blanket `except Exception`.
@@ -60,20 +74,44 @@ def artifacts_dir_for(tmp_path: Path) -> Path:
     return tmp_path / "artifacts" / APP
 
 
-def _produced(tmp_path: Path) -> dict:
-    """What a stubbed audit answers with, in the shape `audit_run.audit` returns."""
+def cloud_artifacts_dir_for(tmp_path: Path) -> Path:
+    """Where the stubbed hosted arm will say it wrote, which is never the local arm's."""
+    return tmp_path / "hosted-artifacts" / CLOUD_APP
+
+
+def _produced(tmp_path: Path, compares: bool) -> dict:
+    """What a stubbed audit answers with, in the shape `main.run` returns.
+
+    `comparison` is always present, because every path through the real
+    `main.run` sets it: None when one arm ran, the hosted arm's own result when
+    two did. A stub that omitted the key entirely would keep passing after
+    `run_jobs` stopped defaulting it.
+    """
     return {"app": APP, "artifacts": artifacts_dir_for(tmp_path),
-            "seconds": RUN_SECONDS, "advisories_read": False}
+            "seconds": RUN_SECONDS, "advisories_read": False,
+            "comparison": _hosted_arm(tmp_path) if compares else None}
+
+
+def _hosted_arm(tmp_path: Path) -> dict:
+    """The second arm's result, in the same four keys the local arm answers with."""
+    return {"app": CLOUD_APP, "artifacts": cloud_artifacts_dir_for(tmp_path),
+            "seconds": CLOUD_RUN_SECONDS, "advisories_read": True}
 
 
 def stub_the_audit(monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
                    error: Exception | None = None,
-                   announces: tuple[str, ...] = ()) -> list[argparse.Namespace]:
+                   announces: tuple[str, ...] = (),
+                   compares: bool = False) -> list[argparse.Namespace]:
     """Replace the audit with a recorder that announces, then answers or raises.
 
     Returns the command lines the wrapper built, so a test can assert the run
     was really asked for what the request said -- a stub that ran an ordinary
     audit would satisfy every status check while a checkbox did nothing.
+
+    `compares` makes it answer as a two-arm run does. It is the stub's own
+    switch and not read off `args`: what a ticked checkbox does to the command
+    line is asserted separately, and a stub that inferred one from the other
+    could not be used to tell the two apart.
     """
     parsed: list[argparse.Namespace] = []
 
@@ -84,7 +122,7 @@ def stub_the_audit(monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
             on_stage(name, "")
         if error is not None:
             raise error
-        return _produced(tmp_path)
+        return _produced(tmp_path, compares)
 
     monkeypatch.setattr(main, "run", fake_run)
     return parsed
@@ -104,7 +142,7 @@ def hold_the_audit(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> threading
         """Hold the run open until the test says otherwise, then answer normally."""
         assert let_it_finish.wait(timeout=WORKER_TIMEOUT_SECONDS), (
             "the test never released the held audit")
-        return _produced(tmp_path)
+        return _produced(tmp_path, compares=False)
 
     monkeypatch.setattr(main, "run", fake_run)
     return let_it_finish

@@ -13,7 +13,9 @@ refusal is raised *after* the 202, so it is no longer a 4xx at all: it lands as
 that the sentence reaches the page and that a refusal is told apart from a
 defect -- the first by `error`, the second by the class name the message carries.
 The `400` that remains is the request rules only, checked before any row is
-written, and the last three tests are those.
+written, and the last two sections are those: the URL rules, and the `auditor`
+a request must carry since the wire version went to 3. Both are refused in the
+same place and for the same reason -- nothing may run before they pass.
 
 `main.run` is replaced throughout this file. What is under test is the
 wrapper's translation of an outcome, and a real audit would only make the five
@@ -34,10 +36,11 @@ pytest.importorskip("fastapi", reason="the web extra is not installed, so there 
 pytest.importorskip("httpx", reason="fastapi's TestClient needs httpx to drive the endpoint")
 
 import main                                        # noqa: E402
-from run_record import FAILED, FINISHED            # noqa: E402
+from run_record import FAILED, FINISHED, MAX_AUDITOR_LENGTH   # noqa: E402
 from run_routes import REFUSED                     # noqa: E402
 
-from .api_stubs import audit_and_poll, client_over, post_an_audit   # noqa: E402
+from .api_stubs import (                          # noqa: E402
+    ENDPOINT, audit_and_poll, client_over, post_an_audit)
 from .audit_stub import (                          # noqa: E402
     URL, UNEXPECTED_ERROR, repositories, stub_the_audit, wait_for_the_worker)
 
@@ -55,6 +58,20 @@ TOOL_MESSAGE = "fetched/demo-app holds another repository; remove it to fetch th
 
 # A body the request rules refuse before any audit is considered.
 PATH_NOT_A_LINK = "/home/someone/private-repo"
+
+# What pydantic answers for a body it will not parse. Named because it is the
+# answer these refusals must *not* be: a 422 carries pydantic's own validation
+# shape, and the page's error path keeps only `detail`.
+UNPROCESSABLE = 422
+
+# The four auditor names the rules refuse, each for its own reason. A run
+# records who asked for it, and this endpoint has no authentication to ask.
+BLANK_AUDITOR = ""
+WHITESPACE_AUDITOR = "   \t "
+TOO_LONG_AUDITOR = "a" * (MAX_AUDITOR_LENGTH + 1)
+CONTROL_CHARACTER_AUDITOR = "Quokka\nReviewer"
+REFUSED_AUDITORS = (BLANK_AUDITOR, WHITESPACE_AUDITOR, TOO_LONG_AUDITOR,
+                    CONTROL_CHARACTER_AUDITOR)
 
 
 @pytest.mark.parametrize("failure", main.EXPECTED_FAILURES)
@@ -141,4 +158,70 @@ def test_an_accepted_request_reaches_the_audit_with_the_url_it_named(monkeypatch
     parsed = stub_the_audit(monkeypatch, tmp_path)
     client, _ = client_over(tmp_path)
     audit_and_poll(client)
+    assert repositories(parsed) == [URL]
+
+
+# --- the auditor, refused the same way and in the same place -------------------
+
+@pytest.mark.parametrize("auditor", REFUSED_AUDITORS)
+def test_a_request_with_no_usable_auditor_is_refused(monkeypatch, tmp_path,
+                                                     auditor) -> None:
+    """A body an old page posts: blank, padded, over the cap, or carrying a control character."""
+    stub_the_audit(monkeypatch, tmp_path)
+    client, _ = client_over(tmp_path)
+    assert post_an_audit(client, auditor=auditor).status_code == REFUSED
+
+
+@pytest.mark.parametrize("auditor", REFUSED_AUDITORS)
+def test_a_refused_auditor_never_reaches_the_audit_or_the_store(monkeypatch, tmp_path,
+                                                                auditor) -> None:
+    """Checked before any row is written, so a refused request leaves no history behind."""
+    parsed = stub_the_audit(monkeypatch, tmp_path)
+    client, registry = client_over(tmp_path)
+    post_an_audit(client, auditor=auditor)
+    assert parsed == []
+    assert registry.store.count() == 0
+
+
+def test_a_body_that_names_nobody_at_all_is_refused_by_the_rules(monkeypatch,
+                                                                  tmp_path) -> None:
+    """A body from an older page, with no `auditor` key at all.
+
+    `AuditOptions` keeps `auditor: str = ""` rather than making it required, so
+    this lands in the refusal list as a sentence saying what to do -- not as a
+    422 whose body the page would show as nothing useful.
+    """
+    stub_the_audit(monkeypatch, tmp_path)
+    client, _ = client_over(tmp_path)
+    response = client.post(ENDPOINT, json={"url": URL})
+    assert response.status_code == REFUSED
+    assert response.status_code != UNPROCESSABLE
+
+
+def test_both_rule_sets_report_together(monkeypatch, tmp_path) -> None:
+    """One refusal list from two rule sets: what may be audited, and who says so.
+
+    `asked.refusals() + run_record.auditor_refusals(auditor)`, joined so that a
+    caller fixing one does not discover the other by trying again.
+    """
+    stub_the_audit(monkeypatch, tmp_path)
+    client, _ = client_over(tmp_path)
+    detail = post_an_audit(client, PATH_NOT_A_LINK, auditor=BLANK_AUDITOR).json()["detail"]
+    assert "https" in detail
+    assert "auditor" in detail
+
+
+def test_a_refused_auditor_says_which_rule_refused_it(monkeypatch, tmp_path) -> None:
+    """The reply carries the refusal `AuditRequest` wrote, so the page can show it."""
+    stub_the_audit(monkeypatch, tmp_path)
+    client, _ = client_over(tmp_path)
+    detail = post_an_audit(client, auditor=BLANK_AUDITOR).json()["detail"]
+    assert "auditor" in detail
+
+
+def test_an_auditor_the_rules_accept_is_not_refused(monkeypatch, tmp_path) -> None:
+    """Non-vacuity for the four refusals above: an ordinary name is accepted and runs."""
+    parsed = stub_the_audit(monkeypatch, tmp_path)
+    client, _ = client_over(tmp_path)
+    assert audit_and_poll(client)["status"] == FINISHED
     assert repositories(parsed) == [URL]

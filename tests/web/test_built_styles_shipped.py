@@ -1,9 +1,10 @@
-"""The shipped stylesheet is built from the six the source has, and all six are imported.
+"""The shipped stylesheet is built from every sheet the source has, and all of them are imported.
 
 `test_built_page_shipped.py` joins the JSX to `dist/assets/index.js` and says so
 in its own docstring: **the CSS half of the bundle is swept by nothing.** The
 stylesheets were split twice while this page was being built -- three files
-became six -- and either half of that can fail silently. A seventh sheet that
+became six, and `overlay.css` made seven -- and either half of that can fail
+silently. A seventh sheet that
 `main.jsx` never imports is simply not in the build, and a rule edited without
 `npm run build` ships as the previous rule. Neither shows up in a Python test
 suite, and a `className`-to-bundle join cannot see either: those names are in

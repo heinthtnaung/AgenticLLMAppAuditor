@@ -26,6 +26,14 @@ Its allowed names are derived the same way, from `web/run_record.py`:
 plus the two keys `body` adds, `result` and `schema_version`. That derivation is
 pinned by a test below, so it cannot quietly widen either.
 
+**Two components joined the run-record sweep with the run overlay**, and they
+are floored by name below: `RunOverlay.jsx`, the card an audit advances in, and
+`RunStamps.jsx`, the timestamps extracted out of `RunSummary.jsx` so the overlay
+and the report show one of them rather than two. The whole-page sweep would pass
+having read neither, which is the only thing a per-file floor adds -- the
+`unknown` checks above already cover every `record.x` in the page wherever it is
+written.
+
 **The coverage block is the fifth shape, and it is not in this file.** The
 advisory section reads three more -- the block, one unreached component, one
 advisory against it -- and `test_jsx_coverage_fields.py` sweeps those against
@@ -96,6 +104,11 @@ MINIMUM_PROBE_ACCESSORS = 3
 # that read nothing, not to count the page.
 MINIMUM_RUN_ACCESSORS = 8
 MINIMUM_RUN_DETAIL_ACCESSORS = 10
+
+# The two components the run overlay is built from, and a floor under each: the
+# page-wide sweep above would be satisfied by a run overlay that read nothing at
+# all. Measured today at five accessors each, so these sit just under.
+OVERLAY_COMPONENTS = {"RunOverlay.jsx": 4, "RunStamps.jsx": 4}
 
 # A field no record has ever carried, to show the check reports rather than
 # tolerates one. This is the accessor that shipped for weeks.
@@ -169,6 +182,14 @@ def test_the_sweep_read_the_run_accessors_too() -> None:
     """The same guard for the fourth prefix, which is read under two names."""
     assert len(accessors(RUN)) >= MINIMUM_RUN_ACCESSORS
     assert len(accessors(RUN_DETAIL)) >= MINIMUM_RUN_DETAIL_ACCESSORS
+
+
+def test_the_run_sweep_read_the_two_components_the_overlay_is_built_from() -> None:
+    """Named, because the page-wide floors above pass whatever these two files contain."""
+    read = [where for where, _ in accessors(RUN_DETAIL)]
+    short = {where: read.count(where) for where, floor in OVERLAY_COMPONENTS.items()
+             if read.count(where) < floor}
+    assert short == {}, f"the run-record sweep read too little of: {short}"
 
 
 def test_both_sides_of_the_probe_join_read_the_same_served_field() -> None:

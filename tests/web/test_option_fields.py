@@ -2,12 +2,20 @@
 
 `AuditOptions` (pydantic, in `web/run_routes.py`) is the JSON body the page posts.
 `AuditRequest` (a frozen dataclass, in `web/audit_request.py`) is what the
-refusal rules are written against. One line joins them --
-`AuditRequest(**options.model_dump())` -- so a field added to one alone is not
-a validation error a caller can read and fix. It is a `TypeError` raised inside
-the handler, and a 500 in the browser. It moved out of `api.py` with the routes
-that use it, which is the only thing about this file that changed when the
-endpoint became a job.
+refusal rules are written against. Three lines join them --
+`model_dump()`, then `pop("auditor")`, then `AuditRequest(**named)` -- so a
+field added to one alone is not a validation error a caller can read and fix.
+It is a `TypeError` raised inside the handler, and a 500 in the browser.
+
+**The two declarations differ by exactly one field, and that is the design.**
+`auditor` is posted, so `AuditOptions` declares it; it is not an option of the
+audit, so `AuditRequest` does not. The route pops it and hands it to
+`Registry.start` beside the request. Asserting the two field sets *equal* is
+what this file used to do, and it is what let the name reach `options` -- which
+`docs/SCHEMAS.md` calls "exactly `AuditRequest`'s fields, so a re-run is exact",
+and a re-run carrying a name would re-run the audit as someone else. So the
+relationship is asserted as one named difference rather than as equality: a
+second extra field is as much a defect as the first was.
 
 The third declaration is `INITIAL` in the frontend: the object the form starts
 as and posts as its body. It is found by searching the JSX rather than by a
@@ -29,6 +37,10 @@ file, and it is cheaper than the alternatives.
 The field *set* is what is asserted, not the field *list*: adding an option to
 both declarations is an ordinary change and must stay one. What may not happen
 is adding it to one.
+
+It keeps `auditor: str = ""` rather than making it required of pydantic, so a
+body that omits it is refused by the rules with the other refusals, as a 400
+naming what to do, rather than by pydantic as a 422 nobody reads.
 """
 
 import dataclasses
@@ -56,10 +68,15 @@ KEY_PATTERN = re.compile(r"^\s*([A-Za-z_]\w*):", re.MULTILINE)
 # would stay true if both declarations were emptied.
 CONSEQUENTIAL_FIELDS = frozenset({"url", "compare_models", "cloud_model"})
 
-# One request with nothing left defaulted, so the join is shown to carry every
-# value across rather than to construct successfully.
-POSTED = {"url": "https://example.invalid/owner/demo-app", "semantic_probe": True,
+# One body with nothing left defaulted, so the join is shown to carry every
+# value across rather than to construct successfully. A field left defaulted
+# here would be a field the join was never shown to carry.
+POSTED = {"url": "https://example.invalid/owner/demo-app", "auditor": "Quokka Reviewer",
+          "model": "a-second-model:7b-instruct", "semantic_probe": True,
           "draft_key": True, "compare_models": True, "cloud_model": "vendor/hosted"}
+
+# The one field the posted body carries that the audited request does not.
+AUDITOR_FIELD = "auditor"
 
 
 def request_fields() -> set[str]:
@@ -89,9 +106,33 @@ def initial_keys() -> set[str]:
     return set(KEY_PATTERN.findall(body.group(1)))
 
 
-def test_the_two_declarations_name_the_same_fields() -> None:
-    """The join is `AuditRequest(**options.model_dump())`; a field in one alone is a 500."""
-    assert request_fields() == option_fields()
+def joined(posted: dict) -> AuditRequest:
+    """The request the route builds from a posted body, joined the way the route joins it."""
+    named = AuditOptions(**posted).model_dump()
+    named.pop(AUDITOR_FIELD)
+    return AuditRequest(**named)
+
+
+def test_the_posted_body_is_the_request_plus_the_name_and_nothing_else() -> None:
+    """The one permitted difference, named. A second extra field is a `TypeError` in the handler."""
+    assert option_fields() == request_fields() | {AUDITOR_FIELD}
+
+
+def test_the_name_is_posted_and_is_not_a_field_of_the_audited_request() -> None:
+    """Both halves said plainly, because the asymmetry is what `options` depends on."""
+    assert AUDITOR_FIELD in option_fields()
+    assert AUDITOR_FIELD not in request_fields()
+
+
+def test_a_body_with_no_name_at_all_still_parses() -> None:
+    """`auditor: str = ""` is why: a missing name is a 400 from the rules, not a 422 from pydantic.
+
+    The refusal carries a sentence saying what to do. A 422 carries pydantic's
+    own validation shape, which the page's error path -- which keeps only
+    `detail` -- would show as nothing useful at all.
+    """
+    without = {key: value for key, value in POSTED.items() if key != AUDITOR_FIELD}
+    assert AuditOptions(**without).auditor == ""
 
 
 def test_both_declarations_name_the_fields_that_send_source_off_the_machine() -> None:
@@ -102,15 +143,21 @@ def test_both_declarations_name_the_fields_that_send_source_off_the_machine() ->
 
 def test_every_posted_option_reaches_the_request_the_join_builds() -> None:
     """Not just constructible: each value posted is the value the rules are applied to."""
-    joined = AuditRequest(**AuditOptions(**POSTED).model_dump())
-    assert joined == AuditRequest(**POSTED)
+    audited = {key: value for key, value in POSTED.items() if key != AUDITOR_FIELD}
+    assert joined(POSTED) == AuditRequest(**audited)
 
 
 def test_the_joined_request_is_the_one_the_page_asked_for() -> None:
     """Guard on the test above: the two sides would agree if both were the defaults."""
-    joined = AuditRequest(**AuditOptions(**POSTED).model_dump())
-    assert joined.compare_models is True
-    assert joined.cloud_model == POSTED["cloud_model"]
+    built = joined(POSTED)
+    assert built.compare_models is True
+    assert built.cloud_model == POSTED["cloud_model"]
+
+
+def test_the_name_the_body_carried_survives_the_join_that_drops_it() -> None:
+    """Dropped from the request, not from the run: the route hands it to `Registry.start`."""
+    assert AuditOptions(**POSTED).auditor == POSTED[AUDITOR_FIELD]
+    assert not hasattr(joined(POSTED), AUDITOR_FIELD)
 
 
 def test_the_page_starts_with_the_fields_the_endpoint_declares() -> None:

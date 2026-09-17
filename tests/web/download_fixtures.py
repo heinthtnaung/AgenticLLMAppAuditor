@@ -23,7 +23,7 @@ from run_jobs import Registry
 from run_record import FINISHED, RunRecord
 
 from .api_stubs import client_over
-from .audit_stub import URL, artifacts_dir_for
+from .audit_stub import AUDITOR, URL, artifacts_dir_for
 
 # The run every fixture below stores, and a second one for the superseded case.
 RUN_ID = "a" * 32
@@ -56,8 +56,8 @@ def plant(directory: Path, names: tuple[str, ...]) -> Path:
 def a_finished_row(run_id: str, artifacts_dir: str | None,
                    started_at: str = LATE) -> RunRecord:
     """One finished run, stored directly so its directory and its time are the test's."""
-    accepted = RunRecord(run_id=run_id, repo_url=URL, options={"url": URL},
-                         started_at=started_at)
+    accepted = RunRecord(run_id=run_id, repo_url=URL, auditor=AUDITOR,
+                         options={"url": URL}, started_at=started_at)
     return replace(accepted, status=FINISHED, finished_at=LATE, seconds=1.0,
                    app="demo-app", artifacts_dir=artifacts_dir,
                    finding_count=0, surface_count=0)

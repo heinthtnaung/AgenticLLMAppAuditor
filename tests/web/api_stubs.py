@@ -41,7 +41,8 @@ import run_routes
 from run_jobs import Registry
 
 from .audit_stub import (
-    POLL_SECONDS, TERMINAL_STATUSES, URL, WORKER_TIMEOUT_SECONDS, open_a_store)
+    AUDITOR, POLL_SECONDS, TERMINAL_STATUSES, URL, WORKER_TIMEOUT_SECONDS,
+    open_a_store)
 
 ENDPOINT = "/api/audit"
 RUNS = "/api/runs"
@@ -66,8 +67,14 @@ def client_over(tmp_path: Path) -> tuple[TestClient, Registry]:
 
 
 def post_an_audit(client: TestClient, url: str = URL, **options) -> httpx.Response:
-    """Post one audit request and return the response, whatever its status."""
-    return client.post(ENDPOINT, json={"url": url, **options})
+    """Post one audit request and return the response, whatever its status.
+
+    The body carries an `auditor` because the request rules now require one: a
+    post without it is a 400 before any row is written, which would make every
+    test through this helper a test of that refusal. `**options` still wins, so
+    a test whose subject *is* the name passes its own -- including a blank one.
+    """
+    return client.post(ENDPOINT, json={"url": url, "auditor": AUDITOR, **options})
 
 
 def accepted_run_id(client: TestClient, url: str = URL, **options) -> str:

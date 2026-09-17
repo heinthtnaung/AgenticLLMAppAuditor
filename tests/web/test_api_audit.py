@@ -26,6 +26,9 @@ directory the audit really wrote into, so a page that tells someone where to
 look is telling them the truth. And the record's counts are the documents' own,
 so the history list and the dashboard cannot disagree about one run.
 
+The staging is `real_audit_fixtures.py`, shared with
+`test_auditor_not_in_artifacts.py`, which sweeps the files this run writes.
+
 The whole file skips when the server packages are not installed: without
 fastapi there is no endpoint to call. Everything the wrapper does that does not
 need a server is tested in `test_audit_request.py`, `test_artifacts_read.py`,
@@ -46,22 +49,15 @@ from checks.auditability import CHECK_NAME as AUDITABILITY_CHECK                
 from checks.output_handling import CHECK_NAME as QUERY_CHECK                    # noqa: E402
 from checks.permissions import CHECK_NAME as PERMISSION_CHECK                   # noqa: E402
 from checks.taint import CHECK_NAME as TAINT_CHECK                              # noqa: E402
-from cli_helpers import (                                                       # noqa: E402
-    EMPTY_SCAN, forbid_subprocesses, stub_knowledge, stub_model, stub_syft)
+from cli_helpers import forbid_subprocesses                                     # noqa: E402
 from main import DEFAULT_ARTIFACTS_DIR                                          # noqa: E402
-from mixed_app_fixtures import (                                                # noqa: E402
-    APP_NAME, MIXED_APP_SURFACES, write_mixed_app)
+from mixed_app_fixtures import APP_NAME, MIXED_APP_SURFACES                     # noqa: E402
 from outputs import FINDINGS_NAME, SURFACES_NAME                                # noqa: E402
-from pipeline_helpers import (                                                  # noqa: E402
-    point_download_root, record_fetch, record_publish)
 import run_record                                                               # noqa: E402
 
 from .api_stubs import audit_and_poll, client_over, post_an_audit               # noqa: E402
 from .audit_stub import wait_for_the_worker                                     # noqa: E402
-
-# The link the page posts. The last segment is the directory name the fetch
-# stage would land on, so it matches the app the stubbed fetch hands back.
-URL = f"https://example.invalid/owner/{APP_NAME}"
+from .real_audit_fixtures import URL, stub_every_outside_stage                  # noqa: E402
 
 # The four checks that report on this app. It carries no dependency manifest, so
 # no bill of materials is built and the supply-chain check has no mapping to
@@ -69,15 +65,17 @@ URL = f"https://example.invalid/owner/{APP_NAME}"
 EXPECTED_RULE_IDS = sorted(
     [PERMISSION_CHECK, TAINT_CHECK, QUERY_CHECK, AUDITABILITY_CHECK])
 
-# What the result envelope carries beside the two documents. Seven keys, exactly
-# as before the endpoint became a job: the protocol around them changed, they
-# did not.
+# What the result envelope carries beside the two documents. Eight now: the
+# seven the endpoint has always answered with, plus `comparison`, which is the
+# hosted arm of a `--compare-models` run and is null on every other path. Null
+# means one arm ran -- never that a second arm found nothing.
 EXPECTED_RESULT_KEYS = {"schema_version", "app", "artifacts_dir", "seconds",
-                        "advisories_read", "findings", "surfaces"}
+                        "advisories_read", "findings", "surfaces", "comparison"}
 
 # The version the reply carries today, pinned as a literal beside the constant
-# it must equal. Imported alone it would agree with itself.
-REPLY_SCHEMA_VERSION = 2
+# it must equal. Imported alone it would agree with itself. 3 since a run gained
+# a required `auditor`: an old page posts a body without one and is answered 400.
+REPLY_SCHEMA_VERSION = 3
 
 # Every boundary this run announces, in order. Seven of the eight: `publish` is
 # the pipeline's, and `record_publish` replaces that stage with a recorder that
@@ -91,22 +89,6 @@ EXPECTED_STAGES = ["fetch", "surfaces", "dependencies", "advisories",
 # `run_routes.py`'s own codes to import.
 ACCEPTED = 202
 UNPROCESSABLE = 422
-
-
-def stub_every_outside_stage(monkeypatch, tmp_path: Path) -> None:
-    """Write the app to audit and replace every stage that would leave this process."""
-    repo = write_mixed_app(tmp_path)
-    stub_model(monkeypatch)
-    stub_knowledge(monkeypatch)
-    stub_syft(monkeypatch, EMPTY_SCAN)
-    point_download_root(monkeypatch, tmp_path)
-    record_fetch(monkeypatch, result=repo)
-    record_publish(monkeypatch)
-    forbid_subprocesses(monkeypatch)
-    # The request carries no artifacts directory -- the page cannot name one --
-    # so the run uses `main.DEFAULT_ARTIFACTS_DIR`, which is relative. Without
-    # this the audit would write into the checkout's own `artifacts/`.
-    monkeypatch.chdir(tmp_path)
 
 
 def audit_through_the_endpoint(monkeypatch, tmp_path: Path) -> dict:
@@ -134,9 +116,15 @@ def test_the_run_finishes_and_carries_a_result(monkeypatch, tmp_path) -> None:
 
 
 def test_the_result_holds_exactly_the_documented_keys(monkeypatch, tmp_path) -> None:
-    """Seven keys: its own version, the run's four facts, and the two artifacts rendered."""
+    """Eight keys: its version, the run's four facts, the two artifacts, and the comparison."""
     record = audit_through_the_endpoint(monkeypatch, tmp_path)
     assert set(record["result"]) == EXPECTED_RESULT_KEYS
+
+
+def test_a_single_arm_audit_carries_a_null_comparison(monkeypatch, tmp_path) -> None:
+    """One arm ran. `null` says so, and never that a second arm found nothing."""
+    record = audit_through_the_endpoint(monkeypatch, tmp_path)
+    assert record["result"]["comparison"] is None
 
 
 def test_the_record_and_its_result_name_the_audited_app(monkeypatch, tmp_path) -> None:

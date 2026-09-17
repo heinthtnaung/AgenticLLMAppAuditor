@@ -47,7 +47,7 @@ from .api_stubs import (                           # noqa: E402
     post_an_audit, read_run)
 from .api_stubs import application_over                                # noqa: E402
 from .audit_stub import (                          # noqa: E402
-    URL, open_a_store, stub_the_audit, wait_for_the_worker)
+    AUDITOR,    URL, open_a_store, stub_the_audit, wait_for_the_worker)
 
 STAGES_PATH = "/api/stages"
 
@@ -102,7 +102,8 @@ def client_over_a_recording_store(
 
 def a_stored_run(run_id: str) -> RunRecord:
     """One accepted run, written straight to the store rather than run."""
-    return RunRecord(run_id=run_id, repo_url=URL, options={"url": URL}, started_at=WHEN)
+    return RunRecord(run_id=run_id, repo_url=URL, auditor=AUDITOR,
+                     options={"url": URL}, started_at=WHEN)
 
 
 # --- the stage vocabulary ------------------------------------------------------
@@ -230,6 +231,13 @@ def test_a_list_row_is_the_summary_form(tmp_path) -> None:
     row = client.get(RUNS).json()["runs"][0]
     assert DROPPED_FROM_A_ROW.isdisjoint(row)
     assert row["run_id"] == UNUSED_ID
+
+
+def test_a_list_row_names_who_asked_for_the_run(tmp_path) -> None:
+    """The history list is where the name is read, so it survives the summary that builds it."""
+    client, registry = client_over(tmp_path)
+    registry.store.save(a_stored_run(UNUSED_ID))
+    assert client.get(RUNS).json()["runs"][0]["auditor"] == AUDITOR
 
 
 def test_the_stored_count_is_the_whole_history_and_the_list_is_capped(tmp_path) -> None:

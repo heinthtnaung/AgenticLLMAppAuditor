@@ -32,9 +32,23 @@ from history_store import (
     STORE_NAME, STORE_SCHEMA_VERSION, HistoryStore, StoreRefused, open_store)
 from run_record import FAILED, INTERRUPTED, RUNNING, RunRecord
 
+# The version this code reads, pinned as a literal beside the constant it must
+# equal. Imported alone it would agree with itself. It went to 2 when the record
+# gained a required `auditor`.
+EXPECTED_STORE_SCHEMA_VERSION = 2
+
+# The version this code used to write, and the one a checkout that ran the
+# server before today has on disk. The refusal a real person meets.
+PREVIOUS_VERSION = 1
+
 # A version no release of this code ever wrote, so the refusal is about the
 # number and not about the file being unreadable.
 FOREIGN_VERSION = 9
+
+# What the refusal must say beyond the two numbers: the old file is still there.
+# It is the only copy of that history, and a message that did not say so invites
+# the reader to assume it was migrated or replaced.
+NOT_DELETED = "never deleted"
 
 # Bytes that are not a database, which is what `_version_of` has to wrap rather
 # than let out as a bare `sqlite3.DatabaseError`.
@@ -42,6 +56,7 @@ NOT_A_DATABASE = "this is a text file that happens to have the right name"
 
 RUN_ID = "b" * 32
 URL = "https://example.invalid/owner/demo-app"
+AUDITOR = "Quokka Reviewer"
 WHEN = "2026-09-09T12:00:00+00:00"
 OPTIONS = {"url": URL}
 
@@ -65,7 +80,8 @@ def store_directory(tmp_path: Path) -> Path:
 
 def a_running_row(store: HistoryStore) -> None:
     """Store one run that says `running`, as a server that then stopped would leave it."""
-    store.save(RunRecord(run_id=RUN_ID, repo_url=URL, options=OPTIONS, started_at=WHEN))
+    store.save(RunRecord(run_id=RUN_ID, repo_url=URL, auditor=AUDITOR,
+                         options=OPTIONS, started_at=WHEN))
 
 
 def foreign_database(tmp_path: Path, version: int) -> Path:
@@ -158,6 +174,49 @@ def test_a_caller_that_names_no_directory_reads_the_module_constant_at_call_time
 
 
 # --- file present and not ours -------------------------------------------------
+
+def test_the_store_version_is_the_one_this_code_writes() -> None:
+    """The file's own version, unrelated to the wire's: one versions a file, one a protocol."""
+    assert STORE_SCHEMA_VERSION == EXPECTED_STORE_SCHEMA_VERSION
+
+
+def test_a_history_written_by_the_previous_version_is_refused(tmp_path) -> None:
+    """The refusal a real checkout meets, not a hypothetical one.
+
+    It refuses rather than migrates, and the reasoning is the record's own:
+    `options.model` would be honestly null on an old row and `uploads` honestly
+    empty, but `auditor` has **no true value** -- nobody recorded who ran it,
+    and a guessed name in a history list is the same fact-shaped guess this
+    project refuses for `app`.
+    """
+    with pytest.raises(StoreRefused, match="never migrated"):
+        open_store(foreign_database(tmp_path, PREVIOUS_VERSION))
+
+
+def test_the_previous_version_refusal_names_both_versions(tmp_path) -> None:
+    """Which number the file says and which this code reads, or the message is unactionable."""
+    with pytest.raises(StoreRefused) as refused:
+        open_store(foreign_database(tmp_path, PREVIOUS_VERSION))
+    said = str(refused.value)
+    assert f"version {PREVIOUS_VERSION}" in said
+    assert f"version {STORE_SCHEMA_VERSION}" in said
+
+
+def test_the_refusal_says_the_old_history_is_not_deleted(tmp_path) -> None:
+    """The one thing a person needs to hear: their only copy of that history is intact."""
+    with pytest.raises(StoreRefused, match=NOT_DELETED):
+        open_store(foreign_database(tmp_path, PREVIOUS_VERSION))
+
+
+def test_the_refused_file_is_still_there_and_still_says_what_it_said(tmp_path) -> None:
+    """Non-vacuity for the sentence above: the message is checked against the disk."""
+    directory = foreign_database(tmp_path, PREVIOUS_VERSION)
+    with pytest.raises(StoreRefused):
+        open_store(directory)
+    assert (directory / STORE_NAME).is_file()
+    with sqlite3.connect(directory / STORE_NAME) as db:
+        assert db.execute("PRAGMA user_version").fetchone()[0] == PREVIOUS_VERSION
+
 
 def test_a_history_at_another_version_is_refused(tmp_path) -> None:
     """It never migrates: the grading key's precedent, with a page for a reader."""
