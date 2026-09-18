@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import ExpandAll from "./ExpandAll.jsx";
 import FindingAdvice from "./FindingAdvice.jsx";
+import { ABSENT } from "../format.js";
 import { fetchArtifactJson } from "../api.js";
 import { useExpanded } from "../useExpanded.js";
 
@@ -40,7 +41,7 @@ const REMEDIATION = "remediation.json";
 /** Where a finding sits, as `file:line`, or the component when it has no line. */
 function location(finding) {
   if (finding.file && finding.line) return `${finding.file}:${finding.line}`;
-  return finding.component_name ?? finding.purl ?? "—";
+  return finding.component_name ?? finding.purl ?? ABSENT;
 }
 
 /** One block of model-written prose, labelled so it is not read as evidence. */
@@ -88,14 +89,22 @@ function Filters({ findings, chosen, onChoose }) {
   );
 }
 
-/** Every advice entry a run wrote, keyed by the finding it is about. */
-function useAdvice(runId) {
+/** Every advice entry one arm wrote, keyed by the finding it is about.
+ *
+ * **Fetched with the arm, and that is the whole point.** `remediation.json`
+ * joins on `finding_id`, both arms audit the same tree, and a finding both of
+ * them found carries the same id -- so reading the local document while
+ * showing the hosted arm's findings would caption one model's finding with the
+ * other model's advice and attribute it to neither.
+ */
+function useAdvice(runId, arm) {
   const [advice, setAdvice] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let watching = true;
-    fetchArtifactJson(runId, REMEDIATION)
+    setLoading(true);
+    fetchArtifactJson(runId, REMEDIATION, arm)
       .then((document) => {
         if (!watching) return;
         setAdvice(Object.fromEntries(
@@ -106,15 +115,15 @@ function useAdvice(runId) {
       // broken page: the rows still open and say so.
       .catch(() => { if (watching) { setAdvice({}); setLoading(false); } });
     return () => { watching = false; };
-  }, [runId]);
+  }, [runId, arm]);
 
   return { advice, loading };
 }
 
 /** Every finding, with the model's reasoning and, on click, how to fix it. */
-export default function FindingList({ findings, probes, runId }) {
+export default function FindingList({ findings, probes, runId, arm }) {
   const [chosen, setChosen] = useState(ALL);
-  const { advice, loading } = useAdvice(runId);
+  const { advice, loading } = useAdvice(runId, arm);
   const shown = chosen === ALL
     ? findings
     : findings.filter((finding) => finding.owasp_id === chosen);

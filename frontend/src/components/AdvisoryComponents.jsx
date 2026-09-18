@@ -111,7 +111,7 @@ export default function AdvisoryComponents({ coverage }) {
           <span className="notice__detail">
             So a supply-chain finding here names a package but not what is known
             to be wrong with it, and this section is empty because nothing was
-            checked — not because nothing was found.
+            checked, not because nothing was found.
           </span>
         </p>
       </div>
@@ -145,7 +145,7 @@ export default function AdvisoryComponents({ coverage }) {
             <strong>{items.length} component{items.length === 1 ? "" : "s"} carry
             a known advisory</strong> ({total} advisor{total === 1 ? "y" : "ies"} in
             total). None is reached by an LLM surface, so none is a scored finding
-            of this tool — but they are real, and an ordinary dependency scanner
+            of this tool, but they are real, and an ordinary dependency scanner
             would flag every one.
           </p>
           <div className="filters">

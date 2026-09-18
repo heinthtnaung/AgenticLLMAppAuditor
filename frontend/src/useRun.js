@@ -53,23 +53,30 @@ export function useRun(runId) {
 }
 
 /** Which files a finished run left on disk, once there is a point in asking. */
-export function useListing(runId, ready) {
+export function useListing(runId, ready, arm) {
   const [listing, setListing] = useState(null);
+  // Why it was refused, kept rather than swallowed. A listing can be refused
+  // for reasons that are not the same statement: the directory is gone, or a
+  // later run of the app overwrote it, or this run had no hosted arm at all.
+  // Rendering one blank for all three is the gap-as-result the rest of this
+  // page refuses, and it got sharper with a second arm -- an overwritten
+  // hosted arm is now reachable from a control rather than only from a URL.
+  const [refused, setRefused] = useState(null);
 
   useEffect(() => {
+    setRefused(null);
     if (!runId || !ready) {
       setListing(null);
       return undefined;
     }
     let watching = true;
-    fetchListing(runId)
-      .then((found) => { if (watching) setListing(found); })
-      // A refused listing is not an error worth a banner: the panel says what
-      // it knows, and the run's own status already says why the files are not
-      // there. `DownloadPanel` renders null for a null listing.
-      .catch(() => { if (watching) setListing(null); });
+    fetchListing(runId, arm)
+      .then((found) => { if (watching) { setListing(found); setRefused(null); } })
+      .catch((failure) => {
+        if (watching) { setListing(null); setRefused(failure.message); }
+      });
     return () => { watching = false; };
-  }, [runId, ready]);
+  }, [runId, ready, arm]);
 
-  return listing;
+  return { listing, refused };
 }

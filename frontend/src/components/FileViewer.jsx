@@ -43,14 +43,14 @@ function readable(text, how) {
  * **HTML goes in a frame that grants nothing.** `sandbox=""` means no scripts
  * and no same-origin access. The markdown converter escapes all HTML today and
  * a test pins that with a real script tag, so this is not load-bearing against
- * the reports as they are — it is load-bearing against that escaping being
+ * the reports as they are; it is load-bearing against that escaping being
  * relaxed one module away, which is the kind of change nobody would think to
  * re-check this page for.
  *
  * Everything else is text in a `<pre>`, which React escapes, so a json document
  * carrying markup is shown and never run.
  */
-export default function FileViewer({ runId, name, onClose }) {
+export default function FileViewer({ runId, name, arm, onClose }) {
   const how = howToShow(name);
   const [text, setText] = useState(null);
   const [failed, setFailed] = useState(null);
@@ -60,11 +60,11 @@ export default function FileViewer({ runId, name, onClose }) {
     let watching = true;
     setText(null);
     setFailed(null);
-    fetchArtifactText(runId, name)
+    fetchArtifactText(runId, name, arm)
       .then((body) => { if (watching) setText(body); })
       .catch((error) => { if (watching) setFailed(error.message); });
     return () => { watching = false; };
-  }, [runId, name, how]);
+  }, [runId, name, arm, how]);
 
   return (
     <Modal title={name} titleId="file-viewer-title" onClose={onClose} wide>
@@ -91,7 +91,7 @@ export default function FileViewer({ runId, name, onClose }) {
         <pre className="viewer__text mono">{readable(text, how)}</pre>
       )}
       <div className="form__actions overlay__actions">
-        <a className="run run--secondary" href={artifactUrl(runId, name)}
+        <a className="run run--secondary" href={artifactUrl(runId, name, arm)}
            download={name}>
           Download {name}
         </a>

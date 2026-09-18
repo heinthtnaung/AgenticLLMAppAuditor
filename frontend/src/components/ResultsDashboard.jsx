@@ -1,11 +1,10 @@
 import AdvisoryComponents from "./AdvisoryComponents.jsx";
-import ComparisonCard from "./ComparisonCard.jsx";
 import FindingList from "./FindingList.jsx";
 import MissingArtifact from "./MissingArtifact.jsx";
 import SurfaceList from "./SurfaceList.jsx";
 
 /** The findings, or the reason there are none to show. */
-function FindingsCard({ document, unreached, runId }) {
+function FindingsCard({ document, unreached, runId, arm }) {
   return (
     <div className="card">
       <h2 className="card__title">Findings</h2>
@@ -32,7 +31,7 @@ function FindingsCard({ document, unreached, runId }) {
       )}
       {document
         ? <FindingList findings={document.findings} probes={document.probes}
-                       runId={runId} />
+                       runId={runId} arm={arm} />
         : <MissingArtifact name="findings.json" />}
     </div>
   );
@@ -60,8 +59,8 @@ function CoverageCard({ checks, artifactsDir }) {
     <div className="card">
       <h2 className="card__title">What could look</h2>
       <p className="card__hint">
-        A check absent here could not run at all — a missing Syft, no advisory
-        data — which the scorer reads as a gap rather than a clean result.
+        A check absent here could not run at all (a missing Syft, no advisory
+        data), which the scorer reads as a gap rather than a clean result.
       </p>
       <div className="checks">
         {checks.length
@@ -79,8 +78,14 @@ function CoverageCard({ checks, artifactsDir }) {
   );
 }
 
-/** What the audit produced: the counts, the findings, and what it looked at. */
-export default function ResultsDashboard({ result, runId }) {
+/** One arm's results: the findings, what it looked at, and where they went.
+ *
+ * `arm` reaches `FindingList`, which reads that arm's own `remediation.json`
+ * rather than the other one's. The two-arm summary is `ComparisonCard`,
+ * rendered by `RunSummary` above the control that chooses between them: it is
+ * about both arms, so it does not belong to either one's results.
+ */
+export default function ResultsDashboard({ result, runId, arm }) {
   const findings = result.findings;
   const surfaces = result.surfaces;
   const checksRun = findings?.coverage?.checks_run;
@@ -94,8 +99,8 @@ export default function ResultsDashboard({ result, runId }) {
 
   return (
     <>
-      <ComparisonCard result={result} />
-      <FindingsCard document={findings} unreached={unreached ?? 0} runId={runId} />
+      <FindingsCard document={findings} unreached={unreached ?? 0} runId={runId}
+                    arm={arm} />
       <AdvisoryComponents coverage={findings?.coverage} />
       <SurfacesCard document={surfaces} runId={runId} />
       <CoverageCard checks={checks} artifactsDir={result.artifacts_dir} />

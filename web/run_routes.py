@@ -20,6 +20,7 @@ from pydantic import BaseModel
 from audit_request import AuditRequest
 from downloads import DOWNLOADABLE
 from history_store import HistoryStore
+import run_files
 import run_record
 from run_jobs import Busy, Registry
 from reporting.progress import STAGES
@@ -28,6 +29,10 @@ from run_record import RunRecord
 REFUSED = 400
 NO_SUCH_RUN = 404
 ALREADY_RUNNING = 409
+# Also 409, and a second name rather than a reuse: "you cannot delete this yet"
+# is not "another audit is in flight". `downloads.py` sets the same precedent
+# with `SUPERSEDED`.
+STILL_RUNNING = 409
 ACCEPTED = 202
 
 # `uuid4().hex`. Checked here so a malformed id never reaches the store at all,
@@ -102,12 +107,96 @@ def register(app: FastAPI, registry: Registry) -> None:
         record, envelope = found
         return _body(registry.store, record, envelope)
 
+    @app.delete("/api/runs")
+    def clear_history() -> dict:
+        """Forget **every** run and every run's files. Deliberately destructive.
+
+        A separate route from the one below rather than a flag on it: that one
+        forgets a row a reader chose, this empties the table, and collapsing
+        them would make the total operation differ from the single one by a
+        query string.
+
+        Refused while an audit is in flight, because that run's worker is
+        writing into the tree this deletes. That is the only refusal -- every
+        stored row goes, and there is no undo, so the page asks twice and names
+        the store's own total rather than the capped number it is showing.
+        """
+        running = registry.active_run_id()
+        if running is not None:
+            raise HTTPException(
+                status_code=STILL_RUNNING,
+                detail=f"run {running} is still going and is writing into the "
+                       "directory this would delete; wait for it to finish")
+        forgotten = registry.store.clear()
+        # After the rows, for the reason `run_files.remove` gives: the row is
+        # the record, and a file this process cannot unlink should not turn a
+        # completed wipe into an error.
+        run_files.remove_every_tree()
+        # `forgotten_count` and not `forgotten`: the per-run route's `forgotten`
+        # is an id, and one key meaning a string on one path and a number on
+        # another is the "field that changes meaning" case `docs/SCHEMAS.md`
+        # says to bump for. A separate name costs nothing and collides with
+        # nothing.
+        return {"schema_version": run_record.REPLY_SCHEMA_VERSION,
+                "forgotten_count": forgotten}
+
+    @app.delete("/api/runs/{run_id}")
+    def forget_run(run_id: str) -> dict:
+        """Forget one run: its row, and the files it wrote. Refuses a running one.
+
+        **This was failed-only until 2026-09-18, and what changed was a
+        filesystem fact rather than a mind.** Artifacts used to be keyed on the
+        app name, so every audit of one app shared a directory: a finished run's
+        stored envelope really was the only copy of its findings, because its
+        files had already been written over by the next run of that app. They
+        are keyed on the run now (`run_files.RUN_ARTIFACTS_ROOT`), so a finished
+        run's files are still its own and forgetting it is a reader deciding
+        they do not want that report -- which is what this endpoint is for.
+
+        **A running run is still refused**, and that refusal is not
+        conventional: its worker is writing into the tree this deletes.
+
+        `run_files.own_tree` covers both arms of a `--compare-models` run, and
+        returns None for a run recorded before the change, whose files sit in a
+        shared directory this must not touch. `runs/uploads/<run_id>/` still
+        survives and is still unreachable afterwards -- both upload routes gate
+        on `store.get` -- and is still recorded in `docs/TODO.md`.
+        """
+        found = registry.store.get(run_id) if RUN_ID.match(run_id) else None
+        if found is None:
+            raise HTTPException(status_code=NO_SUCH_RUN, detail="no run has that id")
+        record, _envelope = found
+        if record.status == run_record.RUNNING:
+            # 409 and not 400: the request is well formed, and it is the run's
+            # *state* that refuses it -- the same distinction this server
+            # already draws when an audit is in flight.
+            raise HTTPException(
+                status_code=STILL_RUNNING,
+                detail="this run is still going and its worker is writing to the "
+                       "files this would delete; wait for it to finish")
+        # Read before the row goes, because it is the row that names the run.
+        tree = run_files.own_tree(run_id)
+        # The store's own answer, not an assumption: a row that vanished between
+        # the read above and here is a 404 rather than a cheerful success.
+        if not registry.store.delete(run_id):
+            raise HTTPException(status_code=NO_SUCH_RUN, detail="no run has that id")
+        if tree is not None:
+            run_files.remove(tree)
+        # `forgotten` echoes what the caller sent and carries no information --
+        # the page discards the body. It is here because every reply under
+        # `/api/` carries a `schema_version`, and a 204 would be the one that
+        # does not.
+        return {"schema_version": run_record.REPLY_SCHEMA_VERSION, "forgotten": run_id}
+
 
 def _body(store: HistoryStore, record: RunRecord, envelope: dict | None = None) -> dict:
     """One run as a reply, with what only a reader can establish added."""
     return run_record.body(
         record, result=envelope,
         artifacts_present=_present(record),
+        # Supplied on this one path, so a list row and the detail body cannot
+        # describe a run's models differently.
+        models=store.model_run(record.run_id),
         # An older run whose directory a newer run has written over. Reported
         # rather than hidden: the findings this run recorded are still true, but
         # the files on disk are no longer the ones it wrote.

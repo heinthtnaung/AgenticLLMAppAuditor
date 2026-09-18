@@ -40,6 +40,13 @@ def build_parser() -> argparse.ArgumentParser:
         help=f"where to write the artifacts (default: {DEFAULT_ARTIFACTS_DIR})",
     )
     parser.add_argument(
+        "--drafts-dir", type=Path, default=None,
+        help="where `--draft-key` writes the drafted key (default: "
+             "grading_keys/drafts/). Given a directory of its own, a run keeps "
+             "its own key instead of sharing one with every other run of the "
+             "same app",
+    )
+    parser.add_argument(
         "--semantic-probe", action="store_true",
         help="ask the local model to judge each prompt template for injection. "
              "Off by default: it puts model-authored findings in findings.json, "
@@ -80,20 +87,25 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _draft_key(app_dir: Path, model: str | None = None) -> None:
+def _draft_key(app_dir: Path, model: str | None = None,
+               drafts_dir: Path | None = None) -> None:
     """Draft a grading key, never letting the attempt cost the run its report.
 
     Last stage of a run whose artifacts are already written, so every failure
     here is a printed reason and an exit code of zero. Without this a second run
     over the same app would raise `FileExistsError`, which `EXPECTED_FAILURES`
-    turns into exit 1 -- an audit that succeeded, reported as a failure.
+    turns into exit 1 -- an audit that succeeded, reported as a failure. That
+    collision is what `--drafts-dir` removes rather than survives: given a
+    directory of its own, a run drafts its own key instead of finding one
+    already there.
 
     Works on any tree that is pinned, not just a fetched one: a key's line
     numbers mean nothing without the commit they were read at, and
     `key_store.write` says exactly that when it cannot find one.
     """
     try:
-        drafted = pipeline.draft_key(app_dir, audit_run.local_model(True, model)["ask"])
+        drafted = pipeline.draft_key(app_dir, audit_run.local_model(True, model)["ask"],
+                                     drafts_dir)
     except pipeline.DRAFTING_FAILURES as error:
         print(f"  no key drafted: {error}", file=sys.stderr)
         return
@@ -133,7 +145,8 @@ def run(args: argparse.Namespace,
         # not so much as construct it. The import is the flag's boundary.
         import compare_run
         return compare_run.run(args.repo_path, args.artifacts_dir,
-                               args.cloud_model, args.model)
+                               args.cloud_model, args.model, on_stage,
+                               args.drafts_dir)
     app_dir = pipeline.resolve_repo(args.repo_path, on_stage)
     audit_run.report_pin_gap(app_dir)
     result = audit_run.audit(app_dir, args.artifacts_dir,
@@ -147,7 +160,7 @@ def run(args: argparse.Namespace,
     # running or not. It is also the one place the model authors ground truth,
     # which is worth a flag a reader can see in the command they typed.
     if args.draft_key:
-        _draft_key(app_dir, args.model)
+        _draft_key(app_dir, args.model, args.drafts_dir)
     # Printed, never written into an artifact: a duration is the one number here
     # that changes on every run, and putting it in a file would break the
     # byte-identical guarantee every artifact makes for a fact about the

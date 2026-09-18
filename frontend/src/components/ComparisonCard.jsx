@@ -27,21 +27,15 @@ export default function ComparisonCard({ result }) {
       <p className="card__hint">
         The same tree audited twice. Only the semantic probe is model-dependent,
         so a difference in findings is a difference in what one model confirmed
-        — not two different tools disagreeing.
+        rather than two different tools disagreeing.
       </p>
       <div className="arms">
         <Arm system={result.comparison.compared_with} envelope={result} />
         <Arm system={result.comparison.system} envelope={result.comparison} />
       </div>
-      {/* Said rather than implied: the download panel serves the local arm's
-          directory, and nothing checks whether a later run overwrote the
-          hosted arm's. Offering its files here would be a link with no
-          evidence path behind it. */}
-      <p className="caveat">
-        The hosted arm wrote to <code>{result.comparison.artifacts_dir}</code>.
-        Those files are not downloadable from this page and nothing here checks
-        whether a later run overwrote them — read them on disk.
-      </p>
+      {/* Where the hosted arm's files are, and why they are not offered here,
+          is said by the Download card when that arm is the one being read --
+          which is where a reader goes looking for them. */}
     </div>
   );
 }

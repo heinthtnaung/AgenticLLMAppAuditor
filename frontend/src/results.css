@@ -299,3 +299,217 @@
      inside the run overlay for the whole length of an audit. */
   .stage--working .stage__mark span { animation: none; }
 }
+
+/* --- History ------------------------------------------------------------- */
+/* The heading and its two controls on one line, the controls holding the right
+   edge when the heading's own two lines wrap. */
+.history__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px 12px;
+}
+.history__actions { display: flex; align-items: center; flex: none; gap: 8px; }
+
+/* --- History, gathered by repository ------------------------------------- */
+/* The header is a row of its own rather than a `<tr>`: each group carries its
+   own table, so there is no single column grid for a spanning header to sit in. */
+.group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 14px 0 0;
+  padding: 10px 12px;
+  background: var(--card-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+.group__open {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0;
+  font: inherit;
+  font-size: 0.86rem;
+  text-align: left;
+  color: var(--ink);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.group__open:hover { color: var(--accent); }
+.group__open:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.group__name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.group__count { flex: none; color: var(--ink-faint); font-size: 0.8rem; }
+.group__forget { flex: none; }
+.group__forget:hover:not(:disabled) { color: var(--crit); border-color: var(--crit-line); }
+.group__forget:disabled { opacity: 0.6; cursor: progress; }
+
+/* An open group is one panel, not a header with a table loose beneath it. The
+   **background** is what joins them; the runs panel draws no border of its own,
+   because those side edges were a vertical rule down either side of the table,
+   the one immediately left of the tick column. The header keeps its outline and
+   gives up its bottom edge and bottom corners, so there is no seam across the
+   middle either. */
+.group--open {
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  border-bottom-color: transparent;
+}
+.group__runs {
+  overflow-x: auto;
+  /* The top padding is the gap the `<th>` row does not carry itself: headings
+     are padded downward only, so without this they sit against the header. */
+  padding: 8px 12px 7px;
+  background: var(--card-raised);
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+}
+
+/* A run with no second arm at all, which is not the same as one that named no
+   model. Faint and not monospaced, because it is a statement and not a name. */
+.model--none { color: var(--ink-faint); font-size: 0.8rem; }
+
+/* --- Footer -------------------------------------------------------------- */
+/* One line, full width. The band spans `.shell` and its contents span the band,
+   so the names sit at the far left and the source control at the far right.
+   No solid fill: the wave layer shows through a blurred veil, the same
+   treatment the top bar uses, so the two ends of the page match. `z-index: 1`
+   keeps it above those waves, which are `position: fixed` at `z-index: 0` and
+   would otherwise paint over a static footer.
+   `backdrop-filter` is safe here only because nothing inside is
+   `position: fixed`: it establishes a containing block, which is the trap
+   `Modal.jsx` documents. */
+.footer {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  margin: 40px 0 0;
+  padding: 13px 28px;
+  border-top: 1px solid var(--line);
+  background: var(--veil);
+  backdrop-filter: blur(10px);
+  color: var(--ink-faint);
+  font-size: 0.8rem;
+}
+/* Flex and not grid: two items on one line where the last one holds the right
+   edge is what `margin-left: auto` does in one declaration, and `flex-wrap`
+   handles a narrow window without a breakpoint of its own. */
+.footer__inner {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 26px;
+}
+.footer__members { margin: 0; color: var(--ink); }
+.footer__label {
+  margin-right: 2px;
+  color: var(--ink-faint);
+  font-size: 0.7rem;
+  font-weight: 640;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+/* GitHub's own black, from a token rather than a literal, and not following the
+   page theme: the mark is a brand, so it is the same in light and dark. */
+.footer__source {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  padding: 7px 13px;
+  color: var(--on-source-mark);
+  background: var(--source-mark);
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  font-weight: 620;
+  white-space: nowrap;
+  transition: transform 0.15s ease;
+}
+.footer__source:hover { transform: translateY(-1px); }
+.footer__source:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+
+/* --- Which arm to read --------------------------------------------------- */
+/* A strip and not a card: it is a control over the cards below it, and giving
+   it a card's own panel would read as another section of the report. */
+.arm-pick {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin: calc(var(--gap) * -0.4) 0 var(--gap);
+  padding: 10px 14px;
+  background: var(--card-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+.arm-pick__label {
+  color: var(--ink-faint);
+  font-size: 0.72rem;
+  font-weight: 620;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+/* `.filters` carries a bottom margin for the findings table; in here the strip
+   supplies the spacing. */
+.arm-pick__buttons { margin-bottom: 0; }
+.arm-pick__system { display: block; font-size: 0.72rem; opacity: 0.75; }
+
+/* The tick column: narrow, and its own click target so the row's navigation
+   does not swallow it. */
+/* The tick column. A fixed width rather than `1%`, so the column does not
+   resize as the widest cell beside it changes, and the header cell is empty on
+   purpose: a heading over a column of checkboxes labels nothing. */
+.table th.pick, .table td.pick { width: 34px; padding-right: 10px; }
+/* Centred in its own cell, both ways. `vertical-align: middle` overrides the
+   `top` every other cell inherits, so the box sits on the row's centre line
+   even when a neighbouring cell wraps to two lines. */
+.table td.pick { cursor: default; vertical-align: middle; text-align: center; }
+
+/* A control of our own rather than the platform's. `appearance: none` removes
+   the native widget outright, which is what removes its inconsistent size,
+   colour and focus ring between browsers -- the grey box that did not belong to
+   this palette, and the stray outline it drew beside a row the options cell had
+   made two lines tall. Everything below is drawn here, so it looks the same
+   everywhere and follows the theme. */
+/* The label is the whole cell's click target, and a block so the box's own
+   `margin: 0 auto` still centres it. */
+.pick__label { display: block; }
+.pick__box {
+  appearance: none;
+  -webkit-appearance: none;
+  display: block;
+  width: 17px;
+  height: 17px;
+  /* `auto` horizontally, which is what centres a block in the cell. */
+  margin: 0 auto;
+  cursor: pointer;
+  background: var(--card-raised);
+  border: 1px solid var(--ink-faint);
+  border-radius: 4px;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+.pick__box:hover { border-color: var(--accent); }
+.pick__box:checked { background: var(--accent); border-color: var(--accent); }
+/* The tick is drawn from two borders rather than a character: a glyph would
+   depend on the font the page happens to load. */
+.pick__box:checked::after {
+  content: "";
+  display: block;
+  width: 4px;
+  height: 8px;
+  margin: 1px auto 0;
+  border: solid var(--on-accent);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+.pick__box:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* No row tint for a picked row. It was `--accent-soft` across every cell, which
+   on this palette is darker than the panel it sits in, so a run of picked rows
+   read as a dark band down the table rather than as a selection. The filled box
+   is the whole indication. */
+
+/* --- What one run asked for ---------------------------------------------- */
+.run-options { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 8px; }
+.run-options__model { color: var(--ink-faint); font-size: 0.76rem; white-space: nowrap; }

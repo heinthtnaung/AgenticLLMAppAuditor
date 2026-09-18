@@ -1,9 +1,9 @@
 // Turning facts into words. Kept out of the components so each one can be read
-// without a detour, and so "—" for absent is spelled once.
+// without a detour, and so "N/A" for absent is spelled once.
 
 // What a missing number shows as. Never "0": a count with no document behind it
 // is a gap, and the whole tool exists to keep those two apart.
-export const ABSENT = "—";
+export const ABSENT = "N/A";
 
 /** A byte count a person can read. */
 export function bytes(count) {

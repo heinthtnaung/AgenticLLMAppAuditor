@@ -102,8 +102,7 @@ export default function AuditPage({ stages, prefill }) {
       {/* While the run is going, and only then. `error` goes into the card
           because the page body is under the scrim. */}
       {running && (
-        <RunOverlay record={record} stages={stages} error={error}
-                    onOpenRun={() => navigate(runPath(runId))} />
+        <RunOverlay record={record} stages={stages} error={error} />
       )}
     </>
   );
