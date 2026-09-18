@@ -8,17 +8,15 @@ import RunPage from "./pages/RunPage.jsx";
 import { fetchStages } from "./api.js";
 import { useRoute } from "./router.js";
 
+// One entry, not two. The history page carries no head: its own card is titled
+// and the sentence that stood here was removed on 2026-09-18 at the user's
+// request. `head` is looked up and may be undefined, which the render guards.
 const HEADS = {
   audit: {
     title: "Audit an application",
     line: "Reports one LLM application against a subset of the OWASP Top 10 for "
         + "LLM Applications, backed by SBOM and AIBOM evidence. It reports; it "
         + "never patches, commits, or runs the code it audits.",
-  },
-  history: {
-    title: "Past runs",
-    line: "Every audit started from this server, newest first. A finished run "
-        + "keeps its findings even after its files are cleaned from disk.",
   },
 };
 

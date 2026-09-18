@@ -6,6 +6,11 @@ OWASP Top 10 for LLM Applications, backed by SBOM/AIBOM evidence.
 Runs **offline** with a local model. It reports; it never patches, commits, or
 runs the code it audits.
 
+**Two ways in, and they run the same audit.** The **web UI** is below and is
+where most people start. The **command line** is further down and is the fuller
+surface -- scoring against a grading key, the baselines, the model comparison.
+One install serves both.
+
 ## Risks it covers
 
 From the **2025** OWASP list (the edition matters — supply chain is LLM03 now,
@@ -25,7 +30,168 @@ LLM05. AUDITABILITY is this project's own category, not a stock OWASP entry.
 
 Each check's title says what it establishes, not what its risk class implies.
 
+---
+
+## Start here: the web UI
+
+A browser front end over the same audit, and how most people use this tool. The
+command line below does everything the page does and more, but you do not need
+it to get a report.
+
+**Set up and run, from a clean clone:**
+
+```bash
+git clone <this repo> && cd AgenticLLMAppAuditor
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+python web/serve.py
+```
+
+Then open **http://127.0.0.1:8000**. Every audit you start from the page is kept
+in the **History** tab, grouped by repository.
+
+`requirements.txt` is one file and carries everything, the server included --
+there is no separate install for the UI. Activate `.venv` in every new terminal
+before running anything; the whole project refuses to be installed anywhere
+else.
+
+**Optional and not part of the tool**: the server lives in `web/`, outside
+`src/`, and nothing under `src/` imports it. That is what keeps the auditor's
+offline guarantees true whether or not you ever start it.
+
+That is the whole thing. **One server, one origin, no Node.** Python serves both
+the page and the API, so the page fetches a relative path and there is **no CORS
+at all** — not a permissive policy, none.
+
+**Start it with `serve.py`, not with `uvicorn` directly.** `uvicorn web.api:app`
+runs the same application, but the bind address then sits on a command line
+where `--host 0.0.0.0` is one word away — and that word publishes an
+unauthenticated endpoint that will clone any URL it is handed. `serve.py` pins
+loopback in code where a test asserts it, and runs from the repo root so an
+audited app's artifacts land in this repo's ignored directories rather than
+beside wherever you happened to be.
+
+The built page is committed under `frontend/dist/`. Build output in git is not
+normally right, but here it is the deliverable: it is what makes the two
+commands above enough. If it is ever missing, the server still starts and the
+browser gets a page saying so and how to build it, rather than a 404.
+
+### For developers
+
+Node is needed to *change* the UI, never to run it. After editing anything under
+`frontend/src/`, rebuild the static files Python serves:
+
+```bash
+cd frontend && npm install && npm run build
+```
+
+Commit `frontend/dist/` in the same change — a source edit without its rebuild
+leaves the served page stale, and nothing but this sentence will tell you.
+For a live-reloading loop, `npm run dev` serves the UI on `:5173` and proxies
+`/api` to the Python server on `:8000` (`frontend/vite.config.js`); that proxy
+is a development convenience and exists in no built page. `uvicorn web.api:app`
+is the same application if you want uvicorn's own flags — with the caveat above
+about which flag not to reach for.
+
+**Read this before binding it anywhere but loopback.** `POST /api/audit` makes
+the server clone a repository you name, run Syft, Trivy and a local model over
+it, and write to disk. **There is no authentication.** CORS does not protect it
+— a cross-origin form POST still reaches the handler; only the reply is hidden.
+`web/serve.py` binds `127.0.0.1` as a named constant that a test asserts, and
+that is where it should stay. The GETs make it worse than a single endpoint
+would: `GET /api/runs` hands back every repository anyone has audited through
+this server and the findings of every finished run, and `GET /api/artifacts/...`
+hands back the files. The run history outlives `artifacts/`, so it is the
+longest-lived thing here and it has no authentication either -- and since
+2026-09-18 a caller can **destroy** part of it: `DELETE /api/runs/{id}` forgets
+a run's row. Narrowed to **failed** runs, because a finished run's envelope is
+the only copy of its findings once the files are cleaned, and every other status
+is refused. With **Compare models** ticked it also sends the
+audited repository's source to a third party, exactly as `--compare-models`
+does from the command line.
+
+### What the page does
+
+- **Shows the audit advancing.** A POST returns a run id immediately and the
+  page polls, so a long audit shows `fetch → surfaces → dependencies →
+  advisories → checks → advice → write → publish` rather than a spinner. The
+  stage names come from `GET /api/stages`, which serves
+  `src/reporting/progress.py`'s own vocabulary -- the page does not restate it.
+- **Keeps every run.** `runs/history.sqlite3` (stdlib `sqlite3`, no new
+  dependency) records each run started from the browser: its URL, its options,
+  its timestamps, its counts, and the whole result. The **History** page lists
+  them grouped by repository, opens any one, and can forget a group's failed
+  runs -- only failed ones, because a finished run's stored result is the only
+  copy of its findings once `artifacts/` is cleaned, and it stays readable
+  after that. Runs from the command line are not recorded -- `src/` does not
+  know the store exists.
+- **Hands back every file.** All sixteen names a run can write are downloadable
+  individually or as one archive. Only names `src/artifacts/names.py` owns are
+  served, joined to the run's own directory, and **always as an attachment**.
+  That last rule is defence in depth and the honest reason is worth stating:
+  `report.html` is built from the audited repository's strings, but
+  `markdown_html.py` escapes every tag and `tests/test_markdown_html_escaping.py`
+  pins that with a real script tag and an `onerror` image -- so this is not
+  load-bearing against the reports as they are. It is load-bearing against that
+  escaping being relaxed one module away, which is the kind of change nobody
+  would think to re-check a download route for.
+- **Renders the artifacts unmodified.** `findings.json` and `surfaces.json` are
+  contracts with their own `schema_version`, and reshaping them for a browser
+  would invent an artifact nobody documents, so the page reads them as they are
+  and the findings are filterable by risk class. What the viewer below shows is
+  the same bytes, pretty-printing aside.
+- **Covers the page while a run goes, then moves out of the way.** Clicking
+  Audit raises a fixed panel carrying the stage list, and the moment the run
+  finishes the page navigates to that run's own report. Only a *finished* run
+  moves it: a failed one is reported beside the URL that produced it, because
+  navigating off a failure before it is read is how a reason gets lost. The
+  panel cannot be dismissed -- an audit cannot be cancelled, so closing it
+  would hide a run that carries on. It offers no exit either: the page leaves
+  the panel by navigating itself when the run finishes, or dropping it when the
+  run fails.
+- **Opens any file it wrote.** The download list is two controls per row: the
+  name opens the file on the page, the arrow saves it. Json is pretty-printed,
+  markdown and text are shown as written, the exported HTML goes in a frame
+  granted nothing. The two PDFs are refused by suffix *before* a byte is
+  fetched, because every reply from the download route is an attachment and
+  there is nothing a frame could display.
+- **Corrects a drafted grading key, and records a human check on it.** Drafts
+  under `grading_keys/drafts/` only -- the published keys are what scoring runs
+  against, and an unauthenticated endpoint that could rewrite those would let
+  anyone who reaches the port rewrite this project's own measurements. A save
+  may not move the key's standing or type an anchor; recording a check is a
+  route of its own, so `source` stays frozen and the pair can never be flipped
+  together. Verifying clears one qualification, `key_unverified`, and no other.
+- **Shows the line a surface names**, read from the tree as it is now, with the
+  reply saying whether that tree could be checked against its pin rather than
+  implying it was.
+- **Says whether the local model server is up**, and which of the models it has
+  pulled an audit would use. Unreachable is an answer: the endpoint replies 200
+  either way, and `models: null` (could not ask) is kept distinct from
+  `models: []` (asked, holds nothing).
+- **Requires an auditor name**, kept with the run and shown on its report, and
+  deliberately in **no artifact** -- so two people auditing one commit still
+  produce byte-identical files.
+- **Light or dark**, defaulting to whatever the machine asks for until you
+  choose, and remembered per browser once you do.
+
+`POST`/`GET /api/runs/{id}/uploads` attach a file to a run as evidence and are
+live, tested, and reachable by nothing on the page: the panel that used to
+exercise them was removed on 2026-09-17. They change no finding -- nothing under
+`src/` reads them -- but that leaves a write endpoint with no UI behind it, which
+`docs/TODO.md` carries as an open decision with both options named.
+
+Two facts the page states rather than hides. A **missing** artifact is not an
+empty one, so a count with no document behind it shows a dash and never `0`. And
+because artifacts are keyed on the app name rather than on the run, a second
+audit of one URL overwrites the first one's files: the older run then reports
+`artifacts_current: false` and its downloads are refused, rather than serving
+newer bytes under an older timestamp.
+
 ## Prerequisites
+
+**Both paths use the same install** -- the four commands above. This section is
+what you can add to either, and what each absence costs.
 
 **Required.** Nothing else is needed to get surfaces, findings and a report.
 
@@ -52,13 +218,13 @@ try the tool.
 | **DejaVu font** | usually already present on Linux | HTML reports still written, PDFs skipped |
 | An **OpenRouter key** | in `.env` | `--compare-models` refuses; nothing else notices |
 
-## Install
+---
 
-```bash
-git clone <this repo> && cd AgenticLLMAppAuditor
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-```
+## The command line
+
+Everything below is the same audit the page runs, driven directly. The install
+is the one above -- `source .venv/bin/activate` in a new terminal and you are
+ready.
 
 Check the local model answers, if you installed Ollama:
 
@@ -66,7 +232,7 @@ Check the local model answers, if you installed Ollama:
 python src/model_client.py
 ```
 
-## Step by step
+### Step by step
 
 **1 — audit something.** A URL is fetched at its current commit and pinned; a
 local path is read where it is.
@@ -140,7 +306,7 @@ python src/index_knowledge.py
 python src/fetch_repo.py <url>
 ```
 
-## Settings
+### Settings
 
 All optional, read from the environment first, then `.env` (gitignored). An
 unknown `AUDITOR_*` name is refused rather than ignored, so a typo is loud.
@@ -156,7 +322,7 @@ unknown `AUDITOR_*` name is refused rather than ignored, so a typo is loud.
 | `OPENROUTER_API_KEY` | — | `--compare-models` only; never read by an audit |
 | `OPENROUTER_MODEL` | `z-ai/glm-5.2` | |
 
-## Try it: catch a real prompt injection
+### Try it: catch a real prompt injection
 
 `indirect-prompt-injection-poc` scrapes a web page and hands the text to a
 model. Its own comments say it is vulnerable. One command:
@@ -198,7 +364,7 @@ Drop `--semantic-probe` and the LLM01 disappears: the probe is the only check
 that asks a model anything, and it is off by default so an ordinary audit is
 fast and produces the same artifacts whether a model was running or not.
 
-### Scoring a run
+#### Scoring a run
 
 Scoring needs a grading key, and this repository ships none — see *What it
 found* below for the figures and the commit that holds the key they were
@@ -216,7 +382,7 @@ Or let the local model draft one for you to correct, with `--draft-key`.
 artifacts directory instead of the app. It audits that folder, finds no source,
 and writes the empty result back over the real one.
 
-## What it found
+### What it found
 
 On `damn-vulnerable-llm-agent` at commit `c0cf9a14`, scored against a grading
 key that **is no longer in this repository** — removed deliberately, recoverable
@@ -245,14 +411,14 @@ advisory-carrying components reached by nothing. Both are correct, and the pair
 is the point: this tool answers "does the LLM reach it?", not "is it
 vulnerable?".
 
-## Optional: compare a local and a hosted model
+### Optional: compare a local and a hosted model
 
 Answers the proposal's Objective 5 — can an open-weight model run locally do
 this job as well as a hosted one. **Entirely optional.** With no API key nothing
 changes: `report.html` holds local-model output only, as it always does, and no
 audit ever reads the key.
 
-### Setup
+#### Setup
 
 Put both settings in `.env` (gitignored). A real environment variable wins over
 either.
@@ -262,7 +428,7 @@ OPENROUTER_API_KEY=sk-or-v1-...
 OPENROUTER_MODEL=z-ai/glm-5.2
 ```
 
-### Run
+#### Run
 
 ```bash
 python src/main.py <repo> --compare-models
@@ -294,7 +460,7 @@ training use, and which upstream provider OpenRouter routed to.
 semantic probe and the remediation advice. The knowledge-base embeddings stay
 local in both arms.
 
-### The study behind it
+#### The study behind it
 
 `experiments/compare_models.py` is the Objective 5 write-up rather than the
 tool: it runs the probe alone across several models at once and renders a page
@@ -311,7 +477,7 @@ python experiments/compare_models.py fetched/<app> \
 audit report is byte-identical run to run, and a hosted model's answer is
 neither reproducible nor available without a key.
 
-### Reading the output
+#### Reading the output
 
 ```
   fetched/<app>: 5 prompt template(s), 2 put to a model     # illustrative
@@ -349,143 +515,6 @@ Three things worth knowing before quoting a result:
 `experiments/` lives outside `src/` and nothing under `src/` may import it; a
 test asserts both directions. The cloud client itself now lives in `src/`,
 because `--compare-models` needs it — see Guarantees for what that costs.
-
-## Web UI
-
-A browser front end over the same audit, for people who would rather not use a
-terminal. **Optional and not part of the tool**: the server lives in `web/`,
-outside `src/`, and nothing under `src/` imports it.
-
-```bash
-pip install -r requirements.txt   # one file; it carries fastapi and uvicorn
-python web/serve.py               # then open http://127.0.0.1:8000
-```
-
-That is the whole thing. **One server, one origin, no Node.** Python serves both
-the page and the API, so the page fetches a relative path and there is **no CORS
-at all** — not a permissive policy, none.
-
-**Start it with `serve.py`, not with `uvicorn` directly.** `uvicorn web.api:app`
-runs the same application, but the bind address then sits on a command line
-where `--host 0.0.0.0` is one word away — and that word publishes an
-unauthenticated endpoint that will clone any URL it is handed. `serve.py` pins
-loopback in code where a test asserts it, and runs from the repo root so an
-audited app's artifacts land in this repo's ignored directories rather than
-beside wherever you happened to be.
-
-The built page is committed under `frontend/dist/`. Build output in git is not
-normally right, but here it is the deliverable: it is what makes the two
-commands above enough. If it is ever missing, the server still starts and the
-browser gets a page saying so and how to build it, rather than a 404.
-
-### For developers
-
-Node is needed to *change* the UI, never to run it. After editing anything under
-`frontend/src/`, rebuild the static files Python serves:
-
-```bash
-cd frontend && npm install && npm run build
-```
-
-Commit `frontend/dist/` in the same change — a source edit without its rebuild
-leaves the served page stale, and nothing but this sentence will tell you.
-For a live-reloading loop, `npm run dev` serves the UI on `:5173` and proxies
-`/api` to the Python server on `:8000` (`frontend/vite.config.js`); that proxy
-is a development convenience and exists in no built page. `uvicorn web.api:app`
-is the same application if you want uvicorn's own flags — with the caveat above
-about which flag not to reach for.
-
-**Read this before binding it anywhere but loopback.** `POST /api/audit` makes
-the server clone a repository you name, run Syft, Trivy and a local model over
-it, and write to disk. **There is no authentication.** CORS does not protect it
-— a cross-origin form POST still reaches the handler; only the reply is hidden.
-`web/serve.py` binds `127.0.0.1` as a named constant that a test asserts, and
-that is where it should stay. The GETs make it worse than a single endpoint
-would: `GET /api/runs` hands back every repository anyone has audited through
-this server and the findings of every finished run, and `GET /api/artifacts/...`
-hands back the files. The run history outlives `artifacts/`, so it is the
-longest-lived thing here and it has no authentication either. With **Compare models** ticked it also sends the
-audited repository's source to a third party, exactly as `--compare-models`
-does from the command line.
-
-### What the page does
-
-- **Shows the audit advancing.** A POST returns a run id immediately and the
-  page polls, so a long audit shows `fetch → surfaces → dependencies →
-  advisories → checks → advice → write → publish` rather than a spinner. The
-  stage names come from `GET /api/stages`, which serves
-  `src/reporting/progress.py`'s own vocabulary -- the page does not restate it.
-- **Keeps every run.** `runs/history.sqlite3` (stdlib `sqlite3`, no new
-  dependency) records each run started from the browser: its URL, its options,
-  its timestamps, its counts, and the whole result. The **History** page lists
-  them and opens any one, and a finished run stays readable after `artifacts/`
-  is cleaned. Runs from the command line are not recorded -- `src/` does not
-  know the store exists.
-- **Hands back every file.** All sixteen names a run can write are downloadable
-  individually or as one archive. Only names `src/artifacts/names.py` owns are
-  served, joined to the run's own directory, and **always as an attachment**.
-  That last rule is defence in depth and the honest reason is worth stating:
-  `report.html` is built from the audited repository's strings, but
-  `markdown_html.py` escapes every tag and `tests/test_markdown_html_escaping.py`
-  pins that with a real script tag and an `onerror` image -- so this is not
-  load-bearing against the reports as they are. It is load-bearing against that
-  escaping being relaxed one module away, which is the kind of change nobody
-  would think to re-check a download route for.
-- **Renders the artifacts unmodified.** `findings.json` and `surfaces.json` are
-  contracts with their own `schema_version`, and reshaping them for a browser
-  would invent an artifact nobody documents, so the page reads them as they are
-  and the findings are filterable by risk class. Since 2026-09-17 a file viewer
-  opens any of the run's own files from the download list -- json pretty-printed,
-  markdown and text as written, the exported HTML in a frame granted nothing.
-  The two PDFs are the exception and are refused by name before a byte is read:
-  every reply from the download route is an attachment, so there is nothing a
-  frame could display.
-- **Covers the page while a run goes, then moves out of the way.** Clicking
-  Audit raises a fixed panel carrying the stage list, and the moment the run
-  finishes the page navigates to that run's own report. Only a *finished* run
-  moves it: a failed one is reported beside the URL that produced it, because
-  navigating off a failure before it is read is how a reason gets lost. The
-  panel cannot be dismissed -- an audit cannot be cancelled, so closing it
-  would hide a run that carries on -- and offers one exit, a link to the run's
-  page, which renders a running run and keeps polling.
-- **Opens any file it wrote.** The download list is two controls per row: the
-  name opens the file on the page, the arrow saves it. Json is pretty-printed,
-  markdown and text are shown as written, the exported HTML goes in a frame
-  granted nothing. The two PDFs are refused by suffix *before* a byte is
-  fetched, because every reply from the download route is an attachment and
-  there is nothing a frame could display.
-- **Corrects a drafted grading key, and records a human check on it.** Drafts
-  under `grading_keys/drafts/` only -- the published keys are what scoring runs
-  against, and an unauthenticated endpoint that could rewrite those would let
-  anyone who reaches the port rewrite this project's own measurements. A save
-  may not move the key's standing or type an anchor; recording a check is a
-  route of its own, so `source` stays frozen and the pair can never be flipped
-  together. Verifying clears one qualification, `key_unverified`, and no other.
-- **Shows the line a surface names**, read from the tree as it is now, with the
-  reply saying whether that tree could be checked against its pin rather than
-  implying it was.
-- **Says whether the local model server is up**, and which of the models it has
-  pulled an audit would use. Unreachable is an answer: the endpoint replies 200
-  either way, and `models: null` (could not ask) is kept distinct from
-  `models: []` (asked, holds nothing).
-- **Requires an auditor name**, kept with the run and shown on its report, and
-  deliberately in **no artifact** -- so two people auditing one commit still
-  produce byte-identical files.
-- **Light or dark**, defaulting to whatever the machine asks for until you
-  choose, and remembered per browser once you do.
-
-`POST`/`GET /api/runs/{id}/uploads` attach a file to a run as evidence and are
-live, tested, and reachable by nothing on the page: the panel that used to
-exercise them was removed on 2026-09-17. They change no finding -- nothing under
-`src/` reads them -- but that leaves a write endpoint with no UI behind it, which
-`docs/TODO.md` carries as an open decision with both options named.
-
-Two facts the page states rather than hides. A **missing** artifact is not an
-empty one, so a count with no document behind it shows a dash and never `0`. And
-because artifacts are keyed on the app name rather than on the run, a second
-audit of one URL overwrites the first one's files: the older run then reports
-`artifacts_current: false` and its downloads are refused, rather than serving
-newer bytes under an older timestamp.
 
 ## Where everything lives
 

@@ -20,6 +20,11 @@ export async function fetchRun(runId) {
   return ask(`/api/runs/${runId}`);
 }
 
+/** Forget one failed run. Refused for any other status, by the server. */
+export async function forgetRun(runId) {
+  return ask(`/api/runs/${runId}`, { method: "DELETE" });
+}
+
 /** The newest runs, and how many the store holds in total. */
 export async function fetchHistory() {
   return ask("/api/runs");

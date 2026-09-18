@@ -16,13 +16,21 @@ import uuid
 from dataclasses import asdict, dataclass, field, fields
 from datetime import datetime, timezone
 
+# The one module in `src/` this file reaches for, and only for a pure function:
+# `canonical_url` owns the rule for deciding whether two URLs name the same
+# repository, and `pipeline._reused` already joins on it. Serving the answer is
+# what keeps the page from re-deriving it -- a `.git` strip written again in
+# JavaScript is a second owner of a join key, and a page that disagreed with
+# the pipeline would show two groups for a repository the tool treated as one.
+from repo_url import canonical_url
+
 # Everything under `/api/` carries this. It went to 2 when the audit stopped
 # blocking, and to 3 when a run gained a **required** `auditor`: an old page
 # posts a body without one and the server answers 400, which is exactly the
 # case this number exists to announce. The `comparison` key added alongside it
 # would not have earned a bump on its own -- an old bundle ignores a key it does
 # not know and renders the local arm, which is degraded rather than wrong.
-# One constant, so three bodies cannot claim three versions.
+# One constant, so seven bodies cannot claim seven versions.
 REPLY_SCHEMA_VERSION = 3
 
 # Free text on an endpoint with no authentication, so it is a claim and not an
@@ -129,10 +137,14 @@ def started(repo_url: str, auditor: str, options: dict) -> RunRecord:
 # fields are checked against one list.
 DURABLE_FIELDS = tuple(f.name for f in fields(RunRecord))
 
-# Added at read time, never stored. A stored flag about the filesystem becomes a
-# lie the moment someone cleans `artifacts/`, and a stale claim that a run's
-# evidence is present is exactly the shape of failure this tool exists to expose.
-COMPUTED_FIELDS = ("artifacts_present", "artifacts_current")
+# Added at read time, never stored. For the two filesystem flags the reason is
+# staleness: a stored flag about `artifacts/` becomes a lie the moment someone
+# cleans it, and a stale claim that a run's evidence is present is exactly the
+# shape of failure this tool exists to expose. For `canonical_repo_url` the
+# reason is ownership: it is derived from a field on the same row by a function
+# `src/` owns, so storing it would be a second copy that could disagree with
+# the one the pipeline joins on.
+COMPUTED_FIELDS = ("artifacts_present", "artifacts_current", "canonical_repo_url")
 
 
 def body(record: RunRecord, *, artifacts_present: bool, artifacts_current: bool,
@@ -148,6 +160,11 @@ def body(record: RunRecord, *, artifacts_present: bool, artifacts_current: bool,
         **asdict(record),
         "artifacts_present": artifacts_present,
         "artifacts_current": artifacts_current,
+        # Computed here rather than passed in, unlike the two flags above: those
+        # need a filesystem and a store query, so only the route can establish
+        # them. This one needs the record alone, so computing it here makes a
+        # caller unable to pass a wrong value.
+        "canonical_repo_url": canonical_url(record.repo_url),
         "result": result,
     }
 

@@ -1,59 +1,53 @@
-import { count, seconds, when } from "../format.js";
-import { navigate, runPath } from "../router.js";
-import { FAILED, FINISHED, RUNNING } from "../runStatus.js";
+import HistoryGroup from "./HistoryGroup.jsx";
+import { useState } from "react";
+import { groupRuns } from "../repoGroup.js";
+import { useExpanded } from "../useExpanded.js";
 
-// How a status reads. A dot and a word, not a pill: the reference design
-// reserves pills for a severity, and a run's status is not one. `interrupted`
-// is not a status the API has -- a run whose server stopped is stored as failed
-// with that reason -- so three is the whole vocabulary, and a value outside it
-// still shows as itself.
-// Keyed by the constants, as `StageProgress` keys `MARK`. Written as bare
-// object keys this was the sixth copy of the status vocabulary and the only
-// one with no quotes to be grepped for -- which is why the test that found
-// it looks for object keys as well as strings.
-const TONE = { [FINISHED]: "low", [RUNNING]: "mid", [FAILED]: "crit" };
+/** Every past run, gathered by repository, each group opening on a click. */
+export default function HistoryTable({ runs, onForget }) {
+  const groups = groupRuns(runs);
+  // The same hook the findings and surfaces tables use, so "which rows are
+  // open" is one behaviour in this page rather than three.
+  const open = useExpanded(groups.map((group) => group.key));
+  const [forgetting, setForgetting] = useState(null);
 
-/** Every past run, newest first, each opening its own page. */
-export default function HistoryTable({ runs }) {
   if (!runs.length) {
     return (
       <p className="empty">
-        No audits yet. Every run started from this page is kept here, including
-        the ones that failed.
+        No audits yet. Every run started from this page is kept here until
+        someone forgets it, and a failed one is the only kind that can be
+        forgotten.
       </p>
     );
   }
+
+  async function forget(group, failed) {
+    setForgetting(group.key);
+    try {
+      // One primitive, called once per run, rather than a bulk endpoint: there
+      // is one rule to reason about on the server and the page decides how many
+      // to apply it to.
+      await onForget(failed);
+    } finally {
+      setForgetting(null);
+    }
+  }
+
   return (
-    <div className="table-scroll">
-      <table className="table">
-        <thead>
-          <tr>
-            <th>Started</th><th>Auditor</th><th>App</th><th>Status</th>
-            <th>Findings</th><th>Surfaces</th><th>Took</th><th>Files</th>
-          </tr>
-        </thead>
-        <tbody>
-          {runs.map((run) => (
-            <tr key={run.run_id} className="row--clickable"
-                onClick={() => navigate(runPath(run.run_id))}>
-              <td>{when(run.started_at)}</td>
-              <td>{run.auditor}</td>
-              <td className="mono">{run.app ?? run.repo_url}</td>
-              <td className="nowrap">
-                <span className={`dot dot--${TONE[run.status] ?? "none"}`} />
-                {run.status}
-              </td>
-              <td>{count(run.finding_count)}</td>
-              <td>{count(run.surface_count)}</td>
-              <td>{seconds(run.seconds)}</td>
-              <td>
-                {!run.artifacts_present ? "gone"
-                  : run.artifacts_current ? "on disk" : "overwritten"}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <>
+      {groups.length > 1 && (
+        <button type="button" className="disclose disclose--inline"
+                onClick={open.toggleAll}>
+          {open.allOpen ? "Close every repository" : "Open every repository"}
+        </button>
+      )}
+      {groups.map((group) => (
+        <HistoryGroup key={group.key} group={group}
+                      open={open.isOpen(group.key)}
+                      onToggle={() => open.toggle(group.key)}
+                      onForget={(failed) => forget(group, failed)}
+                      forgetting={forgetting === group.key} />
+      ))}
+    </>
   );
 }

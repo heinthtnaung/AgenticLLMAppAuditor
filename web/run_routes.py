@@ -28,6 +28,9 @@ from run_record import RunRecord
 REFUSED = 400
 NO_SUCH_RUN = 404
 ALREADY_RUNNING = 409
+# Also 409, and a second name rather than a reuse: a finished run is not
+# "already running". `downloads.py` sets the same precedent with `SUPERSEDED`.
+NOT_FAILED = 409
 ACCEPTED = 202
 
 # `uuid4().hex`. Checked here so a malformed id never reaches the store at all,
@@ -101,6 +104,47 @@ def register(app: FastAPI, registry: Registry) -> None:
             raise HTTPException(status_code=NO_SUCH_RUN, detail="no run has that id")
         record, envelope = found
         return _body(registry.store, record, envelope)
+
+    @app.delete("/api/runs/{run_id}")
+    def forget_run(run_id: str) -> dict:
+        """Forget one **failed** run. Refuses every other status by name.
+
+        `docs/SCHEMAS.md` carries the argument: the CHECK constraint the
+        narrowing rests on, and why the other two statuses are refused.
+        `tests/web/test_failed_run_has_no_artifacts_dir.py` measures its one
+        prose premise -- that a failed row names no `artifacts_dir` -- which is
+        why nothing here branches defensively on a case no producer reaches.
+
+        The row only: `artifacts/<app>/` is keyed on the app name and shared
+        with every other run of that app. `runs/uploads/<run_id>/` survives too
+        and is unreachable afterwards, because both upload routes gate on
+        `store.get` -- `tests/web/test_uploads_serving.py` holds that an id no
+        row carries answers 404, and a forgotten run's id is exactly that.
+        Recorded in `docs/TODO.md`.
+        """
+        found = registry.store.get(run_id) if RUN_ID.match(run_id) else None
+        if found is None:
+            raise HTTPException(status_code=NO_SUCH_RUN, detail="no run has that id")
+        record, _envelope = found
+        if record.status != run_record.FAILED:
+            # 409 and not 400: the request is well formed, and it is the run's
+            # *state* that refuses it -- the same distinction this server
+            # already draws when an audit is in flight.
+            raise HTTPException(
+                status_code=NOT_FAILED,
+                detail=f"this run is {record.status}, and only a failed run may be "
+                       "forgotten. A finished run's envelope is the only copy of its "
+                       "findings once `artifacts/` is cleaned, and a running one "
+                       "still has a worker writing to it")
+        # The store's own answer, not an assumption: a row that vanished between
+        # the read above and here is a 404 rather than a cheerful success.
+        if not registry.store.delete(run_id):
+            raise HTTPException(status_code=NO_SUCH_RUN, detail="no run has that id")
+        # `forgotten` echoes what the caller sent and carries no information --
+        # the page discards the body. It is here because every reply under
+        # `/api/` carries a `schema_version`, and a 204 would be the one that
+        # does not.
+        return {"schema_version": run_record.REPLY_SCHEMA_VERSION, "forgotten": run_id}
 
 
 def _body(store: HistoryStore, record: RunRecord, envelope: dict | None = None) -> dict:

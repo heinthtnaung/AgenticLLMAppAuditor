@@ -313,6 +313,21 @@ same change would not have earned a bump on its own. **The
 page that reads it is built separately into `frontend/dist/` and committed**, so
 an ordinary checkout can serve a stale bundle against a fresh server.
 
+`canonical_repo_url` was added on 2026-09-18, for grouping the history by
+repository, and did **not** bump the number by the widening rule above: an old
+bundle ignores a key it does not know and simply groups nothing. **The
+tolerance runs one way only, and this is the direction the rule does not
+cover.** The new bundle *requires* that key -- `repoGroup.js::groupRuns`
+groups on it with no fallback, so a reply without it puts **every run into one
+group** whose key is `undefined`: a `Map` matches that key after the first row,
+so the page renders one repository holding everything rather than failing --
+a gap shown as a result, which is the one thing this page may not do. That is
+safe here only because `frontend/dist/` is committed beside the server and both
+moved in the same commit; it is not a property of the addition. A key a page cannot render
+without is a required field in everything but name, and the next one added to a
+reply the page *must* have should be read against the first bullet above, not
+the second.
+
 Keys: `schema_version`, `app`, `artifacts_dir`, `seconds`, `advisories_read`,
 `findings`, `surfaces`, `comparison`. All eight always present.
 
@@ -385,6 +400,7 @@ not a view.
 |---|---|
 | `POST /api/audit` | **202** and the record. `400` for a refusal from `AuditRequest.refusals()`, before any row is written. `409` while another run is in flight. `422` for a body pydantic rejects. |
 | `GET /api/runs/{run_id}` | **200** and the record. `404` for an id no row carries, and for an id that is not 32 lowercase hex characters -- "no run has that id" is true of both, and checking the shape keeps a request-supplied string out of a filesystem join. |
+| `DELETE /api/runs/{run_id}` | **200** and `{schema_version, forgotten}`. `404` for an id no row carries and for a malformed one, on the same reasoning as the row above. `409` when the run is not `failed`: the request is well formed and the run's *state* refuses it, which is the distinction `ALREADY_RUNNING` and `SUPERSEDED` already draw. The body echoes the id and carries nothing a caller needs -- it exists so every reply under `/api/` has a `schema_version`. |
 | `GET /api/runs` | **200** and `{schema_version, stored_run_count, runs}`. |
 | `GET /api/stages` | **200** and `{schema_version, stages}` -- the whole vocabulary, in order, so the page can show what has *not* happened without restating it in JavaScript. |
 
@@ -416,6 +432,7 @@ not write.
 | `artifacts_dir` | string \| null | no directory has been named. Read back from the run, never re-derived. |
 | `artifacts_present` | bool | never null. Computed **per request**: the directory exists and holds at least one downloadable name. Coarse on purpose -- not a claim that every artifact is there, and the download endpoint answers per file. Always `false` when `artifacts_dir` is null. |
 | `artifacts_current` | bool | never null. Computed per request. `false` when a **later run wrote to the same directory**: artifacts are keyed on the app name, not on the run, so two audits of one URL share `artifacts/<system>/<app>/`. Downloads are refused with 409 when this is false, rather than serving a newer run's bytes under an older run's timestamp. |
+| `canonical_repo_url` | string | never null. **Computed per request, never stored.** `repo_url` in the one spelling that decides whether two runs are of the same repository, from `src/repo_url.py::canonical_url`: a trailing slash and a `.git` suffix removed and **nothing else normalised**, because two owners with the same repository name are two repositories. Served rather than re-derived by the page: `pipeline._reused` joins on the same function, and a page that disagreed would show two groups for a repository the tool treated as one. |
 | `finding_count` | int \| null | **no `findings.json` stands behind it** -- still running, failed, or finished without the document. It is not `0`. Copied from the document's own `finding_count`, never recounted. |
 | `surface_count` | int \| null | the same, from `surfaces.json`'s own count. |
 | `error` | string \| null | the run did not fail. Non-null exactly when `status == failed`. |
@@ -500,7 +517,9 @@ silently drop an option added to `AuditRequest` later, which is the trap
 the stored text is stable.
 
 `envelope` is what keeps a past run viewable after `artifacts/` is cleaned, which
-is why a row is never deleted for having lost its files. **Byte-identity with
+is why a row is never deleted for having lost its files. A *failed* row may be
+forgotten on request, which is a different reason and a row with no envelope to
+lose. **Byte-identity with
 the artifact files is not claimed**: the envelope is stored compact and sorted,
 the files are written `indent=2, sort_keys=True`. Equality is of content after
 parsing. The list query names its columns and never selects `envelope`.
@@ -532,7 +551,7 @@ never-null `auditor` makes a version-1 row unrepresentable, and refusing is what
 that means. A future column where every old row has an honest value is a case
 this paragraph does not decide.
 
-It never migrates and never deletes. That is the grading key's precedent
+It never migrates a file and never deletes one. That is the grading key's precedent
 verbatim: a version-2 key is refused rather than read by a scorer whose
 vocabulary has moved under it, and a run record read by a store whose columns
 have moved is the same mistake with worse consequences, because the reader here
@@ -552,6 +571,19 @@ its own connection to the path the store holds.
 the findings of every finished run, in a file that outlives `artifacts/`. The
 endpoints have no authentication, so that history is readable by anything that
 can reach the port.
+
+**Rows are a different subject, and one kind may be forgotten.**
+`DELETE /api/runs/{id}` removes a **failed** run's row on request. What makes
+that safe is a constraint and not a convention: `(status = 'failed') = (error IS
+NOT NULL)` and `(status = 'finished') = (envelope IS NOT NULL)` together mean a
+failed row's envelope is NULL, so forgetting one destroys no findings -- and a
+failed row names no `artifacts_dir`, so it cannot move another run's
+`artifacts_current`. Every other status is refused with 409. The *file* is still
+never migrated and never deleted.
+
+`runs/uploads/<run_id>/` survives a forgotten row and is then unreachable: the
+upload route answers 404 without a record, and nothing cleans the directory.
+Recorded in `docs/TODO.md` rather than swept.
 
 ## Attached evidence, and not an artifact either
 
@@ -584,7 +616,7 @@ the pattern the run routes apply.
 | `upload_id` | string | `uuid4().hex`. Server-generated. The only name that reaches the filesystem. |
 | `name` | string | The client's filename. Display only; never a path, never joined. |
 | `bytes` | int | Size as stored. |
-| `sha256` | string | Of the stored bytes. Evidence with no digest cannot be shown to be the bytes that were attached, and the record outlives the files. |
+| `sha256` | string | Of the stored bytes. Evidence with no digest cannot be shown to be the bytes that were attached, and the record outlives the files -- except when the run is *forgotten*, which is the one case where the files outlive the record and become unreachable. |
 
 The client's declared `Content-Type` is deliberately **not** stored: it is
 attacker-chosen and could only ever be echoed back, which is how a sniffed
@@ -620,7 +652,7 @@ root, and the record -- `uploads[]` lists uploads, and
 ## Model status, which is a reply and not a file
 
 `GET /api/model`. Carries `schema_version` because every body under `/api/`
-does -- one constant, six bodies, and an exception here would be something a
+does -- one constant, seven bodies, and an exception here would be something a
 reader has to learn for no gain.
 
 **A gap must not read as "no models".** `models` is `null` when the local Ollama

@@ -299,3 +299,43 @@
      inside the run overlay for the whole length of an audit. */
   .stage--working .stage__mark span { animation: none; }
 }
+
+/* --- History, gathered by repository ------------------------------------- */
+/* The header is a row of its own rather than a `<tr>`: each group carries its
+   own table, so there is no single column grid for a spanning header to sit in. */
+.group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 14px 0 0;
+  padding: 10px 12px;
+  background: var(--card-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+.group__open {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0;
+  font: inherit;
+  font-size: 0.86rem;
+  text-align: left;
+  color: var(--ink);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.group__open:hover { color: var(--accent); }
+.group__open:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.group__name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.group__count { flex: none; color: var(--ink-faint); font-size: 0.8rem; }
+.group__forget { flex: none; }
+.group__forget:hover:not(:disabled) { color: var(--crit); border-color: var(--crit-line); }
+.group__forget:disabled { opacity: 0.6; cursor: progress; }
+
+/* --- What one run asked for ---------------------------------------------- */
+.run-options { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 8px; }
+.run-options__model { color: var(--ink-faint); font-size: 0.76rem; white-space: nowrap; }

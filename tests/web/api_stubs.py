@@ -23,6 +23,16 @@ sees it, and `poll_until_terminal` polls `GET /api/runs/{id}` the way the page
 polls, under a deadline. The tests whose subject is the slot rather than the
 record wait on `audit_stub.wait_for_the_worker` instead.
 
+**`StoreThatRecordsLookups` is here for the same reason the application is.**
+Two route files check a request-supplied id's *shape* before the store is ever
+asked -- `GET /api/runs/{id}` and `DELETE /api/runs/{id}` -- and a status code
+alone cannot see that guard: with the check deleted the store is simply asked
+for the malformed id, finds nothing, and the route answers the same 404. So it
+is measured where it acts, against a double that records every id it was handed.
+It lives here rather than in either test file because a double implementing only
+the method one of them calls is an `AttributeError` in the other, which is how
+this one started: it answered `get` and nothing else.
+
 Nothing here calls `pytest.importorskip`. It imports fastapi outright, and httpx
 for the response type; every test module that imports it skips on the web extra
 before it reaches this import.
@@ -39,6 +49,7 @@ import downloads
 import history_store
 import run_routes
 from run_jobs import Registry
+from run_record import RunRecord
 
 from .audit_stub import (
     AUDITOR, POLL_SECONDS, TERMINAL_STATUSES, URL, WORKER_TIMEOUT_SECONDS,
@@ -47,8 +58,45 @@ from .audit_stub import (
 ENDPOINT = "/api/audit"
 RUNS = "/api/runs"
 
+# Ids every `/api/runs/{id}` route must answer 404 to without touching the
+# store: too short, too long, upper case, and a name that is not hex at all.
+# One spelling, because two routes apply the same `RUN_ID` pattern and a list
+# that grew in one file would leave the other testing less than it says.
+MALFORMED_IDS = ("a" * 31, "a" * 33, "A" * 32, "not-a-run-id")
+
 OK = 200
 ACCEPTED = 202
+
+
+class StoreThatRecordsLookups:
+    """A store double that notes every run id it was asked for, then delegates.
+
+    Every method a route calls with a request-supplied id belongs here, whether
+    or not the test at hand uses it: a double that answers some of them turns a
+    guard that was never exercised into an `AttributeError` rather than a
+    failure anybody can read.
+    """
+
+    def __init__(self, real: history_store.HistoryStore) -> None:
+        """Hold the real store, and the ids asked of it."""
+        self.real = real
+        self.asked: list[str] = []
+        self.deleted: list[str] = []
+
+    def get(self, run_id: str) -> tuple[RunRecord, dict | None] | None:
+        """Record the id, then answer as the real store would."""
+        self.asked.append(run_id)
+        return self.real.get(run_id)
+
+    def delete(self, run_id: str) -> bool:
+        """Record the id in both lists, then delete as the real store would."""
+        self.asked.append(run_id)
+        self.deleted.append(run_id)
+        return self.real.delete(run_id)
+
+    def superseded(self, record: RunRecord) -> bool:
+        """Delegated untouched: `_body` calls it with a record, never with an id."""
+        return self.real.superseded(record)
 
 
 def application_over(store: history_store.HistoryStore) -> tuple[FastAPI, Registry]:
@@ -64,6 +112,14 @@ def client_over(tmp_path: Path) -> tuple[TestClient, Registry]:
     """A client on a fresh application whose history is under `tmp_path`."""
     app, registry = application_over(open_a_store(tmp_path))
     return TestClient(app), registry
+
+
+def client_over_a_recording_store(
+        tmp_path: Path) -> tuple[TestClient, StoreThatRecordsLookups]:
+    """A client whose store reports which ids the routes handed it."""
+    double = StoreThatRecordsLookups(open_a_store(tmp_path))
+    app, _ = application_over(double)
+    return TestClient(app), double
 
 
 def post_an_audit(client: TestClient, url: str = URL, **options) -> httpx.Response:

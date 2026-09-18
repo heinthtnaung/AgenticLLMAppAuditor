@@ -19,9 +19,9 @@ Ticked history is in git before commit `a78482c`; what shipped is in
 | Scoring | Nothing version-gates `findings.json`, so a stale artifact scores silently against fresh code. |
 | `web/run_jobs.py` | One audit at a time: a second request is refused with 409 rather than queued. Two concurrent runs would race between the "already fetched?" check and the clone, and two over one app would overwrite `artifacts/<app>/` mid-write. A queue is the real answer. |
 | `web/downloads.py` | Artifacts are keyed on the app name, not on the run, so a second audit of one URL writes over the first one's files. A superseded run reports `artifacts_current: false` and its downloads are refused with 409 rather than serving the newer bytes under the older timestamp -- which is honest but total: those files are simply not recoverable. Keying artifacts on the run would fix it and would change `--artifacts-dir`'s meaning for the CLI too. |
-| `web/run_jobs.py` | An audit cannot be stopped once it starts. The page shows progress and no cancel, because a cooperative cancel raising through `progress.stage` would be swallowed by five `except` clauses in `src/` (`export_reports.py`, `main.py`, `retrieval/retrieve.py`, `remediation_run.py`, `checks/planner.py`) and reported as a user-fixable refusal -- a cancel silently becoming a partial success. Doing it properly needs a `stop_requested` field beside `status` and an AST sweep over those clauses. **The cost of this rose on 2026-09-17:** the page now covers itself with a fixed overlay for the length of a run it cannot stop. The overlay refuses to close for that reason -- a dismiss would hide a run that carries on -- and offers one exit, a link to the run's own page, because the scrim covers the nav bar too. |
+| `web/run_jobs.py` | An audit cannot be stopped once it starts. The page shows progress and no cancel, because a cooperative cancel raising through `progress.stage` would be swallowed by five `except` clauses in `src/` (`export_reports.py`, `main.py`, `retrieval/retrieve.py`, `remediation_run.py`, `checks/planner.py`) and reported as a user-fixable refusal -- a cancel silently becoming a partial success. Doing it properly needs a `stop_requested` field beside `status` and an AST sweep over those clauses. **The cost of this rose on 2026-09-17:** the page now covers itself with a fixed overlay for the length of a run it cannot stop. The overlay refuses to close for that reason -- a dismiss would hide a run that carries on. **It offers no exit either, from 2026-09-18 at the user's request**, so the nav bar is covered for the length of a run nobody can stop: the page leaves the overlay only by navigating itself when the run finishes, or by dropping it when the run fails. That is the cost of this defect made visible, and it is the one line the user is owed about that trade. |
 | `GET /api/model` | Hands an unauthenticated caller every model this machine has pulled and its digest. Loopback is the only thing between that and anyone who can reach the port -- the same mitigation as the row below, on a wider surface. |
-| `runs/uploads/` | An unauthenticated endpoint writes attacker-chosen bytes to disk, bounded only by `MAX_UPLOAD_BYTES`, `MAX_UPLOAD_TOTAL_BYTES` and `MAX_UPLOADS_PER_RUN`. They change no finding and nothing under `src/` reads them, but the surface is a write primitive where there was none. **Sharper since 2026-09-17:** the panel that exercised it was removed at the user's request, so this is now a write primitive with no UI reaching it -- still tested by six files, still loopback and hand-started, and still there. Keeping the route for a future panel and dropping it are both coherent; forgetting it is not, which is why this sentence exists. |
+| `runs/uploads/` | An unauthenticated endpoint writes attacker-chosen bytes to disk, bounded only by `MAX_UPLOAD_BYTES`, `MAX_UPLOAD_TOTAL_BYTES` and `MAX_UPLOADS_PER_RUN`. They change no finding and nothing under `src/` reads them, but the surface is a write primitive where there was none. **Sharper since 2026-09-17:** the panel that exercised it was removed at the user's request, so this is now a write primitive with no UI reaching it -- still tested by six files, still loopback and hand-started, and still there. Keeping the route for a future panel and dropping it are both coherent; forgetting it is not, which is why this sentence exists. **And since 2026-09-18 the bytes can outlive their record:** `DELETE /api/runs/{id}` forgets a failed run's row and leaves `runs/uploads/<run_id>/` on disk, unreachable afterwards because the upload route answers 404 without a record, and cleaned by nothing. `docs/SCHEMAS.md` says the record outlives the files; this is the one case where that reverses. |
 | `POST /api/audit` | **No authentication**, and same-origin gives it none: it removes a browser's protection *of other sites*, not of this one. Loopback is the only thing between it and a clone-anything endpoint. |
 | `frontend/` | Ticking **Compare models** sends the audited source to a third party. `main.py` puts that behind a flag on the grounds that a flag is something a reader sees in the command they typed; a checkbox is weaker, and the page states the cost rather than the design pretending otherwise. |
 | `tests/test_web_framework_containment.py` | The sweep names `fastapi`, `starlette`, `uvicorn`, `http.server` and `socketserver`, but `ast_scan.imported_modules` records `from http import server` as plain `http`, so that one spelling evades it. Naming `http` would also forbid `http.client` — the outbound half, which is `test_offline_containment.py`'s subject, not this one. Closing it properly needs a second scanner. The file's docstring lists exactly which spellings it does and does not name. |
@@ -37,6 +37,19 @@ Ticked history is in git before commit `a78482c`; what shipped is in
 
 ## Open tasks
 
+- **`web/run_record.py` does two jobs, and the cut is a two-line move.** The
+  record's shape on the wire is one; flattening it for the database is another,
+  and that half is `ENVELOPE`, `as_json`, `to_columns` and `from_columns` --
+  42 lines that belong in `web/run_columns.py`. The blast radius was traced
+  rather than guessed: **one import statement in `web/history_store.py` and one
+  in `tests/web/test_run_record_columns.py`**, nothing in `src/`, nothing in
+  `frontend/`, no schema and no artifact. `DURABLE_FIELDS` stays where it is
+  because both jobs need it, and `test_import_path_bootstrap.py` needs no edit
+  because the new module is reached through the store. Written down with the
+  seam rather than left as "224 lines, worth a reader's eye", which records a
+  symptom nobody can act on -- the `src/fetch_repo.py` row above is the
+  precedent for naming the cut instead.
+
 - **The web UI's remaining polish.** Built: downloads of every file a run wrote,
   the SQLite run history with its own page, live stage progress, timestamps,
   light/dark, and a risk-class filter over the findings. Added since that line
@@ -44,15 +57,27 @@ Ticked history is in git before commit `a78482c`; what shipped is in
   a reader of this roadmap could not tell the page had them: a **drafted-key
   editor** with a verify route, **evidence uploads** attached to a run, an
   **Ollama status pill and model picker**, a **required auditor name**, a
-  **source window** showing the lines a surface names, and (2026-09-17) a
+  **source window** showing the lines a surface names, a **history grouped by
+  repository** with each run's options and both model names and a per-group
+  delete for failed runs (2026-09-18) -- which also *removed* the App column,
+  since the group header now carries the repository and a failed run has no app
+  to show -- and (2026-09-17) a
   **fixed overlay** carrying the stage list while an audit runs, which navigates
   to the run's own page the moment it finishes, plus a **file viewer** that
   opens any artifact from the download list. Removed the same day at the user's
   request: the rendered-report card, which framed two of the sixteen files the
   viewer now opens, and the **attached-evidence panel**. Not built, and each is a line rather than a
   plan:
-  - **Stop a running audit**, and `DELETE /api/runs/{id}` to forget one. Both
-    are in Known defects above with the reason the first is not trivial.
+  - **Stop a running audit.** In Known defects above with the reason it is not
+    trivial, and the reason the overlay now covers the page with no way out.
+  - ~~**`DELETE /api/runs/{id}` to forget one.**~~ Shipped 2026-09-18, narrowed
+    to **failed** runs. Split from the line above rather than ticked with it:
+    one half shipped and the other did not. What makes the narrowing safe is a
+    constraint rather than a convention -- `(status = 'finished') = (envelope IS
+    NOT NULL)` means a failed row's envelope is NULL, so forgetting one destroys
+    no findings. A finished run's envelope is the only copy of its findings once
+    `artifacts/` is cleaned, and a running one still has a worker writing to it;
+    both are refused 409.
   - **A queue** instead of the 409, which is the honest answer to one-at-a-time.
   - **Search and sort the history.** It is capped at `HISTORY_LIST_LIMIT` newest
     first with no paging, so a long history is simply not reachable from the
@@ -105,10 +130,13 @@ Ticked history is in git before commit `a78482c`; what shipped is in
   and the advice prompt beside it is not.
 - Tests import private helpers where a public path exists; the study's tests add
   `_arm`, `_note` and `_check_partition`, whose only public path opens sockets.
-- Many files sit over the ~200-line rule -- **65 under `tests/` and 15 under
-  `src/`**, plus 2 under `web/` (`history_store.py` 204, `run_record.py` 207)
-  and 3 under `frontend/src/` (`FindingList.jsx` 208, `results.css` 298,
-  `controls.css` 231). The `tests/` growth is the overlay's and the file
+- Many files sit over the ~200-line rule -- **69 under `tests/` and 15 under
+  `src/`**, plus 2 under `web/` (`history_store.py` 220, `run_record.py` 224)
+  and 3 under `frontend/src/` (`FindingList.jsx` 208, `results.css` 341,
+  `controls.css` 235). `web/run_record.py` (224) and `history_store.py` (220)
+  both grew again on 2026-09-18 for the delete and the served
+  `canonical_repo_url`; `run_record.py` crossed on 2026-09-16 and has gone up
+  by 68 lines since, which is worth a reader's eye before it grows further. The `tests/` growth is the overlay's and the file
   viewer's, all docstring-heavy rather than doing two jobs and in line with the
   siblings already in that folder; the two stylesheets grew for the viewer's
   rules and the hover and focus states, and `results.css` grew *despite* losing
@@ -120,7 +148,11 @@ Ticked history is in git before commit `a78482c`; what shipped is in
   that made the earlier figure wrong -- which is the whole argument for counting
   rather than quoting. What this change grew, recorded rather than left to be
   noticed:
-  - **Six files crossed**: `src/compare_run.py` (173 -> 206),
+  - **Seven files crossed**, the last being `tests/web/test_jsx_forget_report.py`
+    (203), kept whole on purpose: one subject, 45 of those lines the docstring
+    carrying the argument, and a fourth split would leave a file whose prose
+    outweighs its assertions.
+  - **Six of them**: `src/compare_run.py` (173 -> 206),
     `src/keys/key_promotion.py` (164 -> 202), `src/keys/key_drafting.py`
     (191 -> 202), `src/evaluation/harness.py` (170 -> 221),
     `web/run_record.py` (**156** -> 207) and
@@ -214,6 +246,254 @@ Ticked history is in git before commit `a78482c`; what shipped is in
   failure today and silent in this suite. It lands red on `fetchDrafts`, which
   is the correct state: either the drafts list gets a caller or the function
   goes. Its own change, not folded into a feature.
+- **Eleven guards in this suite asserted a token's presence where the claim
+  was a relationship, and every one of them passed over the defect it named.**
+  Found across five review rounds on 2026-09-18, each measured by building the
+  mutated source rather than by reading the assertion. The generalisation, so
+  the next reader applies it instead of rediscovering it: **the fault appears
+  wherever a claim is about a relationship -- this *before* that, this *inside*
+  that, this *gated by* that, this *rendered* rather than merely computed -- and
+  the test names only one of the two things.** Five relations, the fifth added
+  after the first four proved incomplete: this *before* that, this *inside*
+  that, this *gated by* that, this *rendered* rather than computed, and this
+  **reached from** that -- a function defined versus handed to its consumer, a
+  prop declared versus passed, a callback written versus wired. Worked
+  examples, all real:
+  - `position_of("<Modal") < position_of(THE_WAIT_NOTICE)` compared against the
+    *opening* tag, so a notice written after `</Modal>` -- under the scrim,
+    which is the failure the file names -- passed all ten checks in it.
+  - `"setError(" in page()` was satisfied by the `setError(null)` at the top of
+    the function, so a catch that collapsed the whole list into an error notice
+    passed.
+  - `"gone += 1" in page()` was satisfied with the count *before* the `await`,
+    so a round where two runs were refused would report "5 of 5 forgotten" --
+    a result-shaped lie the page authors about itself.
+  - `"held.stored_run_count" in page()` was satisfied by the `capped`
+    comparison alone, so a page that computed both figures and rendered neither
+    passed.
+  - Two `failed.length > 0 &&` gates in one file meant a check for "the gate
+    appears" passed with the button's own gate replaced by `true &&`.
+
+  The fifth relation is the one that matters most and was found last, because
+  **an assertion-first sweep cannot find it.** Enumerating every presence check
+  and asking "is the token's presence the claim?" only finds guards that are
+  too weak; a relationship with *no assertion at all* has no check to
+  interrogate. Measured on 2026-09-18: deleting `onForget={forget}` from
+  `HistoryPage.jsx` leaves the whole delete feature unreachable -- every group's
+  button calls an `undefined` -- and **the full suite stays green at 5096
+  passed**, with two test files pinning that round's internals and neither
+  pinning that a click can reach it. So the search needs a second pass in the
+  opposite direction: **enumerate the claims, not the assertions.** Two cheap
+  forms, either of which catches that class: list every prop and callback each
+  changed component passes or receives and ask which are pinned; and read each
+  test file's docstring paragraph by paragraph, naming the assertion that holds
+  it -- that second one alone finds a docstring promising ", 2 refused" in a
+  file where no line mentions it.
+
+  **Three forms, not two, and the third runs the other way.** Both of the above
+  go from a *claim* to an assertion. The one they cannot see goes from an
+  *assertion to the premise it rests on*: a guard is often written in its strong
+  form **because** of a property of the source -- a second occurrence of the
+  same token, a weaker line that satisfied the naive check, an explanatory
+  sentence in a response body. The guard is right today and the docstring is
+  honest. Delete the premise and the guard silently degrades into exactly the
+  weak form it replaced, and nothing reports it: form two ticks the paragraph
+  off, because its *promise* is asserted and it is the *premise* that is not,
+  and form one never sees it, because a premise is not a prop. Measured on
+  2026-09-18: deleting the `{failed.length} failed` tag leaves the whole suite
+  green *and* removes the reason `THE_GATED_CONTROL` had to be a regex at all.
+
+  **The sharpest instance was self-inflicted while fixing another, and it is
+  the form to watch for: tightening a guard can delete the only assertion that
+  covered its premise.** `setSaid(` was narrowed to the whole report
+  expression *because* `setSaid(null)` satisfied the loose check -- and the
+  narrowing took that clear's only assertion with it, so the clear became
+  deletable and a second delete round would render the first round's "3 of 5
+  forgotten" while it ran. Every tightening should ask what the loose form was
+  incidentally covering.
+
+  **And the domain was wrong as well as the direction.** Both claim-first forms
+  read *source text*, so they were run over the JSX sweeps alone. The sharpest
+  instance was a **behavioural** assertion over a response body:
+  `assert read_run(client, run_id)["status"] in detail` was satisfied by the
+  detail's own *explanation*, which names both non-failed statuses in prose --
+  so `f"this run is {record.status}"` could become `f"this run is not failed"`
+  with the suite green, in a file whose title promises the other statuses are
+  refused "by name". Ask "is presence the claim?" of every assertion, not only
+  of the ones that read files.
+
+  **A premise that holds today is worth disclosing even when nothing can be
+  asserted about it.** `THE_GATE_EXPRESSION`'s lazy `.*?\)\}` assumes the first
+  `)}` after the gate is the gate's own -- true only because nothing inside that
+  block writes one, which JSX does not forbid. A `{f(x)}` added there would end
+  the span early and put a later read outside it: a false pass. There is no
+  mutation to write, because the premise is not currently violated; the comment
+  saying so is the whole mitigation, and it is worth more than silence.
+
+  **The stopping rule, which took seven passes to find and is the useful part
+  of all of them: a sampled sweep finds the relations you thought of; a
+  rendered relation is only closed by enumerating a finite inventory.** Every
+  round here sampled -- and the round whose own docstring declared this
+  relation closed was followed by **seven measured MISSED in one 104-line
+  component**, including a `<td>` handed the wrong object while 417 lines
+  pinned that component's internals. So the terminating move is not another
+  search but two enumerations over whatever a change creates: every `(th, td)`
+  pair, and every attribute on every element, ticked off once rather than
+  spot-checked. After that, further findings of this class are worth recording
+  rather than gating on, because the inventory is exhausted instead of merely
+  longer -- which is the difference between a loop that ends and one that does
+  not.
+
+  **Both enumerations are done for this change, 2026-09-18.**
+  `tests/web/test_jsx_history_columns.py` pairs all eight headings with the cell
+  expressions under them and walks the two lists pairwise;
+  `tests/web/test_jsx_history_attributes.py` checks a closed register of all
+  **forty-four** `(element, attribute, value)` triples the three components
+  write -- held as data in `tests/web/history_attribute_register.py` -- so an
+  attribute cannot leave, change or be duplicated away without a failure that
+  asks whether a claim holds it. Together they caught the seven that the seventh
+  sampled pass measured MISSED -- among them `options={run}` for
+  `options={run.options}`, which had left 5,134 tests green while every row
+  reported the options of a record that carries none.
+
+  **The first register was itself closed only by inspection, which is the last
+  instance of the pattern and worth recording as such.** It compared two *sets*
+  and a length, and its own docstring claimed the length caught "a duplicate
+  moving"; three escapes were then measured green -- one duplicated `className`
+  becoming another already-registered value, a tag carrying `{...spread}`
+  parsing as nothing so its wires landed invisibly, and a scope sentence that
+  excused `HistoryTable.jsx`'s "Open every repository" button, which nothing
+  anywhere pinned. The fixes: a `collections.Counter` in place of the two sets
+  and the length, a per-file floor of parsed tags against opening angle brackets
+  (32, 7 and 3), and reading that third file whole rather than one element of
+  it. **An enumeration is closed only once its own extractor and its own
+  comparison are** -- the same lesson one level up, and the reason the count in
+  this paragraph was forty before it was forty-four. Sampling is closed for this
+  change; the next pass over it is a read of the diff.
+
+  **That diff read found two more, both in the register file itself**, which is
+  the prediction above coming true one level further down: `REGISTERED` and
+  `BY_FILE` were each defined twice, identically, by a copy-paste at the foot of
+  the data module; and the plant for the duplicate-swap escape asserted
+  `Counter` arithmetic over a hand-built multiset without ever calling the
+  parser, so it demonstrated the fix nowhere -- the same tautology that had just
+  been removed from the columns file's own plant (`3 != 8`). It now parses two
+  synthetic snippets in which no value enters or leaves the set and the total is
+  unchanged, and the swap is re-measured against the real component: three of
+  the seven tests fail, because a `Counter` difference is multiplicity-aware in
+  both directions. **A plant that does not run the code it is planted against is
+  documentation, not a measurement.**
+
+  **And the review pass after it found the same fault twice more, in prose.**
+  `README.md` still said the run overlay "offers one exit, a link to the run's
+  page" -- the control this change deletes -- and the sentence had been carried
+  verbatim through the README restructure, so the commit would have shipped a
+  false claim that contradicted its own Known-defects row above. A comment in
+  `test_jsx_overlay_props.py` gave its regex's premise as "a handler prop
+  contains an arrow: `onOpenRun={() => navigate(...)}`", naming a prop that no
+  longer exists, above a floor that said "Four props today" over
+  `MINIMUM_PROPS = 3`. Both are the assertion-to-premise form already recorded
+  here, in the one place nothing executes: **a docstring, a comment and a README
+  bullet are readers of the code too, and deleting what they describe degrades
+  them silently.** The habit that catches it is the one that caught these --
+  grep the deleted identifier across prose, not only across code.
+
+  **And one more of the same class survived all of that, in the element the
+  register was widened to cover.** The register holds *which* attributes the
+  "Open every repository" button writes, not *when* it renders, so its gate was
+  never pinned by anything: `groups.length > 1 &&` replaced by `true &&`, or
+  deleted outright, left all 5,148 tests green. `test_jsx_history_fold.py` now
+  matches the condition joined to the control it hides, with the ungated
+  spelling planted as a non-match; both that plant and the off-by-one `> 0`
+  were measured caught. **An enumeration of attributes does not close a claim
+  about rendering** -- the two are different inventories over the same element.
+
+  Two gaps on that same button are left open deliberately, and named here
+  because the register's docstring can no longer claim to cover it whole. Its
+  label is `{open.allOpen ? "Close every repository" : "Open every repository"}`
+  -- children rather than an attribute, so no register reaches it, and a swapped
+  ternary would offer to close what is already closed. The precedent for pinning
+  it exists next door in `test_jsx_forget_busy.py`'s `THE_LABELS` /
+  `THE_LABELS_SWAPPED` pair, so this is a small piece of work rather than an
+  open question. And it carries no `aria-expanded`, while `ExpandAll.jsx`'s
+  equivalent control carries `aria-expanded={allOpen}` -- an asymmetry in the
+  very convention `test_jsx_history_fold.py` pins for the group headers. That
+  one is a source decision, not a missing guard, which is why nothing was
+  changed for it here.
+
+  It is not a JSX fault: `test_run_refusal_names.py` exists because the same
+  shape was reachable in Python, where two 409s under different constants are
+  indistinguishable from a response. The fix in every case was to join the two
+  halves into one regex and **plant the alternative as a non-match**, which is
+  the only thing that tells a guard that works from a guard that is merely
+  green. Five rounds each produced at least one, and the last sweep found five
+  at once -- which is information about how hard the search is, not evidence it
+  has converged.
+
+- **Nine props in the page are handed from one component to another with
+  nothing asserting the handoff**, which is the "reached from" relation above
+  applied to the components this change did *not* touch. Found by the same
+  claim-first sweep, left alone under rule 15, and listed because a list is the
+  useful artifact: `RunStamps record=`, `StageProgress stages=` /`announced=`
+  /`status=`, `TopBar page=`, `RunPage stages=` /`onRerun=`, `AuditPage key=`
+  /`stages=` /`prefill=`. The measured cost of one of these in the part that
+  *was* fixed: dropping `group={group}` from `<HistoryGroup>` left every header
+  rendering `undefined.key` with the suite green. `key=` is deliberately not on
+  the list -- React's reconciliation hint is not a wire carrying data, and
+  pinning it would be stricter than the claim. **`aria-expanded` joins that
+  list on five components** -- `HistoryGroup.jsx`, `DownloadPanel.jsx`,
+  `FindingList.jsx`, `SurfaceList.jsx`, `ExpandAll.jsx` -- where deleting it
+  leaves the suite green and a folded control telling a screen reader nothing
+  about its state. A convention gap rather than one change's debt:
+  `aria-modal`, `aria-labelledby` and `aria-label` *are* pinned by three
+  existing files, so the convention exists and this attribute is outside it.
+
+- **The mutation harness should live in the checkout, and the rule that says so
+  is not rule 13.** Rule 13 governs the product's tests. The standard that
+  decides this is the one this file already applies to `grading_keys/`: a figure
+  measured against something that does not ship is unreproducible from a clean
+  checkout. The 47/47 table and every measured-MISSED claim recorded in this
+  file are load-bearing evidence produced by a tool nobody else can re-run --
+  and on 2026-09-18 a shared scratchpad path proved it can be destroyed
+  mid-measurement, which happened to one agent's harness in the middle of a
+  round. Two conditions when it lands: a **script**, not a collected
+  `test_*.py`, so an ordinary suite run cannot trigger it; and it mutates a
+  **copy** of the tree, never the tree, which keeps true of this repository the
+  property `test_no_mutation.py` asserts of audited code. Its own task, with the
+  node-id, control-row and `(\d+) failed` disciplines below built in.
+
+- **The mutation harness has the same blind spot as the tests it checks, and
+  lives outside the checkout, so this entry is the only record of it.**
+  Mutations are applied by hand
+  and their guards recorded as *file paths*; on 2026-09-18 one came back MISSED
+  purely because its guard list still named a file that had since been split.
+  An unresolvable name and a guard that does not fire produce the same answer,
+  which is the false negative every sweep in `tests/web/` already carries a
+  non-vacuity floor to refuse -- one level up, and unrefused. Two structural
+  fixes, neither expensive: record each guard as a **pytest node id** and
+  resolve every id against `--collect-only` before applying any mutation, so an
+  unknown id is a harness error and never a MISSED; and run the guard list
+  green on the unmutated tree first, since a mutation result means nothing if
+  the named test was already red. The generalisation this project already owns
+  fits verbatim: a guard that validates a root and nothing below only moves the
+  traceback one frame, and a record that names a file rather than a resolvable
+  test cannot tell "no guard" from "wrong name".
+
+  **A second spelling of the same false negative, found the same day and worth
+  as much:** a detector testing `"failed" in tail` against pytest's summary
+  reported four MISSED mutations as CAUGHT, because `1632 passed, 1 xfailed`
+  contains the substring "failed". A MISSED read as a CAUGHT is the direction
+  that costs something -- it retires a search. Both cures are the same
+  discipline: parse `(\d+) failed` and print the failing node ids, so a result
+  nobody can read is not treated as a result.
+
+  **A third discipline, and the one that makes the other two worth having: end
+  every run with a control the guards cannot see** -- a comment appended where
+  nothing reads it -- and require it to come back MISSED. A harness that cannot
+  report a MISSED cannot report anything, and that is the failure direction
+  that retires a search rather than prolonging it. The 47-mutation table this
+  change ends on carries that row.
+
 - **No test in this suite renders a React component.** Every guard over the page
   is one of three things: a text sweep of the JSX, a lifted plain-JavaScript
   module run under node (`theme.js`, `useExpanded.js`, and `ModelStatus.jsx`'s
@@ -356,6 +636,15 @@ Ticked history is in git before commit `a78482c`; what shipped is in
   `check_tree_matches_pin`, `manifest_path` -- about 130 lines, consumed by
   `emit_vex`, `pipeline` and `web/source_routes`). That second cluster is also
   where the shared guard belongs, so the split and this row are one task.
+
+- **`HistoryStore.delete` takes any run id, and the whole safety of the
+  feature is one `if` in its only caller.** The route refuses anything that is
+  not `failed`; the store method does not, deliberately -- the route's docstring
+  argues correctly against a second enforcement point, since a check written
+  twice is a check that can disagree with itself. But **nothing names the route
+  as `delete`'s only caller**, so a second caller would bypass the narrowing in
+  silence. The cheap guard is an import sweep: exactly one module under `web/`
+  may call `store.delete`.
 
 - **`--accept-verification` leaves no trace in the key it let through.** A
   verified draft is refused by `promote_key.py` unless a local human passes the

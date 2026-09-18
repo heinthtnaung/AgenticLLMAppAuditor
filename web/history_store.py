@@ -132,6 +132,22 @@ class HistoryStore:
                 (record.artifacts_dir, record.run_id, record.started_at)).fetchone()
         return later is not None
 
+    def delete(self, run_id: str) -> bool:
+        """Forget one run. True when a row went, False when none had that id.
+
+        The answer is a count and not an assumption: `DELETE` on a missing row
+        is silent success in SQL, so a caller told nothing cannot tell "removed"
+        from "was never there" -- and the route above it turns exactly that
+        difference into a 404.
+
+        The row and nothing else. `artifacts/<app>/` is keyed on the app name
+        and shared with every other run of that app, so deleting this run's
+        files would take another run's evidence with them.
+        """
+        with closing(sqlite3.connect(self.path)) as db, db:
+            return db.execute("DELETE FROM runs WHERE run_id = ?",
+                              (run_id,)).rowcount > 0
+
     def count(self) -> int:
         """How many runs the store holds, which is not how many it just listed."""
         with closing(sqlite3.connect(self.path)) as db:
