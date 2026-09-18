@@ -20,6 +20,16 @@ export async function fetchRun(runId) {
   return ask(`/api/runs/${runId}`);
 }
 
+/** Forget one failed run. Refused for any other status, by the server. */
+export async function forgetRun(runId) {
+  return ask(`/api/runs/${runId}`, { method: "DELETE" });
+}
+
+/** Forget every run, whatever its status. There is no undo. */
+export async function clearHistory() {
+  return ask("/api/runs", { method: "DELETE" });
+}
+
 /** The newest runs, and how many the store holds in total. */
 export async function fetchHistory() {
   return ask("/api/runs");
@@ -35,9 +45,19 @@ export async function fetchStages() {
   return ask("/api/stages");
 }
 
-/** Which of a run's files are on disk, and how large each one is. */
-export async function fetchListing(runId) {
-  return ask(`/api/artifacts/${runId}`);
+/** Which of one arm's files are on disk, and how large each one is.
+ *
+ * `arm` is "local" or "cloud" -- the request vocabulary `web/downloads.py`
+ * owns, not the artifacts' own `agentic_auditor` / `cloud_auditor`. Omitted
+ * means local, so every caller that predates a second arm is unchanged.
+ */
+export async function fetchListing(runId, arm) {
+  return ask(`/api/artifacts/${runId}${armQuery(arm)}`);
+}
+
+/** The `?arm=` a request carries, or nothing at all for the local arm. */
+function armQuery(arm) {
+  return arm && arm !== "local" ? `?arm=${encodeURIComponent(arm)}` : "";
 }
 
 /** The lines around the one a surface names, as the tree holds them now. */
@@ -86,15 +106,15 @@ export async function verifyDraft(app, verifiedBy) {
  * download route serves this too and its "every reply is an attachment" rule
  * stays exactly as absolute as it reads.
  */
-export async function fetchArtifactText(runId, name) {
-  const response = await fetch(artifactUrl(runId, name));
+export async function fetchArtifactText(runId, name, arm) {
+  const response = await fetch(artifactUrl(runId, name, arm));
   if (!response.ok) throw new Error(`the backend answered ${response.status}`);
   return response.text();
 }
 
 /** One artifact parsed as JSON, for a document the page reads on demand. */
-export async function fetchArtifactJson(runId, name) {
-  return JSON.parse(await fetchArtifactText(runId, name));
+export async function fetchArtifactJson(runId, name, arm) {
+  return JSON.parse(await fetchArtifactText(runId, name, arm));
 }
 
 // No `attachFile` or `uploadUrl` here. Both went with the evidence panel on
@@ -104,14 +124,14 @@ export async function fetchArtifactJson(runId, name) {
 // /api/runs/{id}/uploads` -- so re-adding the panel means re-adding two
 // four-line functions, which is cheaper than carrying them dead.
 
-/** Where one artifact of one run is served from. A link, never a fetch. */
-export function artifactUrl(runId, name) {
-  return `/api/artifacts/${runId}/${name}`;
+/** Where one artifact of one arm is served from. A link, never a fetch. */
+export function artifactUrl(runId, name, arm) {
+  return `/api/artifacts/${runId}/${name}${armQuery(arm)}`;
 }
 
-/** Where the whole run's artifacts are served as one archive. */
-export function bundleUrl(runId) {
-  return artifactUrl(runId, "artifacts.zip");
+/** Where one arm's artifacts are served as one archive. */
+export function bundleUrl(runId, arm) {
+  return artifactUrl(runId, "artifacts.zip", arm);
 }
 
 async function ask(path, options) {

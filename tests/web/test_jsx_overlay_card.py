@@ -1,4 +1,4 @@
-"""The run overlay's one control is a way out rather than a cancel, and it decides nothing else.
+"""What the run overlay renders: the card, its name, and the one message that arrives mid-run.
 
 `RunOverlay.jsx` is the card an audit advances in, rendered on the shared
 `Modal.jsx` -- a fixed, covering panel while a run is going, and
@@ -9,28 +9,23 @@ into the modal, and `test_modal_contract.py` holds it there. The claims did not
 change with the file, but which file answers for them did, and a test left
 pointing at the old one reads as a passing guard over nothing.
 
-**It cannot be closed, and that is the honest position rather than an
-oversight.** An audit cannot be cancelled -- the page has no endpoint for it and
-`docs/TODO.md` records why -- so a dismiss would hide a run that carries on,
-with the Audit button still disabled and nothing on screen saying why. The way
-that is now *expressed* is by passing the modal no `onClose`, which is why
-`test_modal_contract.py` asserts the pairing across both consumers and this file
-asserts that the panel mentions no dismiss of its own.
-
-What it has instead is **one exit and not zero**: the scrim covers the nav bar
-too, so refusing to let a reader leave would strand them for the length of a
-multi-minute audit. The single button opens this run's own page, which renders a
-running run and keeps polling -- nothing is lost by taking it, and it is not a
-cancel. One button, measured, because the close control the modal may render is
-not this panel's and must not be counted as its exit.
+**Whether it can be closed or left is `test_jsx_overlay_exit.py`** -- no
+dismiss and, since 2026-09-18, no exit. Split out because that one decision
+carries two claims and two plants of its own, and this file would have crossed
+the ~200-line rule with them in it: 153 lines before this change, and 204 had
+the exit claims stayed. Split instead, so this file is 130.
 
 **And the poll error is rendered inside the card.** That is the fix recorded in
 `test_jsx_audit_page_outcomes.py`, which holds the other half -- that the page
-body no longer renders it. Here it is source order only: text can show that the
-notice comes after the modal element opens, and cannot show the element tree, so
-a notice moved outside the card but still after it in the file would pass. No
-test in this suite renders React -- a recorded defect -- and this is one of the
-places that costs something.
+body no longer renders it.
+
+It was asserted as **source order** until 2026-09-18, and that was worthless:
+`<Modal` is the *opening* tag, so everything later in the file is after it,
+`</Modal>` included. Measured -- with the wait notice below the closing tag,
+**all ten checks in this file passed**, on a page rendering the one message that
+can arrive during a run underneath the scrim. The span between the tags is read
+now. Still out of reach: a notice inside the element but nested under something
+that hides it. Text can bound a span; it cannot render a tree.
 
 Reads one component as text. No fastapi, no node, no build.
 """
@@ -41,27 +36,32 @@ from .jsx_sweep import FRONTEND_SRC, strip_comments
 
 OVERLAY = FRONTEND_SRC / "components" / "RunOverlay.jsx"
 
-# The card's one control, and the prop it calls. A button is spelled once here;
-# the count is what carries the decision.
-BUTTON = re.compile(r"<button\b")
-THE_ONE_EXIT = "onClick={onOpenRun}"
-
-# What a dismiss would be written as, on this panel's side: the prop it would
-# have to pass the modal, and the state a dismiss would carry. Not a general ban
-# on effects -- a focus trap is an effect a modal may well need -- and not a ban
-# on the modal having a close control, only on this caller asking for one.
-NO_WAY_TO_DISMISS = ("onClose", "onDismiss", "Escape", "useState(")
-
 # The title, and the fallback that has to be there: `app` is null until the
 # audit has resolved the repository, which is most of the time this panel is on
-# screen, so a card titled from `app` alone would open blank.
-THE_TITLE = "record.app ?? record.repo_url"
+# screen, so a card titled from `app` alone would open blank. Written as the
+# whole `title=` prop rather than as the expression: the fallback used for
+# anything else in this file -- a heading, a tooltip -- would satisfy a check
+# for the expression alone while the card opened with no name.
+THE_TITLE = "title={record.app ?? record.repo_url}"
 
 # The card it renders on, the id it labels that card by, and the notice that must
-# be inside it rather than under the scrim.
+# be inside it rather than under the scrim. `THE_CARD_SPAN` is the whole element,
+# opening tag to closing tag: the notice is required to be *within* it, because
+# "after the opening tag" is true of the whole rest of the file.
 THE_CARD = "<Modal"
+THE_CARD_SPAN = re.compile(r"<Modal\b.*?</Modal>", re.DOTALL)
 TITLE_ID = re.compile(r'titleId="([^"]+)"')
 THE_WAIT_NOTICE = 'className="notice notice--wait"'
+
+# The defect the span exists to refuse: the notice written below the closing
+# tag, where it renders under the scrim. Every check in this file passed on it.
+A_NOTICE_UNDER_THE_SCRIM = (
+    '<Modal title={record.app} titleId="run-overlay-title">\n'
+    '      <p className="card__hint mono">{record.repo_url}</p>\n'
+    "    </Modal>\n"
+    "    {error && (\n"
+    '      <p className="notice notice--wait">Lost contact with the server.</p>\n'
+    "    )}")
 
 # How a status comparison reads. The page decides which run gets this panel; the
 # panel itself is handed a record and renders it.
@@ -83,16 +83,11 @@ def label_target() -> str:
     return found.group(1)
 
 
-def dismissals() -> list[str]:
-    """Every way to close the panel that the source mentions, or nothing."""
-    return [written for written in NO_WAY_TO_DISMISS if written in card()]
-
-
-def position_of(fragment: str) -> int:
-    """Where one fragment is in the source, or say plainly that it is not there."""
-    text = card()
-    assert fragment in text, f"{OVERLAY.name} no longer contains {fragment}"
-    return text.index(fragment)
+def card_contents(text: str) -> str:
+    """Everything between the modal's own tags, or say the card is not one element."""
+    found = THE_CARD_SPAN.search(text)
+    assert found, f"no <{THE_CARD[1:]}>...</Modal> element to read"
+    return found.group(0)
 
 
 # --- what it renders itself ----------------------------------------------------
@@ -112,28 +107,16 @@ def test_the_panel_names_the_id_its_card_is_labelled_by() -> None:
     assert label_target()
 
 
-# --- one exit, and no way to dismiss a run that carries on --------------------
-
-def test_the_card_offers_exactly_one_control() -> None:
-    """One exit and not zero: the scrim covers the nav bar, so leaving has to be possible."""
-    assert len(BUTTON.findall(card())) == 1
-
-
-def test_the_one_control_opens_the_run_and_does_not_close_the_panel() -> None:
-    """It is a way to the run's own page, which keeps polling -- not a cancel."""
-    assert THE_ONE_EXIT in card()
-
-
-def test_the_card_carries_no_way_to_dismiss_itself() -> None:
-    """An audit cannot be cancelled, so a dismiss would hide a run that is still going."""
-    assert dismissals() == []
-
-
 # --- what it renders, and what it decides -------------------------------------
 
 def test_the_poll_error_is_rendered_inside_the_card() -> None:
-    """Source order: the message that arrives during a run is not under the scrim."""
-    assert position_of(THE_CARD) < position_of(THE_WAIT_NOTICE)
+    """Inside the element, not merely later in the file: under the scrim it is invisible."""
+    assert THE_WAIT_NOTICE in card_contents(card())
+
+
+def test_a_notice_written_below_the_closing_tag_is_not_accepted() -> None:
+    """Planted: source order passed on exactly this page, with every other check green."""
+    assert THE_WAIT_NOTICE not in card_contents(A_NOTICE_UNDER_THE_SCRIM)
 
 
 def test_the_card_decides_nothing_about_which_run_it_is_for() -> None:
@@ -145,9 +128,3 @@ def test_the_sweep_read_a_component_and_not_an_empty_file() -> None:
     """Non-vacuity: an unreadable component would satisfy the absence checks above."""
     assert len(re.findall(r"<[A-Za-z]", card())) >= MINIMUM_ELEMENTS
     assert label_target()
-
-
-def test_a_dismiss_added_to_the_card_would_be_reported_by_name() -> None:
-    """Planted: the absence check above is an empty list either way."""
-    assert [written for written in NO_WAY_TO_DISMISS
-            if written in 'onClick={onClose}'] == ["onClose"]

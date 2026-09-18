@@ -3,7 +3,7 @@ import KeyVerify from "./KeyVerify.jsx";
 import { saveDraft } from "../api.js";
 
 // Per-entry fields a person may correct. Everything else on an entry either
-// anchors it to source — which this page has not seen, so it may not type one —
+// anchors it to source, which this page has not seen, so it may not type one,
 // or belongs to the key's standing, which an edit never moves.
 const EDITABLE = ["owasp_id", "title", "description"];
 
@@ -12,7 +12,7 @@ function Entry({ entry, onChange, onDelete }) {
   return (
     <div className="entry">
       <div className="entry__where mono">
-        {entry.id} — {entry.file}:{entry.line}
+        {entry.id} ({entry.file}:{entry.line})
       </div>
       {EDITABLE.map((field) => (
         <label className="field" key={field}>
@@ -63,7 +63,7 @@ export default function KeyEditor({ draft, onClose, onSaved }) {
         {/* Two fields, and only one of them can ever move here. `source` is
             shown as a fact: a drafted key stays tool_drafted however much of it
             a person corrects, because the qualification is about validity, not
-            quality — checking the entries cannot make the tool's own choice of
+            quality; checking the entries cannot make the tool's own choice of
             what to include independent of the tool, and promotion leaves it
             alone too. `verified` is the one a human can move, through its own
             route below rather than through a save, so the pair can never be
@@ -110,7 +110,7 @@ export default function KeyEditor({ draft, onClose, onSaved }) {
         </h2>
         <p className="card__hint">
           A file, a line and an anchor are quotations from source this page has
-          not read, so they are shown and not editable — redraft against the
+          not read, so they are shown and not editable. Redraft against the
           pinned tree to move one.
         </p>
         {key.findings.map((entry, index) => (

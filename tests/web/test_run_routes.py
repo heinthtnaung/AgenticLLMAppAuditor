@@ -20,7 +20,16 @@ The status code alone cannot see that guard, which is worth saying because it
 was written that way first: with the shape check deleted the store is simply
 asked for the malformed id, finds nothing, and the route answers the same 404.
 So the guard is measured where it acts, against a store double that records
-every id it was asked for -- the malformed ones must never reach it.
+every id it was asked for -- the malformed ones must never reach it. That double
+is `api_stubs.StoreThatRecordsLookups`, shared with `test_run_delete.py`, which
+makes the same measurement of the same guard on `DELETE`.
+
+**Forgetting a run is not in this file.** `DELETE /api/runs/{run_id}` is decided
+by a run's *status* rather than by the protocol these four endpoints share, and
+its refusals need three rows in three states to say anything -- so it is
+`test_run_delete.py`. `MALFORMED_IDS` moved into `api_stubs.py` when that
+happened: two routes apply the same pattern, and a list that grew in one file
+would quietly leave the other testing less than its docstring claims.
 
 Every application here is a fresh one over a store under `tmp_path`; see
 `api_stubs.py` for why `api.app` is not used. The whole file skips when the
@@ -33,21 +42,18 @@ pytest.importorskip("fastapi", reason="the web extra is not installed, so there 
 pytest.importorskip("httpx", reason="fastapi's TestClient needs httpx to drive the endpoint")
 
 from dataclasses import replace                    # noqa: E402
-from pathlib import Path                           # noqa: E402
-
-from fastapi.testclient import TestClient          # noqa: E402
 
 import run_record                                  # noqa: E402
-from history_store import HISTORY_LIST_LIMIT, HistoryStore   # noqa: E402
+from history_store import HISTORY_LIST_LIMIT        # noqa: E402
+from repo_url import canonical_url                  # noqa: E402
 from reporting.progress import STAGES              # noqa: E402
 from run_record import RUNNING, RunRecord          # noqa: E402
 
 from .api_stubs import (                           # noqa: E402
-    RUNS, accepted_run_id, audit_and_poll, client_over, poll_until_terminal,
-    post_an_audit, read_run)
-from .api_stubs import application_over                                # noqa: E402
+    MALFORMED_IDS, RUNS, accepted_run_id, audit_and_poll, client_over,
+    client_over_a_recording_store, poll_until_terminal, post_an_audit, read_run)
 from .audit_stub import (                          # noqa: E402
-    AUDITOR,    URL, open_a_store, stub_the_audit, wait_for_the_worker)
+    AUDITOR,    URL, stub_the_audit, wait_for_the_worker)
 
 STAGES_PATH = "/api/stages"
 
@@ -59,10 +65,6 @@ ACCEPTED = 202
 # re-listed: the vocabulary itself is `progress.STAGES`, and a second list here
 # would be the very duplication this endpoint exists to prevent.
 EXPECTED_STAGE_COUNT = 8
-
-# Ids the route must answer 404 to without touching the store: too short, too
-# long, upper case, and a name that is not hex at all.
-MALFORMED_IDS = ("a" * 31, "a" * 33, "A" * 32, "not-a-run-id")
 
 # A well-formed id nobody used, so the 404 above is shown to be about the row
 # and not only about the shape.
@@ -76,28 +78,6 @@ LIST_KEYS = {"schema_version", "stored_run_count", "runs"}
 DROPPED_FROM_A_ROW = {"result", "schema_version"}
 
 WHEN = "2026-09-09T12:00:00+00:00"
-
-
-class StoreThatRecordsLookups:
-    """A store double that notes every run id it was asked for, then delegates."""
-
-    def __init__(self, real: HistoryStore) -> None:
-        """Hold the real store, and the ids asked of it."""
-        self.real = real
-        self.asked: list[str] = []
-
-    def get(self, run_id: str) -> tuple[RunRecord, dict | None] | None:
-        """Record the id, then answer as the real store would."""
-        self.asked.append(run_id)
-        return self.real.get(run_id)
-
-
-def client_over_a_recording_store(
-        tmp_path: Path) -> tuple[TestClient, "StoreThatRecordsLookups"]:
-    """A client whose store reports which ids the routes handed it."""
-    double = StoreThatRecordsLookups(open_a_store(tmp_path))
-    app, _ = application_over(double)
-    return TestClient(app), double
 
 
 def a_stored_run(run_id: str) -> RunRecord:
@@ -231,6 +211,20 @@ def test_a_list_row_is_the_summary_form(tmp_path) -> None:
     row = client.get(RUNS).json()["runs"][0]
     assert DROPPED_FROM_A_ROW.isdisjoint(row)
     assert row["run_id"] == UNUSED_ID
+
+
+def test_a_list_row_carries_the_repository_key_the_page_groups_on(tmp_path) -> None:
+    """Served rather than re-derived: the page groups on this and owns no copy of the rule.
+
+    Computed per request from `repo_url`, so the value is the same one
+    `pipeline._reused` joins on. `test_canonical_repo_url.py` holds what it must
+    equal; this holds that a list row carries it at all, which is the only place
+    the page reads it.
+    """
+    client, registry = client_over(tmp_path)
+    registry.store.save(a_stored_run(UNUSED_ID))
+    row = client.get(RUNS).json()["runs"][0]
+    assert row["canonical_repo_url"] == canonical_url(URL)
 
 
 def test_a_list_row_names_who_asked_for_the_run(tmp_path) -> None:

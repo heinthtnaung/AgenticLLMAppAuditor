@@ -62,9 +62,9 @@ function ModelField({ value, onChange, disabled }) {
           ? "The local model server is not answering, so the models it holds "
             + "cannot be listed. The audit will use the configured model."
           : "Only models this machine has already pulled. findings.json records "
-            + "whichever answered. Artifacts are keyed on the app name, not the "
-            + "run — auditing one app with a second model overwrites the first "
-            + "run's files."}
+            + "whichever answered. Each run keeps its own artifacts directory, "
+            + "so auditing one app twice with different models leaves both "
+            + "runs' files on disk."}
       </p>
     </label>
   );

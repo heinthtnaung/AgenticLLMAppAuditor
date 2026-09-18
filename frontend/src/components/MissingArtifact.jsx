@@ -9,7 +9,7 @@ export default function MissingArtifact({ name }) {
     <p className="notice notice--error">
       <strong>{name} was not written.</strong>
       <span className="notice__detail">
-        This is a gap, not a clean result — the audit did not get far enough to
+        This is a gap, not a clean result: the audit did not get far enough to
         produce it. The server console says why.
       </span>
     </p>

@@ -65,8 +65,8 @@ export default function KeyVerify({ app, keyDocument, onVerified }) {
             server's own, so a claim cannot be backdated through the page. */}
         <p className="field__note">
           Recorded in the draft with today&rsquo;s date. This endpoint has no
-          authentication, so it is a claim about who checked it, not proof —
-          which is why <code>promote_key.py</code> needs{" "}
+          authentication, so it is a claim about who checked it, not proof.
+          That is why <code>promote_key.py</code> needs{" "}
           <code>--accept-verification</code> before a checked draft can bound a
           published figure.
         </p>

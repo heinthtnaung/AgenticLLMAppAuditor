@@ -16,12 +16,28 @@ redirection and not the default. A relative default could come back and the
 suite would stay green. That is the third of the three defects found with this
 folder, and the only one that had no regression test.
 
-So the default is read in a fresh interpreter, started somewhere else entirely,
-with only `web/` on its path: the one arrangement in which the constant's own
-value is visible. Two working directories are measured rather than one, because
-a relative path *is* stable when read as a string -- what tells the two apart is
-that an anchored one names the same absolute directory from both, and a relative
-one names neither.
+So the default is read in a fresh interpreter, started somewhere else entirely:
+the one arrangement in which the constant's own value is visible. Two working
+directories are measured rather than one, because a relative path *is* stable
+when read as a string -- what tells the two apart is that an anchored one names
+the same absolute directory from both, and a relative one names neither.
+
+**The probe carries `src/` as well as `web/`, and that widening is deliberate.**
+It carried only `web/` until 2026-09-18, when `run_record.py` -- which
+`history_store` imports -- began importing `canonical_url` from `src/repo_url.py`
+to serve `canonical_repo_url`, and the probe stopped being able to import the
+module at all. The narrower path was never an arrangement production uses:
+`web/api.py` inserts **both** its own directory and `src/` before it imports
+anything by bare name, and `web/serve.py` adds `web/` and then imports `api`, so
+nothing ever reaches `history_store` with `src/` missing --
+`test_import_path_bootstrap.py::test_the_launcher_order_leaves_one_src_directory`
+measures exactly that. What this file claims is untouched by the widening: the
+store resolves its directory from its own file rather than from the caller's
+working directory, and it makes no database doing so. Widening the path is not
+weakening the assertion; refusing to widen it would have been asserting an
+import graph this file is not about. The coupling itself is pinned at the foot
+of this file, so a reader who finds it gone knows the probe may be narrowed
+again.
 
 Nothing here skips: `history_store.py` is free of fastapi on purpose, and the
 probe imports that module alone. It opens no store, so no database is created
@@ -35,6 +51,8 @@ import sys
 from pathlib import Path
 
 import history_store
+import run_record
+from repo_url import canonical_url
 
 from conftest import REPO_ROOT
 
@@ -54,12 +72,18 @@ EXPECTED_MODULE = REPO_ROOT / "web" / "history_store.py"
 # they stand and in nothing else.
 NESTED = "somewhere/else/entirely"
 
-# Puts `web/` on the path, imports the store's module and prints the constant
-# together with what it actually imported and where it was standing.
+# The directories the probe puts on its path, in the order `web/api.py` puts
+# them there. Both, not one: see the docstring for why the narrower environment
+# was never a real one.
+IMPORTABLE = ("src", "web")
+
+# Puts those directories on the path, imports the store's module and prints the
+# constant together with what it actually imported and where it was standing.
 PROBE = (
     "import json, sys\n"
     "from pathlib import Path\n"
-    "sys.path.append(str(Path(sys.argv[1]) / 'web'))\n"
+    "for name in " + repr(IMPORTABLE) + ":\n"
+    "    sys.path.append(str(Path(sys.argv[1]) / name))\n"
     "import history_store\n"
     "print(json.dumps(dict("
     "store_dir=str(history_store.STORE_DIR), "
@@ -124,3 +148,18 @@ def test_this_process_sees_the_redirection_and_not_the_default() -> None:
 def test_the_repository_is_not_where_this_suite_would_write_a_history() -> None:
     """The redirection's own point, and the reason it cannot be a fixture."""
     assert REPO_ROOT not in REDIRECTED_STORE_DIR.parents
+
+
+# --- why the probe's path carries `src/` too -----------------------------------
+
+def test_the_store_reaches_src_through_the_record_it_imports() -> None:
+    """The coupling that widened the probe, pinned so its removal is not silent.
+
+    `history_store` imports `run_record`, which imports `canonical_url` from
+    `src/repo_url.py` so that `canonical_repo_url` is served rather than
+    re-derived by the page. That is what made a `web/`-only probe fail. If this
+    assertion ever fails, the coupling has gone -- the computation moved to
+    `run_routes`, say -- and `IMPORTABLE` above may be narrowed back to `web/`
+    alone, which is a stricter environment and a better test.
+    """
+    assert run_record.canonical_url is canonical_url

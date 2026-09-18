@@ -127,7 +127,7 @@ code, .mono { font-family: var(--mono); font-size: 0.86em; }
   flex: 1 1 auto;
   min-width: 0;
   width: 100%;
-  max-width: 1180px;
+  max-width: var(--page-measure);
   margin: 0 auto;
   padding: 26px 28px 64px;
 }
@@ -141,14 +141,31 @@ code, .mono { font-family: var(--mono); font-size: 0.86em; }
 }
 
 /* --- Page head ----------------------------------------------------------- */
-.head { margin-bottom: 22px; }
-.head__title { margin: 0; font-size: 1.35rem; font-weight: 640; letter-spacing: -0.015em; }
-.head__subtitle {
-  margin: 6px 0 0;
-  color: var(--ink-soft);
-  font-size: 0.9rem;
-  max-width: 74ch;
+/* Text on the page, with no band behind it: no fill, no border, no accent edge.
+   Centred -- and the title *flexes* rather than the row centring its children,
+   which is what keeps the Report page's buttons on the right edge instead of
+   pulling them in beside the title. The title then centres inside the space
+   those buttons leave it. */
+.head {
+  margin-bottom: 22px;
+  text-align: center;
 }
+/* Left on the report, which is the one page that uses the whole window: its
+   rails and cards all start at the left edge, so a centred heading floated free
+   of everything it introduces. `.content--wide` is that page, so the exception
+   is scoped to it rather than being a second `PageHead` prop. */
+.content--wide .head { text-align: left; }
+.head__title {
+  margin: 0;
+  flex: 1 1 auto;
+  font-size: 1.35rem;
+  font-weight: 640;
+  letter-spacing: -0.015em;
+}
+/* Full width, deliberately. It was capped at 74ch, which is the right measure
+   for a paragraph and the wrong one for a single line: on a wide screen it
+   broke one sentence across three lines with half the band empty beside it. */
+.head__subtitle { margin: 6px 0 0; color: var(--ink-soft); font-size: 0.9rem; }
 
 .head__row {
   display: flex;

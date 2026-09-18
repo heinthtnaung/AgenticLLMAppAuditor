@@ -34,6 +34,14 @@ installed, which `test_audit_request.py` does and this file cannot; `App.jsx`
 is JavaScript because the page is. The cost of both choices is exactly this
 file, and it is cheaper than the alternatives.
 
+**A fourth reader is not in this file.** The history row shows what a stored run
+asked for, reading `run.options.x` and `options[key]` off the record -- names
+that come from the same dataclass and drift the same way, and that
+`test_jsx_record_fields.py` cannot see because it sweeps `run.<field>` and stops
+at `options`. `test_jsx_stored_option_fields.py` holds those. It is a separate
+file because this one is already at the ~200-line rule, not because the subject
+is different.
+
 The field *set* is what is asserted, not the field *list*: adding an option to
 both declarations is an ordinary change and must stay one. What may not happen
 is adding it to one.

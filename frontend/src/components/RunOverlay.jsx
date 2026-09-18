@@ -8,14 +8,16 @@ import StageProgress from "./StageProgress.jsx";
  * finished run navigates to its own page, and a failed one is reported in the
  * notice the audit page owns, beside the URL that produced it.
  *
- * **No dismiss, and exactly one exit.** An audit cannot be cancelled, so
- * closing this would hide a run that carries on — but the scrim covers the nav
- * bar too, so offering no way out would strand a reader for the length of a
- * multi-minute audit. The link opens this run's own page, which renders a
- * running run and keeps polling. Nothing is lost by taking it, and it is not a
- * cancel.
+ * **No dismiss and no exit**, which is a decision the user made on 2026-09-18
+ * and worth stating rather than leaving to be discovered. An audit cannot be
+ * cancelled, so closing this would hide a run that carries on. The link out was
+ * removed on 2026-09-18 at the user's request; the scrim is `z-index: 20` and
+ * `.topbar` is 3,
+ * so the nav is covered until the run reaches a terminal status -- the page
+ * then navigates itself on `finished`, or drops the overlay on `failed`.
+ * `docs/TODO.md` carries what that costs.
  */
-export default function RunOverlay({ record, stages, error, onOpenRun }) {
+export default function RunOverlay({ record, stages, error }) {
   return (
     <Modal title={record.app ?? record.repo_url} titleId="run-overlay-title">
       <p className="card__hint mono">{record.repo_url}</p>
@@ -31,11 +33,6 @@ export default function RunOverlay({ record, stages, error, onOpenRun }) {
           <span className="mono">{error}</span>
         </p>
       )}
-      <div className="form__actions overlay__actions">
-        <button className="run run--secondary" type="button" onClick={onOpenRun}>
-          Open this run&rsquo;s page
-        </button>
-      </div>
     </Modal>
   );
 }

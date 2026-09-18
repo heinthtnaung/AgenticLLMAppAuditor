@@ -36,14 +36,19 @@ THE_OVERLAY = "RunOverlay"
 
 # The props one element is handed, and the props a component takes apart. Both
 # are read off the source, so neither list is transcribed here. `.*?` rather
-# than "anything but a closing angle bracket", because a handler prop contains
-# an arrow: `onOpenRun={() => navigate(...)}`.
+# than "anything but a closing angle bracket", because a handler prop can carry
+# an arrow and so a `>` inside the element -- `HistoryTable.jsx` passes
+# `onForget={(failed) => forget(group, failed)}`. This element passes no such
+# prop today, which is why the lazy form is about what may be added rather than
+# what is there.
 PROPS_PASSED = re.compile(rf"<{THE_OVERLAY}\b(.*?)/>", re.DOTALL)
 PROP_NAME = re.compile(r"(\w+)=\{")
 PROPS_TAKEN = re.compile(rf"function {THE_OVERLAY}\(\{{([^}}]*)\}}\)")
 
 # A floor, so a sweep that read neither side cannot pass as a sweep that found
-# no mismatch. Four props today.
+# no mismatch. Three props today, which is the floor exactly: the fourth went
+# with the exit control on 2026-09-18, so this cannot be lowered any further
+# without ceasing to be a floor.
 MINIMUM_PROPS = 3
 
 # Planted below, because the comparisons are empty sets either way. This is the

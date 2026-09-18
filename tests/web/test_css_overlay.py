@@ -37,6 +37,14 @@ component, and a rule that selects on it. Same join `test_css_viewer_frame.py`
 makes for `.viewer__frame`, and for the same reason -- `.report-frame` outlived
 its markup by a change under two tests that went on passing.
 
+**The card has two consumers and the sweep reads both.** `RunOverlay.jsx`
+stopped rendering a control of any kind on 2026-09-18, so `.overlay__actions` --
+the row at the card's foot -- is now written only by `FileViewer.jsx`. The
+selector stays named here and the file viewer joined the component list, because
+the alternative was to stop naming it: that would leave a live rule with no test
+joining it to any markup, which is precisely what `.report-frame` was when it
+outlived its own component under two passing tests.
+
 **And the classes the card renders are styled and static.** Unstyled markup is
 the failure a `className`-to-bundle join cannot see: the name is in the JSX
 whether a stylesheet mentions it or not. The static form is what
@@ -50,7 +58,7 @@ sized to nothing, a fixed layer with no height: all pass here and need an eye on
 a rendered page. No test in this suite renders React or a browser, which is a
 recorded defect and not one this file closes.
 
-Reads the stylesheets and the three components that make the card as text. No
+Reads the stylesheets and the four components that make the card as text. No
 fastapi, no node, no build.
 """
 
@@ -66,9 +74,15 @@ OVERLAY = css_rules.FRONTEND_SRC / SHEET
 # second consumer -- a list without it reads the run overlay for classes the
 # run overlay no longer writes.
 CARD_COMPONENTS = ("components/Modal.jsx", "components/RunOverlay.jsx",
-                   "components/RunStamps.jsx")
+                   "components/RunStamps.jsx", "components/FileViewer.jsx")
 
-# The panel, the card in it, and the row of controls at its foot.
+# The panel, the card in it, and the row of controls at its foot. The run
+# overlay stopped rendering that row on 2026-09-18 -- it now offers no control
+# at all -- so `FileViewer.jsx` is the only consumer left that writes it, and
+# it is in the list above for that reason. A rule nothing renders is what the
+# `.report-frame` regression was, and dropping the selector from this file
+# instead would have left `.overlay__actions` exactly that on the day the file
+# viewer stops using it too.
 THE_SCRIM = ".overlay"
 THE_CARD = ".overlay__card"
 THE_ACTIONS = ".overlay__actions"
@@ -98,7 +112,7 @@ WIDE_ATTRIBUTE = "data-wide"
 THE_WIDE_CARD = ".overlay__card[data-wide]"
 
 # Floors, so a sweep that read nothing cannot pass as a sweep that found no
-# fault. Six other z-indexes and fifteen classes across the three components
+# fault. Six other z-indexes and twenty-one classes across the four components
 # that make up the card today.
 MINIMUM_OTHER_LAYERS = 4
 MINIMUM_CLASSES = 6

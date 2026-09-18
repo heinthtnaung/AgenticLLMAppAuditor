@@ -33,10 +33,21 @@ import fetch_repo
 from keys import key_drafting
 from keys import key_store
 import pipeline
+from reporting import progress
 
-# Both arms' artifacts, kept apart so neither overwrites the other and each is
-# scored under the name of the model that produced it.
-CLOUD_ARTIFACTS_DIR = Path("artifacts") / CLOUD_AUDITOR
+def cloud_artifacts_dir(local_dir: Path) -> Path:
+    """Where the hosted arm writes: beside the local arm, under its own system name.
+
+    Derived rather than fixed. It was `Path("artifacts") / CLOUD_AUDITOR`, a
+    constant, which meant every compare run of one app wrote the hosted arm to
+    the same directory however `--artifacts-dir` moved the local one -- so a
+    caller that isolated its runs isolated one arm of two. Deriving it keeps the
+    two arms apart, keeps each scored under the name of the model that produced
+    it, and is **byte-identical for the command line**: the default local
+    directory is `artifacts/agentic_auditor`, whose parent is `artifacts`, so
+    this still returns `artifacts/cloud_auditor`.
+    """
+    return local_dir.parent / CLOUD_AUDITOR
 
 
 def cloud_arm(model: str | None = None) -> dict:
@@ -55,7 +66,8 @@ def cloud_arm(model: str | None = None) -> dict:
             "digest": None}
 
 
-def ensure_key(app: str, app_dir: Path, model: dict) -> Path | None:
+def ensure_key(app: str, app_dir: Path, model: dict,
+               drafts_dir: Path | None = None) -> Path | None:
     """Draft a grading key with the local model when none exists, and return its path.
 
     Circular by construction -- see `key_drafting`. Returns None when the model
@@ -75,7 +87,8 @@ def ensure_key(app: str, app_dir: Path, model: dict) -> Path | None:
             "score it against a key written by the system being scored and would "
             f"overwrite the evaluation produced from the real one. Audit it normally "
             "and score it with `python src/evaluate.py`.")
-    already = key_store.existing(app, key_drafting.DRAFTED_KEYS_DIR)
+    drafts_dir = drafts_dir or key_drafting.DRAFTED_KEYS_DIR
+    already = key_store.existing(app, drafts_dir)
     if already is not None:
         print(f"  using the drafted key already at {already}")
         return already
@@ -89,37 +102,55 @@ def ensure_key(app: str, app_dir: Path, model: dict) -> Path | None:
     document = key_drafting.key_document(
         app, key_drafting.anchored(entries, app_dir), pin.get("upstream_commit", ""),
         surfaces)
-    path = key_store.write(app, document, pin, key_drafting.DRAFTED_KEYS_DIR)
+    # The directory resolved above, not the shared constant: this is the write,
+    # and pointing it at `grading_keys/drafts/` is what made every run of an app
+    # share one key.
+    path = key_store.write(app, document, pin, drafts_dir)
     print(f"  drafted a grading key at {path} with {len(entries)} entries -- "
           "tool_drafted and unverified, so every figure it produces carries "
           "key_drafted_by_scored_system")
     return path
 
 
-def score_both(app: str, local_dir: Path) -> None:
+def score_both(app: str, local_dir: Path, drafts_dir: Path | None = None) -> None:
     """Score both arms against the drafted key, each under its own system name.
 
     `local_dir` is whatever `--artifacts-dir` named, not the default: scoring a
     fixed path would read an directory the local arm never wrote to.
     """
     for system, directory in ((AGENTIC_AUDITOR, local_dir),
-                              (CLOUD_AUDITOR, CLOUD_ARTIFACTS_DIR)):
-        document = score_apps([app], directory, system, key_drafting.DRAFTED_KEYS_DIR)
+                              (CLOUD_AUDITOR, cloud_artifacts_dir(local_dir))):
+        document = score_apps([app], directory, system,
+                              drafts_dir or key_drafting.DRAFTED_KEYS_DIR)
         path = write_evaluation(document, directory)
         print(f"  scored {system}: {path}")
 
 
 def run(repo_path: str, artifacts_dir: Path, cloud_model: str | None = None,
-        local_model_name: str | None = None) -> dict:
+        local_model_name: str | None = None,
+        on_stage: progress.StageListener | None = None,
+        drafts_dir: Path | None = None) -> dict:
     """Fetch, draft a key, audit twice, publish both, and score both.
 
     Returns the local arm's four keys with the hosted arm under `comparison`,
     which is the shape `main.run` promises on every path. The local arm is the
-    one that answers to `--artifacts-dir`; the hosted arm writes to
-    `CLOUD_ARTIFACTS_DIR` and is the comparison.
+    one that answers to `--artifacts-dir`; the hosted arm writes beside it,
+    under `cloud_artifacts_dir`, and is the comparison.
+
+    **`on_stage` reaches the local arm only, and that is the whole design.**
+    Until 2026-09-18 it reached neither: this function did not take a listener,
+    so a `--compare-models` run announced nothing and the web page rendered all
+    eight stages as never reached -- work that had happened twice, shown as
+    work that never started. Threading it into *both* arms would be worse than
+    the bug: the listener appends, so the page would receive sixteen
+    announcements for eight stages, and `StageProgress` reads "which stage is
+    working" as `index === announced.length`, which walks off the end of the
+    list on the ninth. One arm announcing matches the record it is stored in --
+    the row carries the local arm's result, with the hosted arm under
+    `comparison`.
     """
     cloud_client.reset_exposure()
-    app_dir = pipeline.resolve_repo(repo_path)
+    app_dir = pipeline.resolve_repo(repo_path, on_stage)
     audit_run.report_pin_gap(app_dir)
     app = app_dir.resolve().name
     # The local arm honours `--model` like every other path: without this it
@@ -127,19 +158,20 @@ def run(repo_path: str, artifacts_dir: Path, cloud_model: str | None = None,
     local, cloud = audit_run.local_model(True, local_model_name), cloud_arm(cloud_model)
 
     print(f"drafting a grading key for {app} with {local['identifier']}")
-    key = ensure_key(app, app_dir, local)
+    key = ensure_key(app, app_dir, local, drafts_dir)
 
     print(f"\nauditing with {local['identifier']} (local)")
-    local_result = audit_run.audit(app_dir, artifacts_dir, local)
-    pipeline.publish(local_result["artifacts"], local_result["advisories_read"])
+    local_result = audit_run.audit(app_dir, artifacts_dir, local, on_stage)
+    pipeline.publish(local_result["artifacts"], local_result["advisories_read"],
+                     on_stage)
 
     print(f"\nauditing with {cloud['identifier']} (hosted)")
-    cloud_result = audit_run.audit(app_dir, CLOUD_ARTIFACTS_DIR, cloud)
+    cloud_result = audit_run.audit(app_dir, cloud_artifacts_dir(artifacts_dir), cloud)
     pipeline.publish(cloud_result["artifacts"], cloud_result["advisories_read"])
 
     if key is not None:
         print("\nscoring both arms against the drafted key")
-        score_both(app, artifacts_dir)
+        score_both(app, artifacts_dir, drafts_dir)
     _summarise(local_result, cloud_result, key)
     # Both arms, not just the one `--artifacts-dir` named. The hosted arm was
     # audited, published and scored and then thrown away here, so nothing but
