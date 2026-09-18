@@ -38,7 +38,7 @@ export default function FindingAdvice({ advice, loading }) {
   if (!advice) {
     return (
       <p className="advice__none">
-        <code>remediation.json</code> holds no entry for this finding — which is
+        <code>remediation.json</code> holds no entry for this finding, which is
         not the same as advice that was refused. The run may not have written
         one.
       </p>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import PageHead from "./components/PageHead.jsx";
-import RepositoryLink from "./components/RepositoryLink.jsx";
+import SiteFooter from "./components/SiteFooter.jsx";
 import TopBar from "./components/TopBar.jsx";
 import AuditPage, { INITIAL } from "./pages/AuditPage.jsx";
 import HistoryPage from "./pages/HistoryPage.jsx";
@@ -14,9 +14,13 @@ import { useRoute } from "./router.js";
 const HEADS = {
   audit: {
     title: "Audit an application",
-    line: "Reports one LLM application against a subset of the OWASP Top 10 for "
-        + "LLM Applications, backed by SBOM and AIBOM evidence. It reports; it "
-        + "never patches, commits, or runs the code it audits.",
+    // The parentheses stand where the copy had em dashes: those are barred from
+    // this UI as a house style, so the wording is kept and the punctuation is
+    // not.
+    line: "A non-invasive security auditor for LLM applications. Evaluate your "
+        + "codebase against the OWASP Top 10 for LLMs (backed by strict SBOM "
+        + "and AIBOM evidence) without ever executing, patching, or modifying "
+        + "your code.",
   },
 };
 
@@ -67,7 +71,7 @@ export default function App() {
           <AuditPage key={JSON.stringify(prefill)} stages={stages} prefill={prefill} />
         )}
       </main>
-      <RepositoryLink />
+      <SiteFooter />
     </div>
   );
 }

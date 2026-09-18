@@ -4,7 +4,7 @@ import { seconds, when } from "../format.js";
  *
  * Its own component because two views show it: the overlay while a run is
  * going, and the report once it is stored. Copied instead, the two would drift
- * over which durations a run has — and the pair below is the whole point.
+ * over which durations a run has, and the pair below is the whole point.
  */
 export default function RunStamps({ record }) {
   return (

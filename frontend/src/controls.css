@@ -4,24 +4,35 @@
 
 /* --- Nav ----------------------------------------------------------------- */
 .nav { display: flex; align-items: center; gap: 4px; }
+/* An underline marks the page, not a filled pill. The 2px bottom border is
+   **transparent in every state and coloured in one**, so the link occupies the
+   same box whether it is current or not: giving the border a width only when
+   selected would move the whole bar by 2px on every navigation.
+   No `border-radius`, because a radius curves the ends of a single edge. */
 .nav__link {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 9px 11px;
+  padding: 9px 11px 7px;
   font-size: 0.9rem;
   font-weight: 520;
   color: var(--ink-soft);
   text-decoration: none;
-  border-radius: var(--radius-sm);
-  border: 1px solid transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
 }
-.nav__link:hover { color: var(--ink); background: var(--card-raised); }
-.nav__link--here {
-  color: var(--accent);
-  background: var(--accent-soft);
-  border-color: var(--accent-line);
+/* Hover is the same mechanism a step quieter, so the two states cannot disagree
+   about what the control looks like -- and **only on a link that is not the
+   current page**. Without the `:not`, `.nav__link:hover` is (0,2,0) against
+   `.nav__link--here`'s (0,1,0), so pointing at the page you are already on
+   replaced its accent underline with the faint one and took the selection away
+   under the cursor. Nothing to feed back anyway: the current page is where a
+   click would already leave you. */
+.nav__link:hover:not(.nav__link--here) {
+  color: var(--ink);
+  border-bottom-color: var(--line);
 }
+.nav__link--here { color: var(--accent); border-bottom-color: var(--accent); }
 
 /* --- Buttons ------------------------------------------------------------- */
 .form__actions { margin-top: 20px; }
@@ -91,8 +102,20 @@
   border-radius: 999px;
   cursor: pointer;
 }
-.filter:hover { color: var(--ink); border-color: var(--accent-line); }
+/* `:not(.filter--on)` for the reason the nav carries: a bare `.filter:hover` is
+   (0,2,0) against `.filter--on`'s (0,1,0), so hovering a chosen chip kept the
+   accent fill and swapped the text to `--ink` over it -- the selected state
+   half-erased, and poor contrast while it lasted. The risk filters and the
+   local/cloud arm toggle both use these two classes. */
+.filter:hover:not(.filter--on) { color: var(--ink); border-color: var(--accent-line); }
 .filter--on { color: var(--on-accent); background: var(--accent); border-color: var(--accent); }
+
+/* Destructive before it is pressed, not after. The only control on this page
+   that can take a finished run's findings with it, so it does not look like
+   the one beside it that cannot. */
+.filter--danger { color: var(--crit); border-color: var(--crit-line); }
+.filter--danger:hover:not(:disabled) { background: var(--crit-soft); color: var(--crit); }
+.filter--danger:disabled { opacity: 0.6; cursor: progress; }
 
 /* --- Theme switch -------------------------------------------------------- */
 /* Two states and no label. The accessible name is on the button, so removing
@@ -210,26 +233,5 @@
 
 @media (prefers-reduced-motion: reduce) { .disclose__mark { transition: none; } }
 
-/* --- A corner link to the source ----------------------------------------- */
-/* Fixed bottom-right, above the wave layer and clear of the sticky rails. */
-.source-link {
-  position: fixed;
-  right: 22px;
-  bottom: 22px;
-  z-index: 4;
-  display: grid;
-  place-items: center;
-  width: 52px;
-  height: 52px;
-  color: var(--on-source-mark);
-  background: var(--source-mark);
-  border: none;
-  border-radius: 50%;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
-  transition: transform 0.15s ease;
-}
-.source-link:hover { transform: translateY(-2px); }
-.source-link:focus-visible { outline: 3px solid var(--source-mark); outline-offset: 3px; }
-.source-link .icon { width: 1.6em; height: 1.6em; }
 
 @media (prefers-reduced-motion: reduce) { .source-link { transition: none; } }

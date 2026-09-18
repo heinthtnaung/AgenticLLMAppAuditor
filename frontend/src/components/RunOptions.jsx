@@ -1,13 +1,62 @@
 // What a run asked for, from the options the record already carries. The three
 // flags are the ones that change what the audit does; `url` and `auditor` are
-// shown elsewhere on the row, so they are not repeated here.
+// shown elsewhere on the row, so they are not repeated here. The two model
+// names used to live in this cell too and now have columns of their own, which
+// is why the helpers below are exported rather than rendered here.
+import { ABSENT } from "../format.js";
+
 const FLAGS = [
   ["semantic_probe", "semantic probe"],
   ["draft_key", "draft key"],
   ["compare_models", "compare models"],
 ];
 
-/** The options one run was started with, and the models it named. */
+// `model_run.status` from `src/artifacts/findings_document.py`, which is a
+// closed set of three. Only two are named here: `used` never reaches these
+// words, because a used run always carries an identifier to show instead --
+// `model_provenance` raises if it does not.
+const DISABLED = "disabled";
+const UNAVAILABLE = "unavailable";
+
+// **Three different absences, and they are not interchangeable.** This column
+// said "server default" for every run that named no model, which read as "a
+// model answered, we just did not pick it" -- and on a run with no semantic
+// probe no model answered at all. That is a gap rendered as a result, the one
+// thing this page may not do.
+const SAID = {
+  [DISABLED]: "no model",
+  [UNAVAILABLE]: "unreachable",
+};
+
+/** The model that answered for one arm, or which kind of nothing it was.
+ *
+ * Reads the **served** fields, not `options`: `options.model` is what was
+ * *asked for* and is empty on almost every run, while
+ * `findings.json`'s `model_run` records what actually answered. There is
+ * deliberately no fallback to `options.model` -- printing a requested name on a
+ * run whose model was unreachable would be a fact-shaped guess.
+ */
+function modelOf(identifier, status) {
+  if (identifier) return identifier;
+  return SAID[status] ?? ABSENT;
+}
+
+/** The local model that answered, or which kind of nothing it was. */
+export function localModel(run) {
+  return modelOf(run.local_model_identifier, run.local_model_status);
+}
+
+/** The hosted model that answered. `N/A` covers "there was no second arm". */
+export function cloudModel(run) {
+  return modelOf(run.cloud_model_identifier, run.cloud_model_status);
+}
+
+/** Whether a cell holds a model's name rather than a statement about its absence. */
+export function isModelName(shown) {
+  return shown !== ABSENT && !Object.values(SAID).includes(shown);
+}
+
+/** The flags one run was started with. */
 export default function RunOptions({ options }) {
   // No `!options` branch. The column is `TEXT NOT NULL`, the record's field is
   // a `dict`, `asdict` always carries it, and `{}` is truthy -- so the guard
@@ -22,22 +71,6 @@ export default function RunOptions({ options }) {
         : chosen.map(([key, label]) => (
             <span key={key} className="tag tag--mid">{label}</span>
           ))}
-      {/* Named, or "server default" -- and deliberately not resolved against
-          `GET /api/model`'s `configured_model`, which reports what the server
-          is set to *now* rather than what answered then. The row cannot say
-          which model ran when none was named: `findings.json`'s `model_run`
-          records it, and the history summary drops the result envelope. */}
-      <span className="run-options__model">
-        local <span className="mono">{options.model || "server default"}</span>
-      </span>
-      {/* Only under `compare_models`: a cloud model named without it is refused
-          before the audit starts, so showing one here would be showing a value
-          that never reached a model. */}
-      {options.compare_models && (
-        <span className="run-options__model">
-          cloud <span className="mono">{options.cloud_model || "server default"}</span>
-        </span>
-      )}
     </div>
   );
 }

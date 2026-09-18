@@ -17,13 +17,13 @@ const SERVER = "Ollama server";
 /** What the pill says, and the detail behind it. */
 function reading(status) {
   if (!status) {
-    return { state: ASKING, label: `${SERVER} — checking`,
+    return { state: ASKING, label: `${SERVER}: checking`,
              detail: "Asking the local model server." };
   }
   if (!status.reachable) {
     return {
       state: DOWN,
-      label: `${SERVER} — Offline`,
+      label: `${SERVER}: offline`,
       // The server's own sentence names the fix, so it is shown rather than
       // replaced with a friendlier one that says less.
       detail: status.error ?? "The local model server did not answer.",
@@ -35,7 +35,7 @@ function reading(status) {
   if (!status.configured_model_pulled) {
     return {
       state: INCOMPLETE,
-      label: `${SERVER} — model not pulled`,
+      label: `${SERVER}: model not pulled`,
       detail: `${status.configured_model} is configured but not pulled. `
             + `Run: ollama pull ${status.configured_model}`,
     };
@@ -48,7 +48,7 @@ function reading(status) {
     label: SERVER,
     detail: `${status.configured_model}, and ${(status.models ?? []).length} `
           + `model(s) pulled. Embeddings: ${status.embed_model}`
-          + (status.embed_model_pulled ? "." : " — configured but not pulled."),
+          + (status.embed_model_pulled ? "." : ", configured but not pulled."),
   };
 }
 
@@ -71,7 +71,7 @@ export default function ModelStatus() {
   return (
     // The label goes bare when all is well, so the state is named here for a
     // reader who cannot see the dot's colour.
-    <span className={`model model--${said.state}`} title={said.detail}
+    <span className={`model model--${said.state}`}
           aria-label={`${said.label}. ${said.detail}`}>
       <span className={`dot dot--${TONE[said.state]}`} />
       <span className="model__label">{said.label}</span>

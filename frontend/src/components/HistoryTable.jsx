@@ -4,7 +4,7 @@ import { groupRuns } from "../repoGroup.js";
 import { useExpanded } from "../useExpanded.js";
 
 /** Every past run, gathered by repository, each group opening on a click. */
-export default function HistoryTable({ runs, onForget }) {
+export default function HistoryTable({ runs, onForget, picked, onPick }) {
   const groups = groupRuns(runs);
   // The same hook the findings and surfaces tables use, so "which rows are
   // open" is one behaviour in this page rather than three.
@@ -46,7 +46,8 @@ export default function HistoryTable({ runs, onForget }) {
                       open={open.isOpen(group.key)}
                       onToggle={() => open.toggle(group.key)}
                       onForget={(failed) => forget(group, failed)}
-                      forgetting={forgetting === group.key} />
+                      forgetting={forgetting === group.key}
+                      picked={picked} onPick={onPick} />
       ))}
     </>
   );

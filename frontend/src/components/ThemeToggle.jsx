@@ -24,7 +24,6 @@ export default function ThemeToggle() {
     <button type="button" role="switch" aria-checked={dark}
             className={`switch${dark ? " switch--on" : ""}`}
             aria-label="Dark theme"
-            title={dark ? "Dark theme" : "Light theme"}
             onClick={() => {
               const next = dark ? LIGHT : DARK;
               rememberTheme(next);

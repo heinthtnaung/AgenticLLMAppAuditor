@@ -49,14 +49,12 @@ export default function RunPage({ runId, stages, onRerun }) {
     <div className="head__actions">
       {draft && (
         <button className="run run--secondary" type="button"
-                title="The grading key this app was drafted, for a human to correct"
                 onClick={() => setEditing(!editing)}>
           {editing ? "Close the key" : "Grading key"}
           <KeyBadge keyDocument={draft.key} />
         </button>
       )}
       <button className="run run--secondary" type="button"
-              title="Opens the audit form with this run's options. You submit it."
               onClick={() => { onRerun(record); navigate(AUDIT); }}>
         Re-run
       </button>
@@ -65,10 +63,11 @@ export default function RunPage({ runId, stages, onRerun }) {
 
   return (
     <>
+      {/* One line, which means inside `.head__subtitle`'s 74ch. The sentence
+          about a finished run keeping its findings went with the second line;
+          the Download card is where that matters and it says so there. */}
       <PageHead title="Report" action={actions}>
-        What one audit found, the stages it went through, and every file it
-        wrote. A finished run keeps its findings even after its files are
-        cleaned from disk.
+        What one audit found, the stages it reached, and every file it wrote.
       </PageHead>
       {/* Beside the run it was drafted from, rather than on a page of its own:
           a key is about one app, and this is where that app's evidence is. */}

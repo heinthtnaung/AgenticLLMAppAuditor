@@ -48,8 +48,8 @@
   --none-soft: #161e28;
   --none-line: #2a3543;
 
-  --source-mark: #f0883e;
-  --on-source-mark: #1b1205;
+  --source-mark: #181717;
+  --on-source-mark: #ffffff;
 
   --veil: rgba(148, 210, 238, 0.05);
   --panel: rgba(10, 15, 22, 0.66);
@@ -67,6 +67,18 @@
   --radius: 10px;
   --radius-sm: 6px;
   --gap: 16px;
+
+  /* How wide the page's own measure is. **One copy**: `.content` and
+     `.footer__inner` both hold to it, and two spellings of the same number are
+     how a footer stops lining up with the content above it. Not the report
+     page, which is `.content--wide` and uses the whole window because its two
+     rails do the framing. The `@media (max-width: 1180px)` in `surfaces.css`
+     is a viewport breakpoint for when those rails stop fitting, not this
+     measure, which is why it does not follow this token.
+     Named `--page-measure` and **not** `--page`: that name is already the page
+     background colour in all three theme blocks, so declaring a length under
+     it silently replaced a colour. */
+  --page-measure: 1500px;
 
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   color: var(--ink);
@@ -115,7 +127,7 @@
     --wave-a: rgba(14, 116, 144, 0.10);
     --wave-b: rgba(17, 107, 44, 0.06);
     --wave-c: rgba(167, 29, 22, 0.05);
-    --source-mark: #d96a0b;
+    --source-mark: #181717;
     --on-source-mark: #ffffff;
 
     --veil: rgba(16, 26, 36, 0.045);
@@ -162,7 +174,7 @@
   --wave-a: rgba(14, 116, 144, 0.10);
   --wave-b: rgba(17, 107, 44, 0.06);
   --wave-c: rgba(167, 29, 22, 0.05);
-  --source-mark: #d96a0b;
+  --source-mark: #181717;
   --on-source-mark: #ffffff;
 
   --veil: rgba(16, 26, 36, 0.045);

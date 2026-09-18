@@ -11,7 +11,7 @@ import { bytes } from "../format.js";
  * **absent rather than disabled** -- nothing to click and nothing that looks
  * clickable.
  */
-function DownloadRow({ runId, file, onOpen }) {
+function DownloadRow({ runId, file, arm, onOpen }) {
   return (
     <div className="download">
       {howToShow(file.name) ? (
@@ -25,7 +25,7 @@ function DownloadRow({ runId, file, onOpen }) {
         </span>
       )}
       <span className="download__size">{bytes(file.bytes)}</span>
-      <a className="download__save" href={artifactUrl(runId, file.name)}
+      <a className="download__save" href={artifactUrl(runId, file.name, arm)}
          download={file.name} aria-label={`Download ${file.name}`}>
         <Icon name="download" />
       </a>
@@ -44,7 +44,7 @@ function DownloadRow({ runId, file, onOpen }) {
  * json document took a round trip through the filesystem -- and a row that only
  * viewed would have no answer for a PDF.
  */
-export default function DownloadPanel({ runId, listing, current }) {
+export default function DownloadPanel({ runId, listing, current, arm }) {
   const [listed, setListed] = useState(false);
   const [viewing, setViewing] = useState(null);
   if (!listing) return null;
@@ -80,13 +80,13 @@ export default function DownloadPanel({ runId, listing, current }) {
       {listed && (
       <div className="downloads">
         {listing.files.map((file) => (
-          <DownloadRow key={file.name} runId={runId} file={file}
+          <DownloadRow key={file.name} runId={runId} file={file} arm={arm}
                        onOpen={() => setViewing(file.name)} />
         ))}
       </div>
       )}
       {viewing && (
-        <FileViewer runId={runId} name={viewing}
+        <FileViewer runId={runId} name={viewing} arm={arm}
                     onClose={() => setViewing(null)} />
       )}
       <a className="run run--secondary" href={bundleUrl(runId)} download>
