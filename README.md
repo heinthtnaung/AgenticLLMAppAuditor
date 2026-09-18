@@ -182,11 +182,12 @@ exercise them was removed on 2026-09-17. They change no finding -- nothing under
 `docs/TODO.md` carries as an open decision with both options named.
 
 Two facts the page states rather than hides. A **missing** artifact is not an
-empty one, so a count with no document behind it shows a dash and never `0`. And
-because artifacts are keyed on the app name rather than on the run, a second
-audit of one URL overwrites the first one's files: the older run then reports
-`artifacts_current: false` and its downloads are refused, rather than serving
-newer bytes under an older timestamp.
+empty one, so a count with no document behind it shows `N/A` and never `0`. And
+a run started from the browser writes to `artifacts/runs/<run_id>/`, which no
+other run shares, so nothing overwrites anything and every stored run's files
+stay readable. Runs recorded before that shared `artifacts/<system>/<app>/` with
+every audit of the app; those report `artifacts_current: false` and their
+downloads are refused, rather than serving newer bytes under an older timestamp.
 
 ## Prerequisites
 

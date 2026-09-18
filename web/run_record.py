@@ -144,11 +144,29 @@ DURABLE_FIELDS = tuple(f.name for f in fields(RunRecord))
 # reason is ownership: it is derived from a field on the same row by a function
 # `src/` owns, so storing it would be a second copy that could disagree with
 # the one the pipeline joins on.
-COMPUTED_FIELDS = ("artifacts_present", "artifacts_current", "canonical_repo_url")
+# What actually answered, per arm. Read out of the stored envelope rather than
+# stored again: `findings.json` already records it at `model_run`, in the same
+# row, so a column would be a second copy of a fact already on disk -- the
+# argument `HistoryStore.overwritten_since` makes for reading
+# `$.comparison.artifacts_dir` the same way. It also means every row written
+# before this existed answers without a migration.
+#
+# The names are here and the JSON paths are in `history_store.py`, which owns
+# the SQL; that module builds its query from this tuple, so the two cannot fall
+# out of order.
+MODEL_FIELDS = ("local_model_identifier", "local_model_status",
+                "cloud_model_identifier", "cloud_model_status")
+
+# Added at read time, never stored. For the two filesystem flags the reason is
+# staleness. For `canonical_repo_url` the reason is ownership. For the four
+# model fields it is ownership too, of a different kind: the envelope is where
+# the audit recorded them, and this row already carries the envelope.
+COMPUTED_FIELDS = ("artifacts_present", "artifacts_current", "canonical_repo_url",
+                   *MODEL_FIELDS)
 
 
 def body(record: RunRecord, *, artifacts_present: bool, artifacts_current: bool,
-         result: dict | None = None) -> dict:
+         models: dict, result: dict | None = None) -> dict:
     """The record as one API body, with what only a reader can know added.
 
     `result` is the audit's own envelope and is present exactly when the run
@@ -165,8 +183,20 @@ def body(record: RunRecord, *, artifacts_present: bool, artifacts_current: bool,
         # them. This one needs the record alone, so computing it here makes a
         # caller unable to pass a wrong value.
         "canonical_repo_url": canonical_url(record.repo_url),
+        # Checked rather than trusted: a caller passing three of the four, or a
+        # fifth nobody registered, would otherwise serve a body whose keys
+        # disagree with `COMPUTED_FIELDS` and every sweep that reads it.
+        **_models(models),
         "result": result,
     }
+
+
+def _models(models: dict) -> dict:
+    """The four model fields, refusing any set of keys but exactly those."""
+    if sorted(models) != sorted(MODEL_FIELDS):
+        raise ValueError(
+            f"expected exactly {MODEL_FIELDS}, got {tuple(sorted(models))}")
+    return models
 
 
 def summary(full_body: dict) -> dict:

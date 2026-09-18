@@ -18,8 +18,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from run_record import (
-    DURABLE_FIELDS, ENVELOPE, FAILED, INTERRUPTED, RUNNING, RUN_STATUSES,
-    RunRecord, from_columns, now, to_columns)
+    DURABLE_FIELDS, ENVELOPE, FAILED, INTERRUPTED, MODEL_FIELDS, RUNNING,
+    RUN_STATUSES, RunRecord, from_columns, now, to_columns)
 
 # The file's own version, unrelated to the wire's: one versions a file, the
 # other versions a protocol. Held in `PRAGMA user_version` rather than a table
@@ -47,6 +47,22 @@ HISTORY_LIST_LIMIT = 50
 
 # The record's own fields, plus the one column that is not a field of it.
 _COLUMNS = (*DURABLE_FIELDS, ENVELOPE)
+
+# Where each arm recorded the model that answered, inside the envelope. Keyed by
+# `run_record.MODEL_FIELDS` so the query is built in that tuple's order and the
+# two cannot drift; interpolated into SQL from these constants and never from a
+# request, which is the rule `_created` states for its own PRAGMA.
+#
+# A second spelling of a shape `run_jobs._arm` also builds, in Python. That pair
+# already exists for `$.comparison.artifacts_dir`, and it is noted here rather
+# than left to be discovered.
+_MODEL_PATHS = {
+    "local_model_identifier": "$.findings.model_run.model_identifier",
+    "local_model_status": "$.findings.model_run.status",
+    "cloud_model_identifier": "$.comparison.findings.model_run.model_identifier",
+    "cloud_model_status": "$.comparison.findings.model_run.status",
+}
+assert sorted(_MODEL_PATHS) == sorted(MODEL_FIELDS), "a model field has no JSON path"
 
 # The invariants are constraints, not conventions: a row that cannot be true
 # cannot be stored, whatever the writer believes.
@@ -118,18 +134,41 @@ class HistoryStore:
         Any later run, not only a finished one: a run that started after this
         one and named the same directory has already begun writing into it.
 
-        Artifacts are keyed on the app name, not on the run, so two audits of
-        one URL share `artifacts/<system>/<app>/`. Without this, an old run's
-        download would serve the newest run's bytes under the old run's
-        timestamp -- the history page and the download link lying to each other.
+        A run started from the browser writes under its own id from 2026-09-18
+        (`run_files.RUN_ARTIFACTS_ROOT`), so no two such runs share a directory
+        and this answers false for all of them. It is still asked, because rows
+        recorded before that wrote to `artifacts/<system>/<app>/`, shared by
+        every audit of the app: without it an old run's download would serve the
+        newest run's bytes under the old run's timestamp, which is the history
+        page and the download link lying to each other.
         """
         if record.artifacts_dir is None:
             return False
+        return self.overwritten_since(record, record.artifacts_dir)
+
+    def overwritten_since(self, record: RunRecord, directory: str) -> bool:
+        """Whether a later run wrote to a named directory, whichever arm used it.
+
+        `superseded` asks this about the record's own column. A
+        `--compare-models` run's hosted arm writes to a path that is **not** a
+        column -- only its envelope names it -- and that path is shared by every
+        compare run of the same app exactly as `artifacts/<app>/` is shared by
+        every audit of it. Without this, the hosted arm's files would be served
+        under an older run's timestamp, which is the one thing `SUPERSEDED`
+        exists to refuse.
+
+        `json_extract` over the stored envelope rather than a new column: the
+        fact is already on disk, and a column would version the file to record
+        something nothing else reads. Either arm of a later run counts, because
+        either can be the one that overwrote this directory.
+        """
         with closing(sqlite3.connect(self.path)) as db:
             later = db.execute(
-                "SELECT 1 FROM runs WHERE artifacts_dir = ? AND run_id != ? "
-                "AND started_at > ? LIMIT 1",
-                (record.artifacts_dir, record.run_id, record.started_at)).fetchone()
+                "SELECT 1 FROM runs WHERE run_id != ? AND started_at > ? "
+                "AND (artifacts_dir = ? "
+                "     OR json_extract(envelope, '$.comparison.artifacts_dir') = ?) "
+                "LIMIT 1",
+                (record.run_id, record.started_at, directory, directory)).fetchone()
         return later is not None
 
     def delete(self, run_id: str) -> bool:
@@ -140,13 +179,52 @@ class HistoryStore:
         from "was never there" -- and the route above it turns exactly that
         difference into a 404.
 
-        The row and nothing else. `artifacts/<app>/` is keyed on the app name
-        and shared with every other run of that app, so deleting this run's
-        files would take another run's evidence with them.
+        The row and nothing else *here*. Whether a run's files may go with it
+        is a question about the filesystem, so `web/run_files.py` answers it and
+        the route calls both: this method has never had a status guard either,
+        and keeping both rules out of the store leaves each of them in one
+        place.
         """
         with closing(sqlite3.connect(self.path)) as db, db:
             return db.execute("DELETE FROM runs WHERE run_id = ?",
                               (run_id,)).rowcount > 0
+
+    def clear(self) -> int:
+        """Forget every run. Returns how many rows went.
+
+        Unlike `delete`, this does not care about status: it is the one
+        operation a reader asks for *because* they want the finished runs gone
+        too. The narrowing that protects a single row is on the route above,
+        not here -- the store has never had a status guard, and giving it one
+        would put the rule in two places.
+
+        The rows and nothing else, for the same reason `delete` says: nothing
+        under `artifacts/` or `runs/uploads/` is keyed on a run in a way that
+        makes deleting it safe from here.
+        """
+        with closing(sqlite3.connect(self.path)) as db, db:
+            return db.execute("DELETE FROM runs").rowcount
+
+    def model_run(self, run_id: str) -> dict:
+        """What answered for each arm of one run, out of its stored envelope.
+
+        Four values, every one nullable. `json_extract` returns NULL for a
+        missing envelope and for a missing key alike, so "still running",
+        "finished but wrote no findings.json" and "had no second arm" all arrive
+        as null with no branch here. The caller renders the difference between
+        them; this reports it.
+
+        One query per row rather than one for the page: fifty indexed lookups
+        against a local SQLite file is not a measured problem, and a batched
+        `IN (?, ?, ...)` would be a second code path for the single-run route to
+        disagree with.
+        """
+        named = ", ".join(f"json_extract(envelope, '{_MODEL_PATHS[field]}')"
+                          for field in MODEL_FIELDS)
+        with closing(sqlite3.connect(self.path)) as db:
+            found = db.execute(f"SELECT {named} FROM runs WHERE run_id = ?",
+                               (run_id,)).fetchone()
+        return dict(zip(MODEL_FIELDS, found or (None,) * len(MODEL_FIELDS)))
 
     def count(self) -> int:
         """How many runs the store holds, which is not how many it just listed."""

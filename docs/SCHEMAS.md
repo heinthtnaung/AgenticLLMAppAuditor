@@ -401,6 +401,7 @@ not a view.
 | `POST /api/audit` | **202** and the record. `400` for a refusal from `AuditRequest.refusals()`, before any row is written. `409` while another run is in flight. `422` for a body pydantic rejects. |
 | `GET /api/runs/{run_id}` | **200** and the record. `404` for an id no row carries, and for an id that is not 32 lowercase hex characters -- "no run has that id" is true of both, and checking the shape keeps a request-supplied string out of a filesystem join. |
 | `DELETE /api/runs/{run_id}` | **200** and `{schema_version, forgotten}`. `404` for an id no row carries and for a malformed one, on the same reasoning as the row above. `409` when the run is not `failed`: the request is well formed and the run's *state* refuses it, which is the distinction `ALREADY_RUNNING` and `SUPERSEDED` already draw. The body echoes the id and carries nothing a caller needs -- it exists so every reply under `/api/` has a `schema_version`. |
+| `DELETE /api/runs` | **200** and `{schema_version, forgotten_count}` -- **how many rows went**, a number. Named apart from the per-run route's `forgotten`, which is an id: one key meaning a string on one path and a number on another is exactly the "field that changes meaning" this document says to bump for, and a second name avoids it for free. A new path bumps nothing, by the widening rule -- no existing reader calls it. Deletes every run whatever its status, and refuses nothing. A separate path from the row above rather than a flag on it, because the two carry opposite defaults -- see the section below. |
 | `GET /api/runs` | **200** and `{schema_version, stored_run_count, runs}`. |
 | `GET /api/stages` | **200** and `{schema_version, stages}` -- the whole vocabulary, in order, so the page can show what has *not* happened without restating it in JavaScript. |
 
@@ -431,7 +432,7 @@ not write.
 | `app` | string \| null | the tree has not been resolved yet, or the run failed before it was. **Never guessed from the URL's last segment** -- a guess in a history list is a fact-shaped guess. |
 | `artifacts_dir` | string \| null | no directory has been named. Read back from the run, never re-derived. |
 | `artifacts_present` | bool | never null. Computed **per request**: the directory exists and holds at least one downloadable name. Coarse on purpose -- not a claim that every artifact is there, and the download endpoint answers per file. Always `false` when `artifacts_dir` is null. |
-| `artifacts_current` | bool | never null. Computed per request. `false` when a **later run wrote to the same directory**: artifacts are keyed on the app name, not on the run, so two audits of one URL share `artifacts/<system>/<app>/`. Downloads are refused with 409 when this is false, rather than serving a newer run's bytes under an older run's timestamp. |
+| `artifacts_current` | bool | never null. Computed per request. `false` when a **later run wrote to the same directory**. From 2026-09-18 a run started from the browser writes to `artifacts/runs/<run_id>/<system>/<app>/`, which no other run shares, so this is true for every such run and the field is about rows recorded before that: those wrote to `artifacts/<system>/<app>/`, shared by every audit of the app. Downloads are refused with 409 when it is false, rather than serving a newer run's bytes under an older run's timestamp. |
 | `canonical_repo_url` | string | never null. **Computed per request, never stored.** `repo_url` in the one spelling that decides whether two runs are of the same repository, from `src/repo_url.py::canonical_url`: a trailing slash and a `.git` suffix removed and **nothing else normalised**, because two owners with the same repository name are two repositories. Served rather than re-derived by the page: `pipeline._reused` joins on the same function, and a page that disagreed would show two groups for a repository the tool treated as one. |
 | `finding_count` | int \| null | **no `findings.json` stands behind it** -- still running, failed, or finished without the document. It is not `0`. Copied from the document's own `finding_count`, never recounted. |
 | `surface_count` | int \| null | the same, from `surfaces.json`'s own count. |
@@ -572,18 +573,37 @@ the findings of every finished run, in a file that outlives `artifacts/`. The
 endpoints have no authentication, so that history is readable by anything that
 can reach the port.
 
-**Rows are a different subject, and one kind may be forgotten.**
-`DELETE /api/runs/{id}` removes a **failed** run's row on request. What makes
-that safe is a constraint and not a convention: `(status = 'failed') = (error IS
-NOT NULL)` and `(status = 'finished') = (envelope IS NOT NULL)` together mean a
-failed row's envelope is NULL, so forgetting one destroys no findings -- and a
-failed row names no `artifacts_dir`, so it cannot move another run's
-`artifacts_current`. Every other status is refused with 409. The *file* is still
-never migrated and never deleted.
+**Rows are a different subject, and a reader may forget one.**
+`DELETE /api/runs/{id}` removes a run's row **and the tree it wrote**. It was
+failed-only until 2026-09-18, and what changed was a filesystem fact rather
+than a judgement: artifacts were keyed on the app, so a finished run's files
+had already been written over by the next audit of that app and its envelope
+really was the only copy of its findings. Runs are keyed on the run now, so a
+finished run's files are still its own, and deleting the report is a decision
+the reader is entitled to make. **A `running` run is still refused with 409**,
+because its worker is writing into the tree the call would delete. The *file*
+that holds the rows is still never migrated and never deleted.
+
+**And the whole table may be emptied, which the constraint does not make
+safe.** `DELETE /api/runs` was added on 2026-09-18 at the user's request and
+deletes every row whatever its status, including finished ones. There is no
+constraint behind that and no argument that it loses nothing: a finished run's
+envelope **is** the only copy of its findings once `artifacts/<app>/` has been
+cleaned or written over by a later audit of the same app, and
+`artifacts_current: false` on the history page is exactly that state. The route
+exists because emptying a development history is a thing a reader legitimately
+wants, and the honest design is a second path that says so rather than a
+parameter that makes the total operation differ from the safe one by a query
+string. The per-run route keeps its 409 unchanged, so no single mis-click can
+destroy a finished run; the page asks twice and names the store's own total,
+which is not the capped number the list shows. `HistoryStore.clear` has no
+status guard and neither did `HistoryStore.delete` -- the narrowing has always
+lived on the route, so that one rule stays in one place.
 
 `runs/uploads/<run_id>/` survives a forgotten row and is then unreachable: the
 upload route answers 404 without a record, and nothing cleans the directory.
-Recorded in `docs/TODO.md` rather than swept.
+**A wipe orphans every upload directory at once**, for the same reason and with
+no extra mechanism. Recorded in `docs/TODO.md` rather than swept.
 
 ## Attached evidence, and not an artifact either
 

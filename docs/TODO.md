@@ -18,7 +18,6 @@ Ticked history is in git before commit `a78482c`; what shipped is in
 | `evaluation.json` | `model_disabled` fires on `unavailable` too, collapsing "turned off" and "unreachable". |
 | Scoring | Nothing version-gates `findings.json`, so a stale artifact scores silently against fresh code. |
 | `web/run_jobs.py` | One audit at a time: a second request is refused with 409 rather than queued. Two concurrent runs would race between the "already fetched?" check and the clone, and two over one app would overwrite `artifacts/<app>/` mid-write. A queue is the real answer. |
-| `web/downloads.py` | Artifacts are keyed on the app name, not on the run, so a second audit of one URL writes over the first one's files. A superseded run reports `artifacts_current: false` and its downloads are refused with 409 rather than serving the newer bytes under the older timestamp -- which is honest but total: those files are simply not recoverable. Keying artifacts on the run would fix it and would change `--artifacts-dir`'s meaning for the CLI too. |
 | `web/run_jobs.py` | An audit cannot be stopped once it starts. The page shows progress and no cancel, because a cooperative cancel raising through `progress.stage` would be swallowed by five `except` clauses in `src/` (`export_reports.py`, `main.py`, `retrieval/retrieve.py`, `remediation_run.py`, `checks/planner.py`) and reported as a user-fixable refusal -- a cancel silently becoming a partial success. Doing it properly needs a `stop_requested` field beside `status` and an AST sweep over those clauses. **The cost of this rose on 2026-09-17:** the page now covers itself with a fixed overlay for the length of a run it cannot stop. The overlay refuses to close for that reason -- a dismiss would hide a run that carries on. **It offers no exit either, from 2026-09-18 at the user's request**, so the nav bar is covered for the length of a run nobody can stop: the page leaves the overlay only by navigating itself when the run finishes, or by dropping it when the run fails. That is the cost of this defect made visible, and it is the one line the user is owed about that trade. |
 | `GET /api/model` | Hands an unauthenticated caller every model this machine has pulled and its digest. Loopback is the only thing between that and anyone who can reach the port -- the same mitigation as the row below, on a wider surface. |
 | `runs/uploads/` | An unauthenticated endpoint writes attacker-chosen bytes to disk, bounded only by `MAX_UPLOAD_BYTES`, `MAX_UPLOAD_TOTAL_BYTES` and `MAX_UPLOADS_PER_RUN`. They change no finding and nothing under `src/` reads them, but the surface is a write primitive where there was none. **Sharper since 2026-09-17:** the panel that exercised it was removed at the user's request, so this is now a write primitive with no UI reaching it -- still tested by six files, still loopback and hand-started, and still there. Keeping the route for a future panel and dropping it are both coherent; forgetting it is not, which is why this sentence exists. **And since 2026-09-18 the bytes can outlive their record:** `DELETE /api/runs/{id}` forgets a failed run's row and leaves `runs/uploads/<run_id>/` on disk, unreachable afterwards because the upload route answers 404 without a record, and cleaned by nothing. `docs/SCHEMAS.md` says the record outlives the files; this is the one case where that reverses. |
@@ -31,11 +30,110 @@ Ticked history is in git before commit `a78482c`; what shipped is in
 | `frontend/` | The page no longer says the endpoint is unauthenticated. The panel saying so was removed at the user's request; `README.md` and the `POST /api/audit` row above still record it, but for a security tool the operator is now told less by the thing they are looking at. |
 | `frontend/src/useRun.js` | Two `setState` calls run synchronously inside an effect (the resets when a run id changes), which `oxlint` flags as cascading renders. They are correct -- clearing is what stops a previous run's data showing under a new one -- but the clean form derives the value instead of resetting it, and that is a hook refactor. `frontend/.oxlintrc.json` now ignores `dist/`, so these are the only warnings left and they are visible. |
 | `frontend/dist/` | Build output is committed, so a source edit without `npm run build` in the same change serves a stale page. `tests/web/test_built_page_shipped.py` puts a floor under it -- every static `className` literal in the JSX must appear in the built bundle, and every asset `index.html` names must exist -- and `tests/web/test_jsx_advisory_vocabulary.py` covers the braced ones that sweep skips by design, by deriving the tone class stems from the source and requiring a rule for each. Still slipping through: a reworded string, a class name *removed* from the JSX, a changed handler, and a CSS-only edit that touches no class name -- the sweep runs source to bundle, so it cannot see what the source no longer says. **Narrowed on 2026-09-17 for two declarations specifically**: `min-width: 0` on `.overlay__card` and `overflow: auto` on `.viewer__text` are joined to the built bytes by value rather than by selector, because "source fixed, `dist/` stale, suite green, user still sees the bug" was a live failure mode for exactly the positioning fix that closed it. An mtime check would be the real answer and cannot be used: `git clone` writes `dist/` before `src/`, so every source file comes out newer on a fresh checkout. |
-| `frontend/` | Auditing one app with a second model overwrites the first run's files: artifacts are keyed on the app name, not the run, so the earlier run is marked superseded and its downloads 409. The model picker says so; keying artifacts on the run is the fix and is not one this change makes. |
-| `web/downloads.py` | The hosted arm of a comparison is rendered but its files are not downloadable: `artifacts_present`, `artifacts_current`, `superseded()` and every download route join on the run record's single `artifacts_dir`, which is the local arm's. `artifacts/cloud_auditor/<app>/` is keyed on the app name and just as supersedable, and nothing checks it. The page says so rather than offering a link with no evidence path behind it. |
 | `frontend/` + `src/main.py` | A `--compare-models` run announces no stages: `main.run` threads `on_stage` into the ordinary audit but not into `compare_run.run`, so the progress panel stays empty and every stage shows as never reached. Threading it would announce `fetch`…`write` twice, once per arm, which breaks the page's assumption that announcements are a prefix of `STAGES` -- so the real fix is a per-arm shape, not another argument. |
 
 ## Open tasks
+
+### The 2026-09-18 history UI change has no tests yet
+
+Four UI changes landed at the user's request with **pytest deliberately not
+run**, so the guards below are known to disagree with the markup and the suite
+is expected to fail until they are brought in line. Listed here rather than
+discovered later, because a stale enumeration that nobody has re-measured is
+worth less than none: it reads as a passing guard.
+
+What changed: the local and cloud model names left the `Options` cell for two
+columns of their own (`RunOptions.jsx` now exports `localModel`/`cloudModel`
+and renders flags only, `N/A` when no second arm ran); the open group became
+one panel with the header (`.group--open`, `.group__runs` in place of
+`.table-scroll`, top padding the `<th>` row never carried); and the page gained
+`Forget all N failed` plus a destructive `Clear all`, the latter on a new
+`DELETE /api/runs` documented in `docs/SCHEMAS.md`.
+
+| Guard | Why it now disagrees |
+|---|---|
+| `test_jsx_history_columns.py` | The `(th, td)` enumeration is eight pairs; the table has ten. This is the enumeration that was just closed, so it must be *extended*, not loosened. |
+| `history_attribute_register.py` | `table-scroll` became `group__runs`, `.group`'s class is now conditional, two `run-options__model` spans and their `mono` children left `RunOptions.jsx`, and `ModelCell` adds new triples. The `BY_FILE` shares and the forty-four figure both move. |
+| `test_jsx_run_options.py` | Pins the model spans that are no longer in that component. |
+| `test_jsx_page_heads.py` | The heading and hint now sit inside `.history__head` beside the two controls. |
+| `test_jsx_stored_option_fields.py`, `test_jsx_run_flags.py` | Read `RunOptions.jsx`, whose shape changed. |
+| `test_jsx_history_refresh.py`, `test_jsx_forget_busy.py` | `HistoryPage.jsx` gained a `working` flag and a second delete path. |
+| **Missing entirely** | Nothing covers `DELETE /api/runs`, `HistoryStore.clear`, `clearHistory()`, the two-step confirm, or `forgotten_count`. The store-level wipe wants the shape `test_history_store_delete.py` already uses. |
+
+`HistoryStore.clear` deliberately has **no status guard**, matching `delete`:
+the narrowing lives on the route so the rule stays in one place. A test should
+hold that, or the next reader will add a guard in the wrong module.
+
+**A second untested batch, same day: the arm toggle and the stage-mark fix.**
+
+`--compare-models` announced no stages at all, because `main.run` called
+`compare_run.run` without the listener and that function had no parameter to
+take one. Every `progress.stage` in the compare path therefore got `None`, the
+row stored `stages: []`, and `StageProgress` rendered all eight boundaries as
+`unreached` -- work that had happened *twice*, shown struck through as work
+that never started, on a run that finished. The listener now reaches the
+**local arm only**: it appends, so threading it into both would send sixteen
+announcements for eight stages and `index === announced.length` would walk off
+the end on the ninth. Runs already stored keep their empty list; the fix is for
+new runs. **A test wants the local-arm-only property specifically** -- the
+naive fix is the one that breaks the overlay.
+
+The report page now chooses which arm to read (`ArmToggle.jsx`), switching the
+rail, findings, advisory components, surfaces and coverage together, because
+the alternative was a rail saying ten beside a hosted arm's nine. `comparison`
+already carries that arm's own `findings` and `surfaces`, so nothing is fetched.
+Two honest edges, both worth a test:
+
+- **Advice is not shown for the hosted arm at all.** `remediation.json` joins on
+  `finding_id`, both arms audit the same tree, and a finding both found carries
+  the same id -- so fetching the served document anyway would caption the
+  hosted arm's finding with the *local* model's advice. `useAdvice(runId,
+  served)` leaves it null and `FindingAdvice`'s `unservedIn` says where the real
+  document is. The test that matters is the negative one: that selecting the
+  hosted arm issues no request for `remediation.json`.
+- **`ComparisonCard` lost its caveat** because the Download card now makes the
+  same statement where a reader looks for those files. One statement, not two.
+
+`FindingList.jsx` is **220 lines**, over the rule and further over than it was
+at 208; `web/history_store.py` 236 and `web/run_record.py` 224 are the other
+two. Three modules now disclosed rather than split, which is two more than the
+rule intends.
+
+**A third batch, and it closed three of this file's own Known-defect rows.**
+Those rows have been deleted from the table above, because this file holds what
+is *not* done; they are named here so the deletion is not silent.
+
+- **Artifacts are keyed on the run now**, not on the app. `web/run_jobs.py`
+  passed no `--artifacts-dir` at all, so every audit of one app wrote to
+  `artifacts/agentic_auditor/<app>/` and the history's files column read
+  "overwritten" for all but the newest row. It now passes
+  `artifacts/runs/<run_id>/<system>/`, and `compare_run.cloud_artifacts_dir`
+  derives the hosted arm from the local one instead of a module constant, so
+  both arms are isolated. **Nothing in `src/` changed to achieve it** and the
+  command line is byte-identical: the default local directory's parent is
+  `artifacts`, so the hosted arm still resolves to `artifacts/cloud_auditor`.
+  The old row claimed this "would change `--artifacts-dir`'s meaning for the
+  CLI too", which was wrong -- the caller choosing a value is not a change of
+  meaning.
+- **The hosted arm's files are served**, by `?arm=cloud` on the three download
+  routes, and its own `remediation.json` is what its findings are captioned
+  with. `HistoryStore.overwritten_since` generalises `superseded` to a
+  directory the record's own column does not name, via `json_extract` over the
+  stored envelope, so the hosted arm is refused with 409 on the same terms as
+  the local one rather than on none.
+- **`DELETE /api/runs/{id}` is no longer failed-only**, and what changed was a
+  filesystem fact rather than a mind: the refusal existed because a finished
+  run's files had already been overwritten by the next audit of that app, so
+  its envelope was the only copy. Per-run directories end that, so any run that
+  is not *running* may be forgotten, and forgetting it removes the tree it
+  wrote. A running one is still refused because its worker is writing there.
+  `web/run_files.py` owns that rule, covers both arms, and returns None for a
+  pre-change row whose files sit in a shared directory nothing may delete.
+
+Still open, and sharper rather than softer now: **`runs/uploads/<run_id>/` is
+the one thing a forgotten run leaves behind.** Every other file it wrote goes
+with it, which makes the upload directory the exception rather than one case
+among several.
 
 - **`web/run_record.py` does two jobs, and the cut is a two-line move.** The
   record's shape on the wire is one; flattening it for the database is another,

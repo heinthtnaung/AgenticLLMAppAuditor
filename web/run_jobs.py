@@ -17,10 +17,12 @@ import subprocess
 import threading
 import time
 from dataclasses import asdict, replace
+from pathlib import Path
 
 from artifacts_read import read_documents
 from history_store import HistoryStore
 import main
+import run_files
 import run_record
 from audit_request import AuditRequest
 from evaluation.document import AGENTIC_AUDITOR, CLOUD_AUDITOR
@@ -94,7 +96,20 @@ class Registry:
             self.store.save(_with(accepted, stages=list(stages)))
 
         try:
-            produced = main.run(main.build_parser().parse_args(asked.to_argv()), note)
+            # Appended here rather than in `AuditRequest.to_argv`: that method
+            # is the request's own meaning and a run id is not part of it --
+            # its docstring says it never invents an option that was not asked
+            # for, and `options` is stored as the dataclass so a re-run is
+            # exact. A destination this wrapper chose is not a stored option.
+            argv = asked.to_argv() + [
+                "--artifacts-dir", str(_run_artifacts(accepted.run_id)),
+                # Its own key directory too. Keys were addressed by app name, so
+                # the first `--draft-key` run of an app wrote the key and every
+                # later one hit `FileExistsError` and drafted nothing -- sharing
+                # one file, which is what the history page was showing.
+                "--drafts-dir", str(run_files.run_keys(accepted.run_id)),
+            ]
+            produced = main.run(main.build_parser().parse_args(argv), note)
             self._finish(accepted, stages, started, produced)
         except REFUSALS as refusal:
             self._fail(accepted, stages, started, str(refusal))
@@ -169,6 +184,23 @@ def _comparison(cloud: dict | None) -> dict | None:
         return None
     return {"system": CLOUD_AUDITOR, "compared_with": AGENTIC_AUDITOR,
             **_arm(cloud, read_documents(cloud["artifacts"]))}
+
+
+def _run_artifacts(run_id: str) -> Path:
+    """Where one run writes, under its own id so nothing else can overwrite it.
+
+    **Until 2026-09-18 this wrapper passed no `--artifacts-dir` at all**, so
+    every run took the command line's default and every audit of one app wrote
+    to `artifacts/agentic_auditor/<app>/`: the history's files column read
+    "overwritten" for every row but the newest, and those files were not
+    recoverable. Nothing in `src/` changed to fix it -- the option already
+    existed and this is a caller finally choosing a value for it.
+
+    The system segment is `main.DEFAULT_ARTIFACTS_DIR`'s own name rather than a
+    second spelling of `agentic_auditor`: the layout below this directory is the
+    command line's, and one copy of that name is the most there may be.
+    """
+    return run_files.run_artifacts(run_id, main.DEFAULT_ARTIFACTS_DIR.name)
 
 
 def _with(record: RunRecord, **changed) -> RunRecord:
