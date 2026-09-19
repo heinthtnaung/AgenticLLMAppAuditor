@@ -65,19 +65,20 @@ export async function fetchSource(runId, file, line) {
   return ask(`/api/runs/${runId}/source?file=${encodeURIComponent(file)}&line=${line}`);
 }
 
-/** Every drafted grading key on disk. */
-export async function fetchDrafts() {
-  return ask("/api/keys");
-}
-
-/** One drafted key, with what an edit may not touch named beside it. */
-export async function fetchDraft(app) {
-  return ask(`/api/keys/${encodeURIComponent(app)}`);
+/** One run's drafted key, with what an edit may not touch named beside it.
+ *
+ * Addressed by run and not by app. A run drafts into its own folder under
+ * `artifacts/runs/<run_id>/keys/`, so the run id is what finds the file; the app
+ * name comes back in the reply, read off the record server-side, because a
+ * caller that could name both could name two that disagree.
+ */
+export async function fetchDraft(runId) {
+  return ask(`/api/runs/${encodeURIComponent(runId)}/key`);
 }
 
 /** Save a corrected draft. Refused if it would move the key's standing. */
-export async function saveDraft(app, key) {
-  return ask(`/api/keys/${encodeURIComponent(app)}`, {
+export async function saveDraft(runId, key) {
+  return ask(`/api/runs/${encodeURIComponent(runId)}/key`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ key }),
@@ -92,8 +93,8 @@ export async function saveDraft(app, key) {
  * `verified` moves here, and the date is the server's -- sending one would let a
  * claim be backdated through the page.
  */
-export async function verifyDraft(app, verifiedBy) {
-  return ask(`/api/keys/${encodeURIComponent(app)}/verify`, {
+export async function verifyDraft(runId, verifiedBy) {
+  return ask(`/api/runs/${encodeURIComponent(runId)}/key/verify`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ verified_by: verifiedBy }),

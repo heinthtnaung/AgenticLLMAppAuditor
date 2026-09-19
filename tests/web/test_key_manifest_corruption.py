@@ -37,7 +37,7 @@ from .corrupt_fixtures import (                              # noqa: E402
     AN_EDIT, CORRUPT_SHAPES, HALF_SAVED, NOT_AN_OBJECT, ROUTES, WRITING_ROUTES,
     corrupt_pin, get_draft, key_file_name, pin_file_name, verify_draft)
 from .key_fixtures import (                                  # noqa: E402
-    APP, ENTRY_COUNT, OK, REFUSED, STORED_ORDER, entry_ids, key_on_disk,
+    APP, ENTRY_COUNT, KEYS_ENDPOINT, OK, REFUSED, STORED_ORDER, entry_ids, key_on_disk,
     planted_client, plant, client_over)
 from .key_verify_fixtures import CHECKED_BY, claim, verified_fields   # noqa: E402
 
@@ -125,7 +125,7 @@ def test_a_refused_save_rewrites_no_entries(
         monkeypatch, tmp_path, text: str, _message) -> None:
     """The save side of the same ordering: `AN_EDIT` would have emptied the findings."""
     client, drafts = with_corrupt_pin(monkeypatch, tmp_path, text)
-    response = client.put(f"/api/keys/{APP}", json=AN_EDIT)
+    response = client.put(KEYS_ENDPOINT, json=AN_EDIT)
     assert response.status_code == REFUSED
     stored = key_on_disk(drafts)
     assert entry_ids(stored) == STORED_ORDER

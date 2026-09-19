@@ -126,12 +126,12 @@ def pin_file_name() -> str:
 
 def get_draft(client: TestClient) -> httpx.Response:
     """Read one draft, whatever the answer."""
-    return client.get(f"{KEYS_ENDPOINT}/{APP}")
+    return client.get(KEYS_ENDPOINT)
 
 
 def put_draft(client: TestClient) -> httpx.Response:
     """Save a correction the route would otherwise accept, whatever the answer."""
-    return client.put(f"{KEYS_ENDPOINT}/{APP}", json=AN_EDIT)
+    return client.put(KEYS_ENDPOINT, json=AN_EDIT)
 
 
 def verify_draft(client: TestClient) -> httpx.Response:

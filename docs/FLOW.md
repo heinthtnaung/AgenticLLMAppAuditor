@@ -78,12 +78,21 @@ discovers it, and why every figure such a key produces is qualified.
 one. Nothing discovers a draft, so nothing is scored against one until a human
 moves it.
 
+**Where a draft lands depends on who asked for it**, and the two do not mix. The
+command line writes `grading_keys/drafts/<app>.*`, which is what the diagram
+shows. A run started from the browser writes `artifacts/runs/<run_id>/keys/`
+instead -- `web/run_jobs.py` passes that as `--drafts-dir` -- so a forgotten run
+takes its key with it and nothing this server writes ever lands in the
+checkout's own key folder. The editor reads a run's key by the run, which is
+why the two routes below name one; promoting that one means
+`promote_key.py <app> --drafts-dir artifacts/runs/<run_id>/keys`.
+
 ```mermaid
 flowchart LR
     DRAFT["key_drafting<br/>--draft-key"] --> D[["grading_keys/drafts/&lt;app&gt;.*<br/>tool_drafted, verified: false"]]
-    D --> EDIT["web key editor<br/>PUT /api/keys/{app}"]
+    D --> EDIT["web key editor<br/>PUT /api/runs/{id}/key"]
     EDIT --> D
-    D --> V["POST /api/keys/{app}/verify<br/>a human checked the entries"]
+    D --> V["POST /api/runs/{id}/key/verify<br/>a human checked the entries"]
     V --> D2[["still tool_drafted<br/>verified: true"]]
     D --> PROMOTE["promote_key.py &lt;app&gt;"]
     D2 --> PROMOTEV["promote_key.py &lt;app&gt;<br/>--accept-verification"]

@@ -34,13 +34,13 @@ Ticked history is in git before commit `a78482c`; what shipped is in
 
 ## Open tasks
 
-### The 2026-09-18 history UI change has no tests yet
+### The 2026-09-18 history UI change: guards realigned, one gap left
 
 Four UI changes landed at the user's request with **pytest deliberately not
-run**, so the guards below are known to disagree with the markup and the suite
-is expected to fail until they are brought in line. Listed here rather than
-discovered later, because a stale enumeration that nobody has re-measured is
-worth less than none: it reads as a passing guard.
+run**. The guards that disagreed with the markup were brought back in line on
+2026-09-19 and the suite is green again; the table below is kept as the record
+of what moved, because a guard that was rewritten is worth more to a reader
+than one that was merely made to pass.
 
 What changed: the local and cloud model names left the `Options` cell for two
 columns of their own (`RunOptions.jsx` now exports `localModel`/`cloudModel`
@@ -50,19 +50,78 @@ one panel with the header (`.group--open`, `.group__runs` in place of
 `Forget all N failed` plus a destructive `Clear all`, the latter on a new
 `DELETE /api/runs` documented in `docs/SCHEMAS.md`.
 
-| Guard | Why it now disagrees |
+| Guard | What was done |
 |---|---|
-| `test_jsx_history_columns.py` | The `(th, td)` enumeration is eight pairs; the table has ten. This is the enumeration that was just closed, so it must be *extended*, not loosened. |
-| `history_attribute_register.py` | `table-scroll` became `group__runs`, `.group`'s class is now conditional, two `run-options__model` spans and their `mono` children left `RunOptions.jsx`, and `ModelCell` adds new triples. The `BY_FILE` shares and the forty-four figure both move. |
-| `test_jsx_run_options.py` | Pins the model spans that are no longer in that component. |
-| `test_jsx_page_heads.py` | The heading and hint now sit inside `.history__head` beside the two controls. |
-| `test_jsx_stored_option_fields.py`, `test_jsx_run_flags.py` | Read `RunOptions.jsx`, whose shape changed. |
-| `test_jsx_history_refresh.py`, `test_jsx_forget_busy.py` | `HistoryPage.jsx` gained a `working` flag and a second delete path. |
-| **Missing entirely** | Nothing covers `DELETE /api/runs`, `HistoryStore.clear`, `clearHistory()`, the two-step confirm, or `forgotten_count`. The store-level wipe wants the shape `test_history_store_delete.py` already uses. |
+| `test_jsx_history_columns.py` | **Extended, not loosened**, from eight pairs to ten, and the unlabelled select column is now enumerated too rather than trimmed away to make the halves match. The cell sweep learned that a component rendering exactly one `<td>` is a cell, which is what `ModelCell` is. |
+| `history_attribute_register.py` | Rebuilt from the source: forty-four lines across four lists became fifty-eight across five, `ModelCell` being the new region because it writes the `<td>` its callers do not. |
+| `test_jsx_run_options.py` | Rewritten around what the component now claims. The old cloud gate is gone with the markup it guarded; what replaces it is stronger -- the helpers must read the **served** `local_model_identifier` fields and are forbidden from falling back to `options.model`, which is the fact-shaped guess the gate was a proxy for. |
+| `test_jsx_page_heads.py` | Needed no change; it was already passing. |
+| `test_jsx_stored_option_fields.py`, `test_jsx_run_flags.py` | The accessor half of the first is now vacuous -- the component reads `options` only through its flag table -- so the floor over it became an assertion that the list *is* empty, with the guard kept live as a trap for a model name coming back. |
+| `test_jsx_history_refresh.py`, `test_jsx_forget_busy.py` | The re-read pattern allows the statements now sitting between the loop and `setRead`, but still not a `try` or a `for`, which is the property it was written for. |
+| **Still missing** | Nothing covers `HistoryStore.clear`, `clearHistory()`, the two-step confirm, or `forgotten_count`. The store-level wipe wants the shape `test_history_store_delete.py` already uses. Partially narrowed: `DELETE /api/runs` is now in `test_run_refusal_names.py`'s handler register, so the route cannot refuse under a name that belongs to another handler -- but nothing drives it. |
 
 `HistoryStore.clear` deliberately has **no status guard**, matching `delete`:
 the narrowing lives on the route so the rule stays in one place. A test should
 hold that, or the next reader will add a guard in the wrong module.
+
+**The drafted-key editor was unreachable for every run this server makes, and
+that is fixed rather than recorded.** `web/run_jobs.py` passed
+`--drafts-dir artifacts/runs/<run_id>/keys` so a forgotten run takes its key
+with it, while `web/key_draft_store.py` read `grading_keys/drafts/` in the
+checkout and, by its own docstring, "nowhere else". The two never met: `GET
+/api/keys/{app}` answered 404 for every key the server had written, and a save
+would have landed in the folder holding a human's own corrected drafts. Nothing
+recorded it -- neither module was wrong on its own, and no test crossed them.
+
+The routes are addressed by run now -- `GET`/`PUT /api/runs/{id}/key` and
+`POST /api/runs/{id}/key/verify` -- with the app name read off the record rather
+than taken from the URL, so a request cannot name one run and another app's key.
+`web/key_scope.py` is the one place a run id becomes a folder and can only
+answer with `run_files.run_keys(...)`, which makes the boundary stronger than
+the one it replaced: `grading_keys/` is unreachable from this server rather than
+one directory away. `GET /api/keys` went with it -- it listed the checkout's
+drafts, nothing on the page called it, and an unauthenticated read of the
+project's own measurements was not worth keeping for no caller.
+
+Two guards hold the shape that broke: `test_key_draft_store.py` asserts that
+**no** module under `web/` binds `DRAFTED_KEYS_DIR`, and that the writer and the
+reader both go through `run_keys` -- a second spelling of that path is the
+defect itself. `docs/SCHEMAS.md` and `docs/FLOW.md` carry the new contract, and
+promoting a run-scoped draft now names its folder:
+`promote_key.py <app> --drafts-dir artifacts/runs/<run_id>/keys`.
+
+**A `--draft-key` run showed a finished panel over work still going, and that
+is fixed.** Key drafting happens in `main.run` after `pipeline.publish`, and it
+announced no stage -- so the overlay ticked all eight boundaries, showed
+`FINISHED: N/A`, and sat there for as long as the local model took to draft.
+`progress.STAGES` has a ninth boundary now, `key`, announced **whether or not
+the flag was passed**: a run not asked for one still passes that boundary, and
+the detail says which happened, the same way `advisories` and `dependencies`
+already announce an absence rather than going quiet. Going quiet is what made
+the panel unreadable -- a listener cannot tell "no more stages" from "still
+working" when the last thing it will ever hear is one it has already heard.
+
+Two guards came with it: `tests/reporting/test_progress_stage.py` holds that
+`key` is the last boundary on both paths and that the flag changes only its
+detail, and `tests/web/test_jsx_stage_states.py` now joins `progress.STAGES` to
+`StageProgress.jsx`'s label table in both directions -- a stage added in `src/`
+rendered as the bare token `key` until that guard existed, which is legibility
+rather than a crash and is exactly why nothing else caught it.
+
+**Still open, and the same shape one path over:** `--compare-models` drafts its
+key *before* the two audits (`compare_run.ensure_key`), and neither that nor the
+hosted arm's audit, publish or scoring announces anything. So a compare run
+still shows eight ticks over work in flight. Threading the key stage there would
+put it second in a nine-name list the page reads positionally, which is the
+per-arm shape problem already recorded above rather than a separate one.
+
+**One source regression was found by this work rather than by a guard going
+stale.** `fae08ae` dropped `title={said.detail}` from `ModelStatus.jsx` while
+reformatting the labels around it, so the model pill lost its tooltip and kept
+only its `aria-label` -- a sighted reader got the state and not the detail.
+`test_model_status_reading.py` was correct and the page was wrong; the attribute
+is restored. It is the one failure of the ninety-five where the fix belonged in
+`frontend/` rather than in `tests/`.
 
 **A second untested batch, same day: the arm toggle and the stage-mark fix.**
 
@@ -75,8 +134,12 @@ that never started, on a run that finished. The listener now reaches the
 **local arm only**: it appends, so threading it into both would send sixteen
 announcements for eight stages and `index === announced.length` would walk off
 the end on the ninth. Runs already stored keep their empty list; the fix is for
-new runs. **A test wants the local-arm-only property specifically** -- the
-naive fix is the one that breaks the overlay.
+new runs. **A test holds the local-arm-only property specifically**, added
+2026-09-19: `tests/compare/test_compare_stage_announcements.py` asserts no stage
+is announced twice and that the count never exceeds the vocabulary, which is
+what the naive fix -- threading the listener into both arms -- would break.
+`tests/compare/test_compare_run_result.py` holds the other half, that `main.run`
+hands the listener across at all.
 
 The report page now chooses which arm to read (`ArmToggle.jsx`), switching the
 rail, findings, advisory components, surfaces and coverage together, because

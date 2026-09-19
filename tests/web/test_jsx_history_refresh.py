@@ -42,7 +42,12 @@ PAGE = FRONTEND_SRC / "pages" / "HistoryPage.jsx"
 # block's and the loop's -- `test_jsx_forget_report.py::THE_CAUGHT_LOOP` is what
 # pins that shape -- so this says the re-read follows the whole loop rather than
 # appearing somewhere in the file.
-THE_REREAD_AFTER_THE_LOOP = re.compile(r"\}\s*\}\s*setRead\(\(was\) => was \+ 1\);")
+# The loop's two closing braces, then the re-read. `setWorking(false)` and
+# `setPicked(new Set())` were added between them on 2026-09-18, so the gap
+# allows statements -- but not a `try` or a `for`, which is what would put the
+# re-read back inside a loop and is the whole point of matching the braces.
+THE_REREAD_AFTER_THE_LOOP = re.compile(
+    r"\}\s*\}\s*(?:[^{}]*;\s*)*setRead\(\(was\) => was \+ 1\);")
 
 # The two placements it refuses, written out so each plant is the real
 # alternative rather than a strawman: before the loop, and inside it.

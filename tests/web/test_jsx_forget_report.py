@@ -114,10 +114,19 @@ A_CATCH_THAT_COLLAPSES_INTO_THE_ERROR = (
     "        setError(failure.message);\n"
     "      }\n    }\n    setRead((was) => was + 1);\n")
 
-# What the page legitimately sets an error for: clearing it as a round begins,
-# and the history fetch that could not read the list at all. A third occurrence
-# is the collapse above.
-EXPECTED_ERROR_SETTERS = 2
+# What the page legitimately sets an error for. Four occurrences, in two pairs:
+# `forget` and `clear` each clear it as their round begins, the history fetch
+# raises when the list could not be read at all, and `clear` raises on its own
+# failure.
+#
+# **`clear` may do what `forget` may not**, and the difference is not a
+# relaxation. `forget` deletes run by run, so a refusal is one outcome among
+# several and belongs in the `said` report beside the count that went -- an
+# error there would throw away four successes to show one refusal. `clear` is a
+# single statement on the server with no partial outcome, so its failure really
+# is the whole story. The collapse this file exists to refuse is still refused:
+# it is asserted over `forget`'s own catch span, not over this count.
+EXPECTED_ERROR_SETTERS = 4
 THE_ERROR_CLEARED = "setError(null)"
 
 # A floor, so a file this test failed to read cannot satisfy the absence above.
@@ -193,7 +202,7 @@ def test_a_catch_that_reports_a_refusal_as_a_page_error_is_not_accepted() -> Non
 
 
 def test_the_page_sets_an_error_only_where_an_error_is_the_whole_story() -> None:
-    """Twice: cleared as a round begins, and raised when the history itself could not be read."""
+    """Four times: each round clears it, the list read raises, and the whole-history wipe does."""
     assert page().count(THE_ERROR_STATE) == EXPECTED_ERROR_SETTERS
     assert THE_ERROR_CLEARED in page()
 

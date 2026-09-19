@@ -9,14 +9,21 @@ on disk, built by the code that really drafts them, under `tmp_path`.
 
 **Nothing here writes to `grading_keys/drafts/`.** That folder holds real drafts
 in a working checkout, and a test that wrote into it would edit the project's
-own measurements.
+own measurements. Since the routes became run-scoped nothing *could*: the
+server can only name a folder under `artifacts/runs/`, and the redirection below
+moves that root rather than a drafts directory.
 
-**The redirection is one name, and it has to be `key_draft_store`'s.**
-`keys/key_drafting.py` declares `DRAFTED_KEYS_DIR` and the store binds its own
-reference with `from ... import`, so rebinding the source module's copy
-redirects drafting and leaves these routes reading the checkout. It was briefly
-two names -- `test_key_draft_store.py` tells that story and asserts that exactly
-one module under `web/` may bind it, which is the fact this helper depends on.
+**The redirection is one name, and it is `run_files.RUN_ARTIFACTS_ROOT`.**
+`key_scope.for_run` is the only place a run id becomes a folder and it can only
+answer with `run_files.run_keys(...)`, so moving that root moves every key path
+this server can reach. It used to be `key_draft_store.DRAFTED_KEYS_DIR`, back
+when the routes read the checkout's drafts folder and could never see the key a
+browser-started run had actually written.
+
+**A key is addressed by run here, because that is how the routes address it.**
+One `RUN_ID`, one row in a real history store, and the app name comes back off
+that row -- so a test cannot ask for one app's key through another app's run,
+which is a mismatch the old app-in-the-URL shape allowed.
 
 **The key is built by `key_drafting`, not transcribed.** `key_document` decides
 the thirteen top-level fields and `anchored` reads each `code_anchor` off the
@@ -37,6 +44,7 @@ no web extra installed skips those files and still runs the rest.
 """
 
 import json
+from dataclasses import replace
 from pathlib import Path
 
 import httpx
@@ -44,24 +52,31 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-import key_draft_store
 import key_routes
 import key_verify_route
+import run_files
 from artifacts.surface import PROMPT_TEMPLATE, TOOL_CALL, Surface
 from keys import key_drafting, key_store
 from keys.grading_keys import GROUND_TRUTH_SUFFIX, MANIFEST_SUFFIX, key_path
 from parsing.languages import PYTHON
 
-KEYS_ENDPOINT = "/api/keys"
+from .api_stubs import open_a_store
+from .run_rows import ENVELOPE, finished
+
+# The one run every test here drafts under. Thirty-two hex characters, because
+# `run_routes.RUN_ID` is what `key_scope` checks the id against before it
+# reaches a filesystem join.
+RUN_ID = "d" * 32
+
+# Where that run's key is read and written. A run, not an app: the app name is
+# read off the record server-side.
+KEYS_ENDPOINT = f"/api/runs/{RUN_ID}/key"
 
 OK = 200
 REFUSED = 400
 NO_SUCH_DRAFT = 404
 
 APP = "demo-app"
-
-# A second draft, so "the list" is never a list of one that happens to be right.
-OTHER_APP = "second-app"
 
 # The audited tree the anchors are quoted from. Two files, so an entry's `file`
 # is a real choice and a re-sort has something to order.
@@ -153,14 +168,24 @@ def a_drafted_key(root: Path, app: str = APP) -> dict:
     return key_drafting.key_document(app, anchored, COMMIT, SURFACES)
 
 
+def keys_dir(root: Path, run_id: str = RUN_ID) -> Path:
+    """Where a run drafts, under a movable root: the shape `run_files` builds.
+
+    Spelled here so `client_over` can point the real `run_files.run_keys` at it
+    and have the two agree. A test that built some other shape would be reading
+    a folder no route could ever name.
+    """
+    return root / "artifacts" / "runs" / run_id / "keys"
+
+
 def plant(root: Path, app: str = APP, *, pin_fields: dict | None = None) -> Path:
-    """Write one drafted key and its manifest under `root/drafts`, and return that folder.
+    """Write one drafted key and its manifest into the run's own folder, and return it.
 
     `pin_fields` adds to the manifest a real draft ships. With none, the pin is
     exactly what `key_store` writes -- naming no framework and no language,
     which is the state every drafted key is actually in.
     """
-    drafts = root / "drafts"
+    drafts = keys_dir(root)
     drafts.mkdir(parents=True, exist_ok=True)
     key_store.write(app, a_drafted_key(root / app, app), FETCHED_PIN, drafts)
     if pin_fields:
@@ -189,10 +214,6 @@ def entry_named(key: dict, entry_id: str) -> dict:
     return found[0]
 
 
-# Every module binding its own reference to the drafts folder. A tuple of one,
-# because it was a tuple of two for a day.
-REDIRECTED_MODULES = (key_draft_store,)
-
 # Both halves of the editor, registered as `web/api.py` registers them: side by
 # side, so a reader auditing what this server exposes sees the route that writes
 # `verified`. An application built from the first alone answers 405 to every
@@ -200,20 +221,28 @@ REDIRECTED_MODULES = (key_draft_store,)
 ROUTE_MODULES = (key_routes, key_verify_route)
 
 
-def client_over(monkeypatch: pytest.MonkeyPatch, drafts: Path) -> TestClient:
-    """An application whose drafted keys are the ones under `drafts`, and never the checkout's.
+def client_over(monkeypatch: pytest.MonkeyPatch, drafts: Path,
+                app_name: str = APP) -> TestClient:
+    """An application whose one run drafted into `drafts`, and which can reach nothing else.
 
-    `key_draft_store.DRAFTED_KEYS_DIR` is the name every read, write, listing
-    and validation joins. Rebinding `keys.key_drafting.DRAFTED_KEYS_DIR`
-    instead redirects drafting and leaves the store pointed at
-    `grading_keys/drafts/` in the checkout, which holds real drafts.
+    The real `run_files.run_keys` runs -- only its root is moved -- so a test
+    reads through the same join the server uses. The shape is asserted rather
+    than assumed: a folder that is not `<root>/artifacts/runs/<run_id>/keys`
+    would leave the routes reading somewhere this fixture never wrote, and every
+    test over it would pass on a 404 it was not asking about.
     """
-    for module in REDIRECTED_MODULES:
-        monkeypatch.setattr(module, "DRAFTED_KEYS_DIR", drafts)
-    app = FastAPI()
+    assert drafts.name == "keys" and drafts.parent.name == RUN_ID, (
+        f"{drafts} is not a run's key folder; build it with `keys_dir`")
+    monkeypatch.setattr(run_files, "RUN_ARTIFACTS_ROOT", drafts.parents[1])
+    history = open_a_store(drafts.parents[3])
+    # With the envelope, because the store's own CHECK constraint ties the two:
+    # `(status = 'finished') = (envelope IS NOT NULL)`. A key belongs to a run
+    # that got far enough to draft one, so `finished` is the honest status here.
+    history.save(replace(finished(RUN_ID), app=app_name), ENVELOPE)
+    application = FastAPI()
     for module in ROUTE_MODULES:
-        module.register(app)
-    return TestClient(app)
+        module.register(application, history)
+    return TestClient(application)
 
 
 def planted_client(monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
@@ -223,20 +252,21 @@ def planted_client(monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
     return client_over(monkeypatch, drafts), drafts
 
 
-def read_draft(client: TestClient, app: str = APP) -> dict:
+def read_draft(client: TestClient, endpoint: str = KEYS_ENDPOINT) -> dict:
     """One drafted key as the editor reads it, insisting the route answered."""
-    response = client.get(f"{KEYS_ENDPOINT}/{app}")
+    response = client.get(endpoint)
     assert response.status_code == OK, response.text
     return response.json()
 
 
-def save_draft(client: TestClient, key: dict, app: str = APP) -> httpx.Response:
+def save_draft(client: TestClient, key: dict,
+               endpoint: str = KEYS_ENDPOINT) -> httpx.Response:
     """Put one corrected key back, whatever the answer -- the refusals are the subject."""
-    return client.put(f"{KEYS_ENDPOINT}/{app}", json={"key": key})
+    return client.put(endpoint, json={"key": key})
 
 
-def saved(client: TestClient, key: dict, app: str = APP) -> dict:
+def saved(client: TestClient, key: dict, endpoint: str = KEYS_ENDPOINT) -> dict:
     """Put one corrected key back and insist it was accepted, returning the reply."""
-    response = save_draft(client, key, app)
+    response = save_draft(client, key, endpoint)
     assert response.status_code == OK, response.text
     return response.json()

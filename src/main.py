@@ -88,7 +88,8 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def _draft_key(app_dir: Path, model: str | None = None,
-               drafts_dir: Path | None = None) -> None:
+               drafts_dir: Path | None = None,
+               on_stage: progress.StageListener | None = None) -> None:
     """Draft a grading key, never letting the attempt cost the run its report.
 
     Last stage of a run whose artifacts are already written, so every failure
@@ -108,10 +109,13 @@ def _draft_key(app_dir: Path, model: str | None = None,
                                      drafts_dir)
     except pipeline.DRAFTING_FAILURES as error:
         print(f"  no key drafted: {error}", file=sys.stderr)
+        progress.stage("key", f"not drafted: {error}", on_stage)
         return
     if drafted is not None:
         print(f"wrote {drafted}")
         print("  a draft, not an answer: read it before scoring anything against it")
+    progress.stage("key", f"wrote {drafted.name}" if drafted else "the model named no defects",
+                   on_stage)
 
 
 def run(args: argparse.Namespace,
@@ -160,7 +164,13 @@ def run(args: argparse.Namespace,
     # running or not. It is also the one place the model authors ground truth,
     # which is worth a flag a reader can see in the command they typed.
     if args.draft_key:
-        _draft_key(app_dir, args.model, args.drafts_dir)
+        _draft_key(app_dir, args.model, args.drafts_dir, on_stage)
+    else:
+        # Announced even when nothing was asked for. The boundary is real -- the
+        # run reached the end of its work -- and a listener that heard eight of
+        # nine stages showed a finished panel over a run still going, which is
+        # what this stage was added to stop. The detail carries the difference.
+        progress.stage("key", "not asked for", on_stage)
     # Printed, never written into an artifact: a duration is the one number here
     # that changes on every run, and putting it in a file would break the
     # byte-identical guarantee every artifact makes for a fact about the

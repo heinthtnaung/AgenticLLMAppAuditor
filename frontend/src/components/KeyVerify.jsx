@@ -27,7 +27,7 @@ function Recorded({ keyDocument }) {
 }
 
 /** Record that a human checked every entry of a drafted key. */
-export default function KeyVerify({ app, keyDocument, onVerified }) {
+export default function KeyVerify({ runId, keyDocument, onVerified }) {
   const [name, setName] = useState("");
   const [sending, setSending] = useState(false);
   const [failed, setFailed] = useState(null);
@@ -38,7 +38,7 @@ export default function KeyVerify({ app, keyDocument, onVerified }) {
     setSending(true);
     setFailed(null);
     try {
-      onVerified(await verifyDraft(app, name));
+      onVerified(await verifyDraft(runId, name));
     } catch (failure) {
       setFailed(failure.message);
     } finally {

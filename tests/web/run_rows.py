@@ -22,7 +22,14 @@ from dataclasses import replace
 from pathlib import Path
 
 from history_store import HistoryStore, open_store
-from run_record import FAILED, FINISHED, RunRecord
+from run_record import FAILED, FINISHED, MODEL_FIELDS, RunRecord
+
+# What `run_record.body` is handed for a run whose envelope named no model --
+# a run still going, or one that failed before a model answered. All four
+# fields, because `_models` refuses any key set but exactly `MODEL_FIELDS`:
+# passing `{}` is a refusal and spelling the four inline is a second copy of a
+# tuple `run_record` owns.
+NO_MODELS = dict.fromkeys(MODEL_FIELDS)
 
 URL = "https://example.invalid/owner/demo-app"
 

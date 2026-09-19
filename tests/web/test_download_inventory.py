@@ -36,6 +36,11 @@ from .download_fixtures import (                   # noqa: E402
 DOWNLOAD = "/api/artifacts"
 BUNDLE = "artifacts.zip"
 
+# Which arm's files a listing is about. A `--compare-models` run wrote two sets
+# into two directories, so a listing that named neither would describe one of
+# them under a name that fits both -- and the archive would too.
+LOCAL_ARM = "local"
+
 OK = 200
 
 DISPOSITION = "content-disposition"
@@ -48,7 +53,7 @@ PRESENT = SOME_NAMES
 ABSENT = tuple(name for name in ALL_NAMES if name not in PRESENT)
 
 # The keys the listing carries.
-LISTING_KEYS = {"run_id", "files", "bundle"}
+LISTING_KEYS = {"run_id", "files", "bundle", "arm"}
 
 
 def listing(client: TestClient, run_id: str = RUN_ID) -> dict:
@@ -129,7 +134,8 @@ def test_the_archive_is_a_zip_and_an_attachment(tmp_path) -> None:
 def test_the_archive_is_named_after_the_directory_it_came_from(tmp_path) -> None:
     """Fifty downloads called `artifacts.zip` are fifty files a reader cannot tell apart."""
     client, _, directory = a_run_holding(tmp_path, PRESENT)
-    assert f'filename="{directory.name}-{BUNDLE}"' in archive(client).headers[DISPOSITION]
+    assert (f'filename="{directory.name}-{LOCAL_ARM}-{BUNDLE}"'
+            in archive(client).headers[DISPOSITION])
 
 
 def test_an_archive_of_a_run_that_wrote_nothing_is_empty_rather_than_an_error(tmp_path) -> None:

@@ -57,15 +57,23 @@ const answer = await (%s);
 console.log(JSON.stringify({ calls, answer }));
 """
 
-APP = "demo-app"
+# The app the stubbed reply names. It comes back in the envelope because the
+# server reads it off the run record -- it is never something the page sends.
+ANSWERED_APP = "demo-app"
+
+# A run id in the shape the server issues. A key is addressed by the run that
+# drafted it, not by the app: the app name is read off the record, so a caller
+# cannot name a run and some other app's key.
+RUN_ID = "d" * 32
 CHECKED_BY = "Quokka Reviewer"
 
-# An app name with characters a URL path may not carry raw. The server refuses
-# such a name outright; the page must not be the thing that sends it.
-AWKWARD_APP = "demo app/../secret"
+# A run id with characters a URL path may not carry raw. No run the server
+# issues looks like this and `key_scope` refuses it outright; the page must not
+# be the thing that sends it, which is a guard on the page and not on the id.
+AWKWARD_RUN_ID = "demo run/../secret"
 
-VERIFY_PATH = f"/api/keys/{APP}/verify"
-SAVE_PATH = f"/api/keys/{APP}"
+VERIFY_PATH = f"/api/runs/{RUN_ID}/key/verify"
+SAVE_PATH = f"/api/runs/{RUN_ID}/key"
 
 # How many separators the path has when the name is one segment. An encoded name
 # adds none; a raw one adds three and the route the request reaches is not this
@@ -90,15 +98,15 @@ def one_call(expression: str, tmp_path: Path) -> dict:
     return made[0]
 
 
-def verify_call(tmp_path: Path, app: str = APP, name: str = CHECKED_BY) -> dict:
-    """The request `verifyDraft(app, name)` makes."""
-    return one_call(f'verifyDraft({json.dumps(app)}, {json.dumps(name)})', tmp_path)
+def verify_call(tmp_path: Path, run_id: str = RUN_ID, name: str = CHECKED_BY) -> dict:
+    """The request `verifyDraft(runId, name)` makes."""
+    return one_call(f'verifyDraft({json.dumps(run_id)}, {json.dumps(name)})', tmp_path)
 
 
 # --- the request it makes -----------------------------------------------------
 
 def test_it_posts_to_the_verify_path(tmp_path) -> None:
-    """The route is `POST /api/keys/{app}/verify`, and nothing else answers there."""
+    """The route is `POST /api/runs/{id}/key/verify`, and nothing else answers there."""
     assert verify_call(tmp_path)["path"] == VERIFY_PATH
 
 
@@ -127,21 +135,22 @@ def test_it_announces_json(tmp_path) -> None:
     assert verify_call(tmp_path)["headers"]["Content-Type"] == "application/json"
 
 
-def test_the_app_name_is_encoded_into_the_path(tmp_path) -> None:
-    """A name stays one path segment, so it can never select a route of its own.
+def test_the_run_id_is_encoded_into_the_path(tmp_path) -> None:
+    """An id stays one path segment, so it can never select a route of its own.
 
-    The page is the first of two guards and `key_draft_store.APP_NAME` is the
-    second. Counted as separators rather than searched for as text: a name
-    carrying `/` raw would still end in `/verify` and still not contain itself
-    literally, and the request would be going somewhere else entirely.
+    The page is the first of two guards and `run_routes.RUN_ID` -- which
+    `key_scope` checks against before any join -- is the second. Counted as
+    separators rather than searched for as text: an id carrying `/` raw would
+    still end in `/verify` and still not contain itself literally, and the
+    request would be going somewhere else entirely.
     """
-    path = verify_call(tmp_path, app=AWKWARD_APP)["path"]
+    path = verify_call(tmp_path, run_id=AWKWARD_RUN_ID)["path"]
     assert path.count("/") == PATH_SEPARATORS
     assert path.endswith("/verify")
 
 
-def test_an_ordinary_name_is_not_mangled(tmp_path) -> None:
-    """Guard on the encoding above: a name needing none comes through as itself."""
+def test_an_ordinary_id_is_not_mangled(tmp_path) -> None:
+    """Guard on the encoding above: an id needing none comes through as itself."""
     assert verify_call(tmp_path)["path"] == VERIFY_PATH
 
 
@@ -159,13 +168,13 @@ def test_an_empty_name_is_still_sent_for_the_server_to_refuse(tmp_path) -> None:
 
 def test_saving_a_draft_is_a_put_to_the_key_itself(tmp_path) -> None:
     """The contrast that makes the tests above mean something: two acts, two requests."""
-    made = one_call(f'saveDraft({json.dumps(APP)}, {{ findings: [] }})', tmp_path)
+    made = one_call(f'saveDraft({json.dumps(RUN_ID)}, {{ findings: [] }})', tmp_path)
     assert (made["path"], made["method"]) == (SAVE_PATH, "PUT")
 
 
 def test_the_two_calls_send_different_bodies(tmp_path) -> None:
     """A verify written by copying the save would post the whole key, frozen fields and all."""
-    saved = json.loads(one_call(f'saveDraft({json.dumps(APP)}, {{ findings: [] }})',
+    saved = json.loads(one_call(f'saveDraft({json.dumps(RUN_ID)}, {{ findings: [] }})',
                                 tmp_path)["body"])
     assert list(saved) == ["key"]
     assert "key" not in json.loads(verify_call(tmp_path)["body"])
@@ -173,5 +182,5 @@ def test_the_two_calls_send_different_bodies(tmp_path) -> None:
 
 def test_the_reply_is_handed_back_to_the_caller(tmp_path) -> None:
     """The route answers the whole envelope, and the editor re-renders the key from it."""
-    assert call(f'verifyDraft({json.dumps(APP)}, {json.dumps(CHECKED_BY)})',
-                tmp_path)["answer"] == {"app": APP}
+    assert call(f'verifyDraft({json.dumps(RUN_ID)}, {json.dumps(CHECKED_BY)})',
+                tmp_path)["answer"] == {"app": ANSWERED_APP}

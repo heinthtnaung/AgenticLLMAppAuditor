@@ -1,13 +1,18 @@
 """Every refusal under `/api/runs` is raised by a name that says which refusal it is.
 
 Two of this router's status codes are the same number. `ALREADY_RUNNING` is 409
-because an audit is in flight; `NOT_FAILED` is 409 because the run a caller
-asked to forget is finished or still going. **No test that drives the endpoint
-can tell those apart**, because a response carries the number and not the name
-it was written with -- so swapping one constant for the other is a change that
-every behavioural test in this folder passes, and a reader who then followed
-`ALREADY_RUNNING` into the delete handler would be told an audit was running
-when none was.
+because an audit is in flight; `STILL_RUNNING` is 409 because the run a caller
+asked to forget has a worker writing to the files the delete would remove.
+**No test that drives the endpoint can tell those apart**, because a response
+carries the number and not the name it was written with -- so swapping one
+constant for the other is a change that every behavioural test in this folder
+passes, and a reader who then followed `ALREADY_RUNNING` into the delete handler
+would be told an audit was running when none was.
+
+`STILL_RUNNING` was `NOT_FAILED` until 2026-09-18, when the delete route stopped
+being failed-only: the name had to move with the narrowing, because a constant
+called `NOT_FAILED` guarding a route that happily forgets finished runs is worse
+than no name at all.
 
 So this file reads the source instead. It is the same shape of guard as
 `tests/test_no_write_commands.py`: a negative about code, which running the code
@@ -62,16 +67,20 @@ THE_FUNCTION_NODES = (ast.FunctionDef, ast.AsyncFunctionDef)
 REFUSALS_BY_HANDLER = {
     "audit": {"REFUSED", "ALREADY_RUNNING"},
     "one_run": {"NO_SUCH_RUN"},
-    "forget_run": {"NO_SUCH_RUN", "NOT_FAILED"},
+    "forget_run": {"NO_SUCH_RUN", "STILL_RUNNING"},
+    # The whole-history wipe, added 2026-09-18. It refuses for the one reason
+    # the single-run delete does and cannot 404: an empty history is a
+    # successful clear, not a missing thing.
+    "clear_history": {"STILL_RUNNING"},
 }
 
 # The two names that are the same number, so a reader of this file knows why the
 # guard exists at all. Compared to each other, never to a literal.
-THE_TWO_CONFLICTS = ("ALREADY_RUNNING", "NOT_FAILED")
+THE_TWO_CONFLICTS = ("ALREADY_RUNNING", "STILL_RUNNING")
 
-# A floor under the sweep: five raises across the three handlers today. An
+# A floor under the sweep: six raises across the four handlers today. An
 # `ast` walk that matched nothing would satisfy every comparison above.
-MINIMUM_REFUSALS = 5
+MINIMUM_REFUSALS = 6
 
 
 def parse_snippet(text: str) -> ast.Module:
@@ -153,7 +162,7 @@ def test_each_handler_refuses_with_the_constants_that_belong_to_it() -> None:
 
 def test_forgetting_a_run_refuses_a_wrong_status_by_its_own_name() -> None:
     """Named on its own, so the failure reads as what it is rather than as a dict diff."""
-    assert "NOT_FAILED" in refusals_by_handler(router_source())["forget_run"]
+    assert "STILL_RUNNING" in refusals_by_handler(router_source())["forget_run"]
     assert "ALREADY_RUNNING" not in refusals_by_handler(router_source())["forget_run"]
 
 

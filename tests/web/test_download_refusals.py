@@ -136,7 +136,7 @@ def test_the_409_explains_that_artifacts_are_keyed_on_the_app(tmp_path) -> None:
     registry.store.save(a_finished_row(RUN_ID, str(directory), EARLY), ENVELOPE)
     registry.store.save(a_finished_row(LATER_RUN_ID, str(directory)), ENVELOPE)
     said = client.get(three_endpoints()[0]).json()["detail"]
-    assert "keyed on the app name" in said
+    assert "keyed on the app rather than on" in said
     assert "audit it again" in said
 
 

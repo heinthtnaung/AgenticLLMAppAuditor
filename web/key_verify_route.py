@@ -27,6 +27,8 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 import key_draft_store as store
+import key_scope
+from history_store import HistoryStore
 from key_edit_guard import FROZEN_FIELDS
 from run_record import auditor_refusals, today
 
@@ -37,13 +39,14 @@ class Verification(BaseModel):
     verified_by: str = ""
 
 
-def register(app: FastAPI) -> None:
+def register(app: FastAPI, history: HistoryStore) -> None:
     """Attach the one route that records a human check."""
 
-    @app.post("/api/keys/{app_name}/verify")
-    def verify(app_name: str, claim: Verification) -> dict:
+    @app.post("/api/runs/{run_id}/key/verify")
+    def verify(run_id: str, claim: Verification) -> dict:
         """Record that a human checked this draft. Moves `verified` and nothing else."""
-        held = store.read(app_name)
+        keys_dir, app_name = key_scope.for_run(history, run_id)
+        held = store.read(keys_dir, app_name)
         _refuse_bad_name(claim.verified_by)
         _refuse_second_claim(app_name, held)
         checked = {**held, "verified": True,
@@ -55,8 +58,8 @@ def register(app: FastAPI) -> None:
         # corrupt manifest used to raise *after* `verified: true` reached disk,
         # so the caller saw a 500, the claim was recorded anyway, and the retry
         # was refused as a second claim. A refusal here leaves nothing behind.
-        said = store.validate(app_name, checked)
-        store.write(app_name, checked)
+        said = store.validate(keys_dir, app_name, checked)
+        store.write(keys_dir, app_name, checked)
         return {"app": app_name, "key": checked,
                 "frozen_fields": list(FROZEN_FIELDS),
                 "refusals": said}

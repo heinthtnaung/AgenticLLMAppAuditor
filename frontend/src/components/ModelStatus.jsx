@@ -71,7 +71,7 @@ export default function ModelStatus() {
   return (
     // The label goes bare when all is well, so the state is named here for a
     // reader who cannot see the dot's colour.
-    <span className={`model model--${said.state}`}
+    <span className={`model model--${said.state}`} title={said.detail}
           aria-label={`${said.label}. ${said.detail}`}>
       <span className={`dot dot--${TONE[said.state]}`} />
       <span className="model__label">{said.label}</span>

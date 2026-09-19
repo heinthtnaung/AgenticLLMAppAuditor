@@ -57,7 +57,15 @@ GROUP = FRONTEND_SRC / "components" / "HistoryGroup.jsx"
 # The page's own element, whole. Written out rather than searched for by prop
 # name, because the element without the prop is valid JSX and renders a table
 # whose every button calls `undefined`.
-THE_TABLE_ELEMENT = "<HistoryTable runs={held.runs} onForget={forget} />"
+# Both data props and both handler props, written as the source writes them but
+# without the closing `/>`: the element gained `picked` and `onPick` on
+# 2026-09-18 and spans two lines now, so matching to the close would pin the
+# line break rather than the wiring.
+THE_TABLE_ELEMENT = "<HistoryTable runs={held.runs} onForget={forget}"
+
+# The two props the select boxes ride on, checked beside the element above so a
+# table rendered without them is a column of checkboxes that record nothing.
+THE_PICK_PROPS = ("picked={picked}", "onPick={pick}")
 
 # The same element with the wire cut, as the plant: this is what 5096 green
 # tests were measured against.
@@ -73,7 +81,7 @@ THE_GROUP_HANDLER = "onForget={(failed) => forget(group, failed)}"
 # eight empty cells. Both measured green across the whole web suite before this.
 THE_GROUP_DATA = "group={group}"
 THE_GROUP_OPEN = "open={open.isOpen(group.key)}"
-THE_ROW_DATA = "<Row key={run.run_id} run={run} />"
+THE_ROW_DATA = "<Row key={run.run_id} run={run}"
 
 # And the toggle that opens one. `() => {}` here leaves every group shut for
 # ever, which hides every run rather than one control.
@@ -82,7 +90,7 @@ THE_GROUP_TOGGLE = "onToggle={() => open.toggle(group.key)}"
 # The far end of the first wire: the prop the table takes apart, and the round it
 # names. Both read, so a rename on either side is a failure here rather than a
 # silently undefined call.
-THE_TABLE_PROPS = "function HistoryTable({ runs, onForget })"
+THE_TABLE_PROPS = "function HistoryTable({ runs, onForget, picked, onPick })"
 THE_ROUND = "async function forget(group, failed)"
 
 # The far end of the second: the prop the header takes apart, and the click that
@@ -111,6 +119,12 @@ def group() -> str:
 def test_the_page_hands_its_round_to_the_table() -> None:
     """The measured hole: without this prop the feature is unreachable and the suite is green."""
     assert THE_TABLE_ELEMENT in page()
+
+
+def test_the_page_hands_the_table_both_halves_of_the_selection() -> None:
+    """A checkbox column wired to neither prop records nothing and disables nothing."""
+    for prop in THE_PICK_PROPS:
+        assert prop in page(), prop
 
 
 def test_a_table_element_with_no_handler_is_not_accepted() -> None:

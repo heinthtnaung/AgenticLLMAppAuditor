@@ -79,6 +79,12 @@ def stage(monkeypatch, tmp_path: Path) -> Path:
     monkeypatch.setattr(model_client, "ask", local_ask)
     monkeypatch.setattr(model_client, "model_digest", lambda model=None: "0" * 64)
     monkeypatch.setattr(cloud_client, "ask", cloud_ask)
+    # `compare_run.cloud_model` calls `api_key()` up front, so a run refuses by
+    # variable name before the first request rather than after the local arm has
+    # already been audited. Stubbing `ask` alone leaves that check live, and it
+    # reads the real environment -- which made every test here pass or fail on
+    # whether the developer happened to have a key in `.env`.
+    monkeypatch.setattr(cloud_client, "api_key", lambda *args, **kwargs: "test-key")
     monkeypatch.setattr(pipeline, "publish", lambda *args, **kwargs: None)
     monkeypatch.chdir(tmp_path)
     return repo

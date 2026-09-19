@@ -40,7 +40,7 @@ from dataclasses import replace
 from repo_url import canonical_url
 from run_record import COMPUTED_FIELDS, DURABLE_FIELDS, body, summary
 
-from .run_rows import AUDITOR, WHEN, running
+from .run_rows import AUDITOR, NO_MODELS, WHEN, running
 
 THE_FIELD = "canonical_repo_url"
 
@@ -66,7 +66,8 @@ RUN_ID = "a" * 32
 def a_body(repo_url: str) -> dict:
     """One run as an API body, for a run of the repository spelled this way."""
     return body(replace(running(RUN_ID), repo_url=repo_url),
-                artifacts_present=False, artifacts_current=True)
+                artifacts_present=False, artifacts_current=True,
+                models=NO_MODELS)
 
 
 def served(repo_url: str) -> str:

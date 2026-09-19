@@ -9,13 +9,13 @@ about ("a token defined in one block and not the other is how a theme ends up
 with black text on a black card"), which is the argument for asserting it rather
 than commenting it.
 
-**The exempt set is named and asserted both ways.** Four tokens are legitimately
-dark-block-only -- `--gap`, `--mono`, `--radius`, `--radius-sm` -- because they
-are not colours and a light palette has nothing to say about them. So the test
-is not "the light blocks may be missing anything harmless": it is that the
-dark-only tokens are *exactly* those four. A new colour token added to the dark
-block alone fails here, and so does deleting one of the four without updating
-the constant.
+**The exempt set is named and asserted both ways.** Five tokens are legitimately
+dark-block-only -- `--gap`, `--mono`, `--radius`, `--radius-sm` and
+`--page-measure` -- because they are not colours and a light palette has nothing
+to say about them. So the test is not "the light blocks may be missing anything
+harmless": it is that the dark-only tokens are *exactly* those five. A new colour
+token added to the dark block alone fails here, and so does deleting one of the
+five without updating the constant.
 
 **Declared once per block, too, which is the other way an edit lands wrong.**
 `--scrim` -- the ground behind the run overlay -- was added to all three blocks
@@ -57,8 +57,12 @@ CHOSEN_LIGHT_BLOCK = ':root[data-theme="light"]'
 LIGHT_QUERY = "@media (prefers-color-scheme: light)"
 
 # Tokens the light palettes are allowed not to redefine, because they are not
-# colours: a gap, a font stack and two corner radii are the same in every theme.
-NON_COLOUR_TOKENS = frozenset({"--gap", "--mono", "--radius", "--radius-sm"})
+# colours: a gap, a font stack, two corner radii and the page's own measure are
+# the same in every theme. `--page-measure` is a length and is deliberately not
+# `--page`, which *is* a colour and is declared in all three blocks -- the
+# comment on the token itself records that near-collision.
+NON_COLOUR_TOKENS = frozenset({"--gap", "--mono", "--radius", "--radius-sm",
+                               "--page-measure"})
 
 # The token whose absence from one block is the defect this file exists for.
 REGRESSED_TOKEN = "--panel"

@@ -25,6 +25,13 @@ sees under it is a composite that depends on the element tree. So `--card-raised
 stands in as the raised ground, which is what the controls carrying most of the
 faint text actually declare.
 
+`--veil` is the second of those and reaches the *pair* sweep, which `--panel`
+does not: the top bar and the footer declare a colour and that translucent fill
+in one rule. Such a pair is named in `TRANSLUCENT_GROUNDS` and asserted to be
+exactly the named set, so a third one cannot appear in silence. The text painted
+on them is not dropped -- `--ink-faint` clears both real grounds under its own
+test, which is the strictest honest reading available without a rendered tree.
+
 **Two failures are recorded here rather than asserted, deliberately, and both
 are in `docs/TODO.md`.**
 
@@ -34,12 +41,14 @@ are in `docs/TODO.md`.**
   nobody has asked for, the defect keeps a name in the suite rather than only in
   a document, and raising the token turns the xfail into an unexpected pass, so
   the record cannot be left behind by the fix.
-- `--on-source-mark` on `--source-mark` is 3.49, which fails 4.5 for text and
-  passes the 3.0 a graphical object needs. It is asserted at the non-text
-  threshold **and the premise is asserted with it**: `RepositoryLink.jsx` is
-  read to confirm that control still carries an icon and no text. Put a word in
-  it and the exemption stops being true, which is the half a threshold alone
-  would not notice.
+`--on-source-mark` on `--source-mark` used to be the second, at 3.49: an
+exemption asserted at the non-text threshold, with `RepositoryLink.jsx` read to
+confirm the control it covered carried an icon and no text. Commit `fae08ae`
+retinted that mark to white on `#181717` and moved the link into
+`SiteFooter.jsx`, so the pair now clears 4.5 as ordinary text and the exemption
+has been **removed rather than left behind** -- which is what the paragraph
+above says must happen when a recorded failure is fixed. It is swept with every
+other declared pair now.
 
 What no test in this suite can do: say how large or heavy any of this text is,
 which is what decides whether 4.5 or 3.0 applies; say what a display does to
@@ -54,7 +63,6 @@ No fastapi, no node, no build, no dependency.
 import pytest
 
 from . import css_rules, wcag
-from .jsx_sweep import strip_comments
 
 # The three palettes, in cascade order. `test_css_theme_parity.py` owns the
 # claim that the two light ones are identical; this file checks all three so
@@ -79,10 +87,12 @@ GROUNDS = ("--page", "--card-raised")
 # the skipped set is asserted below rather than left to grow quietly.
 SKIPPED_FOREGROUNDS = ("var(--stat-tone, var(--accent))",)
 
-# The one pair that is not text, and the component whose markup is why.
-THE_ICON_ONLY_CONTROL = ("--on-source-mark", "--source-mark")
-THE_CORNER_LINK = "RepositoryLink.jsx"
-THE_CORNER_LINK_CLASS = "source-link"
+# Grounds a pair sweep cannot composite. A rule declaring a colour over one of
+# these paints text on whatever shows through, which depends on the element
+# tree -- the same reason `--panel` is not a ground above. Named rather than
+# detected, and asserted below, so a third translucent fill is a failure here
+# and not a pair that quietly stopped being checked.
+TRANSLUCENT_GROUNDS = ("--veil",)
 
 # Recorded and not asserted: a control boundary at 1.21. In `docs/TODO.md`.
 THE_CONTROL_BOUNDARY = ("--line", "--card-raised")
@@ -132,6 +142,12 @@ def declared_pairs() -> set[tuple[str, str]]:
     return found
 
 
+def compositable_pairs() -> set[tuple[str, str]]:
+    """Every declared pair whose ground is an opaque colour this sweep can read."""
+    return {(ink, ground) for ink, ground in declared_pairs()
+            if ground not in TRANSLUCENT_GROUNDS}
+
+
 def inherited_foregrounds() -> set[str]:
     """Every token used as a `color` by a rule that paints no ground of its own."""
     found: set[str] = set()
@@ -169,26 +185,6 @@ def failures(pairs: set[tuple[str, str]], minimum: float) -> list[str]:
                   if ratio_in(selector, foreground, background) < minimum)
 
 
-def _without_tags(markup: str) -> str:
-    """The text a reader would see in one element's body, tags removed."""
-    depth, kept = 0, []
-    for character in markup:
-        depth += {"<": 1, ">": -1}.get(character, 0)
-        if depth == 0 and character != ">":
-            kept.append(character)
-    return "".join(kept)
-
-
-def corner_link_body() -> str:
-    """What the corner link element contains, markup and all."""
-    text = strip_comments(
-        (css_rules.FRONTEND_SRC / "components" / THE_CORNER_LINK).read_text(encoding="utf-8"))
-    opened = text.index(f'className="{THE_CORNER_LINK_CLASS}"')
-    return text[text.index(">", opened) + 1:text.index("</a>", opened)]
-
-
-# --- the maths, against published values ---------------------------------------
-
 def test_the_ratio_matches_every_published_value_this_file_names() -> None:
     """The extremes, the two greys either side of AA, and the AAA boundary."""
     measured = [(wcag.ratio_of(ink, ground), expected)
@@ -206,8 +202,13 @@ def test_a_translucent_ground_is_refused_rather_than_guessed() -> None:
 
 def test_every_declared_colour_pair_meets_the_text_minimum() -> None:
     """A rule setting both is a pair the page really paints, in every palette."""
-    pairs = declared_pairs() - {THE_ICON_ONLY_CONTROL}
-    assert failures(pairs, TEXT_MINIMUM) == []
+    assert failures(compositable_pairs(), TEXT_MINIMUM) == []
+
+
+def test_the_only_grounds_dropped_from_that_sweep_are_the_named_ones() -> None:
+    """A third translucent fill must fail here, not leave a pair unchecked."""
+    dropped = {ground for _ink, ground in declared_pairs() - compositable_pairs()}
+    assert dropped == set(TRANSLUCENT_GROUNDS)
 
 
 def test_the_pair_sweep_read_the_rules_the_page_declares() -> None:
@@ -245,28 +246,6 @@ def test_the_sweep_would_report_a_foreground_that_fell_short() -> None:
     assert len(reported) == len(PALETTES), reported
 
 
-# --- the one non-text exemption, and the premise it rests on -------------------
-
-def test_the_icon_only_control_meets_the_non_text_minimum() -> None:
-    """3.49: too little for text, enough for a graphical object under 1.4.11."""
-    assert failures({THE_ICON_ONLY_CONTROL}, NON_TEXT_MINIMUM) == []
-
-
-def test_the_icon_only_control_would_not_pass_as_text() -> None:
-    """Which is why the exemption is named rather than the threshold lowered for everything."""
-    assert failures({THE_ICON_ONLY_CONTROL}, TEXT_MINIMUM) != []
-
-
-def test_the_control_the_exemption_is_for_carries_an_icon_and_no_text() -> None:
-    """The premise. Put a word in that link and 3.49 stops being enough for it."""
-    body = corner_link_body()
-    assert "<Icon" in body
-    assert _without_tags(body).strip() == "", f"{THE_CORNER_LINK} now renders text"
-
-
-def test_that_reader_would_notice_a_word_in_the_control() -> None:
-    """Mutation check: the check above compares against an empty string either way."""
-    assert _without_tags('<a className="source-link"><Icon /> Source</a>').strip() == "Source"
 
 
 # --- and one failure this file records rather than asserts ---------------------

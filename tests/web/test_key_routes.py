@@ -34,9 +34,9 @@ import key_edit_guard                                         # noqa: E402
 from keys import key_drafting                                 # noqa: E402
 
 from .key_fixtures import (                                   # noqa: E402
-    APP, ENTRY_COUNT, HUMAN_PIN_FIELDS, KEYS_ENDPOINT, OK, OTHER_APP,
-    STORED_ORDER, SURFACE_COUNT, client_over, entry_ids, key_on_disk, plant,
-    planted_client, read_draft)
+    APP, ENTRY_COUNT, HUMAN_PIN_FIELDS, KEYS_ENDPOINT, NO_SUCH_DRAFT, OK,
+    STORED_ORDER, SURFACE_COUNT, client_over, entry_ids, key_on_disk, keys_dir,
+    plant, planted_client, read_draft, saved)
 
 # What one drafted key's reply carries, as a whole set: a reply that lost
 # `frozen_fields` would leave the page with no way to show what it may not edit.
@@ -59,15 +59,23 @@ DRAFTED_PIN_REFUSAL = ("the manifest names no framework or language; both are hu
 # An exact equality, not a subset: that strictness is what caught the verify
 # route being added and unasserted, and it is also what would catch a route
 # gaining `DELETE` on a drafted key.
+# Two paths now, not three. `GET /api/keys` listed the checkout's own drafts
+# folder and went with the move to run-scoped keys: this server never writes
+# there any more, nothing on the page ever called it, and an unauthenticated
+# read of the project's own measurements is not worth keeping for nobody.
 DRAFT_PATHS = {
-    f"{KEYS_ENDPOINT}": {"GET"},
-    f"{KEYS_ENDPOINT}/{{app_name}}": {"GET", "PUT"},
-    f"{KEYS_ENDPOINT}/{{app_name}}/verify": {"POST"},
+    "/api/runs/{run_id}/key": {"GET", "PUT"},
+    "/api/runs/{run_id}/key/verify": {"POST"},
 }
+
+# What the paths above are matched against: every route under `/api/runs/` whose
+# path ends in the key or its verify step. Narrower than a prefix, because the
+# run routes and the downloads live under `/api/runs/` too.
+KEY_PATH_TAIL = "/key"
 
 
 def methods_of(app: FastAPI) -> dict:
-    """Every path one application routes under `/api/keys`, and the methods it answers.
+    """Every path one application routes to a run's key, and the methods it answers.
 
     Accumulated rather than built by comprehension: one path registered with two
     methods is two route objects, and a dict comprehension keeps only the last.
@@ -75,7 +83,7 @@ def methods_of(app: FastAPI) -> dict:
     found: dict = {}
     for route in app.routes:
         path = getattr(route, "path", "")
-        if path.startswith(KEYS_ENDPOINT):
+        if path.endswith(KEY_PATH_TAIL) or path.endswith(f"{KEY_PATH_TAIL}/verify"):
             found.setdefault(path, set()).update(set(route.methods) - {"HEAD"})
     return found
 
@@ -93,63 +101,45 @@ def test_the_drafted_key_routes_are_on_the_application_the_server_runs() -> None
 
 # --- which folder is read -----------------------------------------------------
 
-def test_the_listing_and_the_read_both_answer_from_the_folder_the_store_was_given(
-        monkeypatch, tmp_path) -> None:
-    """One binding, two routes, asserted together -- because it was briefly two bindings.
+def test_both_routes_answer_from_the_folder_the_run_names(monkeypatch, tmp_path) -> None:
+    """The run's own folder, and provably not the checkout's drafts directory.
 
-    `key_draft_store` binds `DRAFTED_KEYS_DIR` with `from ... import`, so
-    rebinding `key_drafting`'s copy -- which `tests/compare_arms_fixtures.py`
-    does, for drafting -- leaves these routes reading `grading_keys/drafts/` in
-    the checkout, where real drafts live. Here the source module's copy is
-    pointed somewhere else entirely, and both routes still answer from the
-    folder the store was given.
-
-    The listing used to glob a *second* binding in `key_routes`, and a fixture
-    redirecting one of the two listed a temporary folder while writing through
-    the other. That is why the two halves are asserted in one test: they were
-    once capable of disagreeing. Which module may bind the name at all is
-    `test_key_draft_store.py`.
+    `keys.key_drafting.DRAFTED_KEYS_DIR` is pointed somewhere else entirely here
+    -- as `tests/compare_arms_fixtures.py` does for drafting -- and both routes
+    go on answering from the run's folder, because neither reads that name any
+    more. Until 2026-09-19 the store bound it and *only* read it, so the editor
+    served 404 for every key `web/run_jobs.py` had written under
+    `artifacts/runs/`. `test_key_draft_store.py` asserts the absence of that
+    binding; this asserts the behaviour it buys.
     """
     somewhere_else = tmp_path / "not-the-drafts"
     somewhere_else.mkdir()
     monkeypatch.setattr(key_drafting, "DRAFTED_KEYS_DIR", somewhere_else)
     client = client_over(monkeypatch, plant(tmp_path))
-    assert client.get(KEYS_ENDPOINT).json()["drafts"] == [APP]
+
     assert read_draft(client)["key"]["app"] == APP
+    assert saved(client, read_draft(client)["key"])["app"] == APP
+    assert list(somewhere_else.iterdir()) == []
 
 
-# --- the listing --------------------------------------------------------------
-
-def test_every_drafted_key_on_disk_is_listed_by_the_app_it_was_drafted_for(
+def test_a_run_whose_folder_was_never_created_answers_404_rather_than_failing(
         monkeypatch, tmp_path) -> None:
-    """Two drafts, both named, sorted -- so a list of one cannot pass by being right once.
+    """No key was drafted for this run, which is normal -- `--draft-key` is off by default."""
+    never = keys_dir(tmp_path / "bare")
+    never.mkdir(parents=True)
+    client = client_over(monkeypatch, never)
 
-    The whole list is asserted rather than membership, which is also what says a
-    `.manifest.json` is not a draft: one sits beside each key on disk, and a
-    glob over the wrong suffix would offer a pin as a key to correct.
-    """
-    drafts = plant(tmp_path)
-    plant(tmp_path / "second", OTHER_APP)
-    for written in (tmp_path / "second" / "drafts").iterdir():
-        written.rename(drafts / written.name)
-    client = client_over(monkeypatch, drafts)
-    assert client.get(KEYS_ENDPOINT).json()["drafts"] == sorted([APP, OTHER_APP])
-
-
-def test_the_listing_names_what_an_edit_may_not_touch(monkeypatch, tmp_path) -> None:
-    """The page shows a key's standing as a fact, so the endpoint has to say which fields those are."""
-    client, _drafts = planted_client(monkeypatch, tmp_path)
-    assert client.get(KEYS_ENDPOINT).json()["frozen_fields"] == list(
-        key_edit_guard.FROZEN_FIELDS)
-
-
-def test_a_folder_that_was_never_created_lists_nothing_rather_than_failing(
-        monkeypatch, tmp_path) -> None:
-    """No draft has ever been made on this machine, which is normal and not an error."""
-    client = client_over(monkeypatch, tmp_path / "never-drafted")
     response = client.get(KEYS_ENDPOINT)
-    assert response.status_code == OK
-    assert response.json()["drafts"] == []
+
+    assert response.status_code == NO_SUCH_DRAFT
+    assert response.json()["detail"].startswith(f"no drafted key for {APP}")
+
+
+def test_the_read_names_what_an_edit_may_not_touch(monkeypatch, tmp_path) -> None:
+    """The page shows a key's standing as a fact, so the endpoint says which fields those are."""
+    client, _drafts = planted_client(monkeypatch, tmp_path)
+
+    assert read_draft(client)["frozen_fields"] == list(key_edit_guard.FROZEN_FIELDS)
 
 
 # --- one draft ----------------------------------------------------------------

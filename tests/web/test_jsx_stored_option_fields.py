@@ -15,13 +15,22 @@ model a person chose should be. One level deeper is exactly where a camel-cased
 guess survives, because JavaScript is where the reader is and snake_case is
 where the record is.
 
-**Two spellings are swept, because the component uses both.** `options.model`
-and `options.cloud_model` are written as accessors; the three boolean flags are
-written as string keys in a `FLAGS` table and read as `options[key]`, which no
-accessor sweep can see. A table whose keys drifted would show "defaults" for a
-run that asked for all three -- a silent under-report of what an audit did,
-which on `compare_models` means a run that sent source to a third party reads
-as one that did not.
+**Two spellings are swept, and only one of them is in use today.** The three
+boolean flags are written as string keys in a `FLAGS` table and read as
+`options[key]`, which no accessor sweep can see: a table whose keys drifted
+would show "defaults" for a run that asked for all three -- a silent
+under-report of what an audit did, which on `compare_models` means a run that
+sent source to a third party reads as one that did not. That half carries the
+whole non-vacuity floor.
+
+The accessor half -- `options.model` and `options.cloud_model` -- was the other
+spelling until 2026-09-18, when the two model names left this component for
+columns fed by `run.local_model_identifier` and its three siblings. Those are
+one level shallower and `test_jsx_record_fields.py` sweeps them, so the blind
+spot moved rather than closed. **The accessor guard is kept as a trap, not
+retired**: it is what fires the day someone reaches back into `options` for a
+model name, which is exactly the fact-shaped guess `test_jsx_run_options.py`
+forbids. A floor over it would now assert that the mistake is present.
 
 **A file of its own rather than a section of `test_option_fields.py`**, which is
 already at 175 lines and would pass the ~200-line rule with this in it. The two
@@ -50,9 +59,9 @@ OPTIONS = "options"
 FLAGS_ARRAY = re.compile(r"const FLAGS = \[(.*?)\n\];", re.DOTALL)
 FLAG_KEY = re.compile(r'\["(\w+)",')
 
-# Floors, so a sweep that matched nothing cannot pass as a sweep that found no
-# fault. Three accessors and three flag keys today.
-MINIMUM_ACCESSORS = 3
+# A floor, so a sweep that matched nothing cannot pass as a sweep that found no
+# fault. Three flag keys today, and no accessors at all -- see the docstring for
+# why that one is asserted as an emptiness rather than propped up by a floor.
 MINIMUM_FLAG_KEYS = 3
 
 # A field no request has ever carried, in the spelling a reader writing
@@ -109,9 +118,14 @@ def test_nothing_the_component_reads_is_unknown() -> None:
 
 # --- the sweep really swept ----------------------------------------------------
 
-def test_the_sweep_read_the_accessors_the_component_is_written_with() -> None:
-    """Non-vacuity: an empty list satisfies every comparison above having read nothing."""
-    assert len(accessors_read()) >= MINIMUM_ACCESSORS
+def test_the_component_reads_its_options_through_the_flag_table_alone() -> None:
+    """Stated rather than floored: an accessor here would be a model name coming back.
+
+    This is the measurement behind the docstring's claim, so the emptiness is a
+    finding of its own and not a check that quietly passes on a file nobody
+    read -- `test_the_flag_table_was_found_and_read` is what proves the read.
+    """
+    assert accessors_read() == []
 
 
 def test_the_flag_table_was_found_and_read() -> None:

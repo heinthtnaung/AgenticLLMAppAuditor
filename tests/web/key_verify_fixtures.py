@@ -25,7 +25,7 @@ from fastapi.testclient import TestClient
 
 import key_verify_route
 
-from .key_fixtures import APP, KEYS_ENDPOINT, OK
+from .key_fixtures import KEYS_ENDPOINT, OK
 
 # An ordinary name, held to the same rules as the auditor of a run: this server
 # has no authentication, so it is a claim about who checked the key.
@@ -50,12 +50,16 @@ FIXED_DATE = "2026-03-04"
 BACKDATED = "2019-01-01"
 
 
-def verify_path(app: str = APP) -> str:
-    """Where a claim that a human checked one draft is posted."""
-    return f"{KEYS_ENDPOINT}/{app}/verify"
+def verify_path(endpoint: str = KEYS_ENDPOINT) -> str:
+    """Where a claim that a human checked one draft is posted.
+
+    Under the run, beside the two routes that read and correct it: a claim is
+    about the key one run drafted, and the app it names is read off that run.
+    """
+    return f"{endpoint}/verify"
 
 
-def claim(client: TestClient, verified_by: str, app: str = APP,
+def claim(client: TestClient, verified_by: str, endpoint: str = KEYS_ENDPOINT,
           **extra_body) -> httpx.Response:
     """Post one verification claim, whatever the answer -- the refusals are a subject too.
 
@@ -63,13 +67,14 @@ def claim(client: TestClient, verified_by: str, app: str = APP,
     driven: a `verified_date` in the body is the case the server's own stamp
     exists to defeat.
     """
-    return client.post(verify_path(app), json={"verified_by": verified_by, **extra_body})
+    return client.post(verify_path(endpoint),
+                       json={"verified_by": verified_by, **extra_body})
 
 
-def claimed(client: TestClient, verified_by: str = CHECKED_BY, app: str = APP,
-            **extra_body) -> dict:
+def claimed(client: TestClient, verified_by: str = CHECKED_BY,
+            endpoint: str = KEYS_ENDPOINT, **extra_body) -> dict:
     """Post one claim and insist it was accepted, returning the reply body."""
-    response = claim(client, verified_by, app, **extra_body)
+    response = claim(client, verified_by, endpoint, **extra_body)
     assert response.status_code == OK, response.text
     return response.json()
 

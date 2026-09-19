@@ -41,6 +41,13 @@ STAGES = (
     "advice",        # remediation advice built
     "write",         # artifacts on disk
     "publish",       # VEX and the exported reports
+    # Last, and announced whether or not `--draft-key` was passed. A run that
+    # was not asked for one still *passes* this boundary, and saying so is what
+    # `advisories` and `dependencies` already do -- both announce with a detail
+    # naming the absence rather than going quiet. Without it a `--draft-key`
+    # run showed all eight boundaries ticked while the model was still drafting,
+    # which is a finished-looking panel over work still going.
+    "key",           # a grading key drafted, or said not to be
 )
 
 

@@ -1,7 +1,15 @@
 """Reading and correcting a drafted grading key, and nothing else.
 
-**Drafts only.** The folder is joined in `key_draft_store`, which says why;
-nothing here can name a published key.
+**Addressed by run, not by app.** A run drafts its key into its own folder --
+`web/run_jobs.py` passes `--drafts-dir artifacts/runs/<run_id>/keys` so a
+forgotten run takes its key with it -- and these routes used to read
+`grading_keys/drafts/` in the checkout instead. The two never met: the editor
+answered 404 for every key this server had written, and would have saved into
+the folder holding a human's own corrected drafts. `key_scope` is the join now,
+and the app name comes off the record rather than out of the URL.
+
+**Drafts only.** The folder is resolved in `key_scope`, which says why; nothing
+here can name a published key, or any path outside `artifacts/runs/`.
 
 **An edit never upgrades a key's standing, and `source` never moves at all.** A
 drafted key stays `tool_drafted` however much of it a person corrects, and
@@ -27,6 +35,8 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 import key_draft_store as store
+import key_scope
+from history_store import HistoryStore
 from key_edit_guard import (
     FROZEN_FIELDS, anchors_moved, entries_malformed, frozen_moved, settled)
 
@@ -37,34 +47,30 @@ class DraftEdit(BaseModel):
     key: dict
 
 
-def register(app: FastAPI) -> None:
+def register(app: FastAPI, history: HistoryStore) -> None:
     """Attach the reading and correcting routes. `api.py` mounts the verify route."""
 
-    @app.get("/api/keys")
-    def drafts() -> dict:
-        """Every drafted key on disk, by the app it was drafted for."""
-        return {"drafts": store.drafted_apps(),
-                "frozen_fields": list(FROZEN_FIELDS)}
-
-    @app.get("/api/keys/{app_name}")
-    def one_draft(app_name: str) -> dict:
-        """One drafted key, with what an edit may not touch named beside it."""
-        held = store.read(app_name)
+    @app.get("/api/runs/{run_id}/key")
+    def one_draft(run_id: str) -> dict:
+        """One run's drafted key, with what an edit may not touch named beside it."""
+        keys_dir, app_name = key_scope.for_run(history, run_id)
+        held = store.read(keys_dir, app_name)
         return {"app": app_name, "key": held,
                 "frozen_fields": list(FROZEN_FIELDS),
-                "refusals": store.validate(app_name, held)}
+                "refusals": store.validate(keys_dir, app_name, held)}
 
-    @app.put("/api/keys/{app_name}")
-    def save_draft(app_name: str, edit: DraftEdit) -> dict:
+    @app.put("/api/runs/{run_id}/key")
+    def save_draft(run_id: str, edit: DraftEdit) -> dict:
         """Save a corrected draft, refusing anything that changes its standing."""
-        held = store.read(app_name)
+        keys_dir, app_name = key_scope.for_run(history, run_id)
+        held = store.read(keys_dir, app_name)
         changed = _guard_frozen(held, edit.key)
         # Asked **before** the write, though the answer only reports. Validating
         # afterwards meant a corrupt manifest raised out of a request that had
         # already changed the file: a failed call that succeeded. Every refusal
         # this module raises now leaves the draft exactly as it found it.
-        said = store.validate(app_name, changed)
-        store.write(app_name, changed)
+        said = store.validate(keys_dir, app_name, changed)
+        store.write(keys_dir, app_name, changed)
         # Saved, then told what promotion would still refuse -- **not** gated on
         # it. The gate is `promote_key.py`, which is the thing that actually
         # publishes, and a draft is invisible to scoring until it runs.

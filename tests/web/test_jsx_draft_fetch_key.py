@@ -47,7 +47,7 @@ DRAFT_SETTER = "setDraft"
 
 # What the page really passes as the key: a field of the run record, not a
 # document. Written as the JSX writes it, optional chaining and all.
-KEYED_ON = "record?.app"
+KEYED_ON = "runId"
 
 
 def hook_source() -> tuple[str, str]:

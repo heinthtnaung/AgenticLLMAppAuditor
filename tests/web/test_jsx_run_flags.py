@@ -65,7 +65,10 @@ THE_CHOSEN_FLAGS = re.compile(
 AN_ARM_THAT_RENDERS_NOTHING = "        : null}\n"
 
 # A floor, so a file this test failed to read cannot satisfy the checks above.
-MINIMUM_ELEMENTS = 5
+# Three today: the wrapping `<div>` and the two `<span>`s of the ternary. It was
+# five until 2026-09-18, when the two model lines left this component for
+# columns of their own -- see `test_jsx_run_options.py`.
+MINIMUM_ELEMENTS = 3
 
 
 def component() -> str:

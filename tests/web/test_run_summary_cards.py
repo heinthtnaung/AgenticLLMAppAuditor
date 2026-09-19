@@ -58,7 +58,12 @@ CARD_TITLE = re.compile(r'<h2 className="card__title"[^>]*>([^<{]+)</h2>')
 # itself. Read together, because a stale import and an undefined element are
 # different failures and each is silent in its own way.
 RENDERED = re.compile(r"<([A-Z]\w*)")
-DEFAULT_JSX_IMPORT = re.compile(r'import (\w+) from "\./(\w+)\.jsx";')
+# A default import, with or without named bindings beside it. `ArmToggle` is
+# brought in as `import ArmToggle, { CLOUD, LOCAL } from "./ArmToggle.jsx";`,
+# and a pattern that stopped at the component name read that line as no import
+# at all -- so a component the page really renders looked dangling.
+DEFAULT_JSX_IMPORT = re.compile(
+    r'import (\w+)(?:, \{[^}]*\})? from "\./(\w+)\.jsx";')
 LOCAL_COMPONENT = re.compile(r"function ([A-Z]\w*)\(")
 
 # The icon the evidence panel asked for, which became dead data when it went.

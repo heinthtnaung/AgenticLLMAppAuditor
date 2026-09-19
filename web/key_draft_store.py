@@ -3,16 +3,28 @@
 Split from the routes because two route modules need it -- correcting a draft
 and signing one off are different acts with different rules, so they are
 different files -- and a second copy of "which file is this app's draft" is how
-one of them ends up reading `grading_keys/` instead of `grading_keys/drafts/`.
+one of them ends up reading the wrong folder.
 
-**Drafts only, and that is the whole security argument.** `grading_keys/` holds
-the answers this tool is scored against; an unauthenticated endpoint that could
-rewrite them would let anyone who reaches the port rewrite the project's own
-measurements. `DRAFTED_KEYS_DIR` is joined here and nowhere else -- including
-the listing, which lived in the routes until a second binding of this constant
-left a test fixture redirecting one of the two and writing through the other --
-and `discover_graded_apps` globs one level, so a draft is invisible to scoring
-until `promote_key.py` publishes it.
+**The folder is a parameter now, and it is always a run's own.** This module
+used to join `keys.key_drafting.DRAFTED_KEYS_DIR` -- `grading_keys/drafts/` in
+the checkout -- and that was wrong in both directions at once. A run started
+from the browser drafts into `artifacts/runs/<run_id>/keys/`, which
+`web/run_jobs.py` passes as `--drafts-dir` so a forgotten run takes its key with
+it; so the editor could never see the key the server had just written, and every
+`GET` for one answered 404. Meanwhile a save would have written into the
+checkout's own drafts folder, where a human's corrected keys live.
+
+`web/key_scope.py` is the one place a run id becomes a folder, and it can only
+answer with `run_files.run_keys(...)`. So the security argument is stronger than
+the one it replaces rather than merely moved: **no route here can name a path
+outside `artifacts/runs/`.** `grading_keys/` holds the answers this tool is
+scored against, and an unauthenticated endpoint that could rewrite those would
+let anyone who reaches the port rewrite the project's own measurements. It is
+now unreachable from this server at all, not merely one directory away.
+
+A draft stays invisible to scoring until `promote_key.py` publishes it, which
+for a run-scoped draft means `promote_key.py <app> --drafts-dir
+artifacts/runs/<run_id>/keys`.
 """
 
 import json
@@ -23,7 +35,6 @@ from fastapi import HTTPException
 
 from keys import key_promotion
 from keys.grading_keys import GROUND_TRUTH_SUFFIX, MANIFEST_SUFFIX, key_path
-from keys.key_drafting import DRAFTED_KEYS_DIR
 
 # `<app>` reaches a filesystem join, so it is checked rather than trusted --
 # the same rule the run routes apply to a run id.
@@ -33,11 +44,16 @@ NO_SUCH_DRAFT = 404
 REFUSED = 400
 
 
-def path_for(app_name: str) -> Path:
-    """Where this app's draft lives, refusing a name that is not one."""
+def path_for(keys_dir: Path, app_name: str) -> Path:
+    """Where this run's draft lives, refusing an app name that is not one.
+
+    The name comes from the run record rather than from a caller, so this check
+    is defence in depth -- but it is the join that would reach the filesystem
+    with it, so it is checked here anyway.
+    """
     if not APP_NAME.match(app_name):
         raise HTTPException(status_code=NO_SUCH_DRAFT, detail="no draft has that name")
-    return key_path(app_name, GROUND_TRUTH_SUFFIX, DRAFTED_KEYS_DIR)
+    return key_path(app_name, GROUND_TRUTH_SUFFIX, keys_dir)
 
 
 def _json_object(path: Path) -> dict:
@@ -71,36 +87,27 @@ def _json_object(path: Path) -> dict:
     return document
 
 
-def read(app_name: str) -> dict:
-    """One drafted key from disk, naming a corrupt one rather than crashing on it."""
-    path = path_for(app_name)
+def read(keys_dir: Path, app_name: str) -> dict:
+    """One drafted key from disk, naming a corrupt one rather than crashing on it.
+
+    A run that never drafted one is the ordinary case -- `--draft-key` is off by
+    default -- so this 404 is an absence and not a fault.
+    """
+    path = path_for(keys_dir, app_name)
     if not path.is_file():
         raise HTTPException(status_code=NO_SUCH_DRAFT,
-                            detail=f"no drafted key for {app_name}")
+                            detail=f"no drafted key for {app_name}. A key is "
+                                   "drafted only when a run asks for one.")
     return _json_object(path)
 
 
-def drafted_apps() -> list[str]:
-    """Every app with a draft on disk, by name. Empty when the folder is absent.
-
-    `is_file()` because a *directory* named like a key would otherwise be
-    listed as a draft -- the same filter, and the same reason, as
-    `grading_keys.discover_graded_apps`.
-    """
-    if not DRAFTED_KEYS_DIR.is_dir():
-        return []
-    return sorted(path.name.removesuffix(GROUND_TRUTH_SUFFIX)
-                  for path in DRAFTED_KEYS_DIR.glob(f"*{GROUND_TRUTH_SUFFIX}")
-                  if path.is_file())
-
-
-def write(app_name: str, key: dict) -> None:
+def write(keys_dir: Path, app_name: str, key: dict) -> None:
     """Put one draft back on disk, sorted so two revisions can be diffed."""
-    path_for(app_name).write_text(
+    path_for(keys_dir, app_name).write_text(
         json.dumps(key, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
-def validate(app_name: str, key: dict) -> list[str]:
+def validate(keys_dir: Path, app_name: str, key: dict) -> list[str]:
     """What promotion would say about this draft, asked of promotion itself.
 
     Reuse, never a second validator: a key this editor accepted and promotion
@@ -109,7 +116,7 @@ def validate(app_name: str, key: dict) -> list[str]:
     that are human judgements a draft cannot supply and this page cannot edit,
     so gating on those would make a draft impossible to correct at all.
     """
-    pin_path = key_path(app_name, MANIFEST_SUFFIX, DRAFTED_KEYS_DIR)
+    pin_path = key_path(app_name, MANIFEST_SUFFIX, keys_dir)
     # Guarded like the key, because it is hand-edited like the key. An absent
     # pin is an ordinary draft and answers `{}`; a *broken* one is a named
     # refusal, not a traceback out of `_pin_refusals` subscripting a list.

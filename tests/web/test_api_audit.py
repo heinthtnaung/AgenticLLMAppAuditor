@@ -51,6 +51,7 @@ from checks.permissions import CHECK_NAME as PERMISSION_CHECK                   
 from checks.taint import CHECK_NAME as TAINT_CHECK                              # noqa: E402
 from cli_helpers import forbid_subprocesses                                     # noqa: E402
 from main import DEFAULT_ARTIFACTS_DIR                                          # noqa: E402
+import run_files                                                                # noqa: E402
 from mixed_app_fixtures import APP_NAME, MIXED_APP_SURFACES                     # noqa: E402
 from outputs import FINDINGS_NAME, SURFACES_NAME                                # noqa: E402
 import run_record                                                               # noqa: E402
@@ -77,12 +78,15 @@ EXPECTED_RESULT_KEYS = {"schema_version", "app", "artifacts_dir", "seconds",
 # a required `auditor`: an old page posts a body without one and is answered 400.
 REPLY_SCHEMA_VERSION = 3
 
-# Every boundary this run announces, in order. Seven of the eight: `publish` is
+# Every boundary this run announces, in order. Eight of the nine: `publish` is
 # the pipeline's, and `record_publish` replaces that stage with a recorder that
-# announces nothing. Pinned as a list, because a page shows the audit advancing
-# and a stage that stopped being announced would show as never reached.
+# announces nothing. `key` *is* here, because `main.run` announces it whether or
+# not a key was asked for -- a run that stopped at `write` left the page showing
+# a finished panel over work still going. Pinned as a list, because a page shows
+# the audit advancing and a stage that stopped being announced would show as
+# never reached.
 EXPECTED_STAGES = ["fetch", "surfaces", "dependencies", "advisories",
-                   "checks", "advice", "write"]
+                   "checks", "advice", "write", "key"]
 
 # The two answers this file reads. 422 is pydantic's, not the wrapper's: a body
 # that fails the request model never reaches the handler, so it is not one of
@@ -169,10 +173,20 @@ def test_the_run_reports_the_wall_clock_it_took(monkeypatch, tmp_path) -> None:
 # --- where it wrote, and what it wrote there ----------------------------------
 
 def test_artifacts_dir_names_where_the_audit_really_wrote(monkeypatch, tmp_path) -> None:
-    """Not re-derived and not guessed: the directory named must hold both artifacts."""
+    """Not re-derived and not guessed: the directory named must hold both artifacts.
+
+    **Keyed on the run, not on the app**, since 2026-09-18. Every audit of one
+    app used to share `artifacts/agentic_auditor/<app>/`, so all but the newest
+    row's files read as overwritten; the server passes `--artifacts-dir` now and
+    two runs of one app keep their own. Nothing in `src/` changed for it -- the
+    command line still defaults to the shared directory, which is why the system
+    segment below is read from `main.DEFAULT_ARTIFACTS_DIR` rather than spelled.
+    """
     record = audit_through_the_endpoint(monkeypatch, tmp_path)
     written = tmp_path / record["result"]["artifacts_dir"]
-    assert Path(record["result"]["artifacts_dir"]) == DEFAULT_ARTIFACTS_DIR / APP_NAME
+    expected = (run_files.run_artifacts(record["run_id"], DEFAULT_ARTIFACTS_DIR.name)
+                / APP_NAME)
+    assert Path(record["result"]["artifacts_dir"]) == expected
     assert record["artifacts_dir"] == record["result"]["artifacts_dir"]
     assert (written / FINDINGS_NAME).is_file()
     assert (written / SURFACES_NAME).is_file()

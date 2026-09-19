@@ -53,7 +53,11 @@ THE_PAGE_FRAME = (":root", "body", ".shell")
 # it opens from inside a card; the other two are written at the shell, where the
 # frame above is all that wraps them.
 PORTALLED = {"overlay": "Modal.jsx"}
-AT_THE_SHELL = {"waves": "App.jsx", "source-link": "RepositoryLink.jsx"}
+# `source-link` was here until `fae08ae` deleted `RepositoryLink.jsx` and moved
+# that control into the footer, where it scrolls with the page rather than
+# being fixed to the viewport. One entry now, and the sweep below is what
+# holds that the stylesheets fix nothing this map has forgotten.
+AT_THE_SHELL = {"waves": "App.jsx"}
 
 # The shell itself: the component that writes the outermost element, the class it
 # writes, and the one file that renders it.

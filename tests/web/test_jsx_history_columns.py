@@ -18,10 +18,19 @@ mislabelled by one.
 with the expression that has to be inside the cell under it, and the test walks
 the two lists in source order and compares them pairwise. That is deliberate:
 the stopping rule this suite arrived at after seven rounds of sampling is that a
-*rendered* relation is only closed by enumerating a finite inventory. Eight
-pairs is finite, so this is closed rather than merely longer -- and a ninth
-column fails here until its row is written, which is the property a spot check
-cannot have.
+*rendered* relation is only closed by enumerating a finite inventory. Ten pairs
+is finite, so this is closed rather than merely longer -- and an eleventh column
+fails here until its row is written, which is the property a spot check cannot
+have. It was eight until 2026-09-18, when the two model names left the Options
+cell for columns of their own; the enumeration was **extended, not loosened**,
+which is the only way a closed inventory survives a change.
+
+**The table has one unlabelled column and it is enumerated too.** The leading
+`<th className="pick" />` carries no text, so the heading sweep cannot see it
+while the cell sweep can -- eleven cells under ten headings, which is exactly
+the drift `paired` exists to report. It is named in `THE_UNLABELLED_COLUMN` and
+asserted as the first cell, so the column is accounted for rather than silently
+dropped to make the two lists the same length.
 
 `test_jsx_row_files.py` holds what the last cell's three words *mean*; this
 holds that they sit under "Files". The two are joined by `COLUMNS`' last entry
@@ -50,17 +59,32 @@ COLUMNS = (
     ("Auditor", "run.auditor"),
     ("Status", "run.status"),
     ("Options", "<RunOptions options={run.options} />"),
+    # Fed the whole run rather than its options: what answered is served beside
+    # the record, because `options.model` is only what was asked for.
+    ("Local", "<ModelCell shown={localModel(run)} />"),
+    ("Cloud", "<ModelCell shown={cloudModel(run)} />"),
     ("Findings", "count(run.finding_count)"),
     ("Surfaces", "count(run.surface_count)"),
     ("Took", "seconds(run.seconds)"),
     ("Files", "files(run)"),
 )
 
+# The one column with no heading: the select box each row is picked with. Its
+# cell is what the pair sweep would otherwise read under "Started".
+THE_UNLABELLED_COLUMN = "pick__box"
+
 # The two halves, as the source writes them. `Row` is sliced out first so the
 # group header's own `<span>`s cannot be read as cells.
 THE_HEADING = re.compile(r"<th>([^<]+)</th>")
-THE_CELL = re.compile(r"<td\b[^>]*>(.*?)</td>", re.DOTALL)
-THE_ROW_FUNCTION = re.compile(r"function Row\(\{ run \}\) \{(.*?)\n\}", re.DOTALL)
+# A cell is a `<td>` **or a component that renders exactly one**. `ModelCell`
+# is the only one of the second kind and it writes its own `<td className=
+# "nowrap">`, so a sweep for literal `<td>` alone reads eight cells under ten
+# headings -- the drift this file reports, caused by the guard rather than by
+# the page. Named as one alternation so the two kinds stay in source order,
+# which is the whole subject here.
+THE_CELL = re.compile(
+    r"<td\b[^>]*>(?P<written>.*?)</td>|(?P<component><ModelCell\b[^>]*/>)", re.DOTALL)
+THE_ROW_FUNCTION = re.compile(r"function Row\(\{ run[^)]*\}\) \{(.*?)\n\}", re.DOTALL)
 
 # Two plants. The first is the transposition -- both expressions are present in
 # the file either way, so only the pairing tells them apart.
@@ -75,11 +99,13 @@ THE_COLUMNS_TRANSPOSED = (
 # that never reached the message it was advertising.
 A_TABLE_WITH_A_HEADING_DROPPED = """
               <tr>
+                <th className="pick" />
                 <th>Started</th><th>Auditor</th>
               </tr>
-function Row({ run }) {
+function Row({ run, picked, onPick }) {
   return (
     <tr>
+      <td className="pick"><input className="pick__box" /></td>
       <td>{when(run.started_at)}</td>
       <td>{run.auditor}</td>
       <td>{run.status}</td>
@@ -110,13 +136,22 @@ def headings(text: str) -> list[str]:
 def cells(text: str) -> list[str]:
     """Every cell of one row, in order. Read from `Row` alone, not the whole file."""
     found = THE_ROW_FUNCTION.search(text)
-    assert found, f"{GROUP.name} no longer declares `function Row({{ run }})`"
-    return [" ".join(cell.split()) for cell in THE_CELL.findall(found.group(1))]
+    assert found, f"{GROUP.name} no longer declares `function Row({{ run, ... }})`"
+    return [" ".join((cell.group("written") or cell.group("component")).split())
+            for cell in THE_CELL.finditer(found.group(1))]
+
+
+def labelled_cells(text: str) -> list[str]:
+    """Every cell that sits under a heading: the row without its unlabelled first column."""
+    found = cells(text)
+    assert THE_UNLABELLED_COLUMN in found[0], (
+        f"the first cell is no longer the one with no heading over it: {found[0]!r}")
+    return found[1:]
 
 
 def paired(text: str) -> list[tuple[str, str]]:
     """Each heading beside the cell written under it, or say the two halves differ in length."""
-    head, body = headings(text), cells(text)
+    head, body = headings(text), labelled_cells(text)
     assert len(head) == len(body), (
         f"{len(head)} headings and {len(body)} cells: the two halves of the table have "
         "drifted, so every column after the difference reads under the wrong name")
@@ -125,15 +160,21 @@ def paired(text: str) -> list[tuple[str, str]]:
 
 # --- the inventory is the table ------------------------------------------------
 
-def test_the_headings_are_the_eight_this_file_names_in_order() -> None:
-    """The inventory, not a sample: a ninth column fails here until its row is written."""
+def test_the_headings_are_the_ten_this_file_names_in_order() -> None:
+    """The inventory, not a sample: an eleventh column fails here until its row is written."""
     assert headings(group()) == [heading for heading, _ in COLUMNS]
 
 
 def test_the_two_halves_are_the_same_length() -> None:
-    """A dropped `<th>` leaves eight cells under seven headings, which this change made reachable."""
-    assert len(headings(group())) == len(cells(group()))
-    assert len(COLUMNS) == len(cells(group()))
+    """A dropped `<th>` leaves ten cells under nine headings, which this change made reachable."""
+    assert len(headings(group())) == len(labelled_cells(group()))
+
+
+def test_the_unlabelled_column_is_the_first_cell_and_not_one_of_the_ten() -> None:
+    """Accounted for rather than trimmed away: it is why the two raw lists differ by one."""
+    assert len(cells(group())) == len(COLUMNS) + 1
+    assert THE_UNLABELLED_COLUMN in cells(group())[0]
+    assert len(COLUMNS) == len(labelled_cells(group()))
 
 
 def test_every_cell_carries_what_its_heading_promises() -> None:
@@ -148,7 +189,7 @@ def test_every_cell_carries_what_its_heading_promises() -> None:
 def test_transposed_columns_are_not_accepted() -> None:
     """Planted: both expressions are in the file either way, so only the pairing separates them."""
     wrong = [heading for (heading, cell), (_, expected) in
-             zip(THE_COLUMNS_TRANSPOSED, COLUMNS[4:6]) if expected not in cell]
+             zip(THE_COLUMNS_TRANSPOSED, COLUMNS[6:8]) if expected not in cell]
     assert wrong == ["Findings", "Surfaces"]
 
 

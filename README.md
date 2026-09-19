@@ -32,6 +32,40 @@ Each check's title says what it establishes, not what its risk class implies.
 
 ---
 
+## Prerequisites
+
+**Both paths use the same install**, which is the four commands in the next
+section. This is what you can add to either, and what each absence costs -- read
+it first so you know which rows you want before you install anything, and come
+back to it when a stage says it was skipped.
+
+**Required.** Nothing else is needed to get surfaces, findings and a report.
+
+| Requirement | Version | Note |
+|---|---|---|
+| Python | **3.10+** | modern type hints (`list[Path]`) |
+| `git` | any | only for fetching a repository by URL |
+| Dependencies | pinned exactly | tree-sitter (JS/TS parsing), langgraph, fpdf2, chromadb |
+
+Versions are pinned with `==`, not `>=`, on purpose: a tree-sitter grammar
+update renames node types, which would silently change `surfaces.json` — the
+artifact every published number is computed from.
+
+**Optional.** Each one is absent-tolerant: the audit still completes, prints why
+the stage was skipped, and produces fewer artifacts. None of them is needed to
+try the tool.
+
+| Tool | Installation | Consequence if Missing |
+|---|---|---|
+| **Syft** | `brew install syft` / [releases](https://github.com/anchore/syft/releases) | no `sbom.json`, no `mapping.json`, so no supply-chain findings |
+| **Trivy** | `brew install trivy` / [releases](https://github.com/aquasecurity/trivy/releases) | no advisory findings; `coverage` says the data was not ingested |
+| **Ollama** + `qwen2.5-coder:7b-instruct` | `ollama pull qwen2.5-coder:7b-instruct` | no remediation advice, no `--semantic-probe`, no `--draft-key` |
+| **vexctl** | [releases](https://github.com/openvex/vexctl/releases) | no `findings.openvex.json` |
+| **DejaVu font** | usually already present on Linux | HTML reports still written, PDFs skipped |
+| An **OpenRouter key** | in `.env` | `--compare-models` refuses; nothing else notices |
+
+---
+
 ## Start here: the web UI
 
 A browser front end over the same audit, and how most people use this tool. The
@@ -49,6 +83,29 @@ python web/serve.py
 
 Then open **http://127.0.0.1:8000**. Every audit you start from the page is kept
 in the **History** tab, grouped by repository.
+
+**On a machine with an HTTP proxy, start it like this instead:**
+
+```bash
+export NO_PROXY=localhost,127.0.0.1 no_proxy=localhost,127.0.0.1
+python web/serve.py
+```
+
+Without that, the page says **"Ollama server: offline"** while Ollama is running
+perfectly well. Python's `urllib` builds its proxy chain from `HTTP_PROXY`, and
+it applies that to `http://localhost:11434` like any other address -- so the
+request for the local model server is sent to the proxy, which cannot reach your
+own loopback and answers `HTTP 502`. Nothing distinguishes that from a model
+server that is down, so the status pill reports what it was told.
+
+Two things to know rather than only the fix. The variables must be set **in the
+shell that starts the server**, because the audit runs inside that process --
+exporting them afterwards changes nothing until you restart it. And this is not
+only a display problem: with a proxy set and no bypass, every prompt an audit
+sends, including the source excerpts `--semantic-probe` quotes, is routed
+through that proxy. `tests/cli/test_main_offline.py` is what notices, failing
+with `{3128} == {11434}` -- it counts the ports an audit's sockets go to, and a
+proxied socket is still a socket, just to the wrong host.
 
 `requirements.txt` is one file and carries everything, the server included --
 there is no separate install for the UI. Activate `.venv` in every new terminal
@@ -114,7 +171,7 @@ does from the command line.
 
 - **Shows the audit advancing.** A POST returns a run id immediately and the
   page polls, so a long audit shows `fetch → surfaces → dependencies →
-  advisories → checks → advice → write → publish` rather than a spinner. The
+  advisories → checks → advice → write → publish → key` rather than a spinner. The
   stage names come from `GET /api/stages`, which serves
   `src/reporting/progress.py`'s own vocabulary -- the page does not restate it.
 - **Keeps every run.** `runs/history.sqlite3` (stdlib `sqlite3`, no new
@@ -188,38 +245,6 @@ other run shares, so nothing overwrites anything and every stored run's files
 stay readable. Runs recorded before that shared `artifacts/<system>/<app>/` with
 every audit of the app; those report `artifacts_current: false` and their
 downloads are refused, rather than serving newer bytes under an older timestamp.
-
-## Prerequisites
-
-**Both paths use the same install** -- the four commands above. This section is
-what you can add to either, and what each absence costs.
-
-**Required.** Nothing else is needed to get surfaces, findings and a report.
-
-| Requirement | Version | Note |
-|---|---|---|
-| Python | **3.10+** | modern type hints (`list[Path]`) |
-| `git` | any | only for fetching a repository by URL |
-| Dependencies | pinned exactly | tree-sitter (JS/TS parsing), langgraph, fpdf2, chromadb |
-
-Versions are pinned with `==`, not `>=`, on purpose: a tree-sitter grammar
-update renames node types, which would silently change `surfaces.json` — the
-artifact every published number is computed from.
-
-**Optional.** Each one is absent-tolerant: the audit still completes, prints why
-the stage was skipped, and produces fewer artifacts. None of them is needed to
-try the tool.
-
-| Tool | Installation | Consequence if Missing |
-|---|---|---|
-| **Syft** | `brew install syft` / [releases](https://github.com/anchore/syft/releases) | no `sbom.json`, no `mapping.json`, so no supply-chain findings |
-| **Trivy** | `brew install trivy` / [releases](https://github.com/aquasecurity/trivy/releases) | no advisory findings; `coverage` says the data was not ingested |
-| **Ollama** + `qwen2.5-coder:7b-instruct` | `ollama pull qwen2.5-coder:7b-instruct` | no remediation advice, no `--semantic-probe`, no `--draft-key` |
-| **vexctl** | [releases](https://github.com/openvex/vexctl/releases) | no `findings.openvex.json` |
-| **DejaVu font** | usually already present on Linux | HTML reports still written, PDFs skipped |
-| An **OpenRouter key** | in `.env` | `--compare-models` refuses; nothing else notices |
-
----
 
 ## The command line
 
@@ -315,7 +340,7 @@ unknown `AUDITOR_*` name is refused rather than ignored, so a typo is loud.
 | Setting | Default | Description |
 |---|---|---|
 | `AUDITOR_MODEL` | `qwen2.5-coder:7b-instruct` | the local model |
-| `AUDITOR_SERVER_URL` | `http://localhost:11434/api/generate` | must stay a local address |
+| `AUDITOR_SERVER_URL` | `http://localhost:11434/api/generate` | must stay a local address, and see the proxy note under the web UI -- a local address is not enough on a machine with `HTTP_PROXY` set |
 | `AUDITOR_TIMEOUT_SECONDS` | `120` | |
 | `AUDITOR_EMBED_MODEL` | `nomic-embed-text:latest` | needs its `:tag`, or provenance comes out null |
 | `AUDITOR_KNOWLEDGE_DIR` | `knowledge` | |

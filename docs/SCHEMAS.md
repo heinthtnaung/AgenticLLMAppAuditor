@@ -454,7 +454,7 @@ Closed, named in `web/run_record.py` beside the record, the way `OWASP_IDS` and
 | Field | Values |
 |---|---|
 | `status` | `running`, `finished`, `failed` |
-| `stages[]` | `fetch`, `surfaces`, `dependencies`, `advisories`, `checks`, `advice`, `write`, `publish` -- `progress.STAGES`, in that order |
+| `stages[]` | `fetch`, `surfaces`, `dependencies`, `advisories`, `checks`, `advice`, `write`, `publish`, `key` -- `progress.STAGES`, in that order. `key` is announced whether or not `--draft-key` was passed, with a detail naming which: a run that went quiet after `publish` left the page showing every boundary ticked while the model was still drafting |
 
 **`cancelled` is deliberately not a status.** Nothing can write it until a cancel
 endpoint exists, and a value no producer writes is a branch every reader carries
@@ -713,13 +713,32 @@ forbids the transport under `web/` outright.
 
 ## Drafted grading keys, corrected in a browser
 
-`GET /api/keys`, `GET /api/keys/{app}`, `PUT /api/keys/{app}`, served by
-`web/key_routes.py` over `grading_keys/drafts/` and **nothing else**.
+`GET /api/runs/{id}/key` and `PUT /api/runs/{id}/key`, served by
+`web/key_routes.py` over `artifacts/runs/{id}/keys/` and **nothing else**.
 `grading_keys/` holds the answers this tool is scored against; an unauthenticated
 endpoint able to rewrite those would let anyone who reaches the port rewrite the
-project's own measurements. A draft is invisible to scoring until
+project's own measurements. It is unreachable from this server: `web/key_scope.py`
+is the one place a run id becomes a folder and it can only answer with
+`run_files.run_keys(...)`. A draft is invisible to scoring until
 `promote_key.py` publishes it, because `discover_graded_apps` globs one level --
 which makes that non-recursive glob load-bearing for a fourth reader.
+
+**Addressed by run, and that is a correction rather than a preference.** These
+routes read `grading_keys/drafts/` until 2026-09-19, while `web/run_jobs.py`
+passed `--drafts-dir artifacts/runs/<run_id>/keys` to every audit it started so
+that a forgotten run takes its key with it. The two never met: `GET` answered
+404 for every key this server had written, and a save would have landed in the
+folder holding a human's own corrected drafts. The app name now comes off the
+run's record rather than out of the URL, so a request cannot name one run and
+another app's key.
+
+**`GET /api/keys` is gone.** It listed the checkout's drafts folder, nothing on
+the page ever called it, and this server no longer writes there -- keeping an
+unauthenticated read of the project's own measurements for no caller was the
+wrong trade.
+
+**Promoting a run-scoped draft names its folder**:
+`python src/promote_key.py <app> --drafts-dir artifacts/runs/<run_id>/keys`.
 
 | Field | Type | Meaning |
 |---|---|---|
@@ -747,10 +766,10 @@ include* independent of the tool.
 The list is `web/key_edit_guard.py`, not `key_routes.py` -- both routes consult
 it, and it is the editor's whole security argument in one file.
 
-### `POST /api/keys/{app}/verify`
+### `POST /api/runs/{id}/key/verify`
 
 Records that a human checked every entry of a draft. Body: `{verified_by}`.
-Answers the same envelope as `GET /api/keys/{app}`.
+Answers the same envelope as `GET /api/runs/{id}/key`.
 
 **Its own route, deliberately not part of a save.** Correcting a title and
 signing off a key are different acts, and keeping them apart is what lets every

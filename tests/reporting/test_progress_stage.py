@@ -34,11 +34,18 @@ import pipeline
 # `STAGES == STAGES` would hold over any reordering, and a caller that renders
 # "not started yet" from this list reads its order as a promise.
 EXPECTED_STAGES = ("fetch", "surfaces", "dependencies", "advisories", "checks",
-                   "advice", "write", "publish")
+                   "advice", "write", "publish", "key")
 
 # The one boundary a local-path audit never reaches: `publish` is
 # `pipeline.publish`, which only a URL run gets to.
 URL_ONLY_STAGE = "publish"
+
+# `key` is announced by `main.run` rather than by `audit_run.audit`, and it is
+# announced **whether or not `--draft-key` was passed** -- a run that was not
+# asked for one still passes the boundary, and the detail says which happened.
+# So a local-path run reaches it too, and the list below keeps it: without that,
+# a `--draft-key` run showed eight ticks while the model was still drafting.
+MAIN_ONLY_STAGE = "key"
 LOCAL_RUN_STAGES = tuple(name for name in EXPECTED_STAGES if name != URL_ONLY_STAGE)
 
 # One boundary and its detail, for the tests about a single announcement.
@@ -108,7 +115,7 @@ def test_an_explicit_none_listener_prints_what_omitting_it_prints(capsys) -> Non
 
 # --- the closed vocabulary ----------------------------------------------------
 
-def test_the_vocabulary_is_the_eight_boundaries_a_run_has() -> None:
+def test_the_vocabulary_is_the_nine_boundaries_a_run_has() -> None:
     """A closed list is a contract, so the whole list is pinned and not just its length."""
     assert STAGES == EXPECTED_STAGES
 
@@ -150,8 +157,8 @@ def test_a_refused_stage_announces_nothing_at_all(capsys) -> None:
 
 # --- the order a real run announces them in -----------------------------------
 
-def audit_with_a_listener(monkeypatch: pytest.MonkeyPatch,
-                          tmp_path: Path) -> list[tuple[str, str]]:
+def audit_with_a_listener(monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+                          *extra: str) -> list[tuple[str, str]]:
     """Audit a tree written here and return every boundary the listener heard."""
     repo = write_mixed_app(tmp_path)
     (repo / PYPI_MANIFEST).write_text(DECLARED_PACKAGE, encoding="utf-8")
@@ -160,7 +167,7 @@ def audit_with_a_listener(monkeypatch: pytest.MonkeyPatch,
     stub_knowledge(monkeypatch)
     heard, listener = record()
     args = main.build_parser().parse_args(
-        [str(repo), "--artifacts-dir", str(tmp_path / "artifacts")])
+        [str(repo), "--artifacts-dir", str(tmp_path / "artifacts"), *extra])
     produced = main.run(args, listener)
     assert produced["app"] == APP_NAME, "the audit really ran over the written tree"
     return heard
@@ -172,7 +179,11 @@ def announced_positions(heard: list[tuple[str, str]]) -> list[int]:
 
 
 def test_a_local_audit_announces_every_stage_but_publish(monkeypatch, tmp_path) -> None:
-    """Seven boundaries: a directory argument publishes nothing, so it ends at `write`."""
+    """Eight boundaries: a directory argument publishes nothing, so `publish` is the gap.
+
+    `key` is *not* a gap even here: `main.run` announces it either way, so a
+    listener hears the run reach its end rather than stopping at `write`.
+    """
     heard = audit_with_a_listener(monkeypatch, tmp_path)
     assert [name for name, _ in heard] == list(LOCAL_RUN_STAGES)
 
@@ -198,3 +209,51 @@ def test_the_publish_stage_announces_itself(monkeypatch, tmp_path) -> None:
     heard, listener = record()
     pipeline.publish(tmp_path / "artifacts", advisories_read=False, on_stage=listener)
     assert [name for name, _ in heard] == [URL_ONLY_STAGE]
+
+
+# --- the boundary a drafted key sits behind -----------------------------------
+#
+# The defect this closes, in one sentence: a `--draft-key` run announced
+# `publish` and then went quiet for as long as the model took to draft, so the
+# page showed eight ticks, `FINISHED: N/A`, and a run still going.
+
+def test_the_key_boundary_is_the_last_one_announced(monkeypatch, tmp_path) -> None:
+    """Whatever the flag says, the run's last word is that it reached the end."""
+    heard = audit_with_a_listener(monkeypatch, tmp_path)
+    assert heard[-1][0] == MAIN_ONLY_STAGE
+
+
+def test_a_run_that_was_not_asked_for_a_key_still_announces_the_boundary(
+        monkeypatch, tmp_path) -> None:
+    """Announced with a detail naming the absence, as `advisories` and `dependencies` are.
+
+    Going quiet instead is what left the panel finished-looking over a run that
+    was not: a listener cannot tell "no more stages" from "still working" when
+    the last boundary it will ever hear is one it has already heard.
+    """
+    heard = dict(audit_with_a_listener(monkeypatch, tmp_path))
+    assert heard[MAIN_ONLY_STAGE] == "not asked for"
+
+
+def test_a_run_asked_for_a_key_says_what_became_of_it(monkeypatch, tmp_path) -> None:
+    """The same boundary, a different detail: the flag changes the answer, not the shape.
+
+    The draft itself is refused here -- `key_store.write` needs a commit and a
+    tree written into `tmp_path` has no pin -- which is one of the ordinary
+    outcomes and is exactly the one that must still announce. A failure that
+    went quiet would leave the page hanging on the stage before it.
+    """
+    heard = dict(audit_with_a_listener(monkeypatch, tmp_path, "--draft-key"))
+    assert MAIN_ONLY_STAGE in heard
+    assert heard[MAIN_ONLY_STAGE] != "not asked for"
+
+
+def test_both_runs_announce_the_same_boundaries_in_the_same_order(
+        monkeypatch, tmp_path) -> None:
+    """The flag must not move a boundary, only what the last one says about itself."""
+    second = tmp_path / "second"
+    second.mkdir()
+    without = [name for name, _ in audit_with_a_listener(monkeypatch, tmp_path)]
+    asked = [name for name, _ in
+             audit_with_a_listener(monkeypatch, second, "--draft-key")]
+    assert without == asked == list(LOCAL_RUN_STAGES)

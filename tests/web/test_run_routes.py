@@ -61,10 +61,10 @@ OK = 200
 NO_SUCH_RUN = 404
 ACCEPTED = 202
 
-# The eight boundaries an audit announces. Pinned as a count rather than
-# re-listed: the vocabulary itself is `progress.STAGES`, and a second list here
-# would be the very duplication this endpoint exists to prevent.
-EXPECTED_STAGE_COUNT = 8
+# The nine boundaries a run announces. Pinned as a count rather than re-listed:
+# the vocabulary itself is `progress.STAGES`, and a second list here would be
+# the very duplication this endpoint exists to prevent.
+EXPECTED_STAGE_COUNT = 9
 
 # A well-formed id nobody used, so the 404 above is shown to be about the row
 # and not only about the shape.

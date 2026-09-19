@@ -24,6 +24,7 @@ import run_record
 from run_record import (
     COMPUTED_FIELDS, DURABLE_FIELDS, REPLY_SCHEMA_VERSION, RUN_STATUSES,
     RunRecord, body, started, summary)
+from .run_rows import NO_MODELS
 
 # The version everything under `/api/` carries, pinned as a literal beside the
 # constant it must equal. Imported alone it would agree with itself. It went to
@@ -165,21 +166,22 @@ def test_the_options_are_copied_and_not_held() -> None:
 
 def test_a_body_is_the_record_plus_the_version_the_computed_flags_and_the_result() -> None:
     """One parser for every single-run reply, so the key set is named rather than trusted."""
-    full = body(a_running_record(), artifacts_present=False, artifacts_current=True)
+    full = body(a_running_record(), artifacts_present=False, artifacts_current=True,
+                models=NO_MODELS)
     assert set(full) == {*DURABLE_FIELDS, *COMPUTED_FIELDS, "schema_version", "result"}
 
 
 def test_a_summary_is_that_body_without_the_result_or_the_version() -> None:
     """The list's only variation from the detail, stated as exactly two dropped keys."""
     full = body(a_finished_record(), artifacts_present=True, artifacts_current=True,
-                result=ENVELOPE_TEXT)
+                models=NO_MODELS, result=ENVELOPE_TEXT)
     assert set(full) - set(summary(full)) == SUMMARY_DROPS
 
 
 def test_a_summary_keeps_every_other_field_the_detail_carries() -> None:
     """Derived from the body, so the list and the detail cannot describe a run differently."""
     full = body(a_finished_record(), artifacts_present=True, artifacts_current=False,
-                result=ENVELOPE_TEXT)
+                models=NO_MODELS, result=ENVELOPE_TEXT)
     kept = summary(full)
     assert set(kept) == set(full) - SUMMARY_DROPS
     assert all(kept[key] == full[key] for key in kept)
@@ -188,7 +190,7 @@ def test_a_summary_keeps_every_other_field_the_detail_carries() -> None:
 def test_both_served_forms_name_who_asked_for_the_run() -> None:
     """The history list is where the name is read, so it survives the summary that builds it."""
     full = body(a_finished_record(), artifacts_present=True, artifacts_current=True,
-                result=ENVELOPE_TEXT)
+                models=NO_MODELS, result=ENVELOPE_TEXT)
     assert full["auditor"] == AUDITOR
     assert summary(full)["auditor"] == AUDITOR
 

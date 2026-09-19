@@ -62,7 +62,15 @@ TABLE = FRONTEND_SRC / "components" / "HistoryTable.jsx"
 # `THE_DISHONEST_LABEL` is named as well, because the joined check alone would
 # be satisfied by a second, differently labelled figure beside it.
 THE_FIGURE = "group.runs.length"
-THE_LABELLED_FIGURE = f"{{{THE_FIGURE}}} shown"
+
+# The word the figure carries. It was "shown" until 2026-09-18 and is "record"
+# now, pluralised beside it. What the label has to do is unchanged and is the
+# reason `THE_DISHONEST_LABEL` is still named: say what this number *is* without
+# implying it is the whole history, so a reader looking at ten of fifty runs
+# cannot conclude the other forty were deleted. The stored-against-shown
+# difference is spelled out where it decides something -- `confirmedClear` says
+# "Only N of them are shown here" before wiping the lot.
+THE_LABELLED_FIGURE = f"{{{THE_FIGURE}}} record"
 THE_DISHONEST_LABEL = "stored"
 
 # The same figure under the wrong word, as the plant for the check above.

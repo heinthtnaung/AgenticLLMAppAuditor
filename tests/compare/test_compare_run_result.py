@@ -70,7 +70,9 @@ def local_arm_result(artifacts_dir: Path) -> dict:
 
 def hosted_arm_result() -> dict:
     """What the hosted arm hands back: the same four keys, about the other audit."""
-    return {"app": CLOUD_APP, "artifacts": compare_run.CLOUD_ARTIFACTS_DIR / CLOUD_APP,
+    return {"app": CLOUD_APP,
+            "artifacts": compare_run.cloud_artifacts_dir(
+                main.DEFAULT_ARTIFACTS_DIR) / CLOUD_APP,
             "seconds": CLOUD_RUN_SECONDS, "advisories_read": True}
 
 
@@ -83,9 +85,16 @@ def stub_the_comparison(monkeypatch: pytest.MonkeyPatch) -> list[tuple]:
     """Replace the two-arm run with a recorder answering the shape the real one answers."""
     calls: list[tuple] = []
 
-    def fake_compare(repo_path: str, artifacts_dir: Path, cloud_model: str | None,
-                     local_model_name: str | None) -> dict:
-        """Record what the command line asked for, and audit nothing at all."""
+    def fake_compare(repo_path: str, artifacts_dir: Path, cloud_model: str | None = None,
+                     local_model_name: str | None = None,
+                     on_stage: progress.StageListener | None = None,
+                     drafts_dir: Path | None = None) -> dict:
+        """Record what the command line asked for, and audit nothing at all.
+
+        Takes the whole signature, not the four values recorded: `main.run`
+        passes six positionally, and a stub that accepts four fails with a
+        `TypeError` about arity rather than whatever the test was asserting.
+        """
         calls.append((repo_path, artifacts_dir, cloud_model, local_model_name))
         return comparison_result(artifacts_dir)
 
@@ -218,3 +227,28 @@ def test_an_audit_without_the_flag_never_reaches_the_comparison(monkeypatch,
     main.run(main.build_parser().parse_args([str(tmp_path)]))
     assert calls == []
     assert audited == [tmp_path]
+
+
+def test_the_comparison_is_handed_the_listener_the_caller_passed(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """A compare run must announce its stages, which needs the listener to arrive.
+
+    Until this was threaded, `main.run` called `compare_run.run` without it,
+    every `progress.stage` on that path got None, the stored row held
+    `stages: []`, and the page struck through all eight boundaries as never
+    reached -- on a run that had done the work twice.
+    """
+    handed: list[object] = []
+
+    def fake_compare(repo_path, artifacts_dir, cloud_model=None,
+                     local_model_name=None, on_stage=None, drafts_dir=None):
+        """Record only the listener; the other arguments have their own test."""
+        handed.append(on_stage)
+        return comparison_result(artifacts_dir)
+
+    monkeypatch.setattr(compare_run, "run", fake_compare)
+    listener: list[tuple] = []
+    main.run(main.build_parser().parse_args([URL, "--compare-models"]),
+             on_stage=listener.append)
+
+    assert handed == [listener.append]

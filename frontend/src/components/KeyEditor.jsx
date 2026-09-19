@@ -27,7 +27,7 @@ function Entry({ entry, onChange, onDelete }) {
 }
 
 /** Correct one drafted key. Its standing is shown, never offered. */
-export default function KeyEditor({ draft, onClose, onSaved }) {
+export default function KeyEditor({ draft, runId, onClose, onSaved }) {
   const [key, setKey] = useState(draft.key);
   const [refusals, setRefusals] = useState(draft.refusals);
   const [saving, setSaving] = useState(false);
@@ -43,7 +43,7 @@ export default function KeyEditor({ draft, onClose, onSaved }) {
     setSaving(true);
     setFailed(null);
     try {
-      const saved = await saveDraft(draft.app, key);
+      const saved = await saveDraft(runId, key);
       setKey(saved.key);
       setRefusals(saved.refusals);
       // The page above shows this key's standing beside the button that opened
@@ -75,7 +75,7 @@ export default function KeyEditor({ draft, onClose, onSaved }) {
           not by how good they are. <code>promote_key.py</code> publishes it and
           leaves this exactly as it is.
         </p>
-        <KeyVerify app={draft.app} keyDocument={key}
+        <KeyVerify runId={runId} keyDocument={key}
                    onVerified={(checked) => {
                      setKey(checked.key);
                      setRefusals(checked.refusals);

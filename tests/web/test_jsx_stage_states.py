@@ -252,3 +252,40 @@ def test_all_four_states_are_reachable_from_a_run_the_wrapper_can_store(tmp_path
     seen = set(states(STAGES[:ANNOUNCED_SO_FAR], RUNNING, tmp_path))
     seen |= set(states(STAGES[:ANNOUNCED_SO_FAR], FINISHED, tmp_path))
     assert seen == {word("DONE"), word("WORKING"), word("PENDING"), word("UNREACHED")}
+
+
+# --- and every stage the server serves has words to show for it ----------------
+
+# How the component names each stage. Read out of the source rather than
+# transcribed: a list here would be a second copy of the labels, and the point
+# is the join between `progress.STAGES` and what the page can say about them.
+THE_LABEL_TABLE = re.compile(r"const SAID = \{(.*?)\n\};", re.DOTALL)
+A_LABEL = re.compile(r"^\s*(\w+):\s*\"([^\"]+)\",", re.MULTILINE)
+
+
+def labels() -> dict:
+    """Each stage the component has words for, and the words."""
+    found = THE_LABEL_TABLE.search(COMPONENT.read_text(encoding="utf-8"))
+    assert found, f"{COMPONENT.name} no longer declares `const SAID = {{...}};`"
+    return dict(A_LABEL.findall(found.group(1)))
+
+
+def test_every_stage_the_server_serves_has_words_on_the_page() -> None:
+    """A stage added in `src/` renders as the bare token `key` until someone writes its line.
+
+    The component falls back to the stage's own name, so this is legibility and
+    not a crash -- which is exactly why nothing else catches it. `key` shipped
+    in `progress.STAGES` before this guard existed.
+    """
+    assert sorted(labels()) == sorted(STAGES)
+
+
+def test_no_label_names_a_stage_the_server_does_not_serve() -> None:
+    """The other direction: a renamed stage leaves its old words behind, unreachable."""
+    assert [name for name in labels() if name not in STAGES] == []
+
+
+def test_the_label_sweep_read_the_table_and_not_an_empty_file() -> None:
+    """Non-vacuity: an unparsed table makes both comparisons above about nothing."""
+    assert len(labels()) == len(STAGES)
+    assert all(words.strip() for words in labels().values())

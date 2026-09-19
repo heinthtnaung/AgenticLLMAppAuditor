@@ -68,11 +68,11 @@ REGISTRY = Registry(STORE)
 run_routes.register(app, REGISTRY)
 downloads.register(app, STORE)
 model_routes.register(app)
-key_routes.register(app)
+key_routes.register(app, STORE)
 # Mounted here rather than from inside `key_routes`, even though it is the same
 # feature: this is the one route that writes `verified` into a grading key, and
 # a reader auditing what this server exposes reads this list.
-key_verify_route.register(app)
+key_verify_route.register(app, STORE)
 uploads.register(app, STORE)
 source_routes.register(app, STORE)
 

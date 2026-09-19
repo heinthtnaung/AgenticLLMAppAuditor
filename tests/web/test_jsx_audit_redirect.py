@@ -44,6 +44,7 @@ from pathlib import Path
 import pytest
 
 from run_record import FAILED, FINISHED, RUN_STATUSES, RUNNING, body, now, started
+from .run_rows import NO_MODELS
 
 from .jsx_sweep import FRONTEND_SRC, strip_comments
 
@@ -143,7 +144,8 @@ def a_run(status: str, run_id: str = POLLED_RUN_ID) -> dict:
     if status != RUNNING:
         failure = {"error": REASON} if status == FAILED else {}
         record = replace(record, status=status, finished_at=now(), seconds=1.0, **failure)
-    return body(record, artifacts_present=False, artifacts_current=False, result=None)
+    return body(record, artifacts_present=False, artifacts_current=False,
+                models=NO_MODELS, result=None)
 
 
 # --- which runs move the page -------------------------------------------------

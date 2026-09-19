@@ -8,10 +8,15 @@ for the two routes that list and save, and nothing held it for this one --
 which is the route that stamps a field every published figure is qualified by.
 
 **A draft is the least trustworthy input this project has.** It is hand-edited
-between being written and being promoted, so it can be absent, named something
-nobody drafted, or left half-saved by an interrupted editor. Each is a different
-answer: 404 for a name with no draft, 404 for a name the pattern excludes before
-any path is joined, and 400 naming the file for one that will not parse.
+between being written and being promoted, so it can be absent, belong to a run
+that drafted none, or be left half-saved by an interrupted editor. Each is a
+different answer: 404 for a run with no draft, 404 for an app name the pattern
+excludes before any path is joined, and 400 naming the file for one that will
+not parse.
+
+The claim is addressed by run now, so the name in the URL is a run id and the
+app comes off that run's record -- see `test_key_draft_store.py` for why, and
+for the defect that shape fixed.
 
 What the name rules are, and what a second claim does, is
 `test_key_verify_refusals.py`.
@@ -27,16 +32,16 @@ import pytest
 pytest.importorskip("fastapi", reason="the web extra is not installed, so there is no endpoint")
 pytest.importorskip("httpx", reason="fastapi's TestClient needs httpx to drive the endpoint")
 
-import key_draft_store                                        # noqa: E402
 from keys import grading_keys                                 # noqa: E402
 
 from .corrupt_fixtures import UNPARSEABLE                     # noqa: E402
 from .key_fixtures import (                                   # noqa: E402
-    APP, NO_SUCH_DRAFT, REFUSED, planted_client)
+    APP, NO_SUCH_DRAFT, REFUSED, client_over, plant, planted_client)
 from .key_verify_fixtures import CHECKED_BY, claim, claimed   # noqa: E402
 
-# A name nobody drafted a key for, and one the pattern excludes before any path
-# is joined -- two 404s that mean different things.
+# An app whose run drafted no key, and one the pattern excludes before any path
+# is joined -- two 404s that mean different things. Both reach this route
+# through the run's record rather than through the URL.
 NEVER_DRAFTED = "never-drafted"
 A_NAME_WITH_A_SPACE = "demo app"
 NO_SUCH_NAME = "no draft has that name"
@@ -59,19 +64,19 @@ def real_keys_folder() -> dict:
 
 # --- a draft that is not there, or not readable --------------------------------
 
-def test_verifying_an_app_with_no_draft_is_a_404_naming_it(monkeypatch, tmp_path) -> None:
-    """A well-formed name for a key nobody drafted: found nothing, rather than refused."""
-    client, _drafts = planted_client(monkeypatch, tmp_path)
-    response = claim(client, CHECKED_BY, NEVER_DRAFTED)
+def test_verifying_a_run_with_no_draft_is_a_404_naming_the_app(monkeypatch, tmp_path) -> None:
+    """A run that drafted no key: found nothing, rather than refused."""
+    client = client_over(monkeypatch, plant(tmp_path), app_name=NEVER_DRAFTED)
+    response = claim(client, CHECKED_BY)
     assert response.status_code == NO_SUCH_DRAFT
-    assert response.json()["detail"] == f"no drafted key for {NEVER_DRAFTED}"
+    assert response.json()["detail"].startswith(f"no drafted key for {NEVER_DRAFTED}")
 
 
 def test_a_name_the_pattern_excludes_is_refused_before_any_path_is_joined(
         monkeypatch, tmp_path) -> None:
-    """`APP_NAME` runs first here too, so a name never becomes a path of the caller's choosing."""
-    client, _drafts = planted_client(monkeypatch, tmp_path)
-    response = claim(client, CHECKED_BY, A_NAME_WITH_A_SPACE)
+    """`APP_NAME` runs on this route too, so a record's name never becomes a chosen path."""
+    client = client_over(monkeypatch, plant(tmp_path), app_name=A_NAME_WITH_A_SPACE)
+    response = claim(client, CHECKED_BY)
     assert response.status_code == NO_SUCH_DRAFT
     assert response.json()["detail"] == NO_SUCH_NAME
 
@@ -124,13 +129,23 @@ def test_a_recorded_check_writes_nothing_into_the_real_keys_folder(
     assert real_keys_folder() == before
 
 
-def test_the_folder_the_net_watches_is_the_parent_of_the_one_written_to() -> None:
+def test_the_folder_the_net_watches_is_the_one_the_route_must_never_reach(
+        monkeypatch, tmp_path) -> None:
     """Guard: a net over an unrelated folder would hold however the route behaved.
 
     The two tests above are only a pair if the folder compared before and after
-    is the one a route escaping its drafts folder would land in. *Which* module
-    is allowed to join that folder at all -- one, and it is the store -- is
-    `test_key_draft_store.py`, asserted there by parsing the imports.
+    is the one this server may not write into. It used to be asserted as a
+    *parent* relation -- the route wrote to `grading_keys/drafts/`, one level
+    inside the watched folder, so escaping it was a plausible slip. The route
+    writes under `artifacts/runs/` now and the two trees are disjoint, which is
+    the stronger arrangement and is what this asserts instead: reaching
+    `grading_keys/` is no longer a slip, it is a different path entirely.
+
+    *Which* modules may join a key folder at all -- two, the writer and the
+    reader, through one function -- is `test_key_draft_store.py`.
     """
+    drafts = plant(tmp_path)
+    client_over(monkeypatch, drafts)
+
     assert grading_keys.KEYS_DIR.is_dir()
-    assert key_draft_store.DRAFTED_KEYS_DIR.parent == grading_keys.KEYS_DIR
+    assert grading_keys.KEYS_DIR.resolve() not in drafts.resolve().parents

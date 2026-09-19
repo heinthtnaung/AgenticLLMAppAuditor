@@ -28,6 +28,10 @@ this project does not own.
 
 import compare_run
 import main
+
+# The hosted arm is derived from the local one now, so the directory a run
+# with no --artifacts-dir writes to is the default put through that function.
+CLOUD_DIR = compare_run.cloud_artifacts_dir(main.DEFAULT_ARTIFACTS_DIR)
 from compare_arms_fixtures import compare
 from mixed_app_fixtures import APP_NAME
 from outputs import FINDINGS_NAME
@@ -54,7 +58,7 @@ def test_the_returned_artifacts_directory_is_the_local_arms(monkeypatch, tmp_pat
     """The hosted arm's directory would send a reader to the comparison, not to the audit."""
     result = compare(monkeypatch, tmp_path)
     assert result["artifacts"] == main.DEFAULT_ARTIFACTS_DIR / APP_NAME
-    assert result["artifacts"] != compare_run.CLOUD_ARTIFACTS_DIR / APP_NAME
+    assert result["artifacts"] != CLOUD_DIR / APP_NAME
 
 
 def test_the_returned_directory_is_one_that_was_really_written(monkeypatch,
@@ -84,7 +88,7 @@ def test_the_hosted_arm_names_its_own_artifacts_directory(monkeypatch,
                                                           tmp_path) -> None:
     """Two arms, two directories: a comparison pointing at the local arm compares nothing."""
     comparison = compare(monkeypatch, tmp_path)["comparison"]
-    assert comparison["artifacts"] == compare_run.CLOUD_ARTIFACTS_DIR / APP_NAME
+    assert comparison["artifacts"] == CLOUD_DIR / APP_NAME
     assert comparison["artifacts"] != main.DEFAULT_ARTIFACTS_DIR / APP_NAME
 
 

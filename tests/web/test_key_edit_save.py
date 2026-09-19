@@ -39,7 +39,7 @@ from keys import key_promotion                                # noqa: E402
 
 from .key_fixtures import (                                   # noqa: E402
     APP, ENTRY_COUNT, HUMAN_PIN_FIELDS, KEYS_ENDPOINT, NO_SUCH_DRAFT, STORED_ORDER,
-    client_over, entry_ids, entry_named, key_on_disk, plant, planted_client,
+    client_over, entry_ids, entry_named, key_on_disk, keys_dir, plant, planted_client,
     read_draft, save_draft, saved)
 
 # The entry a test deletes, and what the count must become. Named rather than
@@ -181,29 +181,56 @@ def test_the_file_is_written_the_way_every_other_document_here_is(
 
 # --- the saves that find nothing to save --------------------------------------
 
-def test_saving_a_draft_that_does_not_exist_is_a_404(monkeypatch, tmp_path) -> None:
-    """Read before write: a PUT never creates a key, so a name nobody drafted is not one."""
-    client, _drafts, key = edited_draft(monkeypatch, tmp_path)
-    response = save_draft(client, key, "never-drafted")
+def test_saving_against_a_run_that_drafted_nothing_is_a_404(monkeypatch, tmp_path) -> None:
+    """Read before write: a PUT never creates a key, so a run that drafted none has none."""
+    _client, _drafts, key = edited_draft(monkeypatch, tmp_path / "planted")
+    empty = keys_dir(tmp_path / "bare")
+    empty.mkdir(parents=True)
+    client = client_over(monkeypatch, empty)
+
+    response = client.put(KEYS_ENDPOINT, json={"key": key})
+
     assert response.status_code == NO_SUCH_DRAFT
-    assert response.json()["detail"] == "no drafted key for never-drafted"
+    assert response.json()["detail"].startswith(f"no drafted key for {APP}")
 
 
 def test_a_put_may_not_create_a_key_in_an_empty_folder(monkeypatch, tmp_path) -> None:
     """The consequence said plainly: nothing a caller posts becomes a new file on disk."""
     _client, _drafts, key = edited_draft(monkeypatch, tmp_path / "planted")
-    empty = tmp_path / "empty-drafts"
-    empty.mkdir()
+    empty = keys_dir(tmp_path / "bare")
+    empty.mkdir(parents=True)
     client = client_over(monkeypatch, empty)
-    assert client.put(f"{KEYS_ENDPOINT}/{APP}", json={"key": key}).status_code == NO_SUCH_DRAFT
+
+    client.put(KEYS_ENDPOINT, json={"key": key})
+
     assert list(empty.iterdir()) == []
+
+
+def test_saving_against_a_run_nobody_started_is_a_404(monkeypatch, tmp_path) -> None:
+    """The run id is the whole address now, so an id no row carries reaches no folder."""
+    client, _drafts, key = edited_draft(monkeypatch, tmp_path)
+
+    response = client.put(f"/api/runs/{'e' * 32}/key", json={"key": key})
+
+    assert response.status_code == NO_SUCH_DRAFT
+    assert response.json()["detail"] == "no run has that id"
 
 
 def test_a_name_the_pattern_excludes_is_refused_before_the_write_too(
         monkeypatch, tmp_path) -> None:
-    """The guard is in `_path`, which both routes go through -- asserted on both, not one."""
-    client, _drafts, key = edited_draft(monkeypatch, tmp_path)
-    response = save_draft(client, key, "..%5C..%5Csecret")
+    """The app guard survives the move, over a record's name rather than a URL's.
+
+    `<app>` no longer comes from the caller -- it is read off the run row -- so
+    this is defence in depth. It is still the join that would reach the
+    filesystem with it, and a row carrying a traversal is what a hand-edited
+    history database holds.
+    """
+    drafts = plant(tmp_path)
+    client = client_over(monkeypatch, drafts, app_name="../../secret")
+    _key = key_on_disk(drafts)
+
+    response = client.put(KEYS_ENDPOINT, json={"key": _key})
+
     assert response.status_code == NO_SUCH_DRAFT
     assert response.json()["detail"] == "no draft has that name"
 

@@ -12,6 +12,7 @@ const SAID = {
   advice: "Build remediation advice",
   write: "Write the artifacts",
   publish: "Author VEX and export the reports",
+  key: "Draft a grading key",
 };
 
 const DONE = "done";

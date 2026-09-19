@@ -7,20 +7,26 @@ import { fetchDraft } from "../api.js";
 import { AUDIT, navigate } from "../router.js";
 import { useRun } from "../useRun.js";
 
-/** The drafted key for this run's app, if one was drafted. */
-function useDraft(app) {
+/** The grading key this run drafted, if it drafted one.
+ *
+ * Keyed on the run and not on its app. A run drafts into its own folder, so two
+ * runs of one app have two keys and asking by app could only ever answer about
+ * one of them -- which is the half of this that was broken: the editor read
+ * `grading_keys/drafts/` and the server had written under `artifacts/runs/`.
+ */
+function useDraft(runId) {
   const [draft, setDraft] = useState(null);
 
   useEffect(() => {
-    if (!app) return undefined;
+    if (!runId) return undefined;
     let watching = true;
-    fetchDraft(app)
+    fetchDraft(runId)
       .then((found) => { if (watching) setDraft(found); })
-      // No draft for this app is the ordinary case -- `--draft-key` writes one
+      // No draft for this run is the ordinary case -- `--draft-key` writes one
       // and most runs do not ask for it -- so it is absence, not an error.
       .catch(() => { if (watching) setDraft(null); });
     return () => { watching = false; };
-  }, [app]);
+  }, [runId]);
 
   return [draft, setDraft];
 }
@@ -28,7 +34,7 @@ function useDraft(app) {
 /** One past run, opened from the history by its own link. */
 export default function RunPage({ runId, stages, onRerun }) {
   const { record, error } = useRun(runId);
-  const [draft, setDraft] = useDraft(record?.app);
+  const [draft, setDraft] = useDraft(runId);
   const [editing, setEditing] = useState(false);
 
   if (error && !record) {
@@ -72,7 +78,7 @@ export default function RunPage({ runId, stages, onRerun }) {
       {/* Beside the run it was drafted from, rather than on a page of its own:
           a key is about one app, and this is where that app's evidence is. */}
       {editing && draft && (
-        <KeyEditor draft={draft} onClose={() => setEditing(false)}
+        <KeyEditor draft={draft} runId={runId} onClose={() => setEditing(false)}
                    onSaved={setDraft} />
       )}
       <RunSummary record={record} stages={stages} />

@@ -50,7 +50,8 @@ SHAPE_IDS = [shape for shape, _name in WRONG_SHAPES]
 
 # What each arm hands `_summarise`: the two keys it reads and nothing else.
 LOCAL_ARM = {"artifacts": Path("artifacts") / "agentic_auditor" / APP, "seconds": 1.5}
-CLOUD_ARM = {"artifacts": compare_run.CLOUD_ARTIFACTS_DIR / APP, "seconds": 2.5}
+CLOUD_ARM = {"artifacts": compare_run.cloud_artifacts_dir(
+    Path("artifacts") / "agentic_auditor") / APP, "seconds": 2.5}
 
 # The second half of the standing a readable key reads as, for the off position.
 UNVERIFIED = "unverified"
