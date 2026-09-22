@@ -4,11 +4,17 @@ Every call a member makes goes through `post_json`, and nothing else in the
 council opens a socket. A test passes its own function of the same shape and no
 suite ever needs a model running.
 
-**No proxy, ever.** This transport speaks to loopback only, and on a machine
-with a corporate proxy set `urllib` would otherwise send a request for
-127.0.0.1 to that proxy, which answers 502 -- a failure that reads exactly like
-the model server being down. Bypassing the proxy here fixes it for good, rather
-than each operator remembering to export NO_PROXY.
+**No proxy, ever.** On a machine with a corporate proxy set, `urllib` sends a
+request for 127.0.0.1 to that proxy, which answers 502 -- a failure that reads
+exactly like the model server being down. Bypassing the proxy here fixes it for
+good, rather than each operator remembering to export NO_PROXY.
+
+**Nothing here keeps a call on loopback.** `post_json` posts to the URL it is
+handed. The guarantee lives one layer up, in `council.ollama.refuse_remote_host`,
+which is where a test holds it. The distinction is worth keeping straight
+because the proxy bypass above is right only while every caller is local: the
+hosted client `docs/COUNCIL.md` describes would need the proxy back, so it wants
+its own transport rather than this one with the rule relaxed.
 """
 
 import json
@@ -27,7 +33,14 @@ NO_PROXY_OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
 
 class ModelUnavailable(RuntimeError):
-    """The model server could not be reached, or did not speak its own protocol."""
+    """Nothing usable came back from a model server, for any of the reasons there are.
+
+    Raised here when the server could not be reached or did not return the JSON
+    it promised, and in `council.ollama` when a server that was reached refused
+    the request or answered with no text in it. One exception for all four
+    because they are one fact to a caller: that member has no answer to give,
+    and `council.runner` records the failure and asks the others.
+    """
 
 
 class Transport(Protocol):
