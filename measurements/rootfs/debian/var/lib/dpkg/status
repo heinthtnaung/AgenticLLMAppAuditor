@@ -1,0 +1,200 @@
+Package: openssl
+Status: install ok installed
+Priority: optional
+Section: misc
+Architecture: amd64
+Version: 1.1.1k-1
+Source: openssl
+Description: openssl
+ placeholder for an offline corpus scan
+
+Package: libssl1.1
+Status: install ok installed
+Priority: optional
+Section: misc
+Architecture: amd64
+Version: 1.1.1k-1
+Source: libssl1.1
+Description: libssl1.1
+ placeholder for an offline corpus scan
+
+Package: curl
+Status: install ok installed
+Priority: optional
+Section: misc
+Architecture: amd64
+Version: 7.74.0-1
+Source: curl
+Description: curl
+ placeholder for an offline corpus scan
+
+Package: libcurl4
+Status: install ok installed
+Priority: optional
+Section: misc
+Architecture: amd64
+Version: 7.74.0-1
+Source: libcurl4
+Description: libcurl4
+ placeholder for an offline corpus scan
+
+Package: bash
+Status: install ok installed
+Priority: optional
+Section: misc
+Architecture: amd64
+Version: 5.1-2
+Source: bash
+Description: bash
+ placeholder for an offline corpus scan
+
+Package: glibc
+Status: install ok installed
+Priority: optional
+Section: misc
+Architecture: amd64
+Version: 2.31-13
+Source: glibc
+Description: glibc
+ placeholder for an offline corpus scan
+
+Package: libc6
+Status: install ok installed
+Priority: optional
+Section: misc
+Architecture: amd64
+Version: 2.31-13
+Source: libc6
+Description: libc6
+ placeholder for an offline corpus scan
+
+Package: zlib1g
+Status: install ok installed
+Priority: optional
+Section: misc
+Architecture: amd64
+Version: 1:1.2.11.dfsg-2
+Source: zlib1g
+Description: zlib1g
+ placeholder for an offline corpus scan
+
+Package: python3.9
+Status: install ok installed
+Priority: optional
+Section: misc
+Architecture: amd64
+Version: 3.9.2-1
+Source: python3.9
+Description: python3.9
+ placeholder for an offline corpus scan
+
+Package: git
+Status: install ok installed
+Priority: optional
+Section: misc
+Architecture: amd64
+Version: 1:2.30.2-1
+Source: git
+Description: git
+ placeholder for an offline corpus scan
+
+Package: systemd
+Status: install ok installed
+Priority: optional
+Section: misc
+Architecture: amd64
+Version: 247.3-6
+Source: systemd
+Description: systemd
+ placeholder for an offline corpus scan
+
+Package: sudo
+Status: install ok installed
+Priority: optional
+Section: misc
+Architecture: amd64
+Version: 1.9.5p2-3
+Source: sudo
+Description: sudo
+ placeholder for an offline corpus scan
+
+Package: tar
+Status: install ok installed
+Priority: optional
+Section: misc
+Architecture: amd64
+Version: 1.34+dfsg-1
+Source: tar
+Description: tar
+ placeholder for an offline corpus scan
+
+Package: perl
+Status: install ok installed
+Priority: optional
+Section: misc
+Architecture: amd64
+Version: 5.32.1-4
+Source: perl
+Description: perl
+ placeholder for an offline corpus scan
+
+Package: libxml2
+Status: install ok installed
+Priority: optional
+Section: misc
+Architecture: amd64
+Version: 2.9.10+dfsg-6.7
+Source: libxml2
+Description: libxml2
+ placeholder for an offline corpus scan
+
+Package: nginx
+Status: install ok installed
+Priority: optional
+Section: misc
+Architecture: amd64
+Version: 1.18.0-6.1
+Source: nginx
+Description: nginx
+ placeholder for an offline corpus scan
+
+Package: vim
+Status: install ok installed
+Priority: optional
+Section: misc
+Architecture: amd64
+Version: 2:8.2.2434-3
+Source: vim
+Description: vim
+ placeholder for an offline corpus scan
+
+Package: apt
+Status: install ok installed
+Priority: optional
+Section: misc
+Architecture: amd64
+Version: 2.2.4
+Source: apt
+Description: apt
+ placeholder for an offline corpus scan
+
+Package: libgcrypt20
+Status: install ok installed
+Priority: optional
+Section: misc
+Architecture: amd64
+Version: 1.8.7-6
+Source: libgcrypt20
+Description: libgcrypt20
+ placeholder for an offline corpus scan
+
+Package: krb5-locales
+Status: install ok installed
+Priority: optional
+Section: misc
+Architecture: all
+Version: 1.18.3-6
+Source: krb5-locales
+Description: krb5-locales
+ placeholder for an offline corpus scan
+

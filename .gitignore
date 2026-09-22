@@ -223,3 +223,11 @@ fetched/
 
 # What an audit writes.
 artifacts/
+
+# The measurement corpus is package databases at their real Linux paths, so the
+# packaging patterns above take `lib/` and `var/` out of it and leave two of the
+# seven scans finding nothing. Only those two directory names are put back, and
+# not everything under the path: a blanket negation there would also re-include
+# a `.env` or a `__pycache__` that fell into the corpus.
+!measurements/rootfs/**/lib/
+!measurements/rootfs/**/var/
