@@ -216,3 +216,10 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Repositories fetched for auditing. Third-party source, never this project's
+# evidence: the target is an argument and changes run to run.
+fetched/
+
+# What an audit writes.
+artifacts/
