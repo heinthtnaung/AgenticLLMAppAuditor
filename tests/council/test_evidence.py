@@ -2,7 +2,8 @@
 
 import pytest
 
-from council.evidence import is_quotation_from, normalise
+from council.evidence import REDACTION_MARKERS, is_quotation_from, normalise
+from council.redaction import REDACTIONS
 from council_samples import ACROSS_A_LINE_BREAK, ADVISORY, NETWORK_QUOTATION, NOT_IN_THE_ADVISORY
 
 
@@ -151,3 +152,45 @@ def test_a_cve_sequence_number_of_any_length_is_caught(digits):
     advisory = f"CVE-2021-{'1' * digits} lets an unauthenticated remote attacker in."
     with pytest.raises(ValueError, match="still contains CVE-2021"):
         is_quotation_from("unauthenticated remote attacker", advisory)
+
+
+# The markers this system substitutes, and an advisory carrying both of them.
+IDENTIFIER, VECTOR = "[identifier withheld]", "[published score withheld]"
+MARKED_ADVISORY = f"{IDENTIFIER}: A flaw in Log4j2 lets a remote attacker run code, per {VECTOR}."
+
+
+def test_the_markers_are_read_off_the_redactions_rather_than_restated():
+    # A marker added to `redaction` is discounted here without anyone
+    # remembering to, so the two cannot drift and reopen the hole.
+    assert set(REDACTION_MARKERS) == {marker for _, marker in REDACTIONS}
+
+
+@pytest.mark.parametrize(
+    "quotation",
+    [IDENTIFIER, f"{IDENTIFIER}:", VECTOR, f"{IDENTIFIER} {VECTOR}", f"  {IDENTIFIER}  "],
+    ids=["a marker", "marker and punctuation", "the other marker", "both", "padded"],
+)
+def test_a_quotation_of_nothing_but_our_own_markers_is_refused(quotation):
+    # The marker is in the text the member read, so it verifies as a substring
+    # while supporting nothing: it is what this system put there, not what the
+    # advisory said. A verified quotation that supports nothing defeats the one
+    # property the council rests on.
+    assert not is_quotation_from(quotation, MARKED_ADVISORY)
+
+
+@pytest.mark.parametrize(
+    "quotation",
+    [f"{IDENTIFIER}: A flaw in Log4j2", f"run code, per {VECTOR}", "in Log4j2"],
+    ids=["marker then words", "words then marker", "no marker at all"],
+)
+def test_a_quotation_carrying_the_advisorys_own_words_is_still_evidence(quotation):
+    # The wrong fix refuses any quotation containing a marker, throwing away a
+    # legitimate quotation of what the member actually read.
+    assert is_quotation_from(quotation, MARKED_ADVISORY)
+
+
+def test_a_quotation_that_swaps_one_marker_for_another_is_refused():
+    # A marker is discounted when deciding whether real words were quoted, never
+    # when checking the quotation is in the text. Discounting it in both places
+    # would let a member put the wrong marker in and still verify.
+    assert not is_quotation_from(f"{VECTOR}: A flaw in Log4j2", MARKED_ADVISORY)
