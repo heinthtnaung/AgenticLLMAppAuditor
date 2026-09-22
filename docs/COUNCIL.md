@@ -99,7 +99,10 @@ odd, or anything else. The edges are still real:
   check still runs and the chairman still hands over a vector, but with no
   cross-check a metric can only come out agreed or unresolved — `contested`
   can never arise. The record marks the run single-assessor, so no reader
-  takes council-grade confidence from one model.
+  takes council-grade confidence from one model. **The count is of the members
+  a run will ask, not of the roster**: three members of whom two are hosted
+  without `egress` cross-check nothing, and that run is marked single-assessor
+  exactly as a roster of one is.
 - **Even n** needs no rule, because nothing is counted. Two members on `S:C`
   and two on `S:U` is not a tie; it is four pieces of evidence, and the
   chairman ranks them by whether the quotation verifies. That is the path an
@@ -114,6 +117,20 @@ not the published scores, not the CVE id.
 - **Not the published scores**, or you measure whether a model can copy.
 - **Not the CVE id**, or a model that recognises `CVE-2021-44228` recites it
   from training and you measure memorisation.
+
+**The rule is applied to the text, not asked for in the prompt.** A sentence in
+a prompt cannot unsee an id, and an advisory's own text routinely carries the id
+and, in some feeds, a vector. Both are replaced by markers rather than deleted,
+so a sentence still reads as a sentence and can still be quoted — and the
+redacted text is what the quotation check is given, because checking against the
+original would fail every quotation spanning a redaction and report an absence
+the advisory never had.
+
+A score written as prose — "a base score of 9.8" — is not caught, and that gap
+is measured rather than assumed: across 153 advisories from both corpora, none
+carries one, while 137 of them contain some `x.y` number and every one sampled
+is a version. A looser pattern would eat the fixed version on nine advisories in
+ten to catch nothing, so the gap stays open knowingly.
 
 A chain — each model refining the last — is the tempting alternative and it
 cannot be measured. Once the second model sees the first's answer, agreement
@@ -178,22 +195,59 @@ advisories carry no evidence for some metrics — `CVE-2025-37164`'s record is o
 sentence that says nothing about Scope, so *no* reader could settle it. That
 absence is a result and must survive to the report.
 
+**Three replies, then, not two.** A member supports a value with a quotation,
+reports an absence, or offers a value it cannot quote. The last is the thing the
+paragraph above forbids, and it is recorded as its own kind rather than folded
+into the absence: **an absence is a fact about the advisory; a guess is a fact
+about the member.** One can be counted per member across a corpus, and neither
+can once they are mixed. A guess weighs exactly what an absence weighs, which is
+nothing — it can neither settle a metric nor make one contested.
+
+**Expect guesses, and expect the fallback.** Asked about a metric its text is
+silent on, a model tends to answer regardless: `qwen2.5:7b-instruct` returned
+`{"value": "N", "evidence": "", "confidence": "low"}` on two metrics of one
+advisory, asked twice each. That is two metrics, one model, one advisory — far
+too small to be a property of local models, and enough to say the design should
+not expect a polite refusal. Those replies are guesses, they carry nothing, and
+the metric comes out unresolved. Which is the evidence rule working: no advisory
+contains the sentence "no user interaction is required", so a metric rested on
+silence has nothing to verify against.
+
 ## What the chairman does
 
 Deterministic where it can be, and its reasoning is recorded either way. It
-reads all n answers at once, and the rules do not change with n.
+reads all n answers at once, and the rules do not change with n. **Every rule
+below is about the verified answers alone** — those whose evidence is a real
+quotation from the advisory. An answer whose quotation is not in the text
+supports nothing, however many members give it.
 
-- **Members agree** → that value, confidence from the weakest member.
-- **Members disagree** → the one whose evidence is a real quotation wins. If
-  more than one qualifies, mark the metric contested and hand it to the
-  escalation policy.
-- **No member found evidence** → the metric is unresolved. Fall back to a
-  published vector, and record both that the fallback happened and which source
-  it came from — there is usually more than one, and they often differ.
+- **The verified answers support one value** → that value, with the confidence
+  of the weakest of them. Record whether anyone dissented, where **anyone means
+  any member that offered a value with a quotation**, verified or not —
+  unanimity and an overruled dissenter read differently afterwards. A guess
+  carries no weight here either, so a member that guesses a different value
+  leaves the record saying the members agreed.
+- **They support more than one value** → the metric is contested, and goes to
+  the escalation policy.
+- **There are none** → the metric is unresolved. Fall back to a published
+  vector, and record both that the fallback happened and which source it came
+  from — there is usually more than one, and they often differ.
 
-**Never a majority vote, at any n.** Counting is what makes an even roster look
-like a problem and a large one look authoritative. Neither is true, because
-members on one base model share its mistakes. Evidence decides.
+**Values are counted; members never are.** Two members agreeing and a third
+dissenting on evidence that does not verify is not a contested metric — one
+value has evidence behind it, so it settles. Counting qualifying members instead
+would escalate on agreement, and would fire on most ordinary disagreements,
+because several members can usually quote an advisory.
+
+**Agreement is not evidence.** n members agreeing with nothing verified settles
+nothing: that metric is unresolved and falls back to a published vector. It is
+the failure this file already names — members on one base model share its
+mistakes, and they share them unanimously.
+
+**Never a majority vote, at any n.** Counting members is what makes an even
+roster look like a problem and a large one look authoritative. Counting distinct
+values is not a vote: it asks whether the verified evidence points one way or
+several. Evidence decides.
 
 ## Escalation is a policy, not a tier
 
@@ -205,6 +259,10 @@ Asking every member every time is the other policy: more money, fewer rounds.
 Neither changes what a member returns or what the chairman does with it.
 
 ## What a hosted member costs
+
+**No hosted member can run today**, because no client exists to reach one: it is
+reported as skipped for want of a client, whether or not `egress` is set. What
+follows is what a hosted member will cost when one can.
 
 **Reproducibility, first and sharpest.** A local member can be pinned: a fixed
 model digest, temperature 0, a seed. A hosted model takes no seed, and the
@@ -276,11 +334,51 @@ roster as configured, the chairman's reasoning, the final vector, and the
 computed score. A score nobody can re-derive is not a score, and a roster
 nobody can reconstruct is not a council.
 
-## Not built
+## What is built, and what is not
 
-**No part of the council exists.** The members, the roster and its
-configuration, the chairman, the escalation policy and the provider clients are
-all design, and this file is the intent rather than a description of code. The
-engine underneath is the exception: `src/cvss` parses a vector and computes a
-Base score today, so the one thing a chairman hands over already has somewhere
-to go.
+**The council is `src/council/`, with tests beside every module.** The roster
+and its `egress` gate, the redaction, the prompt and the wire contract, the
+provider registry and the local Ollama client in it, the HTTP seam under that,
+the reply parser, the quotation check, the chairman, and the runner that puts
+one advisory to every reachable member metric by metric. `src/cvss` is the
+engine it hands a vector to.
+
+**The provider layer is a seam, not a helper.** Which providers this machine can
+reach, and the client that speaks to each, sit apart from the dispatch that puts
+a metric to every member — separated by what makes each of them change. A hosted
+client and a member's own temperature and seed are provider-layer changes and
+touch nothing else; asking every member becoming escalating a contested metric,
+and any change to the shape of the run record, are dispatch changes and touch
+nothing else. The first two gaps below sit on opposite sides of that line, which
+is the useful thing to know before building either.
+
+**A member with no client is reported, never stubbed.** A stub would answer, and
+its answer would be fiction recorded as an assessment. So the two reasons a
+member goes unasked stay distinguishable in the record: not configured, and
+refused by policy.
+
+Four things described above are not built, each deferred rather than forgotten:
+
+- **No hosted provider client.** OpenRouter or another API is a sketch, so a
+  hosted member is skipped for want of one — a second reason on top of
+  `egress`, and the one that outlasts opting in. Adding one is an adapter and
+  an entry in the provider registry; no other module moves.
+- **No escalation policy.** The runner asks every member every metric, which is
+  the other policy named above. A contested metric is recorded as contested and
+  nothing re-asks it on a costlier member.
+- **The answering model is not recorded.** A reply says which member was asked,
+  not which weights answered. That costs nothing while every member is a pinned
+  local one, and becomes the reproducibility hole described above on the day a
+  hosted member runs. What *is* pinned now is the other half: a test holds the
+  member's own model to the client it is asked through. Before the provider
+  layer was separated that line had no test, being the one line that opens a
+  socket, and every local member could have run the server's default model with
+  nothing to say so — which would have made every recorded member identity a
+  claim about a run that did not happen.
+- **No per-member options.** A member carries no temperature and no seed, so
+  local members run on pinned defaults rather than the per-member `options` the
+  sketch above shows.
+
+Nothing orchestrates any of it. No component selects which finding to put to the
+council, and nothing consumes the vector it hands over: `src/council/` imports
+`src/cvss` and nothing imports `src/council/`.
