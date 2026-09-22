@@ -126,6 +126,38 @@ plus one hosted model of another lineage. Adding a member raises cost with
 certainty and raises independence only when the family differs. Record each
 member's family, so a reader can judge what a roster's agreement was worth.
 
+## No retrieval layer
+
+**A member's whole input fits in its context, so there is nothing to retrieve.**
+It needs one advisory and the CVSS v3.1 Base metric definitions. Measured over
+the 18 findings of the repository under test:
+
+| Input | Size |
+|---|---|
+| advisory text, shortest | 386 characters |
+| advisory text, median | 776 characters, roughly 200 tokens |
+| advisory text, longest | 4,585 characters, roughly 1,150 tokens |
+| the Base metric definitions | roughly 2,700 tokens |
+
+Under 4,000 tokens against the 32,768 a 7B local model takes — the worst case
+fits many times over. The definitions are identical for every query, which makes
+them a constant rather than something to look up. **They go in the prompt.** A
+vector store would add a failure mode, the wrong passage retrieved or the one
+that mattered missed, to a problem that does not exist.
+
+**The gap that looks like a retrieval problem is not one.** `CVE-2025-37164`'s
+record is a single sentence that says nothing about Scope, the metric its
+sources dispute. No reader could settle it from that text, and retrieval cannot
+fetch a document nobody collected. That is missing source data, and the fix is a
+corpus question — collect the vendor advisory, or let the metric stand
+unresolved.
+
+**What would change the answer.** A body of past human adjudications too large
+to hold in context, of which there are none yet; a corpus grown to whole vendor
+advisory sites, where which passage matters varies per CVE; or wanting to cite
+specification passages in a rationale — and that last is better served by a
+small fixed lookup than by a vector store.
+
 ## What a member returns
 
 ```
@@ -246,8 +278,9 @@ nobody can reconstruct is not a council.
 
 ## Not built
 
-**None of this exists yet, and neither does the engine underneath it.** There
-is no `src/` at all. The members, the roster and its configuration, the
-chairman, the escalation policy, the provider clients and the CVSS calculator
-they hand a vector to are all design. This file is the intent, not a
-description of code.
+**No part of the council exists.** The members, the roster and its
+configuration, the chairman, the escalation policy and the provider clients are
+all design, and this file is the intent rather than a description of code. The
+engine underneath is the exception: `src/cvss` parses a vector and computes a
+Base score today, so the one thing a chairman hands over already has somewhere
+to go.
