@@ -3,21 +3,69 @@
 Captured from `docs/sources/brainstorming.pdf`. This is the design every agent
 works to. Where an agent's instructions and this file disagree, this file wins.
 
-## Two scores, never merged
+## Published scores, never merged
+
+A finding carries **one published assessment per source**, not one NVD field and
+one vendor field.
 
 | Field | Who owns it | What it means |
 |---|---|---|
-| `nvd_cvss_base_score` | NVD | technical severity, quoted, never recomputed |
-| `vendor_cvss_score` | the vendor | the same, from a source that may disagree |
+| `scores` | the sources | one entry per source whose published vector was read |
+| `unreadable` | the sources | one entry per source whose vector the calculator refused |
 | `organisation_risk_score` | this system | 0–100, this environment's assessment |
 | `llm_explanation` | the model | why they differ, with evidence |
 
-A blended number is unattributable. Keep the fields apart.
+Each entry in `scores`:
+
+| Field | What it holds |
+|---|---|
+| `source` | the source's own name — `nvd`, `redhat`, `ghsa`, `bitnami`, `julia` |
+| `vector` | the CVSS vector string as published, quoted, never edited |
+| `base_score` | the number `src/cvss/` computes from that vector |
+
+An entry in `unreadable` keeps the source, the vector string, and the refusal.
+
+A blended number is unattributable. Keep the entries apart, and keep the source
+name on every one of them.
+
+**The vector is quoted; the score is computed.** `src/cvss/score.py` derives the
+number from the vector by the published equations, so every score on a row
+re-derives from the vector beside it.
+
+**A source that cannot be read is kept, not dropped.** A published v2 or v4.0
+vector is a real occurrence and this calculator refuses it, so that source goes
+to `unreadable` with the reason. It is never scored 0.0: "nobody scored this"
+and "somebody scored this 0.0" are different findings, and one optional number
+would let them be told apart only by remembering to check. The two records are
+separate types for that reason — `src/findings/assessment.py`.
+
+### Why a list, and not two fields
+
+Two fields assume NVD is always there and that there is one vendor. Two
+measurements, on different corpora, say neither holds:
+
+| Corpus | Findings | `nvd` has a vector | The others |
+|---|---|---|---|
+| 8 out-of-date PyPI packages, local Trivy DB | 124 | 102 (82%) | `redhat` 117, `ghsa` 115, `bitnami` 68, `julia` 3 |
+| `github.com/savoirfairelinux/vulnscout` | 18 | 4 (22%) | `ghsa` 18, `redhat` 16 |
+
+On the real repository NVD is absent from 78% of findings, so a field anchored
+to NVD is empty on most rows while `ghsa` has every one of them. And "the
+vendor" is up to four sources that disagree with each other, not only with NVD:
+5 of the 18 vulnscout advisories carry sources that disagree, and on the PyPI
+corpus 49 of the 119 findings with at least two of `nvd`, `redhat` and `ghsa` do.
+One field cannot hold four answers without choosing one, and choosing one is the
+merge this section forbids.
+
+**Which source wins is open.** Nothing here ranks them, and no precedence order
+is defined. Settling which reading an advisory supports is the assessor
+council's job (`docs/COUNCIL.md`); until it runs, the report shows every entry
+side by side and names no winner.
 
 ## The four roles
 
 ```
-CVE data + vendor advisory
+CVE data + published advisories
     -> LLM analyst          reads the CVE, extracts exploit prerequisites
     -> question selector    picks templates matching those prerequisites
     -> organisation         answers Yes / No / Unknown / N/A
