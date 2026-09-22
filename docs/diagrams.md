@@ -19,7 +19,7 @@ them.
 | | Diagram | Answers |
 |---|---|---|
 | 1 | The audit pipeline | how a repository becomes a list of findings |
-| 2 | The two scores | who produces which number, and why they stay apart |
+| 2 | The published scores | how many published scores a finding carries, and why they never merge |
 | 3 | The Organisation Risk Score | how answers become a 0–100 score and a band |
 | 4 | The assessor council | how a roster of n local and hosted models settles a metric without emitting a number |
 | 5 | Build status | what is designed against what exists |
@@ -64,15 +64,16 @@ What this does not show: how findings are stored, how a repeat scan is diffed
 against the last one, or what the report is — file, page, or both. None of that
 is decided.
 
-## 2. The two scores
+## 2. The published scores
 
 **Designed, not built.**
 
 ```mermaid
 flowchart TD
-    subgraph QUOTED["Role 1: NVD and the vendor. Quoted, never recomputed"]
-        nvd["NVD record"]
-        ven["Vendor advisory"]
+    subgraph QUOTED["Role 1: the published sources. Vectors quoted, never edited"]
+        srcs["Sources on one finding<br/>nvd, redhat, ghsa, bitnami, julia<br/>however many published a vector"]
+        pv["One published vector per source<br/>they often disagree"]
+        srcs --> pv
     end
 
     subgraph MODEL["Role 2: the LLM. Reads text, produces no number"]
@@ -83,6 +84,7 @@ flowchart TD
     end
 
     subgraph ENGINE["Role 3: the engine. Every number, deterministic"]
+        cvs["CVSS calculator<br/>published v3.1 equations<br/>one score per published vector"]
         val["Validate model output<br/>typed structure, refused if it does not fit"]
         cal["Weighted calculation<br/>no model in the path"]
     end
@@ -91,8 +93,10 @@ flowchart TD
         dec["Approve or override"]
     end
 
-    nvd --> anl
-    ven --> anl
+    pv --> anl
+    pv --> cvs
+    cvs --> f1["scores<br/>source, vector, base score<br/>one entry per source read"]
+    cvs --> f2["unreadable<br/>source, vector, the refusal<br/>never dropped, never scored 0.0"]
     anl --> sel
     sel --> ans["Organisation answers<br/>Yes / No / Unknown / N/A"]
     ans --> chk
@@ -102,9 +106,7 @@ flowchart TD
     cal --> f3["organisation_risk_score"]
     cal --> exl
     exl --> f4["llm_explanation"]
-    nvd --> f1["nvd_cvss_base_score"]
-    ven --> f2["vendor_cvss_score"]
-    f1 --> out["Report: four fields, side by side"]
+    f1 --> out["Report: every entry side by side"]
     f2 --> out
     f3 --> out
     f4 --> out
@@ -113,18 +115,30 @@ flowchart TD
     f1 x-. "never merged into one number" .-x f3
 ```
 
-Four fields, four owners. The crossed dotted line is the rule the rest of the
-design hangs on: **a blended number is unattributable**, so the published
-severity and this environment's assessment stay in separate fields and separate
-columns. A CVE that is CVSS Critical and organisation Low is the normal case.
+One entry per source, plus the two fields this system owns. The crossed dotted
+line is the rule the rest of the design hangs on: **a blended number is
+unattributable**, so the published severities and this environment's assessment
+stay in separate fields and separate columns. A CVE that is CVSS Critical and
+organisation Low is the normal case.
+
+The left column is a list, not a pair. A finding is assessed by however many
+sources published a vector for it — three or more on 87% of one measured corpus
+— and no source is the reference the others are compared against. On one real
+repository NVD had a vector for 4 findings of 18 while GHSA had all 18.
+`docs/SCORING_MODEL.md` carries the counts.
+
+Each entry's score is computed from that entry's vector, never quoted. The
+vector is what the source published; the number beside it is what the v3.1
+equations give, so a reader can re-derive every one of them.
 
 The `validate` box is the boundary, not a formality. Model output reaches the
 engine only as a typed structure that application code has already refused or
 accepted. A reply that arrives unchecked is the model deciding a number by the
 back door.
 
-What this does not show: the field names are from `docs/SCORING_MODEL.md` and
-no schema exists yet, so nothing here has been fixed in code.
+What this does not show: which source wins when they disagree, because nothing
+ranks them — that is the council in diagram 4. The field names are from
+`docs/SCORING_MODEL.md`, which this page draws and does not amend.
 
 ## 3. The Organisation Risk Score
 

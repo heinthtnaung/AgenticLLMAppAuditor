@@ -12,10 +12,18 @@ or asks the organisation a question.
 
 ## What the page must not do
 
-**Show the two scores apart.** The NVD CVSS base score and the Organisation Risk
-Score are different claims by different authorities. Never blend them into one
-number or one badge, and label which is which. A CVE that is CVSS Critical and
-organisation Low is the normal case, not an error to smooth over.
+**Show every score apart, and name its source.** A finding carries one published
+score per source that published a vector — `nvd`, `redhat`, `ghsa`, however many
+there are — plus the sources whose vector could not be read, which show as
+unscored and never as 0.0. The Organisation Risk Score is a separate claim this
+system owns. Never blend them into one number or one badge, and label which is
+which. A CVE that is CVSS Critical and organisation Low is the normal case, not
+an error to smooth over.
+
+**No source gets a column of its own.** Render the list the finding carries. On
+the repository under test NVD has a vector for 4 findings of 18, so a column
+headed "NVD" is empty on 14 rows — and a layout that assumes a source is present
+looks right until a real repository is on screen.
 
 **Offer four answers, not two.** Every question takes Yes, No, **Unknown** and
 **N/A**. Unknown is a real answer that flags the score as provisional; a UI with
