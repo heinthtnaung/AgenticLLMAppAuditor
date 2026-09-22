@@ -9,6 +9,7 @@ import json
 import pytest
 
 from council.chairman import agreed_vector
+from council.prompt import PROMPT_VERSION
 from council.roster import Roster
 from council.ruling import Basis, PublishedFallback, SettledMetric, UnresolvedMetric
 from council.answer import MemberAnswer, MemberFoundNoEvidence, MemberGuessed
@@ -61,25 +62,33 @@ def test_every_metric_is_put_to_the_roster_and_handed_over_as_a_vector():
     assert not hasattr(run, "score")
 
 
-def test_the_member_is_shown_the_redacted_advisory_and_never_the_raw_one():
-    # The quotation check refuses text still carrying a CVE id, so a runner that
-    # passed the raw advisory would raise here rather than quietly report an
-    # absence the advisory never had.
-    shown = []
+def test_the_runner_builds_the_prompt_the_member_reads_and_the_record_names():
+    # A runner passing the raw advisory would raise on the CVE id rather than
+    # quietly report an absence. The recorded version is that same prompt's, so
+    # a fixture's version can never be what a run carries.
+    seen = []
     def remember(member_asked, prompt):
-        shown.append(prompt.advisory_shown)
+        seen.append(prompt)
         return replying()(member_asked, prompt)
 
-    assess(RAW_ADVISORY, Roster((member(),)), FALLBACKS, clients_of(remember))
-    assert all("CVE-2021-44228" not in text for text in shown)
-    assert all("[identifier withheld]" in text for text in shown)
+    run = assess(RAW_ADVISORY, Roster((member(),)), FALLBACKS, clients_of(remember))
+    assert all("CVE-2021-44228" not in asked.advisory_shown for asked in seen)
+    assert all("[identifier withheld]" in asked.advisory_shown for asked in seen)
+    assert run.rounds[0].replies[0].member.prompt_version == PROMPT_VERSION
 
 
-def test_a_quotation_spanning_a_redaction_still_verifies_through_the_runner():
-    spanning = "[identifier withheld]: A flaw in Apache Log4j2"
-    clients = clients_of(replying(evidence=spanning))
-    run = assess(RAW_ADVISORY, Roster((member(),)), FALLBACKS, clients)
-    assert isinstance(run.rounds[0].ruling, SettledMetric)
+@pytest.mark.parametrize(
+    ("evidence", "kind"),
+    [("[identifier withheld]: A flaw in Apache Log4j2", SettledMetric),
+     ("[identifier withheld]", UnresolvedMetric)],
+    ids=["spanning a marker", "nothing but the marker"],
+)
+def test_a_quotation_must_carry_the_advisorys_words_and_not_only_our_markers(evidence, kind):
+    # Quoting the marker alone verified as a substring and settled a metric on
+    # evidence supporting nothing. Refusing any quotation that contains a marker
+    # is the wrong fix: the first case is a real quotation of what it read.
+    run = assess(RAW_ADVISORY, Roster((member(),)), FALLBACKS, clients_of(replying(evidence)))
+    assert all(isinstance(round_.ruling, kind) for round_ in run.rounds)
 
 
 def test_members_are_asked_in_roster_order():
@@ -96,8 +105,7 @@ def test_a_member_that_could_not_be_asked_reaches_the_run_record():
     # everyone it could not ask is on the record beside those it did.
     roster = Roster((member("local"), hosted("remote")))
     run = assess(RAW_ADVISORY, roster, FALLBACKS, clients_of(replying()))
-    assert run.asked == ("local",)
-    assert [entry.member.name for entry in run.skipped] == ["remote"]
+    assert (run.asked, [entry.member.name for entry in run.skipped]) == (("local",), ["remote"])
 
 
 def test_a_member_that_fails_costs_its_metric_and_not_the_run():
@@ -127,24 +135,19 @@ def test_a_reply_that_cannot_be_read_is_a_failure_and_not_a_crash(said):
 
 def test_a_metric_nobody_could_answer_falls_back_and_says_which_source():
     declines = clients_of(lambda asked, prompt: DECLINED)
-    run = assess(RAW_ADVISORY, Roster((member(),)), FALLBACKS, declines)
-    ruling = run.rounds[0].ruling
+    ruling = assess(RAW_ADVISORY, Roster((member(),)), FALLBACKS, declines).rounds[0].ruling
     assert isinstance(ruling, UnresolvedMetric)
-    assert ruling.fallback.source == "ghsa"
-    assert ruling.fallback.value == "L"
+    assert (ruling.fallback.source, ruling.fallback.value) == ("ghsa", "L")
 
 
-def test_a_run_that_reaches_one_member_is_a_single_assessor():
+def test_single_assessor_counts_the_members_a_run_actually_reaches():
     # Three configured of whom two cannot be reached cross-checks nothing either.
     alone = Roster((member(),))
     reduced = Roster((member("local"), hosted("one", egress=True), hosted("two")))
+    pair = Roster((member("one"), member("two")))
     assert assess(RAW_ADVISORY, alone, FALLBACKS, clients_of(replying())).single_assessor
     assert assess(RAW_ADVISORY, reduced, FALLBACKS, clients_of(replying())).single_assessor
-
-
-def test_two_reachable_members_are_not_a_single_assessor():
-    roster = Roster((member("one"), member("two")))
-    assert not assess(RAW_ADVISORY, roster, FALLBACKS, clients_of(replying())).single_assessor
+    assert not assess(RAW_ADVISORY, pair, FALLBACKS, clients_of(replying())).single_assessor
 
 
 @pytest.mark.parametrize("dropped", ["AV", "S", "A"])
