@@ -5,26 +5,50 @@ repository, join it to a pinned advisory database, score each finding by the
 published CVSS v3.1 equations, and add an **Organisation Risk Score** that
 reflects the environment the code is deployed into.
 
-A local model reads advisories and offers a judgement with its evidence. A
-deterministic engine computes every number. The two are never the same step.
+A council of models — local, hosted, or both — reads advisories and agrees one
+vector, each member quoting the text it relied on. A deterministic engine turns
+that vector into every number. The two are never the same step.
 
 ## Status
 
-**Design stage. There is no code.**
+**Partly built, at both ends.** A repository becomes a list of findings, each
+carrying every source's published vector, parsed and scored. At the other end,
+answers about an environment become an Organisation Risk Score. Nothing joins
+the two yet: there are no questions to ask, and nothing reads a finding or
+prints a report.
 
-| What exists | What it is |
-|---|---|
-| `CLAUDE.md` | the binding rules |
-| `docs/SCORING_MODEL.md` | the Organisation Risk Score design |
-| `docs/COUNCIL.md` | the assessor council design |
-| `docs/diagrams.md` | every flow, as diagrams |
-| `.claude/agents/` | six agent definitions |
-| `docs/sources/` | the two source documents the design was read from |
+| Part | State | What it is |
+|---|---|---|
+| `src/deps/` | built | Syft and Trivy: the components a directory declares, the advisories published against them, and the database's own build date |
+| `src/cvss/` | built | a CVSS Base vector parsed and validated, and its score by the published equations |
+| `src/findings/` | built | the join — a CVE affecting an installed component, with every source's score kept apart and attributed |
+| `src/scoring/` | built | the Organisation Risk Score: per-question weights, categories clamped then weighted, and the band |
+| question library, selector | design | there are no approved questions to ask yet |
+| the assessor council | design | members, roster, chairman — `docs/COUNCIL.md` is intent, not code |
+| provider clients | design | nothing talks to Ollama or a hosted API yet |
+| report, CLI, web page | design | no entry point exists, so no audit runs end to end |
 
-What does not exist is everything else. No `src/`, no tests, no CLI, no
-Python file of any kind. **This README has no usage section because there is
-no command to run.** It gets one when a command exists and its output can be
+Diagram 5 of [`docs/diagrams.md`](docs/diagrams.md) draws the same boundary,
+and the frontier runs in both directions: the engine is built and waiting on
+questions that do not exist.
+
+### Running it
+
+**There is still no command that audits a repository.** Nothing in `src/` has an
+entry point — the packages import, and none of them is a front door. This README
+gets a usage section when an audit can be run from a command line and its output
 pasted here.
+
+What runs today is the suite. `pytest` is the only dependency — the runtime is
+standard library:
+
+```bash
+pip install -r requirements.txt
+python -m pytest -q
+```
+
+No count is pasted here: the suite grows with every module that lands, so any
+number written down is wrong within the day.
 
 ## The design in brief
 
@@ -32,14 +56,16 @@ Four roles, and the boundaries between them are the design:
 
 | Who | What they produce |
 |---|---|
-| NVD and the vendor | the published CVSS base score — quoted, never recomputed |
+| the advisory sources | one published vector each — quoted, attributed, never edited |
 | the LLM | contextual analysis: exploit prerequisites, question selection, the rationale |
-| the scoring engine | every number, deterministically, with no model in the path |
+| the scoring engine | every number, deterministically, with no model in the path — each source's CVSS score and the Organisation Risk Score |
 | the human | approval or override |
 
-The CVSS base score and the Organisation Risk Score stay in separate fields
-and are never blended. A CVE can be CVSS Critical and organisation Low — that
-is the point of the exercise, not an error to reconcile.
+There is no single published score. Several sources assess the same CVE and
+they disagree often; none of them is the reference the others are measured
+against, so each keeps its own field. Those and the Organisation Risk Score are
+never blended. A CVE can be CVSS Critical and organisation Low — that is the
+point of the exercise, not an error to reconcile.
 
 The organisation score weights four categories on a 0–100 scale: technical
 severity 30%, exposure and reachability 25%, business impact 25%, threat and
@@ -55,12 +81,12 @@ without any of them producing a number.
 
 ## Prerequisites
 
-These are real today, unlike the tool. Versions are what is installed on the
-development machine, not minimums except where stated.
+What a scan shells out to. Versions are what is installed on the development
+machine, not minimums except where stated.
 
 | Tool | Version here | For |
 |---|---|---|
-| Python | 3.11.11 (3.10+) | the engine and the CLI |
+| Python | 3.11.11 (3.10+) | the engine and the tests |
 | git | 2.43.0 | cloning the repositories under audit |
 | Syft | 1.52.0 | building the SBOM |
 | Trivy | 0.74.0 | the advisory database and the CVE join |
@@ -146,25 +172,28 @@ design document wins.
 ```
 .
 ├── CLAUDE.md                 the binding rules
+├── README.md                 this file
 ├── LICENSE                   MIT
 ├── .gitignore
+├── pytest.ini                src on the path, tests under tests/
+├── requirements.txt          pytest; the runtime is standard library
 ├── .claude/
-│   └── agents/
-│       ├── judge.md
-│       ├── ai-engineer.md
-│       ├── frontend-developer.md
-│       ├── python-developer.md
-│       ├── technical-writer.md
-│       └── tester.md
-└── docs/
-    ├── COUNCIL.md            the assessor council
-    ├── SCORING_MODEL.md      the Organisation Risk Score
-    └── sources/
-        ├── brainstorming.pdf
-        └── note.docx
+│   └── agents/               six agent definitions
+├── docs/
+│   ├── SCORING_MODEL.md      the Organisation Risk Score
+│   ├── COUNCIL.md            the assessor council
+│   ├── diagrams.md           every flow, as diagrams
+│   └── sources/              the two documents the design was read from
+├── src/
+│   ├── cvss/                 vector parser, metric vocabulary, Base score
+│   ├── deps/                 the Syft and Trivy runners, the database's build date
+│   ├── findings/             the join, and every source's score kept apart
+│   └── scoring/              the Organisation Risk Score engine
+└── tests/                    mirrors src/, a test module per source module
 ```
 
-That is the whole repository.
+`fetched/` and `artifacts/` are ignored: a repository under audit is an argument,
+never this project's evidence, and so is what a run writes.
 
 ## Licence
 
