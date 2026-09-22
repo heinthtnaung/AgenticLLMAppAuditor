@@ -1,0 +1,10 @@
+{
+  "SchemaVersion": 2,
+  "Trivy": {
+    "Version": "0.74.0"
+  },
+  "ReportID": "01a0c7ec-4a1c-7cc1-9491-32fcfb0221f7",
+  "CreatedAt": "2026-09-22T15:02:26.588838472+08:00",
+  "ArtifactName": "/tmp/claude-1000/-home-hein-NTU-AgenticLLMAppAuditor/cbd2e964-c806-4cdd-94f3-84855749b38a/scratchpad/empty",
+  "ArtifactType": "filesystem"
+}

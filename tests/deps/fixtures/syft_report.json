@@ -1,0 +1,118 @@
+{
+  "artifacts": [
+    {
+      "id": "5ce2a31c144a5e4f",
+      "name": "pyyaml",
+      "version": "5.1",
+      "type": "python",
+      "foundBy": "python-package-cataloger",
+      "locations": [
+        {
+          "path": "/requirements.txt",
+          "accessPath": "/requirements.txt",
+          "annotations": {
+            "evidence": "primary"
+          }
+        }
+      ],
+      "licenses": [],
+      "language": "python",
+      "cpes": [
+        {
+          "cpe": "cpe:2.3:a:python-pyyaml:python-pyyaml:5.1:*:*:*:*:*:*:*",
+          "source": "syft-generated"
+        },
+        {
+          "cpe": "cpe:2.3:a:python-pyyaml:python_pyyaml:5.1:*:*:*:*:*:*:*",
+          "source": "syft-generated"
+        }
+      ],
+      "purl": "pkg:pypi/pyyaml@5.1",
+      "metadataType": "python-pip-requirements-entry",
+      "metadata": {
+        "name": "PyYAML",
+        "versionConstraint": "==5.1"
+      }
+    },
+    {
+      "id": "4df74c2b0f620ac0",
+      "name": "django",
+      "version": "2.2.0",
+      "type": "python",
+      "foundBy": "python-package-cataloger",
+      "locations": [
+        {
+          "path": "/requirements.txt",
+          "accessPath": "/requirements.txt",
+          "annotations": {
+            "evidence": "primary"
+          }
+        }
+      ],
+      "licenses": [],
+      "language": "python",
+      "cpes": [
+        {
+          "cpe": "cpe:2.3:a:python-django:python-django:2.2.0:*:*:*:*:*:*:*",
+          "source": "syft-generated"
+        },
+        {
+          "cpe": "cpe:2.3:a:python-django:python_django:2.2.0:*:*:*:*:*:*:*",
+          "source": "syft-generated"
+        }
+      ],
+      "purl": "pkg:pypi/django@2.2.0",
+      "metadataType": "python-pip-requirements-entry",
+      "metadata": {
+        "name": "Django",
+        "versionConstraint": "==2.2.0"
+      }
+    },
+    {
+      "id": "928fc3c958241ddd",
+      "name": "requests",
+      "version": "2.19.1",
+      "type": "python",
+      "foundBy": "python-package-cataloger",
+      "locations": [
+        {
+          "path": "/requirements.txt",
+          "accessPath": "/requirements.txt",
+          "annotations": {
+            "evidence": "primary"
+          }
+        }
+      ],
+      "licenses": [],
+      "language": "python",
+      "cpes": [
+        {
+          "cpe": "cpe:2.3:a:python:requests:2.19.1:*:*:*:*:*:*:*",
+          "source": "nvd-cpe-dictionary"
+        }
+      ],
+      "purl": "pkg:pypi/requests@2.19.1",
+      "metadataType": "python-pip-requirements-entry",
+      "metadata": {
+        "name": "requests",
+        "versionConstraint": "==2.19.1"
+      }
+    }
+  ],
+  "artifactRelationships": [],
+  "source": {
+    "id": "8fca3cc13ac5b29fd107505fdf3fb63b65a61b686f96ae94a482673eeb295636",
+    "name": "sample",
+    "version": "",
+    "type": "directory"
+  },
+  "distro": {},
+  "descriptor": {
+    "name": "syft",
+    "version": "1.52.0"
+  },
+  "schema": {
+    "version": "16.1.10",
+    "url": "https://raw.githubusercontent.com/anchore/syft/main/schema/json/schema-16.1.10.json"
+  }
+}
