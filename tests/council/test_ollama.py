@@ -4,9 +4,9 @@ import pytest
 
 import recorded_replies as recorded
 from council.ollama import (
+    DEFAULT_CONTEXT_TOKENS,
     DEFAULT_MODEL,
     GENERATE_PATH,
-    PINNED_TEMPERATURE,
     LocalModel,
     ask,
     build_request,
@@ -19,6 +19,10 @@ from council_samples import ADVISORY, identity
 
 PROMPT = build_prompt("AV", ADVISORY)
 MEMBER = identity()
+
+# The longest advisory of the 1,187 read off this machine's database snapshot,
+# in characters. The pinned model counted its prompt at 4,897 tokens.
+LONGEST_ADVISORY_CHARACTERS = 17_893
 
 
 class Recorded:
@@ -45,12 +49,61 @@ def answering(text: str, model: str = DEFAULT_MODEL) -> Recorded:
 def test_the_model_is_pinned_and_not_left_to_a_default():
     request = build_request(PROMPT, LocalModel())
     assert request["model"] == DEFAULT_MODEL
-    assert request["options"]["temperature"] == PINNED_TEMPERATURE
     assert request["options"]["seed"] == LocalModel().seed
+
+
+def test_a_member_does_not_sample():
+    # The literal 0 is the test. Asserting against `PINNED_TEMPERATURE` compares
+    # the constant with itself and passes at 0.8 as readily as at 0, and
+    # temperature is the one pinning that is deliberately not configurable: a
+    # member that samples is a different instrument and the record would still
+    # call the run reproducible. `seed` and `num_ctx` are fields, so reading them
+    # off `LocalModel()` is the right check there -- it is plumbing that is under
+    # test, not a value.
+    assert build_request(PROMPT, LocalModel())["options"]["temperature"] == 0
 
 
 def test_the_context_length_is_set_so_a_long_advisory_is_not_silently_cut():
     assert build_request(PROMPT, LocalModel())["options"]["num_ctx"] == LocalModel().context_tokens
+
+
+def test_the_worst_advisory_yet_measured_still_fits_and_is_not_refused():
+    # The guard below must not fire on anything real. If this fails, an advisory
+    # in the corpus has outgrown the pinned window and the number is the
+    # evidence for raising it -- which is a decision, not a default.
+    longest = "word " * (LONGEST_ADVISORY_CHARACTERS // len("word "))
+    assert build_request(build_prompt("AC", longest), LocalModel())["prompt"]
+
+
+def test_a_prompt_too_long_for_the_window_is_refused_and_not_quietly_cut():
+    # The failure this guard exists for: Ollama truncates without saying so, the
+    # member assesses part of an advisory, and the record shows a confident
+    # answer with nothing to say most of the text was missing.
+    overlong = "word " * DEFAULT_CONTEXT_TOKENS
+    with pytest.raises(ValueError, match="would assess part of the advisory"):
+        build_request(build_prompt("AV", overlong), LocalModel())
+
+
+def test_the_refusal_says_how_much_too_long_the_prompt_was():
+    overlong = "word " * DEFAULT_CONTEXT_TOKENS
+    with pytest.raises(ValueError, match=r"roughly \d+ tokens, about \d+ more than"):
+        build_request(build_prompt("AV", overlong), LocalModel())
+
+
+def test_nothing_is_sent_to_the_server_when_the_prompt_will_not_fit():
+    # Refusing after the call would still have truncated the advisory.
+    transport = answering(recorded.ATTACK_VECTOR)
+    with pytest.raises(ValueError, match="pinned to"):
+        ask(build_prompt("AV", "word " * DEFAULT_CONTEXT_TOKENS), LocalModel(), transport)
+    assert transport.url is None
+
+
+def test_a_smaller_window_refuses_what_the_pinned_one_accepts():
+    # The guard reads the member's own pinning, not the default.
+    asked = build_prompt("AV", "word " * 400)
+    assert build_request(asked, LocalModel())["prompt"]
+    with pytest.raises(ValueError, match="is pinned to"):
+        build_request(asked, LocalModel(context_tokens=256))
 
 
 def test_the_reply_is_asked_for_as_json_and_not_streamed():
@@ -81,6 +134,14 @@ def test_the_model_the_server_names_is_kept_over_the_one_that_was_asked_for():
     # A pinning is only worth what the record says actually answered.
     reply = ask(PROMPT, LocalModel(), answering(recorded.ATTACK_VECTOR, "qwen2.5:7b-instruct-q4"))
     assert reply.model == "qwen2.5:7b-instruct-q4"
+
+
+def test_a_server_that_names_no_model_leaves_the_pinned_name_standing():
+    # The one case where `ModelReply.model` is a claim and not an observation,
+    # and nothing downstream can tell which it is holding. Ollama has named the
+    # model on every reply seen, so this is the path that opens if it stops.
+    transport = Recorded({"response": recorded.ATTACK_VECTOR, "done": True})
+    assert ask(PROMPT, LocalModel(), transport).model == DEFAULT_MODEL
 
 
 def test_a_member_answers_end_to_end_into_the_council_s_own_contract():

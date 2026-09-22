@@ -7,12 +7,17 @@ model, temperature 0, and a seed. Temperature is a module constant rather than a
 field because it is not an option -- a member sampling at 0.8 is a different
 instrument, and the record would still call it reproducible.
 
-The context length is set explicitly for the same reason. Ollama's default
-window is small enough to truncate a long advisory silently, and an answer given
-on half an advisory is wrong in a way no reader can see.
+The context length is set explicitly for the same reason, and `build_request`
+refuses a prompt too long for it. An advisory that overflows the window is cut
+by the server without saying so, and a member then assesses half an advisory and
+answers with confidence -- the record shows an assessment and nothing shows that
+most of the text was missing. Refusing costs that one metric, which the chairman
+records as unresolved and falls back on. The two are not worth the same, so the
+refusal is a guard and not a warning.
 
 Nothing here parses the model's words: `ask` gives back the reply text and the
-model that produced it, and `council.reply` turns that into an answer.
+model the server named beside it -- see `ModelReply` for what that name is worth
+-- and `council.reply` turns those into an answer.
 """
 
 from dataclasses import dataclass
@@ -31,9 +36,30 @@ DEFAULT_SEED = 11
 # Not a field. See the module docstring: a member that samples is not pinned.
 PINNED_TEMPERATURE = 0
 
-# The longest advisory in the corpus is roughly 1,150 tokens and the definitions
-# of one metric a few hundred more, so this is several times the worst case.
+# Measured, and pinned rather than generous. The pinned model counts the whole
+# prompt -- one metric's definitions, the instructions and the reply schema --
+# at 421 tokens with the advisory taken out, and the worst advisory of 1,187
+# read off this machine's database snapshot takes it to 4,897. So the margin is
+# 1.7x, not the several times an 18-advisory corpus suggested.
+#
+# It stays at 8,192 anyway. The window is one of the things a local member pins,
+# and `docs/COUNCIL.md` rests the reproducibility claim on the pinning, so
+# moving it changes what a run is comparable with. `refuse_overlong_prompt`
+# below makes the failure impossible instead of rare, and its firing is the
+# evidence that would justify raising this -- nothing has come near the limit
+# yet, and the day something does is the day to raise it knowingly.
 DEFAULT_CONTEXT_TOKENS = 8192
+
+# Four characters to the token. Rough, and calibrated: on the worst advisory in
+# the corpus this estimate said 4,936 where the model counted 4,897, an error of
+# 0.8%. `measurements/prompt_tokens.py` re-counts it against the pinned model.
+CHARACTERS_PER_TOKEN = 4
+
+# What the estimate is allowed to be wrong by, in the direction that matters. A
+# prompt refused that would just have fitted costs one metric; a prompt sent
+# that does not fit costs an assessment of half an advisory that reads like a
+# whole one.
+USABLE_CONTEXT_FRACTION = 0.9
 
 JSON_REPLY_FORMAT = "json"
 
@@ -46,7 +72,12 @@ ERROR_FIELD = "error"
 
 @dataclass(frozen=True)
 class LocalModel:
-    """The pinning of one local member: which model, which seed, how much context."""
+    """The pinning of one local member: which model, which seed, how much context, which host.
+
+    `host` is here with the other three because it is pinned in the same sense:
+    `refuse_remote_host` holds it to loopback, and that is what makes `ran_local`
+    on a record an observation rather than a label.
+    """
 
     model: str = DEFAULT_MODEL
     seed: int = DEFAULT_SEED
@@ -64,7 +95,17 @@ class LocalModel:
 
 @dataclass(frozen=True)
 class ModelReply:
-    """What came back: the words, and the model the server says wrote them."""
+    """What came back: the words, and which model answered -- if the server said.
+
+    `model` is the name the server reported, and the pinned name when it
+    reported none. Those are an observation and a claim, and this field does not
+    distinguish them. It matters because `docs/COUNCIL.md` rests reproducibility
+    on knowing which weights answered: a record saying `qwen2.5:7b-instruct`
+    may mean the server confirmed it or only that nobody contradicted it. Ollama
+    does name the model on every reply seen so far, so the fallback is for a
+    server that stops -- it is not the ordinary path, and it is not a lie the
+    reader can spot.
+    """
 
     text: str
     model: str
@@ -87,7 +128,8 @@ def generate_url(pinning: LocalModel) -> str:
 
 
 def build_request(prompt: MemberPrompt, pinning: LocalModel) -> dict[str, Any]:
-    """Build the Ollama request for one prompt, pinned and not streamed."""
+    """Build the Ollama request for one prompt, pinned, not streamed, and sure to fit."""
+    refuse_overlong_prompt(prompt, pinning)
     return {
         MODEL_FIELD: pinning.model,
         "system": prompt.system,
@@ -112,6 +154,26 @@ def read_envelope(envelope: Any, pinning: LocalModel) -> ModelReply:
     if not isinstance(text, str) or not text.strip():
         raise ModelUnavailable(f"{pinning.model} answered with no text at all")
     return ModelReply(text=text, model=envelope.get(MODEL_FIELD) or pinning.model)
+
+
+def estimated_tokens(prompt: MemberPrompt) -> int:
+    """Estimate what a prompt will cost the model to read, in tokens."""
+    return (len(prompt.system) + len(prompt.user)) // CHARACTERS_PER_TOKEN
+
+
+def refuse_overlong_prompt(prompt: MemberPrompt, pinning: LocalModel) -> None:
+    """Refuse a prompt the window cannot hold, rather than let the server cut it in silence."""
+    estimated = estimated_tokens(prompt)
+    usable = int(pinning.context_tokens * USABLE_CONTEXT_FRACTION)
+    if estimated <= usable:
+        return
+    raise ValueError(
+        f"This {prompt.metric} prompt is roughly {estimated} tokens, about "
+        f"{estimated - usable} more than the {usable} usable of the {pinning.context_tokens} "
+        f"{pinning.model} is pinned to. Ollama would cut it without saying so and the member "
+        f"would assess part of the advisory as though it were all of it. Shorten the "
+        f"advisory, or raise the pinned context knowing it changes what the run compares to."
+    )
 
 
 def refuse_remote_host(host: str) -> None:
