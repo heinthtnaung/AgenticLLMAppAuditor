@@ -110,10 +110,20 @@ bands**, which run 0.0-10.0 and carry their own response times:
 | 7.0-8.9 | High | within 1 month; significant C/I/A risk |
 | 4.0-6.9 | Medium | within 2 months; usually needs local network position |
 | 0.1-3.9 | Low | if resources allow |
-| 0.0 | Info | if resources allow |
+| 0.0 | None | if resources allow |
 
 A CVE can be CVSS Critical and organisation Low. That is the point of the
 exercise, not an error to reconcile.
+
+**The source document calls 0.0 "Info"; the specification calls it "None".** The
+row above is corrected to the published v3.1 qualitative scale, which is what
+`src/cvss/score.py` returns.
+
+That is the second place `docs/sources/brainstorming.pdf` departs from the
+standard it describes — the category weights are the other, and that one moved
+every number the tool produces. One is a transcription slip; two is a pattern.
+Check the PDF against the published specification rather than trusting it,
+including in the parts nobody has implemented yet.
 
 ### Turning answers into a category score
 
