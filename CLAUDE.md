@@ -59,9 +59,12 @@ Binding. Work that breaks one is not done.
     gone, so the next person starts from nothing. An agent file is where the
     project keeps what it knows.
 
-    **Name a run after its agent**, not after its task — `technical-writer-1`,
-    not `council-rewrite`. A task-shaped name in the agent list reads like an
-    agent nobody created.
+    **One live agent per type, and send the next task to it.** A second
+    `python-developer` starts cold; a message to the one already running resumes
+    it with the conventions it set and the files it has read. Three runs for
+    three consecutive steps means learning the same conventions three times.
+    Spawn another of a type only for work that is genuinely parallel, and name a
+    run after its type — `python-developer`, not `council-rewrite`.
 
 18. **The judge sees it before the commit.** Every change, no exceptions.
 19. **Keep `docs/diagrams.md` true.** After any change to how the system works —
