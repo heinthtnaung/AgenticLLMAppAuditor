@@ -5,17 +5,19 @@ repository, join it to a pinned advisory database, score each finding by the
 published CVSS v3.1 equations, and add an **Organisation Risk Score** that
 reflects the environment the code is deployed into.
 
-A council of models — local, hosted, or both — reads advisories and agrees one
-vector, each member quoting the text it relied on. A deterministic engine turns
-that vector into every number. The two are never the same step.
+A council of models — local today, hosted once a client for one exists — reads
+advisories and agrees one vector, each member quoting the text it relied on. A
+deterministic engine turns that vector into every number. The two are never the
+same step.
 
 ## Status
 
-**Partly built, at both ends.** A repository becomes a list of findings, each
-carrying every source's published vector, parsed and scored. At the other end,
-answers about an environment become an Organisation Risk Score. Nothing joins
-the two yet: there are no questions to ask, and nothing reads a finding or
-prints a report.
+**Partly built, in three pieces that nothing joins.** A repository becomes a
+list of findings, each carrying every source's published vector, parsed and
+scored. A council of local models reads an advisory and agrees a vector. Answers
+about an environment become an Organisation Risk Score. No component puts a
+finding to the council, takes back its vector, asks the organisation anything,
+or prints a report.
 
 | Part | State | What it is |
 |---|---|---|
@@ -23,14 +25,16 @@ prints a report.
 | `src/cvss/` | built | a CVSS Base vector parsed and validated, and its score by the published equations |
 | `src/findings/` | built | the join — a CVE affecting an installed component, with every source's score kept apart and attributed |
 | `src/scoring/` | built | the Organisation Risk Score: per-question weights, categories clamped then weighted, and the band |
+| `src/council/` | built | the roster and its `egress` gate, redaction, the prompt, a provider registry holding one local Ollama client, the quotation check, the chairman and the runner |
+| hosted provider client | design | the local client works; nothing reaches OpenRouter or another API, so a hosted member is skipped for want of one. An adapter and a registry entry, and no other module moves |
+| escalation policy | design | a contested metric is recorded as contested and nothing re-asks it on a costlier member |
 | question library, selector | design | there are no approved questions to ask yet |
-| the assessor council | design | members, roster, chairman — `docs/COUNCIL.md` is intent, not code |
-| provider clients | design | nothing talks to Ollama or a hosted API yet |
 | report, CLI, web page | design | no entry point exists, so no audit runs end to end |
 
-Diagram 5 of [`docs/diagrams.md`](docs/diagrams.md) draws the same boundary,
-and the frontier runs in both directions: the engine is built and waiting on
-questions that do not exist.
+Diagram 5 of [`docs/diagrams.md`](docs/diagrams.md) draws the same boundary.
+The three built pieces import nothing from each other — only `src/cvss`, which
+two of them share — so what is missing is not glue but the components between
+them.
 
 ### Running it
 
@@ -185,6 +189,7 @@ design document wins.
 │   ├── diagrams.md           every flow, as diagrams
 │   └── sources/              the two documents the design was read from
 ├── src/
+│   ├── council/              the roster, redaction, the providers, the chairman
 │   ├── cvss/                 vector parser, metric vocabulary, Base score
 │   ├── deps/                 the Syft and Trivy runners, the database's build date
 │   ├── findings/             the join, and every source's score kept apart
