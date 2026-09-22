@@ -1,0 +1,3 @@
+# Runtime: the CVSS calculator is standard library only.
+# Development:
+pytest==9.1.1
