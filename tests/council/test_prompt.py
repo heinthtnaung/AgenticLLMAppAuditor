@@ -18,6 +18,7 @@ from council_samples import ADVISORY
 from cvss.metrics import METRIC_ORDER
 
 CVE_ID = "CVE-2021-44228"
+GHSA_ID = "GHSA-jfh8-c2jp-5v3q"
 PUBLISHED = "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H"
 
 IDENTIFIED_ADVISORY = (
@@ -25,10 +26,16 @@ IDENTIFIED_ADVISORY = (
     f"The vendor scores it {PUBLISHED}."
 )
 
-# The longest advisory in the corpus `docs/COUNCIL.md` measured, in characters.
-LONGEST_ADVISORY_CHARACTERS = 4_585
+# The longest advisory of 1,187 read off this machine's database snapshot --
+# seven offline Trivy scans across PyPI, npm, Go, Rust, Debian and Alpine, and
+# the repository under test. Nearly four times the 4,585 of the 18-advisory
+# corpus this constant used to carry, which is why the number is named with the
+# corpus that produced it: a worst case is only ever the worst so far.
+LONGEST_ADVISORY_CHARACTERS = 17_893
 
-# Four characters to the token, against the 8,192 the local member is pinned to.
+# Not a rule of thumb. The pinned model counted that advisory's prompt at 4,897
+# tokens, of which 421 is the prompt with the advisory taken out, putting the
+# advisory itself at almost exactly four characters to the token.
 CHARACTERS_PER_TOKEN = 4
 PINNED_CONTEXT_TOKENS = 8_192
 
@@ -91,6 +98,13 @@ def test_the_member_is_never_shown_a_published_score():
 def test_the_prompt_says_what_it_withheld_so_a_record_can_show_it():
     asked = build_prompt("AV", IDENTIFIED_ADVISORY)
     assert asked.withheld == (PUBLISHED, CVE_ID)
+
+
+def test_what_it_withheld_is_the_identifiers_as_well_as_the_scores():
+    # Both halves of the panel rule, in the one tuple. A record that showed only
+    # the scores would leave no evidence that the ids were held back at all.
+    asked = build_prompt("AV", f"{IDENTIFIED_ADVISORY} Tracked as {GHSA_ID}.")
+    assert asked.withheld == (PUBLISHED, CVE_ID, GHSA_ID)
 
 
 def test_the_text_the_member_saw_is_what_a_quotation_is_checked_against():

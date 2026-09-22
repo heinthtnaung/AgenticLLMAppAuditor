@@ -2,11 +2,17 @@
 
 A member assesses one metric at a time and is given that metric's definition in
 the prompt. `docs/COUNCIL.md` records why there is no retrieval layer: the
-definitions are identical for every query and all eight cost roughly 2,700
-tokens against a 32,768-token context, which makes them a constant to state
-rather than a document to look up.
+definitions are identical for every query, which makes them a constant to state
+rather than a document to look up. **Its 2,700-token figure is the whole table,
+and a prompt never carries the whole table**: the pinned model counts one
+metric's definitions, the instructions and the reply schema at 421 tokens,
+against the 8,192 `council.ollama` asks for.
 
-The wording is condensed from the CVSS v3.1 specification, section 2.1 and 2.3.
+The wording is condensed from the CVSS v3.1 specification, sections 2.1 to 2.3:
+Exploitability, Scope and Impact. Scope has a section of its own between the
+other two, and this table defines it, so citing only 2.1 and 2.3 leaves out the
+metric the council's sources disagree about most.
+
 It is the member's whole authority on what a value means, so wording that drifts
 from the specification is a measurement error and not a typo. `metrics.py` owns
 which values are legal; this file owns what they mean, and a test holds the two

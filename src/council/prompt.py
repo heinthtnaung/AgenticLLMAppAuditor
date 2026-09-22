@@ -103,8 +103,14 @@ class MemberPrompt:
     """One question to one member: what it was asked, and exactly what it was shown.
 
     `advisory_shown` is the redacted text, which is what the member read, so it
-    is also what its quotation must be checked against. `withheld` is what came
-    out of the original, so a record can say the scores really were held back.
+    is also what its quotation must be checked against.
+
+    **`withheld` is everything `council.redaction` took out**, not the scores
+    alone: CVE ids, GHSA ids and vector strings go into the one tuple, in the
+    order the patterns run rather than the order they stood in the advisory, and
+    a mention taken out twice is in it twice. A reader auditing what a member
+    was kept from sees all of it here or nowhere -- naming only the scores would
+    describe half the tuple and leave the panel rule's other half unevidenced.
     """
 
     metric: str
@@ -152,7 +158,7 @@ def value_lines(metric: str) -> tuple[str, ...]:
 
 
 def reply_schema(metric: str) -> str:
-    """Show the exact JSON object a reply must be, naming this metric's own values."""
+    """Show the three fields a reply must carry and what each may hold, for this metric."""
     allowed = ", ".join(definition_of(metric).value_meanings)
     return json.dumps(
         {
