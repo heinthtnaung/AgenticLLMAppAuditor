@@ -52,4 +52,13 @@ METRICS_BY_ABBREVIATION: dict[str, BaseMetric] = {
 
 def metric_name(abbreviation: str) -> str:
     """Give a Base metric's name in words, so a refusal reads as English."""
-    return METRICS_BY_ABBREVIATION[abbreviation].name
+    # ValueError and not the dict's own KeyError: every refusal its neighbours in
+    # `cvss.vector` raise is a ValueError, and a caller wrapping vector work in
+    # `except ValueError` would otherwise sail straight past this one.
+    metric = METRICS_BY_ABBREVIATION.get(abbreviation)
+    if metric is None:
+        raise ValueError(
+            f"{abbreviation!r} is not a CVSS Base metric; "
+            f"the eight are {', '.join(METRIC_ORDER)}"
+        )
+    return metric.name
