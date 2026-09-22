@@ -10,7 +10,7 @@ from council.roster import (
     members_skipped,
     members_to_ask,
 )
-from council_samples import hosted, member
+from council_samples import SAMPLE_PROMPT_VERSION, hosted, member
 
 
 def test_a_roster_keeps_its_members_in_the_order_they_are_asked():
@@ -102,15 +102,15 @@ def test_a_flag_that_is_not_a_flag_is_refused(flag):
 
 
 def test_a_member_names_itself_on_an_answer_with_the_prompt_it_was_asked_with():
-    identity = member("small").identify("member-base-metric-1")
+    identity = member("small").identify(SAMPLE_PROMPT_VERSION)
     assert isinstance(identity, MemberIdentity)
     assert identity.name == "small"
     assert identity.ran_local
-    assert identity.prompt_version == "member-base-metric-1"
+    assert identity.prompt_version == SAMPLE_PROMPT_VERSION
 
 
 def test_a_hosted_member_identifies_itself_as_having_run_hosted():
-    assert not hosted(egress=True).identify("member-base-metric-1").ran_local
+    assert not hosted(egress=True).identify(SAMPLE_PROMPT_VERSION).ran_local
 
 
 def test_a_member_is_frozen():

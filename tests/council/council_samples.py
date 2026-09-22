@@ -27,6 +27,15 @@ ADVISORY = (
 )
 
 NETWORK_QUOTATION = "unauthenticated remote attacker"
+
+# Deliberately not `council.prompt.PROMPT_VERSION`, and deliberately not shaped
+# like it. These are the deterministic half's fixtures and they run without the
+# model-facing modules loaded, so the real constant is not importable here
+# without dragging the prompt builder into a test of the roster. It drifted once
+# while pretending to be a copy of the real one; looking nothing like a real one
+# is what stops that. What a run actually records is the prompt's own version,
+# and `tests/council/test_runner.py` pins that end to end.
+SAMPLE_PROMPT_VERSION = "sample-prompt-version"
 ACROSS_A_LINE_BREAK = "remote attacker can send a crafted request"
 NOT_IN_THE_ADVISORY = "the attacker must already hold local credentials"
 
@@ -39,10 +48,7 @@ def identity(name: str = "small-local", **overrides) -> MemberIdentity:
         "model": "qwen2.5:7b",
         "family": "qwen",
         "ran_local": True,
-        # The real one, from `council.prompt.PROMPT_VERSION`. Written out rather
-        # than imported: these tests are the deterministic half and run without
-        # the model-facing modules.
-        "prompt_version": "member-base-metric-1",
+        "prompt_version": SAMPLE_PROMPT_VERSION,
     }
     fields.update(overrides)
     return MemberIdentity(**fields)
