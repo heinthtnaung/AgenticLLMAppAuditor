@@ -1,0 +1,41 @@
+version = 3
+
+[[package]]
+name = "smallvec"
+version = "0.6.13"
+
+[[package]]
+name = "openssl"
+version = "0.10.29"
+
+[[package]]
+name = "time"
+version = "0.1.43"
+
+[[package]]
+name = "tokio"
+version = "0.2.20"
+
+[[package]]
+name = "hyper"
+version = "0.13.5"
+
+[[package]]
+name = "regex"
+version = "1.4.0"
+
+[[package]]
+name = "rustls"
+version = "0.19.0"
+
+[[package]]
+name = "lock_api"
+version = "0.3.4"
+
+[[package]]
+name = "crossbeam-deque"
+version = "0.7.2"
+
+[[package]]
+name = "chrono"
+version = "0.4.19"
