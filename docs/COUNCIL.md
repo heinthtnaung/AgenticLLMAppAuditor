@@ -126,11 +126,36 @@ redacted text is what the quotation check is given, because checking against the
 original would fail every quotation spanning a redaction and report an absence
 the advisory never had.
 
-A score written as prose — "a base score of 9.8" — is not caught, and that gap
-is measured rather than assumed: across 153 advisories from both corpora, none
-carries one, while 137 of them contain some `x.y` number and every one sampled
-is a version. A looser pattern would eat the fixed version on nine advisories in
-ten to catch nothing, so the gap stays open knowingly.
+A score written as prose is not caught. That gap is measured rather than
+assumed, and the measurement is the reason it stays open. Across **1,187
+distinct advisories** — seven offline scans covering PyPI, npm, Go, Rust, Debian
+11 and Alpine, plus vulnscout's 18, none of which carries one — exactly one
+does. Redacted, tornado's `GHSA-pw6j-qg29-8w7f` reads:
+
+```
+Proposed CVSS 3.1: [published score withheld] (5.9, medium); attack complexity
+is High because...
+```
+
+The marker takes out the vector and the sentence publishes the score beside it.
+**There are two leaks there and only one of them is catchable.** `(5.9, medium)`
+is a pattern away and would cost nothing. "attack complexity is High" is the
+published value of a metric a member may be assessing, three words later, and no
+pattern reaches it without eating the advisory's own reasoning — which is the
+text the member is there to read. Catching the cheap half would let this system
+say the published scores are withheld while the Attack Complexity value stands
+in the one advisory that proves otherwise. An open gap a reader knows about is
+worth more than a claim that is true 1,186 times. **Half-redaction is worse than
+none here**, not merely less complete: a visible `[published score withheld]`
+marker tells a reader the text was handled, so taking the number out while
+"attack complexity is High" stands three words later makes the leak harder to
+notice than leaving both in place.
+
+Two limits on that corpus: an Ubuntu scan returned no findings and was dropped,
+and RHSA advisories are untested by occurrence, because RHEL needs an rpm
+database that cannot be synthesised offline. The manifests and the synthetic
+package databases those scans ran over are in `measurements/`, so the corpus is
+something a reader can rebuild rather than take on trust.
 
 A chain — each model refining the last — is the tempting alternative and it
 cannot be measured. Once the second model sees the first's answer, agreement
@@ -146,21 +171,27 @@ member's family, so a reader can judge what a roster's agreement was worth.
 ## No retrieval layer
 
 **A member's whole input fits in its context, so there is nothing to retrieve.**
-It needs one advisory and the CVSS v3.1 Base metric definitions. Measured over
-the 18 findings of the repository under test:
+A prompt carries one metric's definitions and one advisory — never all eight
+metrics — and a local member pins its window at 8,192 tokens rather than taking
+whatever maximum the model offers. Measured against the prompt that runs:
 
 | Input | Size |
 |---|---|
-| advisory text, shortest | 386 characters |
-| advisory text, median | 776 characters, roughly 200 tokens |
-| advisory text, longest | 4,585 characters, roughly 1,150 tokens |
-| the Base metric definitions | roughly 2,700 tokens |
+| the prompt, with the advisory taken out | 421 tokens |
+| advisory, median of the 18 under test | 776 characters, roughly 200 tokens |
+| advisory, longest of those 18 | 4,585 characters, roughly 1,150 tokens |
+| advisory, longest of the same 1,187 | 17,893 characters, taking the prompt to 4,897 tokens |
 
-Under 4,000 tokens against the 32,768 a 7B local model takes — the worst case
-fits many times over. The definitions are identical for every query, which makes
-them a constant rather than something to look up. **They go in the prompt.** A
-vector store would add a failure mode, the wrong passage retrieved or the one
-that mattered missed, to a problem that does not exist.
+The worst case measured is **4,897 against 8,192, a margin of 1.7×** — not the
+several times over that an 18-advisory corpus suggested. That margin is guarded
+rather than merely large: a prompt the window cannot hold is refused, because
+Ollama cuts an overlong one without saying so, and a member would then assess
+half an advisory and answer about it with confidence.
+
+The definitions are identical for every query, which makes them a constant
+rather than something to look up. **They go in the prompt.** A vector store
+would add a failure mode, the wrong passage retrieved or the one that mattered
+missed, to a problem that does not exist.
 
 **The gap that looks like a retrieval problem is not one.** `CVE-2025-37164`'s
 record is a single sentence that says nothing about Scope, the metric its
@@ -357,7 +388,7 @@ its answer would be fiction recorded as an assessment. So the two reasons a
 member goes unasked stay distinguishable in the record: not configured, and
 refused by policy.
 
-Four things described above are not built, each deferred rather than forgotten:
+Five things described above are not built, each deferred rather than forgotten:
 
 - **No hosted provider client.** OpenRouter or another API is a sketch, so a
   hosted member is skipped for want of one — a second reason on top of
@@ -378,6 +409,14 @@ Four things described above are not built, each deferred rather than forgotten:
 - **No per-member options.** A member carries no temperature and no seed, so
   local members run on pinned defaults rather than the per-member `options` the
   sketch above shows.
+- **The prose score is not reported.** Removing it will never scale — the
+  general form of the leak is a Base metric value written in words, and no
+  pattern bounds that without eating the advisory's reasoning. Detecting it
+  does: a pattern on the severity word beside the number, the `(5.9, medium)`
+  shape, fires once in 1,187 and eats nothing, and could record on the round
+  that this advisory states a published score in prose. The text stays whole and
+  the guarantee stays honest. A hole that is reported is not the same thing as a
+  hole that is hidden.
 
 Nothing orchestrates any of it. No component selects which finding to put to the
 council, and nothing consumes the vector it hands over: `src/council/` imports

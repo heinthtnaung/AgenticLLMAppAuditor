@@ -240,7 +240,7 @@ hosted member, and no escalation policy re-asks a contested metric.
 ```mermaid
 flowchart TD
     raw["Advisory text, as the database carries it"] --> red["Redaction<br/>CVE and GHSA ids and vector strings<br/>replaced by markers, not deleted"]
-    red --> shown["The text a member sees<br/>no id, no published scores,<br/>no other member's answer"]
+    red --> shown["The text a member sees<br/>no id, no published vector,<br/>no other member's answer"]
 
     subgraph ROSTER["The roster: n members, added and removed by the operator"]
         subgraph LOCALM["Local: Ollama on this machine"]
@@ -307,6 +307,12 @@ the text before any member sees it, because a sentence in a prompt cannot make a
 model unsee `CVE-2021-44228`. The same redacted text is what the quotation check
 reads: checking against the original would fail every quotation spanning a
 marker and report an absence the advisory never had.
+
+The box says **vector** rather than score, and the distinction is measured. One
+advisory of 1,187 publishes a score in prose beside the redacted vector, and
+three words later publishes the disputed metric's value in words as well. No
+pattern takes that out without taking the advisory's reasoning with it, so it is
+a known gap rather than a closed one — `docs/COUNCIL.md` carries the example.
 
 Three replies, three shapes, and only one of them can decide anything. A value
 with a quotation goes to the check; an absence and a guess are recorded and
