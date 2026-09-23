@@ -9,8 +9,8 @@ the path and imports by basename, so a second `samples.py` would be shadowed by
 `tests/deps/samples.py` and the import would fail on a name that does exist.
 """
 
-from deps.syft_runner import Component
-from deps.trivy_runner import Advisory
+from deps.syft_report import Component
+from deps.trivy_report import Advisory
 
 DJANGO_PURL = "pkg:pypi/django@2.2.0"
 PYYAML_PURL = "pkg:pypi/pyyaml@5.1"

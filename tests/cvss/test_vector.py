@@ -146,7 +146,8 @@ def test_deriving_a_vector_leaves_the_original_untouched():
 
 
 def test_a_derived_vector_keeps_the_declared_version():
-    assert parse("CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H").with_metric("S", "C").version == "3.0"
+    derived = parse("CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H").with_metric("S", "C")
+    assert derived.version == "3.0"
 
 
 def test_deriving_with_an_illegal_value_is_refused():
