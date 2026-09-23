@@ -2,6 +2,7 @@
 
 from cli.arguments import Options, TEXT_FORMAT
 from cli.audit import run_audit
+from scoring.library import APPROVED_QUESTIONS
 from cli_samples import (
     ADVISORY,
     BUILT_AT,
@@ -12,9 +13,11 @@ from cli_samples import (
 )
 
 
-def options_for(path, models=()) -> Options:
+def options_for(path, models=(), answers=None) -> Options:
     """Build the options one run is about."""
-    return Options(repository=path, report_format=TEXT_FORMAT, council_models=tuple(models))
+    return Options(
+        repository=path, report_format=TEXT_FORMAT, council_models=tuple(models), answers=answers
+    )
 
 
 def test_an_audit_joins_what_is_installed_to_what_is_published(tmp_path, monkeypatch):
@@ -72,3 +75,19 @@ def test_no_council_runs_unless_the_operator_named_one(tmp_path, monkeypatch):
 def test_the_same_scan_builds_the_same_record(tmp_path, monkeypatch):
     scanners_answering(monkeypatch)
     assert run_audit(options_for(tmp_path), BUILT_AT) == run_audit(options_for(tmp_path), BUILT_AT)
+
+
+def test_the_advisories_an_answer_file_overrides_reach_the_record(tmp_path, monkeypatch):
+    # A mistyped advisory id applies to nothing; the run keeps going and the
+    # report says which override matched no finding.
+    import json
+
+    scanners_answering(monkeypatch)
+    answers = tmp_path / "answers.json"
+    answers.write_text(json.dumps({
+        "answers": {asked.question_id: "No" for asked in APPROVED_QUESTIONS},
+        "by_advisory": {"CVE-NOT-FOUND": {"THR-1": "Yes"}},
+    }), encoding="utf-8")
+    report = run_audit(options_for(tmp_path, answers=answers), BUILT_AT)
+    assert report.overrides_without_findings == ("CVE-NOT-FOUND",)
+    assert len(report.findings) == 1

@@ -12,7 +12,7 @@ path and imports by basename, so a second `samples.py` would be shadowed by
 from deps.syft_report import Catalogue, Component, UnidentifiedArtifact
 from deps.trivy_report import Advisory
 from findings.finding import build_finding
-from report.record import AdvisoryDatabase, RunProvenance
+from report.provenance import AdvisoryDatabase, RunProvenance
 
 CONFIDENTIALITY_ONLY = "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N"  # 7.5 High
 LOW_CONFIDENTIALITY = "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N"  # 5.3 Medium

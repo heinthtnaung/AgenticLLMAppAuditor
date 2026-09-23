@@ -17,11 +17,14 @@ policy's input, and throwing it away told the report no council had run at all.
 
 from cvss.metrics import METRIC_ORDER
 from council.chairman import agreed_vector
-from council.roster import Member, Roster
+from council.roster import Member, Roster, members_to_ask
+from council.prompt import build_prompt
 from council.runner import PROVIDER_CLIENTS, assess
 from council.ruling import ContestedMetric, NoFallbackPublished, UnresolvedMetric
 from findings.finding import Finding
-from report.record import CouncilAssessment, CouncilOutcome, CouncilWithoutVector
+from cli.council_detail import rulings_of
+from cli.progress import NO_PROGRESS, CouncilProgress
+from report.council_record import CouncilAssessment, CouncilOutcome, CouncilWithoutVector
 
 OLLAMA_PROVIDER = "ollama"
 FAMILY_SEPARATOR = ":"
@@ -53,17 +56,24 @@ def local_member(model: str) -> Member:
 
 
 def assessments(
-    findings: tuple[Finding, ...], roster: Roster, clients=PROVIDER_CLIENTS
+    findings: tuple[Finding, ...], roster: Roster, clients=PROVIDER_CLIENTS, progress=NO_PROGRESS
 ) -> tuple[CouncilOutcome, ...]:
     """Put the council to every finding that carries text to read, and keep what came back."""
     return tuple(
-        assess_one(finding, roster, clients) for finding in findings if advisory_text(finding)
+        assess_one(finding, roster, clients, progress)
+        for finding in findings
+        if advisory_text(finding)
     )
 
 
-def assess_one(finding: Finding, roster: Roster, clients) -> CouncilOutcome:
+def assess_one(finding: Finding, roster: Roster, clients, progress=NO_PROGRESS) -> CouncilOutcome:
     """Put one advisory to the council, handing on a vector only where it reached one."""
-    run = assess(advisory_text(finding), roster, FALLBACKS, clients)
+    progress.starting(finding.advisory.advisory_id)
+    text = advisory_text(finding)
+    run = assess(text, roster, FALLBACKS, clients, progress.asking)
+    # The text the members actually read, which is what their quotations were
+    # checked against and so what the record has to re-check them against.
+    rulings = rulings_of(run, build_prompt(METRIC_ORDER[0], text).advisory_shown)
     unresolved = metrics_of(run, UnresolvedMetric)
     contested = metrics_of(run, ContestedMetric)
     if unresolved or contested:
@@ -75,11 +85,13 @@ def assess_one(finding: Finding, roster: Roster, clients) -> CouncilOutcome:
             single_assessor=run.single_assessor,
             unresolved_metrics=unresolved,
             contested_metrics=contested,
+            rulings=rulings,
         )
     return CouncilAssessment(
         advisory_id=finding.advisory.advisory_id,
         vector=str(agreed_vector(run.rulings, VECTOR_VERSION)),
         single_assessor=run.single_assessor,
+        rulings=rulings,
     )
 
 
@@ -88,6 +100,14 @@ def metrics_of(run, kind) -> tuple[str, ...]:
     return tuple(
         metric for metric in METRIC_ORDER if isinstance(run.rulings.get(metric), kind)
     )
+
+
+def watching(findings: tuple[Finding, ...], roster: Roster, out) -> CouncilProgress:
+    """Count the calls this roster will make over the findings it can read."""
+    # Only the findings that carry text and only the members that will be asked:
+    # a total that counts calls nobody makes is a progress bar that never fills.
+    readable = [one for one in findings if advisory_text(one)]
+    return CouncilProgress(len(readable), len(members_to_ask(roster)), out)
 
 
 def advisory_text(finding: Finding) -> str:

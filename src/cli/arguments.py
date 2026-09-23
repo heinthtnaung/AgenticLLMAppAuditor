@@ -24,10 +24,18 @@ DESCRIPTION = "Audit a repository against the pinned advisory database, offline.
 
 TEXT_FORMAT = "text"
 JSON_FORMAT = "json"
-REPORT_FORMATS = (TEXT_FORMAT, JSON_FORMAT)
+HTML_FORMAT = "html"
+REPORT_FORMATS = (TEXT_FORMAT, JSON_FORMAT, HTML_FORMAT)
 
 REPOSITORY_HELP = "the repository to audit, already on disk"
-FORMAT_HELP = "text for a terminal, json for the audit record"
+FORMAT_HELP = (
+    "text for a terminal, json for the audit record, "
+    "html for one self-contained page that fetches nothing"
+)
+ANSWERS_HELP = (
+    "a JSON file of this organisation's answers to the approved questions; "
+    "without one no Organisation Risk Score is computed and the report says so"
+)
 MEMBER_HELP = (
     "add one local model to the assessor council, by its Ollama name; "
     "repeat for more members, and give none to run no council"
@@ -41,6 +49,9 @@ class Options:
     repository: Path
     report_format: str
     council_models: tuple[str, ...]
+    # None is "no file was given", which is the only thing absence can mean for
+    # a command-line path, and `organisation_run` reads it as exactly that.
+    answers: Path | None = None
 
 
 def parse_arguments(argv: list[str] | None = None) -> Options:
@@ -50,6 +61,7 @@ def parse_arguments(argv: list[str] | None = None) -> Options:
         repository=Path(parsed.repository),
         report_format=parsed.format,
         council_models=tuple(parsed.council_member),
+        answers=Path(parsed.answers) if parsed.answers else None,
     )
 
 
@@ -63,4 +75,5 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--council-member", action="append", default=[], metavar="MODEL", help=MEMBER_HELP
     )
+    parser.add_argument("--answers", metavar="FILE", default=None, help=ANSWERS_HELP)
     return parser

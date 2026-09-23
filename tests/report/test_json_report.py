@@ -7,13 +7,9 @@ import pytest
 from cvss.score import base_score
 from cvss.vector import parse
 from report.json_report import as_dictionary, as_json
-from report.record import (
-    CouncilAssessment,
-    CouncilWithoutVector,
-    RunProvenance,
-    UnknownAdvisoryDatabase,
-    build_report,
-)
+from report.provenance import RunProvenance, UnknownAdvisoryDatabase
+from report.council_record import CouncilAssessment, CouncilWithoutVector
+from report.record import build_report
 from report_samples import (
     catalogue,
     CONFIDENTIALITY_ONLY,
@@ -31,10 +27,10 @@ DJANGO = component()
 DISAGREEING = {"ghsa": TOTAL_LOSS, "nvd": LOW_CONFIDENTIALITY}
 
 
-def a_report(findings=(), council=(), provenance=PROVENANCE, unidentified=()):
+def a_report(findings=(), council=(), provenance=PROVENANCE, unidentified=(), overridden=()):
     """Build one report from whatever a test is about."""
     found = catalogue(DJANGO, unidentified=unidentified)
-    return build_report(provenance, found, findings, {}, council)
+    return build_report(provenance, found, findings, {}, council, (), None, overridden)
 
 
 def test_every_score_travels_beside_the_vector_it_came_from():
@@ -91,7 +87,9 @@ def test_a_council_that_did_not_run_is_null_rather_than_absent():
 def test_a_council_that_settled_a_vector_is_recorded_with_it():
     settled = CouncilAssessment("CVE-2019-14234", TOTAL_LOSS, True)
     rendered = as_dictionary(a_report((finding(DJANGO),), (settled,)))["findings"][0]
-    assert rendered["council"] == {"ran": True, "vector": TOTAL_LOSS, "single_assessor": True}
+    assert rendered["council"]["ran"]
+    assert rendered["council"]["vector"] == TOTAL_LOSS
+    assert rendered["council"]["single_assessor"]
 
 
 def test_a_council_that_ran_and_settled_nothing_says_so_rather_than_looking_absent():
@@ -144,3 +142,12 @@ def test_the_artifacts_nothing_could_join_to_are_named_in_the_record():
 
 def test_a_run_where_everything_was_identified_names_none():
     assert as_dictionary(a_report())["unidentified_artifacts"] == []
+
+
+def test_an_override_that_matched_no_finding_is_in_the_record():
+    rendered = as_dictionary(a_report(overridden=("CVE-2021-42799",)))
+    assert rendered["overrides_without_findings"] == ["CVE-2021-42799"]
+
+
+def test_a_run_whose_overrides_all_matched_names_none():
+    assert as_dictionary(a_report())["overrides_without_findings"] == []

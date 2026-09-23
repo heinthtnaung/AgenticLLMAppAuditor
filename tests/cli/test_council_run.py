@@ -1,10 +1,11 @@
 """Guards on the council wiring: a roster from the command line, and no source preferred."""
 
+import io
 import json
 
 from council.ruling import NoFallbackPublished
-from report.record import CouncilAssessment, CouncilWithoutVector
-from cli.council_run import FALLBACKS, assessments, build_roster
+from report.council_record import CouncilAssessment, CouncilWithoutVector
+from cli.council_run import FALLBACKS, assessments, build_roster, watching
 from cvss.metrics import METRIC_ORDER
 from findings.finding import build_finding
 from cli_samples import ADVISORY, LODASH
@@ -92,3 +93,23 @@ def test_an_advisory_with_no_text_is_not_put_to_anybody():
         summary="", details="   ", vectors={},
     ))
     assert assessments((silent,), build_roster(("small",)), answering()) == ()
+
+
+def test_the_total_counts_only_the_members_this_run_will_ask():
+    # A hosted member with no egress is never asked, and a total counting it is
+    # a progress line that never reaches its end.
+    from council.roster import Member, Roster
+
+    hosted = Member("remote", "openrouter", "x/y", "x", runs_local=False)
+    roster = Roster((*build_roster(("small",)).members, hosted))
+    assert watching((FINDING,), roster, io.StringIO()).calls == 8
+
+
+def test_the_total_counts_only_the_findings_the_council_can_read():
+    # An advisory with no text is never put to anybody.
+    silent = build_finding(LODASH, ADVISORY.__class__(
+        advisory_id="CVE-2", purl=LODASH.purl, fixed_version=None,
+        summary="", details="  ", vectors={},
+    ))
+    counted = watching((FINDING, silent), build_roster(("small",)), io.StringIO())
+    assert (counted.findings, counted.calls) == (1, 8)

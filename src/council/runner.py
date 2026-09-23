@@ -24,7 +24,7 @@ answer.
 """
 
 from dataclasses import dataclass
-from typing import Mapping
+from typing import Callable, Mapping
 
 from cvss.metrics import METRIC_ORDER
 from council.answer import MemberReply
@@ -91,17 +91,22 @@ class CouncilRun:
         return tuple(failure for round_ in self.rounds for failure in round_.failures)
 
 
+def nobody_asking(metric: str, member: str) -> None:
+    """Report nothing, which is what a run nobody is watching needs."""
+
+
 def assess(
     advisory_text: str,
     roster: Roster,
     fallbacks: Mapping[str, Fallback],
     clients: Mapping[str, AskMember] = PROVIDER_CLIENTS,
+    asking: Callable[[str, str], None] = nobody_asking,
 ) -> CouncilRun:
     """Put one advisory to the roster, one metric at a time, and collect the rulings."""
     refuse_incomplete_fallbacks(fallbacks)
     reachable = reachable_members(members_to_ask(roster), clients)
     rounds = [
-        assess_metric(metric, advisory_text, reachable, clients, fallbacks[metric])
+        assess_metric(metric, advisory_text, reachable, clients, fallbacks[metric], asking)
         for metric in METRIC_ORDER
     ]
     return CouncilRun(
@@ -120,10 +125,11 @@ def assess_metric(
     members: tuple[Member, ...],
     clients: Mapping[str, AskMember],
     fallback: Fallback,
+    asking: Callable[[str, str], None] = nobody_asking,
 ) -> MetricRound:
     """Ask every reachable member about one metric and rule on what came back."""
     prompt = build_prompt(metric, advisory_text)
-    outcomes = [ask_one_member(member, prompt, clients) for member in members]
+    outcomes = [ask_one_member(member, prompt, clients, asking) for member in members]
     replies = tuple(item for item in outcomes if not isinstance(item, MemberFailure))
     return MetricRound(
         metric=metric,
@@ -136,9 +142,15 @@ def assess_metric(
 
 
 def ask_one_member(
-    member: Member, prompt: MemberPrompt, clients: Mapping[str, AskMember]
+    member: Member,
+    prompt: MemberPrompt,
+    clients: Mapping[str, AskMember],
+    asking: Callable[[str, str], None] = nobody_asking,
 ) -> MemberReply | MemberFailure:
     """Put one prompt to one member, recording a failure rather than ending the run."""
+    # Said before the call, so a member that takes half a minute is a line that
+    # sits there rather than a number nobody has yet.
+    asking(prompt.metric, member.name)
     try:
         said = clients[member.provider](member, prompt)
         return read_reply(said, prompt.metric, member.identify(prompt.version))

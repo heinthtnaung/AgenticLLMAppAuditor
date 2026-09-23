@@ -5,6 +5,7 @@ import json
 
 import pytest
 
+from cli import audit as audit_module
 from cli import main as entry
 from cli.main import COULD_NOT_RUN, FOUND_NOTHING, FOUND_SOMETHING, main
 from cli.preflight import CannotRun
@@ -58,7 +59,7 @@ def test_the_three_outcomes_are_three_different_codes():
 def test_a_bad_command_line_also_leaves_by_the_could_not_run_door():
     # argparse exits 2 of its own accord, which is the code this tool uses too.
     with pytest.raises(SystemExit) as leaving:
-        main(["--format", "html", "somewhere"])
+        main(["--format", "yaml", "somewhere"])
     assert leaving.value.code == COULD_NOT_RUN
 
 
@@ -83,3 +84,43 @@ def test_what_was_not_assessed_is_printed_rather_than_left_out(monkeypatch, tmp_
 def test_nothing_is_written_to_the_error_stream_by_a_run_that_worked(monkeypatch, tmp_path):
     _, _, error = run([], monkeypatch, tmp_path)
     assert error == ""
+
+
+def reporting_council(findings, roster, clients=None, progress=None):
+    """Stand in for a council run, saying what it is doing through the progress it was given."""
+    progress.starting("CVE-2021-23337")
+    progress.asking("AV", "qwen2.5:7b-instruct")
+    return ()
+
+
+def test_a_run_with_no_council_says_nothing_on_the_error_stream(monkeypatch, tmp_path):
+    # A scan with no council takes about a second and needs no progress at all.
+    _, _, error = run([], monkeypatch, tmp_path)
+    assert error == ""
+
+
+def test_progress_is_said_on_the_error_stream_and_never_on_stdout(monkeypatch, tmp_path):
+    # The whole constraint: `--format json` writes the record to stdout and it
+    # has to stay pipeable, so progress and the record share a process and
+    # nothing else.
+    monkeypatch.setattr(audit_module, "assessments", reporting_council)
+    _, out, error = run(["--council-member", "qwen2.5:7b-instruct"], monkeypatch, tmp_path)
+    assert error.strip()
+    assert error.strip() not in out
+    assert out.startswith("Audit of")
+
+
+def test_the_audit_record_stays_parseable_while_progress_is_being_said(monkeypatch, tmp_path):
+    monkeypatch.setattr(audit_module, "assessments", reporting_council)
+    given = ["--council-member", "qwen2.5:7b-instruct", "--format", "json"]
+    _, out, error = run(given, monkeypatch, tmp_path)
+    assert error.strip()
+    assert json.loads(out)["run"]["finding_count"] == 1
+
+
+def test_progress_locates_the_run_by_finding_metric_and_member(monkeypatch, tmp_path):
+    monkeypatch.setattr(audit_module, "assessments", reporting_council)
+    _, _, error = run(["--council-member", "qwen2.5:7b-instruct"], monkeypatch, tmp_path)
+    assert "CVE-2021-23337" in error
+    assert "AV" in error
+    assert "qwen2.5:7b-instruct" in error

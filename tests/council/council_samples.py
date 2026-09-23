@@ -9,6 +9,8 @@ the path and imports by basename, so a second `samples.py` would be shadowed by
 `tests/deps/samples.py`.
 """
 
+import json
+
 from council.answer import (
     Confidence,
     MemberAnswer,
@@ -104,3 +106,36 @@ def hosted(name: str = "hosted-other-family", **overrides) -> Member:
     }
     fields.update(overrides)
     return member(name, **fields)
+
+
+# An advisory carrying a CVE id and a published vector, so the prompt builder
+# has something to redact and the quotation check something to span.
+RAW_ADVISORY = (
+    "CVE-2021-44228: A flaw in Apache Log4j2. An unauthenticated remote attacker "
+    "who can control log messages can execute arbitrary code. "
+    "Scored CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H by the vendor."
+)
+QUOTABLE = "unauthenticated remote attacker"
+DECLINED = json.dumps({"value": "NO_EVIDENCE", "evidence": ""})
+
+# A value each metric allows, and a second one. "N" is legal for AV and not for
+# AC or S, so a client saying one thing everywhere would test the refusal path.
+LEGAL_VALUE = {"AV": "N", "AC": "L", "PR": "N", "UI": "N", "S": "U", "C": "H", "I": "H", "A": "H"}
+OTHER_VALUE = {"AV": "L", "AC": "H", "PR": "L", "UI": "R", "S": "C", "C": "L", "I": "L", "A": "L"}
+
+
+def replying(evidence: str = QUOTABLE):
+    """A client answering each metric with a value that metric allows."""
+    return lambda asked, prompt: json.dumps(
+        {"value": LEGAL_VALUE[prompt.metric], "evidence": evidence, "confidence": "high"}
+    )
+
+
+def guessing(asked, prompt):
+    """A client that leans the other way with nothing to quote for it."""
+    return json.dumps({"value": OTHER_VALUE[prompt.metric], "evidence": "", "confidence": "low"})
+
+
+def clients_of(ask):
+    """Put one client behind the local provider."""
+    return {"ollama": ask}

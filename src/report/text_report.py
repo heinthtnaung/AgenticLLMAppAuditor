@@ -17,9 +17,13 @@ it goes on.
 """
 
 from report.disagreement import sources_disagree
-from report.record import AdvisoryDatabase, CouncilAssessment, Report
+from organisation.approval import Approval
+from report.provenance import AdvisoryDatabase
+from report.record import Report
+from report.text_council import council_block
 from report.text_findings import agreeing_block, contested_block, unscored_block
 from report.text_layout import INDENT, SOURCE_SEPARATOR, section
+from report.text_risk import risk_block
 
 # Wide enough for a path, which is what an unidentifiable artifact is named by.
 ARTIFACT_NAME_WIDTH = 42
@@ -32,9 +36,11 @@ def as_text(report: Report) -> str:
         contested_block(report),
         agreeing_block(report),
         unscored_block(report),
+        risk_block(report),
         council_block(report),
         unmatched_block(report),
         unidentified_block(report),
+        approval_line(report),
         absences_block(report),
     ]
     body = "\n\n".join(block for block in blocks if block)
@@ -73,35 +79,34 @@ def unmatched_block(report: Report) -> str:
     entries = [
         f"{INDENT}{len(report.components_without_findings)} components carry no advisory",
         f"{INDENT}{len(report.advisories_without_components)} advisories matched no component",
+        *overrides_line(report),
     ]
     return section("MATCHED NOTHING", entries)
 
 
-def council_block(report: Report) -> str:
-    """Say what the council did for each advisory, keeping its two outcomes apart.
-
-    Three states a reader has to be able to tell apart: no council ran, which is
-    this block being absent and the absence named below; a council settled a
-    vector; and a council ran and could not. The last two are both "a council
-    ran", and they were indistinguishable from the first until they had their
-    own records.
-    """
-    if not report.council:
-        return ""
-    width = max(len(advisory_id) for advisory_id in report.council)
-    entries = [
-        f"{INDENT}{advisory_id.ljust(width)}  {council_line(report.council[advisory_id])}"
-        for advisory_id in sorted(report.council)
+def overrides_line(report: Report) -> list[str]:
+    """Name the answer overrides that matched no finding, so a typo cannot be silent."""
+    # A mistyped advisory id used to apply to nothing quietly, and a deliberate
+    # escalation that did not apply moved a finding a band with nothing said.
+    missed = report.overrides_without_findings
+    if not missed:
+        return []
+    plural = "" if len(missed) == 1 else "s"
+    return [
+        f"{INDENT}{len(missed)} answer override{plural} matched no finding: {', '.join(missed)}"
     ]
-    return section(f"COUNCIL ({len(report.council)})", entries)
 
 
-def council_line(outcome) -> str:
-    """Say whether the council handed over a vector, or what stopped it."""
-    if isinstance(outcome, CouncilAssessment):
-        return f"settled{SOURCE_SEPARATOR}{outcome.vector}"
-    still_open = ", ".join(outcome.unresolved_metrics + outcome.contested_metrics)
-    return f"no vector{SOURCE_SEPARATOR}could not settle {still_open}"
+def approval_line(report: Report) -> str:
+    """Say who approved this audit, which is the one fact here about a human act."""
+    decided = report.approval
+    if not isinstance(decided, Approval):
+        return ""
+    note = f"{SOURCE_SEPARATOR}{decided.note}" if decided.note else ""
+    return section(
+        "APPROVAL",
+        [f"{INDENT}{decided.decision.value} by {decided.approver} at {decided.recorded_at}{note}"],
+    )
 
 
 def unidentified_block(report: Report) -> str:

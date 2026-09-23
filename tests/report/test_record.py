@@ -2,15 +2,13 @@
 
 import pytest
 
-from report.record import (
-    Absence,
-    AdvisoryDatabase,
-    CouncilAssessment,
-    Report,
-    RunProvenance,
-    UnknownAdvisoryDatabase,
-    build_report,
-)
+from organisation.approval import Approval, Decision, NotApproved
+from organisation.risk import assess, per_source
+from report.provenance import AdvisoryDatabase, RunProvenance, UnknownAdvisoryDatabase
+from report.council_record import CouncilAssessment
+from report.record import Absence, Report, build_report
+from scoring.library import APPROVED_QUESTIONS
+from scoring.question import Answer
 from report_samples import (
     DATABASE,
     PROVENANCE,
@@ -22,14 +20,24 @@ from report_samples import (
     unidentified,
 )
 
+def all_answers(overrides=None) -> dict:
+    """Answer every approved question No, except the ones a test names."""
+    return {**{asked.question_id: Answer.NO for asked in APPROVED_QUESTIONS}, **(overrides or {})}
+
+
 DJANGO = component()
 PYYAML = component("pyyaml", "5.1")
 
 
-def a_report(components=(), findings=(), advisories=None, council=(), unidentified=()):
+def a_report(
+    components=(), findings=(), advisories=None, council=(), unidentified=(),
+    risk=(), approval=None, overridden=(),
+):
     """Build one report from whatever a test is about."""
     found = catalogue(*components, unidentified=unidentified)
-    return build_report(PROVENANCE, found, findings, advisories or {}, council)
+    return build_report(
+        PROVENANCE, found, findings, advisories or {}, council, risk, approval, overridden
+    )
 
 
 def test_a_run_gathers_its_findings_and_counts_what_was_catalogued():
@@ -137,3 +145,54 @@ def test_an_unidentifiable_artifact_is_not_counted_as_a_component():
     report = a_report(components=(DJANGO,), unidentified=(unidentified(),))
     assert report.component_count == 1
     assert report.components_without_findings == (DJANGO.purl,)
+
+
+def test_a_run_nobody_answered_for_names_the_organisation_score_absent():
+    named = {one.what: one.because for one in a_report().not_assessed}
+    assert "no organisation answers were supplied" in named["Organisation Risk Score"]
+
+
+def test_a_run_that_was_answered_for_does_not_claim_the_score_is_missing():
+    one = finding(DJANGO)
+    weighed = assess(one, all_answers({"EXP-1": Answer.YES}), per_source(one))
+    report = a_report(findings=(finding(DJANGO),), risk=(weighed,))
+    assert "Organisation Risk Score" not in [one.what for one in report.not_assessed]
+    assert report.risk[weighed.advisory_id] is weighed
+
+
+def test_an_unapproved_run_names_the_approval_absent_with_its_own_reason():
+    report = a_report(approval=NotApproved("nobody looked"))
+    named = {one.what: one.because for one in report.not_assessed}
+    assert named["Approval record"] == "nobody looked"
+
+
+def test_an_approved_run_does_not_claim_nobody_approved_it():
+    signed = Approval("someone", Decision.APPROVED, "2026-09-23T09:14:00Z")
+    report = a_report(approval=signed)
+    assert "Approval record" not in [one.what for one in report.not_assessed]
+    assert report.approval is signed
+
+
+def test_an_override_naming_an_advisory_this_scan_found_matched_something():
+    one = finding(DJANGO)
+    report = a_report(findings=(one,), overridden=(one.advisory.advisory_id,))
+    assert report.overrides_without_findings == ()
+
+
+def test_an_override_naming_an_advisory_nothing_found_is_counted_not_dropped():
+    # A mistyped advisory id used to apply to nothing quietly, and a deliberate
+    # escalation that did not apply moved a finding a band with nothing said.
+    report = a_report(findings=(finding(DJANGO),), overridden=("CVE-2021-42799",))
+    assert report.overrides_without_findings == ("CVE-2021-42799",)
+
+
+def test_an_override_that_matched_nothing_does_not_stop_the_run():
+    # An answer file reused across repositories will legitimately name advisories
+    # absent from one of them, so this is counted rather than refused.
+    report = a_report(findings=(finding(DJANGO),), overridden=("CVE-OTHER",))
+    assert len(report.findings) == 1
+
+
+def test_overrides_that_matched_nothing_are_sorted_so_two_runs_agree():
+    report = a_report(overridden=("CVE-2", "CVE-1"))
+    assert report.overrides_without_findings == ("CVE-1", "CVE-2")
