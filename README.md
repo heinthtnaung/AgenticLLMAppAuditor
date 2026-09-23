@@ -12,39 +12,119 @@ same step.
 
 ## Status
 
-**Partly built, in three pieces that nothing joins.** A repository becomes a
-list of findings, each carrying every source's published vector, parsed and
-scored. A council of local models reads an advisory and agrees a vector. Answers
-about an environment become an Organisation Risk Score. No component puts a
-finding to the council, takes back its vector, asks the organisation anything,
-or prints a report.
+**It runs, and it says what it did not do.** A repository on disk becomes a
+report: components catalogued, advisories joined, every source's published
+vector scored and kept attributed, and a council of local models asked if you
+name one. What it does not produce is the Organisation Risk Score — that engine
+is built and tested, and the approved question library that would feed it is
+not, so nobody answers anything. The report prints that absence, and the missing
+approval record, as `NOT ASSESSED` rather than as a zero or an omission.
 
 | Part | State | What it is |
 |---|---|---|
 | `src/deps/` | built | Syft and Trivy: the components a directory declares, the advisories published against them, and the database's own build date |
 | `src/cvss/` | built | a CVSS Base vector parsed and validated, and its score by the published equations |
 | `src/findings/` | built | the join — a CVE affecting an installed component, with every source's score kept apart and attributed |
-| `src/scoring/` | built | the Organisation Risk Score: per-question weights, categories clamped then weighted, and the band |
+| `src/scoring/` | built, unreachable | the Organisation Risk Score: per-question weights, categories clamped then weighted, and the band. No module imports it, because nothing can answer its questions |
 | `src/council/` | built | the roster and its `egress` gate, redaction, the prompt, a provider registry holding one local Ollama client, the quotation check, the chairman and the runner |
+| `src/report/` | built | the record every run produces, rendered as a terminal report or as the JSON audit artefact |
+| `src/cli/` | built | the arguments, the preflight refusals, the order the packages run in, and the exit code |
+| question library, selector | design | there are no approved questions, so the Organisation Risk Score cannot be produced |
 | hosted provider client | design | the local client works; nothing reaches OpenRouter or another API, so a hosted member is skipped for want of one. An adapter and a registry entry, and no other module moves |
 | escalation policy | design | a contested metric is recorded as contested and nothing re-asks it on a costlier member |
-| question library, selector | design | there are no approved questions to ask yet |
-| report, CLI, web page | design | no entry point exists, so no audit runs end to end |
+| approval record | design | nothing captures a human approving or overriding a finding |
+| web page | design | nothing renders any of this in a browser |
 
-Diagram 5 of [`docs/diagrams.md`](docs/diagrams.md) draws the same boundary.
-The three built pieces import nothing from each other — only `src/cvss`, which
-two of them share — so what is missing is not glue but the components between
-them.
+Diagram 5 of [`docs/diagrams.md`](docs/diagrams.md) draws the same boundary from
+the import graph: `src/cli` reaches five packages and closes the path, and
+`src/scoring` is the one built package nothing reaches.
 
-### Running it
+## Usage
 
-**There is still no command that audits a repository.** Nothing in `src/` has an
-entry point — the packages import, and none of them is a front door. This README
-gets a usage section when an audit can be run from a command line and its output
-pasted here.
+**Nothing is installed and there is no entry point on the path**, so `src` goes
+on `PYTHONPATH` and the module is run directly. The repository being audited is
+an argument and already on disk — this tool never clones one.
 
-What runs today is the suite. `pytest` is the only dependency — the runtime is
-standard library:
+```bash
+PYTHONPATH=src python -m cli.main fetched/vulnscout
+```
+
+```
+Audit of fetched/vulnscout
+  syft 1.52.0  ·  trivy 0.74.0  ·  advisory database built 2026-09-22T02:00:05.774028462Z
+
+18 findings across 60 components. 5 carry sources that disagree.
+
+SOURCES DISAGREE (5)
+  CVE-2025-13465  lodash-es 4.17.21
+    2.9 apart  ·  High and Medium  ·  differ on A
+    ghsa 6.5  ·  nvd 5.3  ·  redhat 8.2
+  CVE-2021-4279   fast-json-patch 2.2.1
+    2.5 apart  ·  Critical and High  ·  differ on C, I, A
+    ghsa 7.3  ·  nvd 9.8
+
+SOURCES AGREE (13)
+  CVE-2026-14257       brace-expansion 1.1.14          7.5  High      2 sources
+  CVE-2026-53550       js-yaml 3.14.2                  5.3  Medium    2 sources
+
+MATCHED NOTHING
+  55 components carry no advisory
+  0 advisories matched no component
+
+NOT ASSESSED
+  Organisation Risk Score
+    the approved question library is not built, so no organisation answered anything
+  Approval record
+    nothing in this tool captures a human's approval yet
+  Council ruling
+    no council assessed this run, so no source has been chosen between
+```
+
+Three of the five disagreements and eleven of the thirteen agreements are elided
+above; everything else is verbatim. `--format json` prints the same record as
+the audit artefact instead.
+
+### The exit code says which of three things happened
+
+| Code | Meaning |
+|---|---|
+| `0` | the audit ran and found nothing |
+| `1` | the audit ran and found something |
+| `2` | the audit could not run |
+
+**`2` is the one that matters.** A missing database, an absent scanner or a path
+that is not there would otherwise exit 0 beside a genuinely clean repository, and
+a pipeline would go green on a scan that never happened. `2` is also what a bad
+command line exits with, so every "could not run" leaves by the same door.
+
+### The council is off unless you ask for it
+
+```bash
+export NO_PROXY=localhost,127.0.0.1 no_proxy=localhost,127.0.0.1
+PYTHONPATH=src python -m cli.main fetched/vulnscout \
+    --council-member qwen2.5:7b-instruct --council-member qwen3:8b
+```
+
+The `NO_PROXY` line is needed here and not above: a member talks to Ollama on
+loopback, and without it those requests go to the corporate proxy, which answers
+502. A scan with no council needs nothing exported.
+
+Each `--council-member` names one local Ollama model. With none named there is
+no council, which is the honest default: the per-source scores stand side by
+side with no winner. It is also the cheap one — two members over this repository
+is roughly 288 model calls, eight metrics for each of 18 findings, twice.
+
+### Fetching and scanning pull in opposite directions
+
+The repository is an argument because fetching it needs the corporate proxy
+**on** and scanning needs it **off**, so a command doing both would flip that
+state mid-run. The advisory database download is out of band for the same
+reason. Fetch once with the proxy on; scan what is on disk, offline, as often as
+you like. The proxy section below puts both directions in a table.
+
+### Running the tests
+
+`pytest` is the only dependency — the runtime is standard library:
 
 ```bash
 pip install -r requirements.txt
@@ -90,7 +170,7 @@ machine, not minimums except where stated.
 
 | Tool | Version here | For |
 |---|---|---|
-| Python | 3.11.11 (3.10+) | the engine and the tests |
+| Python | 3.11.11 (3.10+) | the CLI, the engine and the tests |
 | git | 2.43.0 | cloning the repositories under audit |
 | Syft | 1.52.0 | building the SBOM |
 | Trivy | 0.74.0 | the advisory database and the CVE join |
@@ -189,11 +269,13 @@ design document wins.
 │   ├── diagrams.md           every flow, as diagrams
 │   └── sources/              the two documents the design was read from
 ├── src/
+│   ├── cli/                  arguments, preflight, the audit order, the exit code
 │   ├── council/              the roster, redaction, the providers, the chairman
 │   ├── cvss/                 vector parser, metric vocabulary, Base score
 │   ├── deps/                 the Syft and Trivy runners, the database's build date
 │   ├── findings/             the join, and every source's score kept apart
-│   └── scoring/              the Organisation Risk Score engine
+│   ├── report/               the record, the text report, the JSON artefact
+│   └── scoring/              the Organisation Risk Score engine, unreachable
 └── tests/                    mirrors src/, a test module per source module
 ```
 

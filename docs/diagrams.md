@@ -2,13 +2,13 @@
 
 The one page to read to understand the system.
 
-**Three stretches of this are built and nothing joins them.** A directory
-becomes components, components join advisories, and every source's published
-vector is parsed and scored. A council of local models reads an advisory and
-agrees a vector. Answers about an environment become an Organisation Risk Score.
-What lies between those three and past them — the questions, the hosted client,
-the report and any page — the project has decided to build and you cannot run.
-Each diagram states its own boundary, and diagram 5 is about nothing else.
+**The scan path runs end to end; the risk score does not.** A repository on disk
+becomes a report — components catalogued, advisories joined, every source's
+published vector scored and kept attributed, and a council of local models asked
+if the operator names one. The Organisation Risk Score is built and unreachable:
+no approved question library exists, so nobody answers anything and the report
+names the absence rather than printing a zero. Each diagram states its own
+boundary, and diagram 5 is about nothing else.
 
 `CLAUDE.md` rule 19 binds this file: after any change to how the system works —
 a new component, a changed flow, a deleted one — **the diagrams are updated in
@@ -22,7 +22,7 @@ them.
 
 | | Diagram | Answers |
 |---|---|---|
-| 1 | The audit pipeline | how a repository becomes a list of findings |
+| 1 | The audit pipeline | how a repository on disk becomes a report |
 | 2 | The published scores | how many published scores a finding carries, and why they never merge |
 | 3 | The Organisation Risk Score | how answers become a 0–100 score and a band |
 | 4 | The assessor council | how a roster of n local and hosted models settles a metric without emitting a number |
@@ -30,18 +30,21 @@ them.
 
 ## 1. The audit pipeline
 
-**Built as far as a finding.** Everything inside the scan is source with tests;
-the report and the human review are not.
+**Built, and it runs.** `PYTHONPATH=src python -m cli.main <repository>` walks
+this path. The one branch it does not walk is the organisation context, because
+no question library exists to feed it.
 
 ```mermaid
 flowchart TD
     subgraph OOB["Out of band, before any scan"]
         fetch["Operator downloads the Trivy vulnerability DB"] --> adb[("Advisory database<br/>on local disk")]
-        adb --> age["Its own build date, readable<br/>src/deps/trivy_database"]
+        get["Operator fetches the repository<br/>the tool never clones one"] --> repo["Repository under audit"]
     end
 
     subgraph SCAN["The scan: offline, against the database already on disk"]
-        repo["Repository under audit"] --> syft["Syft scans the directory<br/>lockfiles and manifests, one pass"]
+        pre["Preflight<br/>no repository, no scanner, no database date<br/>= could not run, never found nothing"]
+        repo --> pre
+        pre --> syft["Syft scans the directory<br/>lockfiles and manifests, one pass"]
         syft --> comp[("Components<br/>name, version, purl, where found")]
         trivy["Trivy reads the database<br/>advisories per purl, and a published<br/>vector for each source that wrote one"]
         comp --> join["Join on the versioned purl"]
@@ -50,40 +53,54 @@ flowchart TD
         asm --> fin["Findings<br/>component, advisory, a score per<br/>readable source, refused vectors kept"]
     end
 
+    adb --> pre
     adb --> trivy
 
-    fin --> ctx["Organisation context<br/>diagram 3"]
-    fin --> rep["Report<br/>one row per finding"]
-    ctx --> rep
-    rep --> hum["Human reviews"]
+    fin --> cou["Council, only if members were named<br/>diagram 4"]
+    fin --> rec["Report record<br/>and what was not assessed"]
+    cou --> rec
+    fin -. "not reachable: no question library" .-> ctx["Organisation context<br/>diagram 3"]
+    ctx -.-> rec
+    rec --> out["Rendered as text, or as JSON"]
+    out --> hum["Human reviews"]
 ```
 
 The database is fetched out of band so that a scan runs offline against the copy
-already on disk. That is what a reproducible scan rests on: the same commit and
-the same database are meant to produce the same findings.
+already on disk, and the repository is fetched out of band for the same reason:
+fetching needs the corporate proxy on and scanning needs it off, so a command
+doing both would flip that state mid-run. What is left is repeatable — the same
+commit and the same database produce the same findings, as many times as anyone
+wants.
 
-That choice has a cost, and it is the sharpest edge in this diagram: **an empty
-or stale cache produces a clean report rather than an error.** Trivy finds no
-advisories, reports nothing, and exits 0. `src/deps/trivy_database` reads the
-database's own build date — its own, not the local download time — so a caller
-can tell the two apart before the scan. **The reading is built; the refusal is
-not.** Nothing yet stops a run against a stale database.
+That choice had a cost and the preflight is what pays it: **an empty or stale
+cache produces a clean report rather than an error.** Trivy finds no advisories,
+reports nothing, and exits 0. So the database is asked for its own build date
+before anything is scanned, and a run that cannot read one does not start. Every
+refusal there is "could not run", which a pipeline must be able to tell from
+"found nothing" — conflating the two is how a broken scan goes green.
 
 Syft is one box because it is one call: it finds the manifests and catalogues
-them in the same pass, so there is no separate discovery component to build. The
-calculator sits inside the scan because that is where it runs: every source's
+them in the same pass, so there is no separate discovery component. The
+calculator sits inside the scan because that is where it runs — every source's
 vector is parsed and scored as the finding is assembled, not in a pass over the
 findings afterwards.
 
-What this does not show: how findings are stored, how a repeat scan is diffed
-against the last one, or what the report is — file, page, or both. None of that
-is decided, and none of it is built.
+The two dotted edges are the part that does not run. The engine that turns
+answers about an environment into an Organisation Risk Score is built; the
+approved question library that would produce those answers is not, so no
+organisation answers anything and the record carries the absence rather than a
+zero. A report that looked complete would be worse than one that says what it
+did not do.
+
+What this does not show: how a repeat scan is diffed against the last one, which
+is not decided and not built.
 
 ## 2. The published scores
 
-**Half built.** The published vectors, the calculator behind them and the
-weighted calculation are real; the LLM roles and the validation that guards them
-are not.
+**The left half runs.** The published vectors, the calculator behind them and
+the report are real. No LLM role exists and nothing validates model output, so
+`organisation_risk_score` and `llm_explanation` are reported as not assessed —
+the weighted calculation itself is built, in `src/scoring`, and never called.
 
 ```mermaid
 flowchart TD
@@ -159,9 +176,10 @@ ranks them — that is the council in diagram 4. The field names are from
 
 ## 3. The Organisation Risk Score
 
-**Built, apart from the questions.** `src/scoring/` is everything from the
-answers rightwards; the template library and the selector that produce them are
-not built.
+**Built, apart from the questions — and therefore never called.** `src/scoring/`
+is everything from the answers rightwards. The template library and the selector
+that would produce those answers are not built, and no module imports
+`src/scoring`, so nothing in a run reaches this diagram.
 
 ```mermaid
 flowchart LR
@@ -343,20 +361,30 @@ to the council in the first place, because nothing does yet.
 ```mermaid
 flowchart LR
     subgraph BUILT["Built: source with tests beside it"]
-        b0["src/deps/scanner<br/>run an external tool, read its JSON,<br/>refuse what it cannot identify"]
-        b1["src/deps/syft_runner<br/>the components a directory declares"]
-        b2["src/deps/trivy_runner<br/>advisories per purl,<br/>one published vector per source"]
+        b0["src/deps/scanner<br/>run an external tool, read its JSON"]
+        b1["src/deps/syft_runner, syft_report<br/>run Syft, and read what it wrote"]
+        b2["src/deps/trivy_runner, trivy_report<br/>run Trivy, and read what it wrote"]
         b3["src/deps/trivy_database<br/>the database's own build date"]
         b4["src/cvss<br/>vector parser, metric vocabulary,<br/>Base score equations"]
-        b5["src/findings<br/>the join, and every source's<br/>score kept apart from the others"]
-        b6["src/scoring<br/>per-question weights, categories<br/>clamped then weighted, and the band"]
-        b7["src/council<br/>roster and the egress gate, redaction, prompt,<br/>provider registry holding one local client,<br/>quotation check, chairman, runner"]
+        b5["src/findings<br/>the join, every source's score apart"]
+        b7["src/council<br/>roster and the egress gate, redaction,<br/>prompt, provider registry, chairman"]
+        b8["src/report<br/>the record, the text report, the JSON"]
+        b9["src/cli<br/>arguments, preflight, the audit order,<br/>and the exit code a pipeline reads"]
+        b6["src/scoring<br/>categories clamped then weighted,<br/>and the band"]
         b0 --> b1
         b0 --> b2
-        b1 --> b5
         b2 --> b5
         b4 --> b5
         b4 --> b7
+        b2 --> b8
+        b4 --> b8
+        b5 --> b8
+        b2 --> b9
+        b3 --> b9
+        b4 --> b9
+        b5 --> b9
+        b7 --> b9
+        b8 --> b9
     end
 
     subgraph UNBUILT["Designed, not built: no source file"]
@@ -364,19 +392,16 @@ flowchart LR
         d2["Question selector"]
         d3["Answer validation"]
         d6["Hosted provider client<br/>an adapter, and an entry in<br/>the provider registry"]
-        d10["Orchestration<br/>nothing puts an advisory to the council,<br/>and nothing takes back its vector"]
         d11["Escalation policy<br/>nothing re-asks a contested metric"]
-        d7["Report"]
-        d8["CLI"]
-        d9["Web UI"]
+        d12["Approval record<br/>nothing captures a human's decision"]
+        d9["Web page"]
     end
 
-    b5 -- "a finding exists,<br/>nothing yet reads or judges it" --> d1
-    d1 -- "and the engine waits on<br/>questions nobody has written" --> b6
-    b5 --> d10
-    d10 --> b7
-    b7 --> d11
+    b5 -- "nothing asks the organisation anything" --> d1
+    d1 -- "so the engine is never called" --> b6
     d6 --> b7
+    b7 --> d11
+    b9 --> d12
 
     subgraph REAL["Real today, but not this project's code"]
         x1["CLAUDE.md, the binding rules"]
@@ -386,40 +411,38 @@ flowchart LR
     end
 ```
 
-**Three islands, and nothing between them.** A repository becomes a list of
-findings, each carrying every source's published vector, parsed and scored, and
-there it stops. The scoring engine is built and idle: it weighs answers to
-questions nobody has written. The council is built and idle for a third reason:
-nothing selects a finding to put to it, and nothing takes back the vector it
-hands over.
+**One path runs, and one island is left.** `src/cli` reaches five packages and
+closes the line from a repository on disk to a report: that is the frontier this
+page has drawn open in both directions since the first diagram, shut on one
+side. What it does not reach is `src/scoring`. The engine has no arrow into it
+and none out, because nothing imports it — the questions that would give it
+something to weigh are the one component between a finding and a risk score, and
+they are in the middle column.
 
-The only arrows inside the built column are real imports. `src/cvss` is imported
-by `src/findings` and by `src/council`, and that is the whole of it — nothing
-else in that column depends on anything else in it. In particular no arrow runs
-from `src/findings` to `src/scoring`, or from `src/council` to either: which
-source's CVSS score becomes the technical severity is the council's call, and
-who puts the council's answer where is a component nobody has written. Drawing
-those edges would draw the design rather than the code.
+Every arrow in the built column is a real import, read off the source rather
+than off the design. `src/cli` is the only module that imports across packages
+in quantity, which is what an entry point looks like; before it existed the
+three built stretches shared nothing but `src/cvss`. No arrow runs from
+`src/council` to `src/report` — the command line holds both and hands one to the
+other — and none runs from `src/findings` to `src/scoring`, because which
+source's CVSS score becomes the technical severity is still the council's call
+and nothing makes it.
 
-The council is the one box in the built column that is built **except** for a
-piece of itself. Its local client works and its `egress` gate is enforced, and
-the hosted client that gate exists to guard does not exist — which is why the
-hosted provider client has a box of its own on the other side, and an edge back
-into the registry it would be registered in. That edge is a seam in the code and
-not a wish: the provider layer is separate from the dispatch beside it precisely
-because a new client changes one and not the other.
+The council is still built **except** for a piece of itself: its local client
+works and its `egress` gate is enforced, and the hosted client that gate exists
+to guard does not exist. That is why the hosted provider client keeps a box of
+its own with an edge back into the registry it would be registered in.
 
 The third column is there so the page is not read as claiming the rest is
 absent: the rules, the design documents and the agent definitions are written,
 and the third-party tools are installed. None of that is code this project
 wrote.
 
-What this does not show: an order of work for the middle column. Nothing here
-says which component is built next, and no such plan exists. That column is also
-not evenly documented — the escalation policy and the hosted client are
-described in `docs/COUNCIL.md`, while `Report`, `CLI` and `Web UI` appear only as
-a remit in an agent definition, and no provider has been committed to beyond
-Ollama.
+What this does not show: an order of work for the middle column, because no such
+plan exists. That column is also not evenly documented — the escalation policy
+and the hosted client are described in `docs/COUNCIL.md`, the question library
+only as a constraint in `docs/SCORING_MODEL.md`, and the web page only as a
+remit in an agent definition.
 
 ## Keeping this page true
 
