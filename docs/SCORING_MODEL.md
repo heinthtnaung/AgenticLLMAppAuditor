@@ -143,10 +143,58 @@ Exposure, for example:
 **Clamp every category to 0–100 before weighting.** A strong control must not
 produce a negative risk.
 
+### The library is approved, and approved is structural
+
+Twelve questions across the three answered categories — technical severity is
+not asked, because it comes from the published vectors. An operator answers by
+**question id**, and the id is resolved inside the library, so a caller never
+holds a question and cannot introduce one or change what a Yes is worth. That is
+the rule below — the model may not modify scoring weights — made structural
+rather than promised: taking a question from a caller would let any weight in,
+and taking an id cannot.
+
+**Which weights came from this document, and which did not.** The exposure table
+above is quoted into the library weight for weight, both compensating controls
+included, and a test holds the library to it. The business and threat weights
+are **the library's own**: this document gives exposure "for example" and pins
+business impact only through its worked example, where business-critical,
+production and sensitive data come to 80. They are a starting point for an
+operator to argue with, not a measurement, and the distinction matters to anyone
+judging where a number came from.
+
+The worked example runs end to end through the library: CVSS 8.0, nothing
+exposed, no threat, and those three business answers give **44.0, Medium** — the
+number this document prints.
+
 ### Unknown answers
 
 Calculate a provisional score and flag it. Do not silently treat Unknown as No,
 and do not refuse to score.
+
+### One score per source, because there is no single severity
+
+Technical severity is 30% of the total and it is the one input this system does
+not own. While sources disagree, a finding **has no single technical severity**,
+so it is scored once per published source and the report carries the range:
+`46.9 to 54.4`, with every source's own figure behind it.
+
+Choosing one source instead would be the precedence this document refuses to
+define, arriving as an implementation detail. The range costs a reader nothing
+and answers a question no single number can: **does which source you believe
+change what this organisation should do?** Usually it does not, and that is the
+useful answer — two sources 2.5 apart on the CVSS scale can land in one band
+here, which is the argument between them ceasing to matter in this environment.
+When it does change the band, the report says so on the heading rather than
+leaving a reader to compare rows.
+
+It runs the other way too, and that is the sharper case. Two sources **agreeing**
+— 7.0 and 7.5, both High — can come out Low and Medium in an environment that is
+internet-facing with the component disabled. Agreement on the published number
+is not agreement on what to do about it.
+
+Where the council settled a vector there is one agreed technical severity, so
+that finding takes one score. The range is what disagreement looks like, not a
+permanent feature.
 
 ## What the LLM may not do
 
@@ -171,3 +219,11 @@ evidence, the score calculation, the **prompt and model version**, and the
 approval record.
 
 A score nobody can re-derive is not a score.
+
+**The approval record exists and nothing stamps it.** Who approved, which
+decision it was, when, and why all travel in the answer file, validated as a
+real instant so a record cannot carry `"yesterday"`. The time arrives with the
+human act rather than being read from a clock, which is also what keeps a run's
+JSON byte-identical between two runs over the same inputs. Stamping one would
+need an approval command, which does not exist — and it would be the first clock
+anywhere in `src/`.
