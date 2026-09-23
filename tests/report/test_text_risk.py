@@ -39,6 +39,15 @@ def test_a_run_nobody_answered_for_shows_no_risk_block():
     assert block() == ""
 
 
+def test_the_weighting_that_combined_the_categories_heads_the_block():
+    # The category scores were re-derivable and the total was not: the 30/25/25/20
+    # weighting lived only in `docs/SCORING_MODEL.md`.
+    one = finding(DJANGO, advisory_id="CVE-1", vectors={"ghsa": HIGH_HIGH})
+    rendered = block(weighed(one, SETTLED))
+    assert "weighted Technical severity 0.3, Exposure and reachability 0.25," in rendered
+    assert "Business impact 0.25, Threat and exploitation 0.2" in rendered
+
+
 def test_a_finding_all_its_sources_agree_on_shows_one_score():
     one = finding(DJANGO, advisory_id="CVE-1", vectors={"ghsa": HIGH_HIGH})
     rendered = block(weighed(one, SETTLED))

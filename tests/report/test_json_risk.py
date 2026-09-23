@@ -1,5 +1,7 @@
 """Guards on the organisation's half of the audit record: re-derivable, and honest when absent."""
 
+import math
+
 from organisation.approval import Approval, Decision, NotApproved
 from organisation.risk import assess, per_source
 from report.json_risk import approval_of, risk_of
@@ -42,6 +44,34 @@ def test_every_answer_and_weight_that_produced_a_score_is_in_the_record():
         "yes_weight": 40,
         "contribution": 40,
     }
+
+
+def test_the_weighting_that_combined_the_categories_is_in_the_record():
+    # The category scores were re-derivable and the total was not: the 30/25/25/20
+    # weighting lived only in `docs/SCORING_MODEL.md`.
+    one = finding(DJANGO)
+    rendered = risk_of(a_report((one,), (weighed(one),)), one.advisory.advisory_id)
+    assert rendered["category_weights"] == [
+        {"category": "Technical severity", "weight": 0.30},
+        {"category": "Exposure and reachability", "weight": 0.25},
+        {"category": "Business impact", "weight": 0.25},
+        {"category": "Threat and exploitation", "weight": 0.20},
+    ]
+
+
+def test_the_recorded_weighting_re_derives_the_recorded_total():
+    one = finding(DJANGO)
+    rendered = risk_of(a_report((one,), (weighed(one),)), one.advisory.advisory_id)
+    categories = rendered["categories"]
+    terms = [
+        rendered["scores"][0]["technical_score"],
+        categories["exposure"]["score"],
+        categories["business"]["score"],
+        categories["threat"]["score"],
+    ]
+    weights = [entry["weight"] for entry in rendered["category_weights"]]
+    by_hand = math.fsum(term * weight for term, weight in zip(terms, weights))
+    assert round(by_hand, 2) == rendered["scores"][0]["score"]
 
 
 def test_a_category_carries_its_raw_total_beside_the_clamped_score():

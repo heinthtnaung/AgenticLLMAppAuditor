@@ -1,10 +1,11 @@
 """The organisation's half of the audit record: its risk scores and its approval.
 
 **A score nobody can re-derive is not a score**, so every answer that produced
-one is here with the weight it carried and what it contributed -- a reader with
-`docs/SCORING_MODEL.md` reaches the same number without this tool. The raw total
-is written beside the clamped score because the clamp is invisible in the score
-alone, and the clamp is the step the design is most particular about.
+one is here with the weight it carried and what it contributed, and the
+weighting that combined the four categories is here beside them -- a reader
+reaches the same number from this record alone. The raw total is written beside
+the clamped score because the clamp is invisible in the score alone, and the
+clamp is the step the design is most particular about.
 
 The categories are written once per finding rather than once per source: the
 environment does not change with who published a vector, only the technical term
@@ -30,6 +31,7 @@ def risk_of(report: Report, advisory_id: str) -> dict[str, Any] | None:
         "band_depends_on_the_source": weighed.band_depends_on_the_source,
         "provisional": weighed.is_provisional,
         "categories": categories_of(weighed.scores[0]),
+        "category_weights": weights_of(weighed.scores[0]),
     }
 
 
@@ -58,6 +60,11 @@ def categories_of(scored: Any) -> dict[str, Any]:
         ("threat", scored.threat),
     )
     return {name: category_of(category) for name, category in named}
+
+
+def weights_of(scored: Any) -> list[dict[str, Any]]:
+    """Give the weighting that combined the categories, so the total re-derives too."""
+    return [{"category": one.category, "weight": one.weight} for one in scored.weights]
 
 
 def category_of(category: Any) -> dict[str, Any]:
