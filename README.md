@@ -27,14 +27,13 @@ leave them out — `NOT ASSESSED`, never a zero and never an omission.
 | `src/scoring/` | built | the approved question library, per-question weights, categories clamped then weighted, and the band |
 | `src/council/` | built | the roster and its `egress` gate, redaction, the prompt, a provider registry holding one local Ollama client, the quotation check, the chairman and the runner |
 | `src/organisation/` | built | the answer file, the approval record, and one risk score per published source |
-| `src/report/` | built | the record every run produces, rendered as a terminal report or as the JSON audit artefact |
-| `src/cli/` | built | the arguments, the preflight refusals, the order the packages run in, and the exit code |
+| `src/report/` | built | the record every run produces, and its three renderings: a terminal report, the JSON audit artefact, and one self-contained HTML page |
+| `src/cli/` | built | the arguments, the preflight refusals, the order the packages run in, which findings the council is put to, the progress it prints to stderr, and the exit code |
 | question selector | design | every approved question is asked, rather than the few a CVE's prerequisites call for |
 | answer validation | design | no model reads the answers back for gaps or contradictions |
 | hosted provider client | design | the local client works; nothing reaches OpenRouter or another API, so a hosted member is skipped for want of one. An adapter and a registry entry, and no other module moves |
 | escalation policy | design | a contested metric is recorded as contested and nothing re-asks it on a costlier member |
 | an approval command | design | an approval is recorded, never stamped: the time arrives with it in the answer file, because there is no clock anywhere in `src/` |
-| web page | design | nothing renders any of this in a browser |
 
 Diagram 5 of [`docs/diagrams.md`](docs/diagrams.md) draws the same boundary from
 the import graph. Nothing built is unreachable any more: `src/organisation`
@@ -84,8 +83,35 @@ NOT ASSESSED
 ```
 
 Three of the five disagreements and eleven of the thirteen agreements are elided
-above; everything else is verbatim. `--format json` prints the same record as
-the audit artefact instead.
+above; everything else is verbatim.
+
+### Three formats, one record
+
+| `--format` | What it writes |
+|---|---|
+| `text` | the block above, and the default |
+| `json` | the audit artefact, for a pipeline or `jq` |
+| `html` | one page to open in a browser |
+
+```bash
+PYTHONPATH=src python -m cli.main fetched/vulnscout --format html > report.html
+```
+
+All three render the same record and none of them works a number out, so a
+figure cannot differ between them. The HTML page fetches nothing — the
+stylesheet is inlined and there is no script, no font, no image and no link out
+— because a scan runs behind the corporate proxy and the report is opened from
+disk. A page that fetched its stylesheet would arrive unreadable in the
+environment it was made for.
+
+What HTML costs is comparison. Text and JSON both read line by line, so two runs
+diff; a styling change rewrites an HTML file the whole way down, which is why
+`json` stays the format to keep.
+
+**It is a page, not an application.** Nothing is served and nothing is
+interactive; there is no JavaScript and no build step. The browser-facing half
+`frontend-developer` exists for is unwritten, and it has no box in diagram 5
+because nothing has designed it either.
 
 ### Scoring a finding against your environment
 
@@ -136,6 +162,7 @@ PYTHONPATH=src python -m cli.main fetched/vulnscout --answers answers.json
 <!-- readme-check: run --answers -->
 ```
 ORGANISATION RISK (18)  ·  the source changes the band on 1
+  weighted Technical severity 0.3, Exposure and reachability 0.25, Business impact 0.25, Threat and exploitation 0.2
   CVE-2026-4800        ghsa 70.5 to nvd 75.7       Critical and High
   CVE-2021-4279        ghsa 84.2 to nvd 91.7       Critical
   CVE-2025-13465       nvd 62.1 to redhat 70.8     High
@@ -143,6 +170,11 @@ ORGANISATION RISK (18)  ·  the source changes the band on 1
   CVE-2026-13676       68.8                        High
   CVE-2026-14257       68.8                        High
 ```
+
+The second line is the weighting those totals were reached with. It is read off
+the record rather than off `docs/SCORING_MODEL.md`, so a reader re-deriving a
+score by hand works from the run that produced it and not from a table that
+could have moved since.
 
 `CVE-2021-4279` is at the top because it is the one finding the `by_advisory`
 block says is being exploited in the wild with public exploit code. Take those
@@ -169,6 +201,7 @@ internet-facing, nothing else touched:
 <!-- readme-check: run --answers EXP-1=No EXP-4=Yes -->
 ```
 ORGANISATION RISK (18)  ·  the source changes the band on 4
+  weighted Technical severity 0.3, Exposure and reachability 0.25, Business impact 0.25, Threat and exploitation 0.2
   CVE-2021-4279        ghsa 70.4 to nvd 77.9       Critical and High
   CVE-2025-13465       nvd 48.4 to redhat 57.1     High and Medium
   CVE-2026-13149       ghsa 48.4 to redhat 55.0    High and Medium
@@ -227,8 +260,65 @@ loopback, and without it those requests go to the corporate proxy, which answers
 
 Each `--council-member` names one local Ollama model. With none named there is
 no council, which is the honest default: the per-source scores stand side by
-side with no winner. It is also the cheap one — two members over this repository
-is roughly 288 model calls, eight metrics for each of 18 findings, twice.
+side with no winner.
+
+### It is asked only about the findings the sources do not settle
+
+The council reconciles sources, so a finding whose sources already agree is not
+its work. Of the 18 findings on this repository, 5 carry sources that disagree,
+and a two-member run is asked about those 5 — **80 model calls rather than 288**,
+eight metrics for each of 5 findings, twice. A finding **no** source scored is
+asked about too: there is no agreement to lean on, and a council vector is the
+only severity it will ever carry.
+
+```bash
+PYTHONPATH=src python -m cli.main fetched/vulnscout \
+    --council-member qwen2.5:7b-instruct --council-member qwen3:8b \
+    --council-all-findings
+```
+
+`--council-all-findings` asks about all 18, at the full 288 calls. **What scoping
+costs is the one thing only a council can find:** whether two sources that agree
+are both wrong. Nothing here treats any source as the reference, so that is a
+real loss and the flag is how you refuse it.
+
+Every finding the council was not put to is named in the report with the reason
+— `no published source disagrees, so there is nothing to reconcile`, or `the
+advisory carries no text for a member to read`. The `COUNCIL (n)` heading counts
+only what was assessed, because counting the skips would claim the council did
+more than it did. A finding it was never asked about, one it could not settle,
+and a run with no members named are three different facts and read as three.
+
+### A council run says where it has got to
+
+Calls queue on one GPU, so a second member multiplies the wall clock rather than
+adding to it, and a run that says nothing is indistinguishable from a hung one.
+So a run prints one line per call:
+
+```
+council 1/80  finding 1/5 CVE-2026-13149  AV  qwen2.5:7b-instruct
+council 2/80  finding 1/5 CVE-2026-13149  AV  qwen3:8b
+council 3/80  finding 1/5 CVE-2026-13149  AC  qwen2.5:7b-instruct
+...
+council 17/80  finding 2/5 CVE-2021-4279  AV  qwen2.5:7b-instruct
+council 18/80  finding 2/5 CVE-2021-4279  AV  qwen3:8b
+```
+
+The denominators are what this run will actually do: 5 findings after scoping,
+not 18, and only the members it can reach. A total counting calls nobody makes
+is a progress bar that never fills.
+
+**Every one of those lines goes to stderr and none to stdout.** The report has
+the other stream to itself, so `--format json | jq` receives the artefact alone,
+byte for byte the same whether or not anybody was watching. Redirect stdout to a
+file and the progress still reaches your terminal.
+
+Counts, and no elapsed time. A line prints *before* the call it names, so a slow
+member is a line that sits there and you supply the seconds yourself. That is
+what lets `src/` read no clock anywhere, which is what makes two runs of the
+same commit and the same database byte-identical. The cost is the scrollback
+afterwards: it cannot tell you whether a line sat for ninety seconds or nine
+minutes.
 
 ### Fetching and scanning pull in opposite directions
 
@@ -385,13 +475,13 @@ design document wins.
 │   ├── diagrams.md           every flow, as diagrams
 │   └── sources/              the two documents the design was read from
 ├── src/
-│   ├── cli/                  arguments, preflight, the audit order, the exit code
+│   ├── cli/                  arguments, preflight, the audit order, the council scope, the exit code
 │   ├── council/              the roster, redaction, the providers, the chairman
 │   ├── cvss/                 vector parser, metric vocabulary, Base score
 │   ├── deps/                 the Syft and Trivy runners, the database's build date
 │   ├── findings/             the join, and every source's score kept apart
 │   ├── organisation/         the answer file, the approval, one score per source
-│   ├── report/               the record, the text report, the JSON artefact
+│   ├── report/               the record, and the text, JSON and HTML renderings
 │   └── scoring/              the approved questions and the risk score engine
 └── tests/                    mirrors src/, a test module per source module
 ```
