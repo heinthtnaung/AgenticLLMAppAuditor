@@ -30,6 +30,10 @@ class TechnicalSeverity:
 
     score: float
     derived_from: str
+    # The source on its own as well as in the sentence. A report naming which
+    # source sits at which end of a range needs the name, and digging it back
+    # out of the sentence would be reading a value out of prose.
+    source: str = ""
 
     def __post_init__(self) -> None:
         """Refuse a score off the scale, or one that names no origin."""
@@ -84,4 +88,5 @@ def from_cvss_base_score(base_score: float, source: str) -> TechnicalSeverity:
     return TechnicalSeverity(
         score=base_score * CVSS_TO_CATEGORY_SCALE,
         derived_from=f"{source} CVSS base score {base_score}",
+        source=source,
     )

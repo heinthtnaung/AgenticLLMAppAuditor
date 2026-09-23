@@ -80,3 +80,15 @@ def test_an_unscored_finding_contributes_nothing_and_is_known_to_be_unknown():
 def test_something_that_is_neither_kind_of_technical_severity_is_refused(given):
     with pytest.raises(TypeError, match="must be a TechnicalSeverity or an Unknown"):
         technical_category_score(given)
+
+
+def test_the_source_is_kept_on_its_own_as_well_as_in_the_sentence():
+    # A report naming which source sits at which end of a range needs the name,
+    # and digging it back out of the sentence would be reading a value out of prose.
+    one = from_cvss_base_score(8.2, "redhat")
+    assert one.source == "redhat"
+    assert one.derived_from == "redhat CVSS base score 8.2"
+
+
+def test_a_severity_the_caller_computed_itself_names_no_source():
+    assert TechnicalSeverity(score=60.0, derived_from="operator override").source == ""
