@@ -2,13 +2,13 @@
 
 The one page to read to understand the system.
 
-**The scan path runs end to end; the risk score does not.** A repository on disk
-becomes a report — components catalogued, advisories joined, every source's
-published vector scored and kept attributed, and a council of local models asked
-if the operator names one. The Organisation Risk Score is built and unreachable:
-no approved question library exists, so nobody answers anything and the report
-names the absence rather than printing a zero. Each diagram states its own
-boundary, and diagram 5 is about nothing else.
+**It runs end to end.** A repository on disk becomes a report — components
+catalogued, advisories joined, every source's published vector scored and kept
+attributed, a council of local models asked if the operator names one, and every
+finding weighed against this environment into an Organisation Risk Score if the
+operator answers the approved questions. What is optional is named as absent in
+the record rather than left out or printed as a zero. Each diagram states its
+own boundary, and diagram 5 is about nothing else.
 
 `CLAUDE.md` rule 19 binds this file: after any change to how the system works —
 a new component, a changed flow, a deleted one — **the diagrams are updated in
@@ -31,8 +31,7 @@ them.
 ## 1. The audit pipeline
 
 **Built, and it runs.** `PYTHONPATH=src python -m cli.main <repository>` walks
-this path. The one branch it does not walk is the organisation context, because
-no question library exists to feed it.
+this path, all of it, given an answer file and council members.
 
 ```mermaid
 flowchart TD
@@ -57,10 +56,12 @@ flowchart TD
     adb --> trivy
 
     fin --> cou["Council, only if members were named<br/>diagram 4"]
+    fin --> ctx["Organisation context<br/>scored once per source<br/>diagram 3"]
+    ans["Answer file<br/>--answers: the approved questions<br/>answered by id, and who approved"] --> ctx
+    cou --> ctx
     fin --> rec["Report record<br/>and what was not assessed"]
     cou --> rec
-    fin -. "not reachable: no question library" .-> ctx["Organisation context<br/>diagram 3"]
-    ctx -.-> rec
+    ctx --> rec
     rec --> out["Rendered as text, or as JSON"]
     out --> hum["Human reviews"]
 ```
@@ -85,22 +86,29 @@ calculator sits inside the scan because that is where it runs — every source's
 vector is parsed and scored as the finding is assembled, not in a pass over the
 findings afterwards.
 
-The two dotted edges are the part that does not run. The engine that turns
-answers about an environment into an Organisation Risk Score is built; the
-approved question library that would produce those answers is not, so no
-organisation answers anything and the record carries the absence rather than a
-zero. A report that looked complete would be worse than one that says what it
-did not do.
+Two of the three inputs are optional, and the record says so when they are
+absent. Without `--answers` nobody has been asked about the environment, so
+there is no Organisation Risk Score and the report names the absence rather than
+printing a zero — a number there would read as a finding assessed and found
+harmless. Without `--council-member` no model has read anything, and the
+per-source scores stand side by side with no winner.
+
+The council feeds the context as well as the record, and that edge is the whole
+argument of this project in one line: where a council settled a vector there is
+one technical severity and the finding takes one score, and everywhere else it
+is scored once per published source, because choosing a source is precedence
+`docs/SCORING_MODEL.md` refuses to set.
 
 What this does not show: how a repeat scan is diffed against the last one, which
 is not decided and not built.
 
 ## 2. The published scores
 
-**The left half runs.** The published vectors, the calculator behind them and
-the report are real. No LLM role exists and nothing validates model output, so
-`organisation_risk_score` and `llm_explanation` are reported as not assessed —
-the weighted calculation itself is built, in `src/scoring`, and never called.
+**Built, apart from the LLM column.** The published vectors, the calculator, the
+weighted calculation and the report are real, and `organisation_risk_score` is
+produced once per source when an operator answers. What is missing is every role
+in the middle: no analyst, no selector, no checker, no explainer, so
+`llm_explanation` is reported as not assessed.
 
 ```mermaid
 flowchart TD
@@ -176,16 +184,16 @@ ranks them — that is the council in diagram 4. The field names are from
 
 ## 3. The Organisation Risk Score
 
-**Built, apart from the questions — and therefore never called.** `src/scoring/`
-is everything from the answers rightwards. The template library and the selector
-that would produce those answers are not built, and no module imports
-`src/scoring`, so nothing in a run reaches this diagram.
+**Built, and called.** `src/scoring/` is everything from the answers rightwards,
+including the approved library the questions come from. `src/organisation/`
+reads the answer file and puts each finding through this diagram once per
+published source.
 
 ```mermaid
 flowchart LR
-    cve["CVE and advisory"] --> pre["Exploit prerequisites"]
-    pre --> qs["Questions selected<br/>approved template library only"]
-    qs --> ans["Answers<br/>Yes / No / Unknown / N/A"]
+    cve["CVE and advisory"] --> pre["Exploit prerequisites<br/>no selector: every approved<br/>question is asked"]
+    pre --> qs["The approved library<br/>12 questions, answered by id<br/>nothing outside it can add one"]
+    qs --> ans["Answers<br/>Yes / No / Unknown / N/A<br/>per environment, overridable per advisory"]
 
     ans --> wgt["Per question weight<br/>only Yes moves the total<br/>a compensating control subtracts"]
 
@@ -198,7 +206,7 @@ flowchart LR
     hraw --> hclp["Clamp to 0-100"]
 
     subgraph TECH["Technical severity: handed in, never asked"]
-        pick["One source's CVSS base score,<br/>chosen by the caller and attributed"] --> tsc["On the 0-100 scale<br/>base score x 10"]
+        pick["Each published source in turn,<br/>or the council's vector where it settled one"] --> tsc["On the 0-100 scale<br/>base score x 10"]
         nosrc["No source scored this finding<br/>kept as its own answer, with a reason"] --> tzero["Contributes 0"]
     end
 
@@ -232,10 +240,15 @@ risk in its own category and no further.
 
 **Technical severity has no question path**, and the missing arrow is the point.
 The other three categories are asked; this one is handed in, as a number with
-the source it came from. Choosing which source's CVSS score to use is the
-council's job and the council does not exist, so the engine refuses to reach
-into a finding and pick one — and it refuses an unattributed number outright,
+the source it came from. The engine refuses an unattributed number outright,
 because that is the merge the design forbids arriving by the back door.
+
+So a finding with three disagreeing sources goes through this diagram three
+times and comes out as a range. That is not indecision: it answers a question
+nothing else here can, which is whether believing `nvd` rather than `ghsa`
+changes what this organisation should do. Often it does not — and a report that
+picked one source would have hidden both the cases where it matters and the
+cases where it stops mattering.
 
 The provisional branch has **two ways in**, not one. An Unknown answer is the
 first. A finding nobody scored is the second: it contributes 0 to the weighted
@@ -370,7 +383,8 @@ flowchart LR
         b7["src/council<br/>roster and the egress gate, redaction,<br/>prompt, provider registry, chairman"]
         b8["src/report<br/>the record, the text report, the JSON"]
         b9["src/cli<br/>arguments, preflight, the audit order,<br/>and the exit code a pipeline reads"]
-        b6["src/scoring<br/>categories clamped then weighted,<br/>and the band"]
+        b6["src/scoring<br/>the approved question library, categories<br/>clamped then weighted, and the band"]
+        b10["src/organisation<br/>the answer file, the approval record,<br/>one score per source"]
         b0 --> b1
         b0 --> b2
         b2 --> b5
@@ -385,23 +399,27 @@ flowchart LR
         b5 --> b9
         b7 --> b9
         b8 --> b9
+        b4 --> b10
+        b5 --> b10
+        b6 --> b10
+        b10 --> b8
+        b10 --> b9
     end
 
     subgraph UNBUILT["Designed, not built: no source file"]
-        d1["Question template library"]
-        d2["Question selector"]
-        d3["Answer validation"]
+        d2["Question selector<br/>every approved question is asked instead"]
+        d3["Answer validation<br/>no model reads the answers for contradictions"]
         d6["Hosted provider client<br/>an adapter, and an entry in<br/>the provider registry"]
         d11["Escalation policy<br/>nothing re-asks a contested metric"]
-        d12["Approval record<br/>nothing captures a human's decision"]
+        d12["An approval command<br/>nothing stamps a decision; the time<br/>arrives with it in the answer file"]
         d9["Web page"]
     end
 
-    b5 -- "nothing asks the organisation anything" --> d1
-    d1 -- "so the engine is never called" --> b6
     d6 --> b7
     b7 --> d11
-    b9 --> d12
+    d2 --> b10
+    d3 --> b10
+    b10 --> d12
 
     subgraph REAL["Real today, but not this project's code"]
         x1["CLAUDE.md, the binding rules"]
@@ -411,22 +429,27 @@ flowchart LR
     end
 ```
 
-**One path runs, and one island is left.** `src/cli` reaches five packages and
-closes the line from a repository on disk to a report: that is the frontier this
-page has drawn open in both directions since the first diagram, shut on one
-side. What it does not reach is `src/scoring`. The engine has no arrow into it
-and none out, because nothing imports it — the questions that would give it
-something to weigh are the one component between a finding and a risk score, and
-they are in the middle column.
+**There is no island left.** `src/scoring` was the last box on this page with no
+arrow in and none out; `src/organisation` imports it, and the path from a
+repository on disk to a banded risk score is closed. Every component the design
+named as load-bearing is now reachable from the command line.
 
 Every arrow in the built column is a real import, read off the source rather
-than off the design. `src/cli` is the only module that imports across packages
-in quantity, which is what an entry point looks like; before it existed the
-three built stretches shared nothing but `src/cvss`. No arrow runs from
-`src/council` to `src/report` — the command line holds both and hands one to the
-other — and none runs from `src/findings` to `src/scoring`, because which
-source's CVSS score becomes the technical severity is still the council's call
-and nothing makes it.
+than off the design. Two are worth naming because their absence is deliberate:
+nothing runs from `src/council` to `src/report`, since the command line holds
+both and hands one to the other, and nothing runs from `src/findings` to
+`src/scoring`, because `src/organisation` stands between them and is the only
+place that decides which technical severity a score is computed from — once per
+published source, or once from the council's vector where it settled one.
+
+What remains in the middle column is smaller than it looks and none of it blocks
+a run. Two are refinements of things that work: a selector would ask fewer
+questions than all twelve, and answer validation would read the answers for
+contradictions. Two are the council's: a hosted client, and an escalation policy
+for a contested metric. The fifth is the only one that changes what a record can
+claim — nothing stamps an approval, because the time arrives with the human act
+in the answer file rather than from a clock, and there is no clock anywhere in
+`src/`. An approval command would be the first one.
 
 The council is still built **except** for a piece of itself: its local client
 works and its `egress` gate is enforced, and the hosted client that gate exists
@@ -440,9 +463,9 @@ wrote.
 
 What this does not show: an order of work for the middle column, because no such
 plan exists. That column is also not evenly documented — the escalation policy
-and the hosted client are described in `docs/COUNCIL.md`, the question library
-only as a constraint in `docs/SCORING_MODEL.md`, and the web page only as a
-remit in an agent definition.
+and the hosted client are described in `docs/COUNCIL.md`, the selector and the
+answer validation in `docs/SCORING_MODEL.md`, and the web page only as a remit
+in an agent definition.
 
 ## Keeping this page true
 

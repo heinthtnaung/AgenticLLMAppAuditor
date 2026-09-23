@@ -12,32 +12,34 @@ same step.
 
 ## Status
 
-**It runs, and it says what it did not do.** A repository on disk becomes a
-report: components catalogued, advisories joined, every source's published
-vector scored and kept attributed, and a council of local models asked if you
-name one. What it does not produce is the Organisation Risk Score — that engine
-is built and tested, and the approved question library that would feed it is
-not, so nobody answers anything. The report prints that absence, and the missing
-approval record, as `NOT ASSESSED` rather than as a zero or an omission.
+**It runs end to end.** A repository on disk becomes a report: components
+catalogued, advisories joined, every source's published vector scored and kept
+attributed, a council of local models asked if you name one, and every finding
+weighed against your environment into an Organisation Risk Score if you answer
+the approved questions. The two optional halves are named as absent when you
+leave them out — `NOT ASSESSED`, never a zero and never an omission.
 
 | Part | State | What it is |
 |---|---|---|
 | `src/deps/` | built | Syft and Trivy: the components a directory declares, the advisories published against them, and the database's own build date |
 | `src/cvss/` | built | a CVSS Base vector parsed and validated, and its score by the published equations |
 | `src/findings/` | built | the join — a CVE affecting an installed component, with every source's score kept apart and attributed |
-| `src/scoring/` | built, unreachable | the Organisation Risk Score: per-question weights, categories clamped then weighted, and the band. No module imports it, because nothing can answer its questions |
+| `src/scoring/` | built | the approved question library, per-question weights, categories clamped then weighted, and the band |
 | `src/council/` | built | the roster and its `egress` gate, redaction, the prompt, a provider registry holding one local Ollama client, the quotation check, the chairman and the runner |
+| `src/organisation/` | built | the answer file, the approval record, and one risk score per published source |
 | `src/report/` | built | the record every run produces, rendered as a terminal report or as the JSON audit artefact |
 | `src/cli/` | built | the arguments, the preflight refusals, the order the packages run in, and the exit code |
-| question library, selector | design | there are no approved questions, so the Organisation Risk Score cannot be produced |
+| question selector | design | every approved question is asked, rather than the few a CVE's prerequisites call for |
+| answer validation | design | no model reads the answers back for gaps or contradictions |
 | hosted provider client | design | the local client works; nothing reaches OpenRouter or another API, so a hosted member is skipped for want of one. An adapter and a registry entry, and no other module moves |
 | escalation policy | design | a contested metric is recorded as contested and nothing re-asks it on a costlier member |
-| approval record | design | nothing captures a human approving or overriding a finding |
+| an approval command | design | an approval is recorded, never stamped: the time arrives with it in the answer file, because there is no clock anywhere in `src/` |
 | web page | design | nothing renders any of this in a browser |
 
 Diagram 5 of [`docs/diagrams.md`](docs/diagrams.md) draws the same boundary from
-the import graph: `src/cli` reaches five packages and closes the path, and
-`src/scoring` is the one built package nothing reaches.
+the import graph. Nothing built is unreachable any more: `src/organisation`
+imports the scoring engine, and `src/cli` reaches six packages to close the line
+from a directory on disk to a banded score.
 
 ## Usage
 
@@ -49,6 +51,7 @@ an argument and already on disk — this tool never clones one.
 PYTHONPATH=src python -m cli.main fetched/vulnscout
 ```
 
+<!-- readme-check: run (elided) -->
 ```
 Audit of fetched/vulnscout
   syft 1.52.0  ·  trivy 0.74.0  ·  advisory database built 2026-09-22T02:00:05.774028462Z
@@ -73,9 +76,9 @@ MATCHED NOTHING
 
 NOT ASSESSED
   Organisation Risk Score
-    the approved question library is not built, so no organisation answered anything
+    no organisation answers were supplied, so no environment was weighed
   Approval record
-    nothing in this tool captures a human's approval yet
+    no answer file was given, so nobody was asked about this environment
   Council ruling
     no council assessed this run, so no source has been chosen between
 ```
@@ -83,6 +86,119 @@ NOT ASSESSED
 Three of the five disagreements and eleven of the thirteen agreements are elided
 above; everything else is verbatim. `--format json` prints the same record as
 the audit artefact instead.
+
+### Scoring a finding against your environment
+
+A scanner cannot tell whether a vulnerable component is exposed, or whether it
+matters. `--answers` supplies that half, as a JSON file answering the **approved
+question library** by question id. [`answers.example.json`](answers.example.json)
+is a runnable skeleton: every question answered `No`, with the question text
+beside each id so you do not have to look them up.
+
+Filled in for an internet-facing, business-critical asset:
+
+<!-- readme-check: answers -->
+```json
+{
+  "answers": {
+    "EXP-1": "Yes", "EXP-2": "Yes", "EXP-3": "Yes", "EXP-4": "No", "EXP-5": "No",
+    "BUS-1": "Yes", "BUS-2": "Yes", "BUS-3": "Yes", "BUS-4": "Yes",
+    "THR-1": "No",  "THR-2": "No",  "THR-3": "No"
+  },
+  "by_advisory": {
+    "CVE-2021-4279": {"THR-1": "Yes", "THR-2": "Yes"}
+  },
+  "approval": {
+    "approver": "Hein",
+    "decision": "approved",
+    "recorded_at": "2026-09-23T09:15:00Z",
+    "note": "reviewed against the staging inventory"
+  }
+}
+```
+
+`answers` applies to every finding and `by_advisory` overrides it for one, which
+is what threat needs: whether *this* vulnerability is exploited in the wild is a
+fact about the vulnerability, not about your network. An override naming an
+advisory the scan did not find is reported under `MATCHED NOTHING` rather than
+ignored, because a mistyped id would otherwise drop that finding's band in
+silence. **Every approved question
+must be answered** — a missing one is refused by name, because scoring it as `No`
+would quietly move a band. Every answer is `Yes`, `No`, `Unknown` or `N/A`, and
+**Unknown is never read as No**: it is carried through and every score it touches
+comes out marked provisional. `approval` is optional, and its timestamp is part
+of the human act, so you write it rather than the tool stamping it.
+
+```bash
+PYTHONPATH=src python -m cli.main fetched/vulnscout --answers answers.json
+```
+
+<!-- readme-check: run --answers -->
+```
+ORGANISATION RISK (18)  ·  the source changes the band on 1
+  CVE-2026-4800        ghsa 70.5 to nvd 75.7       Critical and High
+  CVE-2021-4279        ghsa 84.2 to nvd 91.7       Critical
+  CVE-2025-13465       nvd 62.1 to redhat 70.8     High
+  CVE-2026-13149       ghsa 62.1 to redhat 68.8    High
+  CVE-2026-13676       68.8                        High
+  CVE-2026-14257       68.8                        High
+```
+
+`CVE-2021-4279` is at the top because it is the one finding the `by_advisory`
+block says is being exploited in the wild with public exploit code. Take those
+two answers away and it scores like its neighbours.
+
+**Read the range, not the number.** A finding is scored once per published
+source, because picking one would decide which source wins and that is left
+open. Each end of a range names the source that produced it: `CVE-2026-4800` is
+8.1 to GHSA and 9.8 to NVD, which here is `ghsa 70.5 to nvd 75.7` — High by one
+reading and Critical by the other, and the heading says the source changes the
+band on one finding. Everywhere else it does not: `CVE-2025-13465`'s sources are
+2.9 apart on the CVSS scale and both ends land in High, which is their
+disagreement ceasing to matter in this environment. That is the question a range
+answers and a single number cannot.
+
+A row with one figure and no source, like `CVE-2026-13676` at `68.8`, is a
+finding whose sources agree — there is nothing to attribute between, so nothing
+is named.
+
+**The environment drives those numbers, not the CVE.** The same file with
+`EXP-1` set to `No` and `EXP-4` to `Yes` — the asset segmented rather than
+internet-facing, nothing else touched:
+
+<!-- readme-check: run --answers EXP-1=No EXP-4=Yes -->
+```
+ORGANISATION RISK (18)  ·  the source changes the band on 4
+  CVE-2021-4279        ghsa 70.4 to nvd 77.9       Critical and High
+  CVE-2025-13465       nvd 48.4 to redhat 57.1     High and Medium
+  CVE-2026-13149       ghsa 48.4 to redhat 55.0    High and Medium
+  CVE-2026-2950        nvd 48.4 to redhat 52.0     High and Medium
+  CVE-2026-4800        ghsa 56.8 to nvd 61.9       High
+  CVE-2026-13676       55.0                        High
+```
+
+One answer moved and every score fell. Note what happened to the heading:
+**the source now changes the band on four findings rather than one.** Segmenting
+the asset pushed a cluster of findings onto a band boundary, and near a boundary
+it matters much more which source you believe. Where the argument between NVD
+and GHSA lands is a property of the environment, not of the CVE.
+
+Run the skeleton unedited and sixteen of the 18 come out `Low`, the other two
+straddling `Medium and Low` — `CVE-2021-4279` among them at `21.9 to 29.4`, a CVE
+that is Critical to NVD assessed as Low to Medium for an organisation that
+exposes nothing and would lose nothing. `docs/SCORING_MODEL.md` calls that the
+point of the exercise.
+
+**The questions are fixed.** Twelve of them, across exposure, business impact
+and threat — technical severity is not asked, because it comes from the
+published vectors. Answering by id rather than by question is deliberate: the id
+is resolved inside the library, so nothing outside it can add a question or
+change what a Yes is worth. `docs/SCORING_MODEL.md` lists them, says which
+weights are quoted from the design and which the library chose, and works
+through the design's own example end to end.
+
+Without `--answers` there is no Organisation Risk Score, and the report says so
+under `NOT ASSESSED` rather than printing a zero.
 
 ### The exit code says which of three things happened
 
@@ -274,8 +390,9 @@ design document wins.
 │   ├── cvss/                 vector parser, metric vocabulary, Base score
 │   ├── deps/                 the Syft and Trivy runners, the database's build date
 │   ├── findings/             the join, and every source's score kept apart
+│   ├── organisation/         the answer file, the approval, one score per source
 │   ├── report/               the record, the text report, the JSON artefact
-│   └── scoring/              the Organisation Risk Score engine, unreachable
+│   └── scoring/              the approved questions and the risk score engine
 └── tests/                    mirrors src/, a test module per source module
 ```
 
