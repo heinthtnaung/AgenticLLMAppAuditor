@@ -45,3 +45,15 @@ def test_naming_several_models_keeps_them_in_the_order_given():
     # The roster's order is its cost order, which is what escalation reads.
     given = ["repo", "--council-member", "small", "--council-member", "large"]
     assert parse_arguments(given).council_models == ("small", "large")
+
+
+def test_the_council_is_scoped_to_the_findings_that_need_one():
+    # The council reconciles sources, so by default it is not put to a finding
+    # whose sources already agree.
+    assert parse_arguments(["repo"]).council_all_findings is False
+
+
+def test_an_operator_can_refuse_the_scoping_and_ask_about_every_finding():
+    # Scoping cannot discover that two agreeing sources are both wrong, and that
+    # loss is the operator's call to accept or refuse.
+    assert parse_arguments(["repo", "--council-all-findings"]).council_all_findings is True

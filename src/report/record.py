@@ -24,7 +24,7 @@ from deps.trivy_report import Advisory
 from findings.finding import Finding, unmatched_purls
 from organisation.approval import ApprovalOutcome, NotApproved
 from organisation.risk import FindingRisk
-from report.council_record import CouncilOutcome
+from report.council_record import CouncilOutcome, was_assessed
 from report.provenance import RunProvenance
 
 NO_ANSWERS_GIVEN = "no organisation answers were supplied, so no environment was weighed"
@@ -33,6 +33,10 @@ NO_APPROVAL_GIVEN = "nobody has approved or overridden this audit"
 # is a different fact and has its own record; conflating the two put a false
 # statement in an audit record, reachable from the command line.
 NO_COUNCIL_RUN = "no council assessed this run, so no source has been chosen between"
+# And a third: members were named and every finding was passed over, so the
+# council assessed none. Naming no absence there leaves a reader with neither a
+# ruling nor a reason there is none.
+NOTHING_WAS_PUT_TO_IT = "the council was put to no finding, so no source has been chosen between"
 
 
 @dataclass(frozen=True)
@@ -135,6 +139,11 @@ def absences(
         named.append(Absence("Organisation Risk Score", NO_ANSWERS_GIVEN))
     if isinstance(approval, NotApproved):
         named.append(Absence("Approval record", approval.reason))
-    if not council:
-        named.append(Absence("Council ruling", NO_COUNCIL_RUN))
-    return tuple(named)
+    return tuple([*named, *council_absence(council)])
+
+
+def council_absence(council: Mapping[str, CouncilOutcome]) -> list[Absence]:
+    """Name a missing council ruling, keeping "asked about nothing" apart from "never ran"."""
+    if any(was_assessed(one) for one in council.values()):
+        return []
+    return [Absence("Council ruling", NO_COUNCIL_RUN if not council else NOTHING_WAS_PUT_TO_IT)]

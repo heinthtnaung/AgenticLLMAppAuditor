@@ -115,7 +115,7 @@ code {
   background: var(--note-bg); border: 1px solid var(--note-border);
   border-radius: 6px; padding: .6rem .8rem; color: var(--page-fg);
 }
-.finding, .risk-entry {
+.finding, .risk-entry, .council > li {
   background: var(--card-bg); border: 1px solid var(--card-border);
   border-radius: 8px; padding: .7rem .85rem; margin-bottom: .55rem;
 }
@@ -158,13 +158,36 @@ summary { cursor: pointer; color: var(--muted-fg); font-size: .88em; }
 .answer-text { flex: 1 1 16rem; }
 .answer-value { min-width: 4rem; }
 .answer-weight { color: var(--muted-fg); }
-.counts > li, .absences > li, .council > li, .artifacts > li { padding: .25rem 0; }
+.weighting { color: var(--muted-fg); font-size: .85em; margin: .6rem 0 0; }
+.counts > li, .absences > li, .artifacts > li { padding: .25rem 0; }
 .absence-what { font-weight: 600; display: block; }
 .absence-why { color: var(--muted-fg); display: block; }
 .counts details { border-top: 0; padding-top: 0; margin-top: 0; }
 .counts summary { color: var(--page-fg); font-size: 1em; }
+.council-name { margin: 0 0 .2rem; }
+.council-settled { color: var(--muted-fg); font-size: .88em; margin: 0; }
+.bases > li { color: var(--muted-fg); font-size: .88em; padding: .05rem 0 .05rem .9rem; }
+.basis-count { font-weight: 600; margin-right: .45rem; }
+.not-asked { color: var(--muted-fg); font-size: .88em; margin: .8rem 0 .2rem; }
+.not-asked > li { padding: .15rem 0; font-size: .88em; }
+.metric > summary { color: var(--page-fg); font-size: 1em; }
+.ruling { color: var(--muted-fg); font-size: .9em; margin: .4rem 0 0; }
+.members > li {
+  display: flex; flex-wrap: wrap; gap: .2rem .6rem; align-items: baseline;
+  padding: .3rem 0; font-size: .9em; border-top: 1px solid var(--rule);
+}
+.members > li:first-child { border-top: 0; }
+.member-name { font-weight: 600; min-width: 9rem; }
+.member-value { font-weight: 700; }
+.verified { color: var(--muted-fg); }
+.unverified { color: var(--alarm-fg); font-weight: 600; }
+.evidence {
+  flex: 1 1 100%; margin: .1rem 0 0; padding: .1rem 0 .1rem .6rem;
+  border-left: 2px solid var(--chip-border); color: var(--muted-fg);
+  overflow-wrap: anywhere;
+}
 @media (max-width: 30rem) {
   main { padding: 1rem .7rem 3rem; }
-  .source-name, .answer-id, .answer-value { min-width: 0; }
+  .source-name, .answer-id, .answer-value, .member-name { min-width: 0; }
 }
 """

@@ -1,18 +1,50 @@
-"""Guards on the council wiring: a roster from the command line, and no source preferred."""
+"""Guards on the council wiring: which findings it is put to, and no source preferred.
+
+**Scoped by default.** A measured two-member run over 18 findings spent roughly
+72% of 43 minutes on findings whose sources already agreed, and the council
+exists to reconcile sources. So these hold the scope to the findings that need
+one -- and hold every skip to naming its reason, because a finding the council
+was not asked about and a run where nobody was named to ask are different facts.
+"""
 
 import io
 import json
 
 from council.ruling import NoFallbackPublished
-from report.council_record import CouncilAssessment, CouncilWithoutVector
-from cli.council_run import FALLBACKS, assessments, build_roster, watching
+from report.council_record import CouncilAssessment, CouncilNotAsked, CouncilWithoutVector
+from cli.council_run import (
+    FALLBACKS,
+    NO_TEXT_TO_READ,
+    SOURCES_AGREE,
+    assessments,
+    build_roster,
+    watching,
+)
 from cvss.metrics import METRIC_ORDER
 from findings.finding import build_finding
 from cli_samples import ADVISORY, LODASH
 
 QUOTATION = "A remote attacker can inject commands"
+AGREED = "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
 LEGAL = {"AV": "N", "AC": "L", "PR": "N", "UI": "N", "S": "U", "C": "H", "I": "H", "A": "H"}
 FINDING = build_finding(LODASH, ADVISORY)
+
+
+def advisory_like(advisory_id: str, **overrides):
+    """Build one advisory against lodash, with whichever sources a test needs on it."""
+    fields = {
+        "advisory_id": advisory_id,
+        "purl": LODASH.purl,
+        "fixed_version": None,
+        "summary": "",
+        "details": ADVISORY.details,
+        "vectors": {"ghsa": AGREED, "nvd": AGREED},
+    }
+    return ADVISORY.__class__(**{**fields, **overrides})
+
+
+UNDISPUTED = build_finding(LODASH, advisory_like("CVE-AGREED"))
+UNSCORED = build_finding(LODASH, advisory_like("CVE-UNSCORED", vectors={}))
 
 
 def answering(evidence: str = QUOTATION, declining: tuple[str, ...] = ()):
@@ -87,12 +119,15 @@ def test_a_council_whose_members_quote_nothing_real_settles_every_metric_open():
     assert outcome.unresolved_metrics == METRIC_ORDER
 
 
-def test_an_advisory_with_no_text_is_not_put_to_anybody():
+def test_an_advisory_with_no_text_is_not_put_to_anybody_and_the_record_says_why():
+    # Dropping it said no council had run on that finding, which is a different
+    # and false thing: a council ran, and this advisory gave it nothing to read.
     silent = build_finding(LODASH, ADVISORY.__class__(
         advisory_id="CVE-1", purl=LODASH.purl, fixed_version=None,
         summary="", details="   ", vectors={},
     ))
-    assert assessments((silent,), build_roster(("small",)), answering()) == ()
+    outcome = assessments((silent,), build_roster(("small",)), answering())[0]
+    assert outcome == CouncilNotAsked("CVE-1", NO_TEXT_TO_READ)
 
 
 def test_the_total_counts_only_the_members_this_run_will_ask():
@@ -113,3 +148,50 @@ def test_the_total_counts_only_the_findings_the_council_can_read():
     ))
     counted = watching((FINDING, silent), build_roster(("small",)), io.StringIO())
     assert (counted.findings, counted.calls) == (1, 8)
+
+
+def test_a_finding_whose_sources_agree_is_not_put_to_the_council():
+    # The council reconciles sources. A finding with nothing to reconcile is not
+    # its work, and 13 of 18 on the corpus under test are exactly that.
+    outcome = assessments((UNDISPUTED,), build_roster(("small",)), answering())[0]
+    assert outcome == CouncilNotAsked("CVE-AGREED", SOURCES_AGREE)
+
+
+def test_a_finding_whose_sources_disagree_is_put_to_the_council():
+    assessed = assessments((FINDING,), build_roster(("small",)), answering())
+    assert [one.advisory_id for one in assessed] == [ADVISORY.advisory_id]
+    assert isinstance(assessed[0], CouncilAssessment)
+
+
+def test_a_finding_no_source_scored_is_put_to_the_council():
+    # Its sources do not agree either -- there are none -- and a council vector
+    # is the only severity this finding will ever carry.
+    assessed = assessments((UNSCORED,), build_roster(("small",)), answering())
+    assert isinstance(assessed[0], CouncilAssessment)
+
+
+def test_every_finding_is_asked_about_when_the_operator_asks_for_that():
+    # Scoping cannot discover that two agreeing sources are both wrong, and
+    # `docs/COUNCIL.md` says no source is the reference the others are measured
+    # against. So an operator may refuse the saving.
+    assessed = assessments(
+        (UNDISPUTED,), build_roster(("small",)), answering(), every_finding=True
+    )
+    assert isinstance(assessed[0], CouncilAssessment)
+
+
+def test_the_assessed_findings_come_before_the_ones_passed_over():
+    given = (UNDISPUTED, FINDING)
+    assessed = assessments(given, build_roster(("small",)), answering())
+    assert [type(one).__name__ for one in assessed] == ["CouncilAssessment", "CouncilNotAsked"]
+
+
+def test_the_total_counts_only_the_findings_this_run_will_be_asked_about():
+    counted = watching((FINDING, UNDISPUTED), build_roster(("small",)), io.StringIO())
+    assert (counted.findings, counted.calls) == (1, 8)
+
+
+def test_the_total_counts_every_finding_when_every_finding_is_asked_about():
+    roster = build_roster(("small",))
+    counted = watching((FINDING, UNDISPUTED), roster, io.StringIO(), every_finding=True)
+    assert (counted.findings, counted.calls) == (2, 16)

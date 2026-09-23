@@ -14,7 +14,6 @@ cut for space.
 """
 
 from organisation.approval import Approval
-from report.council_record import CouncilAssessment
 from report.html_layout import listing, section, separated, tag, text
 from report.record import Report
 
@@ -26,7 +25,6 @@ UNIDENTIFIED_LEDE = (
     "Catalogued, and joinable to no advisory by nature. Counted rather than dropped, because "
     "dropping one silently loses a CVE."
 )
-COUNCIL_LEDE = "What the assessor council settled, and what it could not."
 APPROVAL_LEDE = "The one fact on this page about a human act."
 NOT_ASSESSED_LEDE = (
     "What this run did not do, so no reader takes silence for a nil result."
@@ -79,27 +77,6 @@ def unidentified_section(report: Report) -> str:
 def artifact_entry(artifact) -> str:
     """Name one artifact and the ecosystem it was catalogued under."""
     return separated([tag("code", text(artifact.name)), text(artifact.ecosystem)])
-
-
-def council_section(report: Report) -> str:
-    """Say what the council did for each advisory, keeping its two outcomes apart."""
-    # Three states a reader has to tell apart: no council ran, which is this
-    # section being absent and the absence named below; a council settled a
-    # vector; and a council ran and could not.
-    if not report.council:
-        return ""
-    entries = [council_entry(report.council[one]) for one in sorted(report.council)]
-    title = f"Council ({len(report.council)})"
-    return section(title, COUNCIL_LEDE, listing(entries, "council"))
-
-
-def council_entry(outcome) -> str:
-    """Say whether the council handed over a vector for one advisory, or what stopped it."""
-    named = tag("code", text(outcome.advisory_id))
-    if isinstance(outcome, CouncilAssessment):
-        return separated([named, text("settled"), tag("code", text(outcome.vector))])
-    still_open = ", ".join(outcome.unresolved_metrics + outcome.contested_metrics)
-    return separated([named, text("no vector"), text(f"could not settle {still_open}")])
 
 
 def approval_section(report: Report) -> str:

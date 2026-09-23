@@ -3,42 +3,104 @@
 Eight metrics by n members for every assessed finding is more page than anyone
 reads, and most of it is agreement. So the page shows the metrics the chairman
 could **not** settle -- contested and unresolved -- with every member's answer,
-its evidence and whether that evidence checked out, and counts the settled rest
-on one line. The audit record carries all of it; this chooses.
+its evidence and whether that evidence checked out, and counts the settled rest.
+The audit record carries all of it; this chooses.
 
 Contested is the case the whole project exists for. Two model families reading
 one advisory and reaching different values, each with a quotation that verifies,
 is not something a count can express -- and a human exercising the override the
 design gives them needs to see who said what, on what evidence.
+
+**The quotation is never shortened.** On a contested metric it *is* the
+disagreement: it is the entire reason two models reached different values, and an
+extract of it hides what a human is being asked to adjudicate. A terminal has
+less room than a browser, so a long quotation is re-flowed across lines rather
+than cut -- the width goes to the cases somebody must decide.
+
+**The settled rest is counted by what settled it.** A metric where the chairman
+overruled a dissenter reads nothing like one nobody argued about, and a bare
+`settled` says neither. The bases come off the record, so this counts them
+rather than wording them.
+
+**And the findings it was never put to are named, with the reason.** A scoped run
+assesses the findings whose sources do not settle them; a page that simply left
+the rest out would say no council had run on them, which is a different and false
+thing. They are grouped by reason and listed by id, so a reader can see whether
+their own CVE was passed over.
+
+The sentences this shares with the web page are `report.council_words`.
 """
 
-from report.council_record import CouncilAssessment, MemberSaid, MetricRuling, Outcome, SaidKind
+from collections import Counter
+from itertools import chain
+from textwrap import fill
+
+from report.council_record import (
+    CouncilAssessment,
+    CouncilNotAsked,
+    MemberSaid,
+    MetricRuling,
+    Outcome,
+    PassedOver,
+    SaidKind,
+    grouped_by_reason,
+    was_assessed,
+)
+from report.council_words import (
+    NOT_ASKED,
+    SINGLE_ASSESSOR,
+    chairman_said,
+    checked,
+    counted,
+    unanswered,
+    who,
+)
 from report.text_layout import INDENT, SOURCE_SEPARATOR, section
 
-EVIDENCE_WIDTH = 60
-VERIFIED = "quoted"
-UNVERIFIED = "not in the advisory"
+# The depths the block indents to, named because four of them read as arithmetic.
+ADVISORY_DEPTH = 1
+METRIC_DEPTH = 2
+MEMBER_DEPTH = 3
+QUOTATION_DEPTH = 4
+# What a re-flowed quotation wraps at, margin included.
+PAGE_WIDTH = 96
 
 
 def council_block(report) -> str:
-    """Say what the council did for each advisory, keeping its two outcomes apart."""
+    """Say what the council assessed, what it could not settle, and what it was never put to."""
     if not report.council:
         return ""
-    entries = [
-        line
-        for advisory_id in sorted(report.council)
-        for line in advisory_lines(advisory_id, report.council[advisory_id])
-    ]
-    return section(f"COUNCIL ({len(report.council)})", entries)
+    outcomes = [report.council[one] for one in sorted(report.council)]
+    assessed = [one for one in outcomes if was_assessed(one)]
+    entries = chain.from_iterable(advisory_lines(one) for one in assessed)
+    passed = [one for one in outcomes if not was_assessed(one)]
+    return section(f"COUNCIL ({len(assessed)})", [*entries, *passed_over_lines(passed)])
 
 
-def advisory_lines(advisory_id: str, outcome) -> list[str]:
+def passed_over_lines(passed: list[CouncilNotAsked]) -> list[str]:
+    """Name the findings the council was not put to, grouped by the reason it was not."""
+    if not passed:
+        return []
+    headed = indented(ADVISORY_DEPTH, f"{counted(len(passed), 'finding')} {NOT_ASKED}")
+    grouped = grouped_by_reason(passed)
+    return [headed, *chain.from_iterable(reason_lines(one) for one in grouped)]
+
+
+def reason_lines(group: PassedOver) -> list[str]:
+    """Give one reason findings were passed over, and name every finding it covers."""
+    named = ", ".join(group.advisory_ids)
+    return [indented(METRIC_DEPTH, group.because), *wrapped(named, MEMBER_DEPTH)]
+
+
+def advisory_lines(outcome) -> list[str]:
     """Give one advisory's heading, then the metrics the chairman could not settle."""
     unsettled = [one for one in outcome.rulings if one.outcome is not Outcome.SETTLED]
-    settled = len(outcome.rulings) - len(unsettled)
+    settled = [one for one in outcome.rulings if one.outcome is Outcome.SETTLED]
+    heading = SOURCE_SEPARATOR.join([headline(outcome), *single_assessor(outcome)])
     return [
-        f"{INDENT}{advisory_id}  {headline(outcome)}{settled_note(settled)}",
-        *[line for ruling in unsettled for line in ruling_lines(ruling)],
+        indented(ADVISORY_DEPTH, f"{outcome.advisory_id}  {heading}"),
+        *settled_lines(settled),
+        *chain.from_iterable(ruling_lines(one) for one in unsettled),
     ]
 
 
@@ -50,39 +112,74 @@ def headline(outcome) -> str:
     return f"no vector{SOURCE_SEPARATOR}could not settle {still_open}"
 
 
-def settled_note(settled: int) -> str:
-    """Count the metrics nobody needs to read, rather than printing them."""
-    return f"{SOURCE_SEPARATOR}{settled} metrics settled" if settled else ""
+def single_assessor(outcome) -> list[str]:
+    """Mark a run only one member answered, so nobody reads a council into it."""
+    return [SINGLE_ASSESSOR] if outcome.single_assessor else []
 
 
-def ruling_lines(ruling: MetricRuling) -> list[str]:
-    """Give one unsettled metric and every member behind it."""
-    fell_back = f" (fell back to {ruling.fallback_source})" if ruling.fallback_source else ""
+def settled_lines(settled: list[MetricRuling]) -> list[str]:
+    """Count the metrics nobody needs to read, and say what the chairman settled them on."""
+    if not settled:
+        return []
+    bases = Counter(one.basis for one in settled if one.basis)
     return [
-        f"{INDENT}{INDENT}{ruling.metric}  {ruling.outcome.value}{fell_back}",
-        *[f"{INDENT}{INDENT}{INDENT}{said_line(one)}" for one in ruling.said],
+        indented(METRIC_DEPTH, f"{counted(len(settled), 'metric')} settled"),
+        *[basis_line(basis, count) for basis, count in sorted(bases.items())],
     ]
 
 
-def said_line(said: MemberSaid) -> str:
-    """Give one member's answer, its evidence, and whether that evidence checked out."""
-    who = f"{said.member.name} ({said.member.family})"
+def basis_line(basis: str, count: int) -> str:
+    """Say how many of the settled metrics rested on one basis, in the chairman's own words."""
+    return indented(MEMBER_DEPTH, f"{count}  {basis}")
+
+
+def ruling_lines(ruling: MetricRuling) -> list[str]:
+    """Give one unsettled metric, what the chairman made of it, and every member behind it."""
+    spoke = counted(len(ruling.said), "member")
+    said = SOURCE_SEPARATOR.join([ruling.metric, ruling.outcome.value, spoke])
+    return [
+        indented(METRIC_DEPTH, said),
+        *chairman_lines(ruling),
+        *chain.from_iterable(member_lines(one) for one in ruling.said),
+    ]
+
+
+def chairman_lines(ruling: MetricRuling) -> list[str]:
+    """Give what the chairman decided and why, where it decided anything at all."""
+    told = chairman_said(ruling)
+    return [indented(MEMBER_DEPTH, SOURCE_SEPARATOR.join(told))] if told else []
+
+
+def member_lines(said: MemberSaid) -> list[str]:
+    """Give one member's answer, what it was worth to it, and its quotation in full."""
+    named = who(said.member)
     if said.kind is not SaidKind.ANSWERED:
-        return f"{who}  {said.kind.value}{trailing(said)}"
-    checked = VERIFIED if said.verified else UNVERIFIED
-    return f"{who}  {said.value}  {said.confidence}  {checked}  {quoted(said.evidence)}"
+        return [indented(MEMBER_DEPTH, f"{named}  {unanswered(said)}")]
+    answered = SOURCE_SEPARATOR.join(
+        [said.value, f"{said.confidence} confidence", checked(said.verified)]
+    )
+    return [
+        indented(MEMBER_DEPTH, f"{named}  {answered}"),
+        *evidence_lines(said.evidence),
+    ]
 
 
-def trailing(said: MemberSaid) -> str:
-    """Say what a member that did not answer left behind, if anything."""
-    if said.kind is SaidKind.GUESSED:
-        return f" {said.value} with nothing quoted"
-    return f": {said.reason}" if said.reason else ""
+def evidence_lines(quotation: str) -> list[str]:
+    """Quote a member's evidence whole, re-flowed to the page rather than shortened."""
+    # Re-flowing is not shortening: every word survives, on as many lines as it
+    # takes. Cutting it would hide the text a human is being asked to judge.
+    if not quotation:
+        return []
+    folded = " ".join(quotation.split())
+    return wrapped(f"{folded!r}", QUOTATION_DEPTH)
 
 
-def quoted(evidence: str) -> str:
-    """Quote a member's evidence, shortened to keep one member on one line."""
-    folded = " ".join(evidence.split())
-    if len(folded) <= EVIDENCE_WIDTH:
-        return f"{folded!r}"
-    return f"{folded[:EVIDENCE_WIDTH]!r}..."
+def wrapped(said: str, depth: int) -> list[str]:
+    """Re-flow one long line to the width of the page, losing no word of it."""
+    margin = INDENT * depth
+    return fill(said, width=PAGE_WIDTH, initial_indent=margin, subsequent_indent=margin).split("\n")
+
+
+def indented(depth: int, said: str) -> str:
+    """Put one line at its depth on the page."""
+    return f"{INDENT * depth}{said}"

@@ -17,11 +17,11 @@ response time, and what the run did not assess is last and never cut.
 from report.disagreement import sources_disagree
 from report.html_absences import (
     approval_section,
-    council_section,
     matched_nothing_section,
     not_assessed_section,
     unidentified_section,
 )
+from report.html_council import council_section
 from report.html_findings import agreeing_section, contested_section, unscored_section
 from report.html_layout import separated, tag, text
 from report.html_risk import risk_section

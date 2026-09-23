@@ -5,8 +5,14 @@ import pytest
 from organisation.approval import Approval, Decision, NotApproved
 from organisation.risk import assess, per_source
 from report.provenance import AdvisoryDatabase, RunProvenance, UnknownAdvisoryDatabase
-from report.council_record import CouncilAssessment
-from report.record import Absence, Report, build_report
+from report.council_record import CouncilAssessment, CouncilNotAsked
+from report.record import (
+    NO_COUNCIL_RUN,
+    NOTHING_WAS_PUT_TO_IT,
+    Absence,
+    Report,
+    build_report,
+)
 from scoring.library import APPROVED_QUESTIONS
 from scoring.question import Answer
 from report_samples import (
@@ -76,7 +82,16 @@ def test_what_this_build_cannot_assess_is_named_every_time(named):
 
 def test_a_run_with_no_council_says_so():
     absences = {absence.what: absence.because for absence in a_report().not_assessed}
-    assert "no source has been chosen between" in absences["Council ruling"]
+    assert absences["Council ruling"] == NO_COUNCIL_RUN
+
+
+def test_a_council_put_to_no_finding_is_an_absence_and_says_which_kind():
+    # Scoped to nothing is not "no council ran": members were named, every
+    # finding was passed over, and a reader given neither a ruling nor a reason
+    # would read the silence as a nil result.
+    passed = CouncilNotAsked("CVE-2019-14234", "no published source disagrees")
+    absences = {one.what: one.because for one in a_report(council=(passed,)).not_assessed}
+    assert absences["Council ruling"] == NOTHING_WAS_PUT_TO_IT
 
 
 def test_a_run_with_a_council_does_not_claim_it_had_none():
