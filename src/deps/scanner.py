@@ -37,14 +37,19 @@ def is_installed(executable: str) -> bool:
     return shutil.which(executable) is not None
 
 
-def run_json_scanner(command: list[str]) -> Any:
-    """Run a scanner that writes a JSON report to stdout, and give that report parsed."""
+def run_scanner(command: list[str]) -> str:
+    """Run a scanner and give back what it wrote, refusing a tool that is absent or failed."""
     executable = command[0]
     refuse_unavailable(executable)
     completed = subprocess.run(command, capture_output=True, text=True, check=False)
     if completed.returncode != 0:
         raise ScannerFailed(failure_message(executable, completed))
-    return read_json(executable, completed.stdout)
+    return completed.stdout
+
+
+def run_json_scanner(command: list[str]) -> Any:
+    """Run a scanner that writes a JSON report to stdout, and give that report parsed."""
+    return read_json(command[0], run_scanner(command))
 
 
 def refuse_unavailable(executable: str) -> None:

@@ -15,7 +15,7 @@ from dataclasses import dataclass
 
 from cvss.score import base_score
 from cvss.vector import CvssVector, parse
-from deps.trivy_runner import Advisory
+from deps.trivy_report import Advisory
 
 
 @dataclass(frozen=True)

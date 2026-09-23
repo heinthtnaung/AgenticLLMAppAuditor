@@ -22,7 +22,7 @@ DATABASE_BUILD_DATE = "UpdatedAt"
 
 
 def database_built_at(metadata_path: str | Path = DATABASE_METADATA_PATH) -> str | None:
-    """Give the advisory database's build date as it wrote it, or None when there is none to read."""
+    """Give the database's build date as it wrote it, or None when there is none to read."""
     metadata = read_metadata(as_path(metadata_path, "A database metadata path"))
     if not isinstance(metadata, Mapping):
         return None
