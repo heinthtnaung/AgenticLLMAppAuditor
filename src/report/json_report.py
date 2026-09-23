@@ -17,7 +17,10 @@ import json
 from typing import Any
 
 from report.disagreement import bands_crossed, score_spread, sources_disagree
-from report.record import AdvisoryDatabase, Absence, CouncilAssessment, Report
+from report.json_council import council_of
+from report.json_risk import approval_of, risk_of
+from report.provenance import AdvisoryDatabase
+from report.record import Absence, Report
 
 INDENT = 2
 
@@ -34,9 +37,11 @@ def as_dictionary(report: Report) -> dict[str, Any]:
         "findings": [finding_of(report, finding) for finding in report.findings],
         "components_without_findings": list(report.components_without_findings),
         "advisories_without_components": list(report.advisories_without_components),
+        "overrides_without_findings": list(report.overrides_without_findings),
         "unidentified_artifacts": [
             artifact_of(one) for one in report.unidentified_artifacts
         ],
+        "approval": approval_of(report),
         "not_assessed": [absence_of(absence) for absence in report.not_assessed],
     }
 
@@ -77,6 +82,7 @@ def finding_of(report: Report, finding: Any) -> dict[str, Any]:
         "score_spread": score_spread(finding),
         "severity_bands": list(bands_crossed(finding)),
         "council": council_of(report, finding.advisory.advisory_id),
+        "organisation_risk": risk_of(report, finding.advisory.advisory_id),
     }
 
 
@@ -111,24 +117,6 @@ def score_of(score: Any) -> dict[str, Any]:
 def unreadable_of(source: Any) -> dict[str, Any]:
     """Give one source this calculator refused, kept rather than scored zero."""
     return {"source": source.source, "vector": source.vector, "refusal": source.refusal}
-
-
-def council_of(report: Report, advisory_id: str) -> dict[str, Any] | None:
-    """Give what the council did for an advisory, or null where none ran on it."""
-    outcome = report.council.get(advisory_id)
-    if outcome is None:
-        return None
-    if isinstance(outcome, CouncilAssessment):
-        return {"ran": True, "vector": outcome.vector, "single_assessor": outcome.single_assessor}
-    # A council that ran and settled nothing is a result, not the absence of one:
-    # the vector is missing and the reason it is missing is the record.
-    return {
-        "ran": True,
-        "vector": None,
-        "single_assessor": outcome.single_assessor,
-        "unresolved_metrics": list(outcome.unresolved_metrics),
-        "contested_metrics": list(outcome.contested_metrics),
-    }
 
 
 def artifact_of(artifact: Any) -> dict[str, Any]:

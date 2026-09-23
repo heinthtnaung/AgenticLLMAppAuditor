@@ -18,12 +18,22 @@ every "could not run" leaves by the same door.
 import sys
 
 from deps.scanner import ScannerFailed, ScannerUnavailable
+from report.html_report import as_html
 from report.json_report import as_json
 from report.text_report import as_text
 
-from cli.arguments import JSON_FORMAT, PROGRAM, Options, parse_arguments
+from cli.arguments import (
+    HTML_FORMAT,
+    JSON_FORMAT,
+    PROGRAM,
+    TEXT_FORMAT,
+    Options,
+    parse_arguments,
+)
 from cli.audit import run_audit
 from cli.preflight import CannotRun, refuse_unrunnable
+
+RENDERERS = {TEXT_FORMAT: as_text, JSON_FORMAT: as_json, HTML_FORMAT: as_html}
 
 FOUND_NOTHING = 0
 FOUND_SOMETHING = 1
@@ -36,7 +46,7 @@ def main(argv: list[str] | None = None, out=None, error=None) -> int:
     error = sys.stderr if error is None else error
     try:
         options = parse_arguments(argv)
-        report = audit(options)
+        report = audit(options, error)
     except (CannotRun, ScannerFailed, ScannerUnavailable, ValueError, OSError) as fault:
         error.write(f"{PROGRAM}: {fault}\n")
         return COULD_NOT_RUN
@@ -44,14 +54,20 @@ def main(argv: list[str] | None = None, out=None, error=None) -> int:
     return FOUND_SOMETHING if report.findings else FOUND_NOTHING
 
 
-def audit(options: Options):
+def audit(options: Options, error):
     """Check what a trustworthy report needs, then produce one."""
-    return run_audit(options, refuse_unrunnable(options.repository))
+    # Progress goes to the error stream, so the audit record on stdout stays
+    # pipeable and byte-identical whether or not anyone is watching.
+    return run_audit(options, refuse_unrunnable(options.repository), error)
 
 
 def rendered(report, report_format: str) -> str:
     """Render the record the way the command line asked for it."""
-    return as_json(report) if report_format == JSON_FORMAT else as_text(report)
+    renderer = RENDERERS.get(report_format)
+    if renderer is None:
+        named = ", ".join(RENDERERS)
+        raise ValueError(f"{report_format!r} is no report format; this tool writes {named}")
+    return renderer(report)
 
 
 if __name__ == "__main__":

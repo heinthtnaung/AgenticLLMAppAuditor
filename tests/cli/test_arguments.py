@@ -21,7 +21,7 @@ def test_the_audit_record_is_asked_for_by_name():
 
 def test_a_format_nobody_renders_is_refused():
     with pytest.raises(SystemExit):
-        parse_arguments(["repo", "--format", "html"])
+        parse_arguments(["repo", "--format", "yaml"])
 
 
 def test_no_repository_is_refused():

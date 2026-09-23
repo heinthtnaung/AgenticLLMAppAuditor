@@ -22,11 +22,13 @@ from typing import Iterable, Mapping
 from deps.syft_report import Catalogue, UnidentifiedArtifact
 from deps.trivy_report import Advisory
 from findings.finding import Finding, unmatched_purls
+from organisation.approval import ApprovalOutcome, NotApproved
+from organisation.risk import FindingRisk
+from report.council_record import CouncilOutcome
+from report.provenance import RunProvenance
 
-NO_QUESTION_LIBRARY = (
-    "the approved question library is not built, so no organisation answered anything"
-)
-NO_APPROVAL_CAPTURE = "nothing in this tool captures a human's approval yet"
+NO_ANSWERS_GIVEN = "no organisation answers were supplied, so no environment was weighed"
+NO_APPROVAL_GIVEN = "nobody has approved or overridden this audit"
 # Said only when no council ran at all. A council that ran and settled nothing
 # is a different fact and has its own record; conflating the two put a false
 # statement in an audit record, reachable from the command line.
@@ -47,83 +49,6 @@ class Absence:
 
 
 @dataclass(frozen=True)
-class AdvisoryDatabase:
-    """The advisory database this scan joined against, by its own build date."""
-
-    built_at: str
-
-    def __post_init__(self) -> None:
-        """Refuse a database that names no build date, which is the same as none at all."""
-        if not self.built_at.strip():
-            raise ValueError("An advisory database must give the date it was built")
-
-
-@dataclass(frozen=True)
-class UnknownAdvisoryDatabase:
-    """No build date could be read, so nothing says this scan saw a database at all."""
-
-    reason: str
-
-    def __post_init__(self) -> None:
-        """Refuse an unexplained absence of the one check against a silent clean report."""
-        if not self.reason:
-            raise ValueError("A missing database date must say why it is missing")
-
-
-Database = AdvisoryDatabase | UnknownAdvisoryDatabase
-
-
-@dataclass(frozen=True)
-class RunProvenance:
-    """What produced this report, so a reader can judge whether to believe it."""
-
-    repository: str
-    syft_version: str
-    trivy_version: str
-    database: Database
-
-    def __post_init__(self) -> None:
-        """Refuse provenance a reader could not reproduce the run from."""
-        missing = [
-            name
-            for name in ("repository", "syft_version", "trivy_version")
-            if not getattr(self, name)
-        ]
-        if missing:
-            raise ValueError(f"A run's provenance needs {', '.join(missing)}")
-        if not isinstance(self.database, (AdvisoryDatabase, UnknownAdvisoryDatabase)):
-            raise TypeError(f"A run needs a database, not {type(self.database).__name__}")
-
-
-@dataclass(frozen=True)
-class CouncilAssessment:
-    """A council that settled every metric for one advisory, and the vector it handed over."""
-
-    advisory_id: str
-    vector: str
-    single_assessor: bool
-
-
-@dataclass(frozen=True)
-class CouncilWithoutVector:
-    """A council that ran on one advisory and could not settle a vector, and what stopped it.
-
-    Its own type rather than an assessment with the vector left out. A council
-    that ran and settled nothing is not a council that did not run: the second
-    is an absence, the first is a result, and what it could not settle is the
-    escalation policy's whole input.
-    """
-
-    advisory_id: str
-    single_assessor: bool
-    unresolved_metrics: tuple[str, ...] = ()
-    contested_metrics: tuple[str, ...] = ()
-
-
-CouncilOutcome = CouncilAssessment | CouncilWithoutVector
-
-
-@dataclass(frozen=True)
 class Report:
     """One audit: what was found, what matched nothing, and what was not assessed."""
 
@@ -136,12 +61,19 @@ class Report:
     # is a report that looks clean and is not.
     components_without_findings: tuple[str, ...]
     advisories_without_components: tuple[str, ...]
+    # A fourth: an answer file naming an advisory this scan did not find. Not
+    # refused, because a file reused across repositories will legitimately name
+    # advisories absent from one of them -- but a deliberate override that did
+    # not apply moved a finding a band with nothing said, so it is counted.
+    overrides_without_findings: tuple[str, ...]
     # A third kind of nothing: catalogued, joinable to nothing by nature, and so
     # never a finding. Counted rather than dropped, because the reason the
     # scanner used to refuse these was that dropping one silently loses a CVE.
     unidentified_artifacts: tuple[UnidentifiedArtifact, ...]
     not_assessed: tuple[Absence, ...]
     council: Mapping[str, CouncilOutcome] = field(default_factory=dict)
+    risk: Mapping[str, FindingRisk] = field(default_factory=dict)
+    approval: ApprovalOutcome = field(default_factory=lambda: NotApproved(NO_APPROVAL_GIVEN))
 
 
 def build_report(
@@ -150,32 +82,59 @@ def build_report(
     findings: Iterable[Finding],
     advisories_by_purl: Mapping[str, tuple[Advisory, ...]],
     council: Iterable[CouncilOutcome] = (),
+    risk: Iterable[FindingRisk] = (),
+    approval: ApprovalOutcome | None = None,
+    overridden: Iterable[str] = (),
 ) -> Report:
     """Gather one run into the record both renderings read."""
-    catalogued = catalogue.components
     raised = tuple(findings)
-    settled = {assessment.advisory_id: assessment for assessment in council}
-    affected = {finding.component.purl for finding in raised}
+    settled, weighed = by_advisory(council), by_advisory(risk)
+    decided = approval or NotApproved(NO_APPROVAL_GIVEN)
     return Report(
         provenance=provenance,
         findings=raised,
-        component_count=len(catalogued),
-        components_without_findings=tuple(
-            sorted(one.purl for one in catalogued if one.purl not in affected)
-        ),
-        advisories_without_components=unmatched_purls(catalogued, advisories_by_purl),
+        component_count=len(catalogue.components),
+        components_without_findings=purls_without_findings(catalogue, raised),
+        advisories_without_components=unmatched_purls(catalogue.components, advisories_by_purl),
         unidentified_artifacts=catalogue.unidentified,
-        not_assessed=absences(settled),
+        overrides_without_findings=overrides_without_findings(overridden, raised),
+        not_assessed=absences(settled, weighed, decided),
         council=settled,
+        risk=weighed,
+        approval=decided,
     )
 
 
-def absences(council: Mapping[str, CouncilOutcome]) -> tuple[Absence, ...]:
-    """Name what this build cannot assess, so no reader takes silence for a nil result."""
-    named = [
-        Absence("Organisation Risk Score", NO_QUESTION_LIBRARY),
-        Absence("Approval record", NO_APPROVAL_CAPTURE),
-    ]
+def by_advisory(entries: Iterable) -> dict:
+    """Index anything carrying an advisory id by the advisory it is about."""
+    return {one.advisory_id: one for one in entries}
+
+
+def purls_without_findings(catalogue: Catalogue, findings: tuple[Finding, ...]) -> tuple[str, ...]:
+    """Name the installed components nothing was published against."""
+    affected = {finding.component.purl for finding in findings}
+    return tuple(sorted(one.purl for one in catalogue.components if one.purl not in affected))
+
+
+def overrides_without_findings(
+    overridden: Iterable[str], findings: tuple[Finding, ...]
+) -> tuple[str, ...]:
+    """Name the answer overrides that matched nothing this scan found."""
+    found = {finding.advisory.advisory_id for finding in findings}
+    return tuple(sorted(one for one in overridden if one not in found))
+
+
+def absences(
+    council: Mapping[str, CouncilOutcome],
+    risk: Mapping[str, FindingRisk],
+    approval: ApprovalOutcome,
+) -> tuple[Absence, ...]:
+    """Name what this run did not assess, so no reader takes silence for a nil result."""
+    named = []
+    if not risk:
+        named.append(Absence("Organisation Risk Score", NO_ANSWERS_GIVEN))
+    if isinstance(approval, NotApproved):
+        named.append(Absence("Approval record", approval.reason))
     if not council:
         named.append(Absence("Council ruling", NO_COUNCIL_RUN))
     return tuple(named)

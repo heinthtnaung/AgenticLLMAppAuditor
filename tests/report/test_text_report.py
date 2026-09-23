@@ -2,13 +2,9 @@
 
 import pytest
 
-from report.record import (
-    CouncilAssessment,
-    CouncilWithoutVector,
-    RunProvenance,
-    UnknownAdvisoryDatabase,
-    build_report,
-)
+from report.provenance import RunProvenance, UnknownAdvisoryDatabase
+from report.council_record import CouncilAssessment, CouncilWithoutVector
+from report.record import build_report
 from report.text_report import as_text
 from report_samples import (
     LOW_CONFIDENTIALITY,
@@ -25,10 +21,15 @@ DJANGO = component()
 PYYAML = component("pyyaml", "5.1")
 
 
-def rendered(findings=(), components=(DJANGO,), provenance=PROVENANCE, unidentified=(), council=()):
+def rendered(
+    findings=(), components=(DJANGO,), provenance=PROVENANCE, unidentified=(), council=(),
+    overridden=(),
+):
     """Render one report from whatever a test is about."""
     found = catalogue(*components, unidentified=unidentified)
-    return as_text(build_report(provenance, found, findings, {}, council))
+    return as_text(
+        build_report(provenance, found, findings, {}, council, (), None, overridden)
+    )
 
 
 def lines_under(heading: str, text: str) -> list[str]:
@@ -111,3 +112,19 @@ def test_the_three_council_states_read_differently():
     settled = rendered((finding(DJANGO),), council=(CouncilAssessment("CVE-1", TOTAL_LOSS, False),))
     ran_open = rendered((finding(DJANGO),), council=(CouncilWithoutVector("CVE-1", False, ("S",)),))
     assert none_ran != settled != ran_open != none_ran
+
+
+def test_an_override_that_matched_no_finding_is_counted_and_named():
+    text = rendered((finding(DJANGO),), overridden=("CVE-2021-42799",))
+    assert "1 answer override matched no finding: CVE-2021-42799" in text
+
+
+def test_several_overrides_that_matched_nothing_are_all_named():
+    text = rendered(overridden=("CVE-1", "CVE-2"))
+    assert "2 answer overrides matched no finding: CVE-1, CVE-2" in text
+
+
+def test_a_run_whose_overrides_all_matched_says_nothing_about_them():
+    one = finding(DJANGO)
+    text = rendered((one,), overridden=(one.advisory.advisory_id,))
+    assert "matched no finding" not in text

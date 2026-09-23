@@ -15,12 +15,15 @@ from council.ruling import Basis, PublishedFallback, SettledMetric, UnresolvedMe
 from council.answer import MemberAnswer, MemberFoundNoEvidence, MemberGuessed
 from council.runner import CouncilRun, MemberFailure, assess
 from council.transport import ModelUnavailable
-from council_samples import hosted, member
-
-RAW_ADVISORY = (
-    "CVE-2021-44228: A flaw in Apache Log4j2. An unauthenticated remote attacker "
-    "who can control log messages can execute arbitrary code. "
-    "Scored CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H by the vendor."
+from council_samples import (
+    DECLINED,
+    QUOTABLE,
+    RAW_ADVISORY,
+    clients_of,
+    guessing,
+    hosted,
+    member,
+    replying,
 )
 
 FALLBACKS = {
@@ -29,28 +32,6 @@ FALLBACKS = {
         "AV": "L", "AC": "H", "PR": "H", "UI": "R", "S": "U", "C": "N", "I": "N", "A": "N",
     }.items()
 }
-
-QUOTABLE = "unauthenticated remote attacker"
-DECLINED = json.dumps({"value": "NO_EVIDENCE", "evidence": ""})
-
-# A second legal value for each metric, so a guess can lean the other way.
-OTHER_VALUE = {"AV": "L", "AC": "H", "PR": "L", "UI": "R", "S": "C", "C": "L", "I": "L", "A": "L"}
-
-# A value each metric actually allows. "N" is legal for AV and not for AC or S,
-# so a client that said one thing everywhere would be testing the refusal path.
-LEGAL_VALUE = {"AV": "N", "AC": "L", "PR": "N", "UI": "N", "S": "U", "C": "H", "I": "H", "A": "H"}
-
-
-def replying(evidence: str = QUOTABLE):
-    """A client answering each metric with a value that metric allows."""
-    return lambda asked, prompt: json.dumps(
-        {"value": LEGAL_VALUE[prompt.metric], "evidence": evidence, "confidence": "high"}
-    )
-
-
-def clients_of(ask, provider: str = "ollama"):
-    """Put one client behind one provider."""
-    return {provider: ask}
 
 
 def test_every_metric_is_put_to_the_roster_and_handed_over_as_a_vector():
@@ -166,15 +147,29 @@ def test_fallbacks_that_are_no_mapping_are_refused(given):
 
 
 def test_the_same_replies_give_the_same_run():
-    roster = Roster((member(),))
-    first = assess(RAW_ADVISORY, roster, FALLBACKS, clients_of(replying()))
-    second = assess(RAW_ADVISORY, roster, FALLBACKS, clients_of(replying()))
-    assert first.rulings == second.rulings
+    roster, clients = Roster((member(),)), clients_of(replying())
+    assert (
+        assess(RAW_ADVISORY, roster, FALLBACKS, clients).rulings
+        == assess(RAW_ADVISORY, roster, FALLBACKS, clients).rulings
+    )
 
 
-def guessing(asked, prompt):
-    """A client that leans the other way with nothing to quote for it."""
-    return json.dumps({"value": OTHER_VALUE[prompt.metric], "evidence": "", "confidence": "low"})
+def test_every_member_asked_is_announced_before_it_is_asked():
+    # A run says nothing for over an hour otherwise, and the announcement has to
+    # come first: a slow member is a line that sits there, not one that arrives
+    # once the wait is over.
+    said = []
+    roster = Roster((member("one"), member("two")))
+
+    def announcing(member_asked, prompt):
+        said.append(("asked", prompt.metric, member_asked.name))
+        return replying()(member_asked, prompt)
+
+    assess(RAW_ADVISORY, roster, FALLBACKS, clients_of(announcing),
+           lambda metric, name: said.append(("told", metric, name)))
+    assert len(said) == 32
+    assert said[0] == ("told", "AV", "one")
+    assert said[1] == ("asked", "AV", "one")
 
 
 def test_replies_carrying_no_weight_still_reach_the_record():
