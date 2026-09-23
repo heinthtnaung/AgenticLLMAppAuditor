@@ -264,6 +264,20 @@ supports nothing, however many members give it.
   vector, and record both that the fallback happened and which source it came
   from — there is usually more than one, and they often differ.
 
+**A council that settles only some of the eight still leaves a record.** A
+vector needs all eight metrics, so one unresolved metric with no fallback means
+no vector — and the run is not discarded with it. What ran, and which metrics it
+could not settle, survives into the report: throwing that away told a reader no
+council had run at all, which is a different and false thing, and what went
+unsettled is the escalation policy's input.
+
+The fallback rule above is unchanged; what has changed is that a caller must now
+name the published source to fall back to. The command line names none, because
+preferring `nvd` or `ghsa` to fill a gap would set exactly the precedence this
+design leaves open, arriving through the back door of an error path. So in
+practice today an unresolved metric produces no vector, and the finding keeps
+its per-source scores side by side with no winner.
+
 **Values are counted; members never are.** Two members agreeing and a third
 dissenting on evidence that does not verify is not a contested metric — one
 value has evidence behind it, so it settles. Counting qualifying members instead
