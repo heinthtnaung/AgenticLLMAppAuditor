@@ -13,6 +13,12 @@ committed to, so members are named on the command line rather than read from a
 schema nobody has agreed. Naming none, which is the default, is a run with no
 council -- and that is the honest state, because the per-source scores then
 stand side by side with no winner.
+
+**And when it is on it is scoped.** The council reconciles sources, so by default
+it is asked only about the findings whose sources do not settle them;
+`--council-all-findings` turns that off. The flag exists because scoping costs
+something real -- a council that never reads an agreed finding cannot discover
+that both its sources are wrong -- and that is a call for the operator.
 """
 
 import argparse
@@ -40,6 +46,11 @@ MEMBER_HELP = (
     "add one local model to the assessor council, by its Ollama name; "
     "repeat for more members, and give none to run no council"
 )
+ALL_FINDINGS_HELP = (
+    "put every finding to the council, not only those whose published sources "
+    "disagree or that no source scored; slower, and the only way to catch two "
+    "sources that agree and are both wrong"
+)
 
 
 @dataclass(frozen=True)
@@ -49,6 +60,7 @@ class Options:
     repository: Path
     report_format: str
     council_models: tuple[str, ...]
+    council_all_findings: bool = False
     # None is "no file was given", which is the only thing absence can mean for
     # a command-line path, and `organisation_run` reads it as exactly that.
     answers: Path | None = None
@@ -61,6 +73,7 @@ def parse_arguments(argv: list[str] | None = None) -> Options:
         repository=Path(parsed.repository),
         report_format=parsed.format,
         council_models=tuple(parsed.council_member),
+        council_all_findings=parsed.council_all_findings,
         answers=Path(parsed.answers) if parsed.answers else None,
     )
 
@@ -74,6 +87,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--council-member", action="append", default=[], metavar="MODEL", help=MEMBER_HELP
+    )
+    parser.add_argument(
+        "--council-all-findings", action="store_true", help=ALL_FINDINGS_HELP
     )
     parser.add_argument("--answers", metavar="FILE", default=None, help=ANSWERS_HELP)
     return parser

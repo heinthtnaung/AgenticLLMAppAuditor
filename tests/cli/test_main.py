@@ -86,7 +86,7 @@ def test_nothing_is_written_to_the_error_stream_by_a_run_that_worked(monkeypatch
     assert error == ""
 
 
-def reporting_council(findings, roster, clients=None, progress=None):
+def reporting_council(findings, roster, clients=None, progress=None, every_finding=False):
     """Stand in for a council run, saying what it is doing through the progress it was given."""
     progress.starting("CVE-2021-23337")
     progress.asking("AV", "qwen2.5:7b-instruct")

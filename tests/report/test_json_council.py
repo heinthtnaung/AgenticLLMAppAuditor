@@ -2,6 +2,7 @@
 
 from report.council_record import (
     CouncilAssessment,
+    CouncilNotAsked,
     CouncilWithoutVector,
     MemberIdentity,
     MemberSaid,
@@ -104,3 +105,22 @@ def test_a_member_whose_call_failed_records_why():
 def test_a_council_that_did_not_run_on_an_advisory_is_null():
     report = build_report(PROVENANCE, catalogue(DJANGO), (finding(DJANGO),), {})
     assert council_of(report, "CVE-2019-14234") is None
+
+
+def test_a_finding_the_council_was_not_put_to_says_so_and_says_why():
+    # Three states, and null is only the third: no council in this run at all.
+    # A scoped run that wrote null here would report a finding it passed over as
+    # a finding nothing ran on.
+    passed = CouncilNotAsked("CVE-1", "no published source disagrees")
+    assert rendered(passed) == {"ran": False, "because": "no published source disagrees"}
+
+
+def test_a_finding_of_a_run_with_no_council_at_all_is_null():
+    one = finding(DJANGO, advisory_id="CVE-1")
+    report = build_report(PROVENANCE, catalogue(DJANGO), (one,), {})
+    assert council_of(report, "CVE-1") is None
+
+
+def test_an_assessed_finding_says_a_council_ran_on_it():
+    assessed = CouncilAssessment("CVE-1", TOTAL_LOSS, False, ())
+    assert rendered(assessed)["ran"] is True

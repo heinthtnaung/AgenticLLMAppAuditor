@@ -8,7 +8,7 @@ from cvss.score import base_score
 from cvss.vector import parse
 from report.json_report import as_dictionary, as_json
 from report.provenance import RunProvenance, UnknownAdvisoryDatabase
-from report.council_record import CouncilAssessment, CouncilWithoutVector
+from report.council_record import CouncilAssessment, CouncilNotAsked, CouncilWithoutVector
 from report.record import build_report
 from report_samples import (
     catalogue,
@@ -151,3 +151,29 @@ def test_an_override_that_matched_no_finding_is_in_the_record():
 
 def test_a_run_whose_overrides_all_matched_names_none():
     assert as_dictionary(a_report())["overrides_without_findings"] == []
+
+
+# Every state the council record can be in. A new one that reaches a rendering
+# as an `AttributeError` is the defect this closes: the type says a fact exists
+# and the code that must read it does not know. Adding a fifth breaks this list
+# before it breaks a run.
+COUNCIL_STATES = (
+    CouncilAssessment("CVE-SETTLED", TOTAL_LOSS, single_assessor=False),
+    CouncilWithoutVector("CVE-OPEN", False, ("AV",), ()),
+    CouncilNotAsked("CVE-PASSED", "no published source disagrees"),
+)
+
+
+def test_every_state_the_council_record_can_be_in_renders():
+    raised = tuple(finding(DJANGO, advisory_id=one.advisory_id) for one in COUNCIL_STATES)
+    rendered = as_dictionary(a_report(findings=raised, council=COUNCIL_STATES))
+    said = {one["advisory"]["advisory_id"]: one["council"] for one in rendered["findings"]}
+    assert said["CVE-SETTLED"]["ran"] is True
+    assert said["CVE-OPEN"]["ran"] is True
+    assert said["CVE-PASSED"] == {"ran": False, "because": "no published source disagrees"}
+
+
+def test_a_finding_of_a_run_with_no_council_at_all_carries_null():
+    # Null is the fourth state and only the fourth: no council ran on this audit.
+    rendered = as_dictionary(a_report(findings=(finding(DJANGO),)))
+    assert rendered["findings"][0]["council"] is None

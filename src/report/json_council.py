@@ -13,14 +13,18 @@ record says so.
 
 from typing import Any
 
-from report.council_record import CouncilAssessment, MemberSaid, MetricRuling
+from report.council_record import CouncilAssessment, CouncilNotAsked, MemberSaid, MetricRuling
 
 
 def council_of(report, advisory_id: str) -> dict[str, Any] | None:
-    """Give what the council did for an advisory, or null where none ran on it."""
+    """Give what the council did for an advisory, or null where no council ran at all."""
     outcome = report.council.get(advisory_id)
     if outcome is None:
         return None
+    if isinstance(outcome, CouncilNotAsked):
+        # Not the same as null. A council ran on this audit and was not put to
+        # this finding, and why it was not is a result rather than an omission.
+        return {"ran": False, "because": outcome.because}
     settled = isinstance(outcome, CouncilAssessment)
     return {
         "ran": True,

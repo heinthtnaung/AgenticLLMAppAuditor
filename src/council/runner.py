@@ -21,6 +21,28 @@ A member whose call fails, or whose reply cannot be read, costs that one metric
 and not the run: the failure is recorded and the remaining members are still
 asked. Losing a whole assessment because one model timed out would be the worse
 answer.
+
+**Every reachable member is asked every metric**, which is the ask-all policy
+`docs/COUNCIL.md` names beside escalation. Escalation -- ask the cheapest first,
+send only a contested or unresolved metric to a costlier member -- is a dispatch
+change and would be made here.
+
+It has a precondition, and it is not obvious. **Escalation needs a cheap tier of
+two or more members that can contest something between themselves.** A contest
+requires two distinct *verified* values (`ruling.ContestedMetric`), so one member
+asked alone can only settle or leave unresolved -- it cannot produce the outcome
+escalation exists to escalate. On a roster of one cheap member and one costly
+one the policy therefore degrades to "run the cheap one, ask the costly one only
+where the cheap one found nothing", and every metric the cheap member settles
+alone comes back as agreement that was never cross-checked. Measured on a
+two-member roster: 61 of 144 metrics came out contested because the second member
+disagreed, and escalation would have recorded all 61 as settled. `single_assessor`
+would have to say so too, and today it reads the count of members reached rather
+than the count asked about a given metric.
+
+So escalation is worth building on a roster of three or more where at least two
+are cheap, and is a loss on a roster of two. That is a property of the roster,
+not a refusal of the policy.
 """
 
 from dataclasses import dataclass

@@ -3,7 +3,7 @@
 import pytest
 
 from report.provenance import RunProvenance, UnknownAdvisoryDatabase
-from report.council_record import CouncilAssessment, CouncilWithoutVector
+from report.council_record import CouncilAssessment, CouncilNotAsked, CouncilWithoutVector
 from report.record import build_report
 from report.text_report import as_text
 from report_samples import (
@@ -128,3 +128,26 @@ def test_a_run_whose_overrides_all_matched_says_nothing_about_them():
     one = finding(DJANGO)
     text = rendered((one,), overridden=(one.advisory.advisory_id,))
     assert "matched no finding" not in text
+
+
+# Every state the council record can be in. A new one that reaches a rendering
+# as an `AttributeError` is the defect this closes: the type says a fact exists
+# and the code that must read it does not know. Adding a fifth breaks this list
+# before it breaks a run.
+COUNCIL_STATES = (
+    CouncilAssessment("CVE-SETTLED", TOTAL_LOSS, single_assessor=False),
+    CouncilWithoutVector("CVE-OPEN", False, ("AV",), ()),
+    CouncilNotAsked("CVE-PASSED", "no published source disagrees"),
+)
+
+
+def test_every_state_the_council_record_can_be_in_renders():
+    raised = tuple(finding(DJANGO, advisory_id=one.advisory_id) for one in COUNCIL_STATES)
+    page = rendered(findings=raised, council=COUNCIL_STATES)
+    assert [one.advisory_id for one in COUNCIL_STATES if one.advisory_id not in page] == []
+
+
+def test_a_run_with_no_council_at_all_renders_and_names_the_absence():
+    page = rendered(findings=(finding(DJANGO),))
+    assert "COUNCIL" not in page
+    assert "Council ruling" in page

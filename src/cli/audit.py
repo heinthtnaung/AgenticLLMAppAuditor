@@ -65,8 +65,10 @@ def weighed(findings, answers, options: Options, council):
 
 
 def council_of(findings, options: Options, progress_to: TextIO):
-    """Put the council to the findings, or run none, which is the default."""
+    """Put the council to the findings that need one, or run none, which is the default."""
     if not options.council_models:
         return ()
+    every = options.council_all_findings
     roster = build_roster(options.council_models)
-    return assessments(findings, roster, progress=watching(findings, roster, progress_to))
+    watcher = watching(findings, roster, progress_to, every)
+    return assessments(findings, roster, progress=watcher, every_finding=every)
