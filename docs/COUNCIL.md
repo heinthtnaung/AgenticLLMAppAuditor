@@ -69,8 +69,8 @@ only way a hosted model takes part.
 
 ```
 n council members  ->  a metric value + the sentence that supports it
-chairman           ->  one agreed vector + a rationale + a confidence
-scoring engine     ->  the number            <- deterministic, no model
+chairman           ->  one agreed vector + a rationale + a confidence  <- code, no model
+scoring engine     ->  the number                                      <- code, no model
 human              ->  approve or override
 ```
 
@@ -246,11 +246,11 @@ silence has nothing to verify against.
 
 ## What the chairman does
 
-Deterministic where it can be, and its reasoning is recorded either way. It
-reads all n answers at once, and the rules do not change with n. **Every rule
-below is about the verified answers alone** — those whose evidence is a real
-quotation from the advisory. An answer whose quotation is not in the text
-supports nothing, however many members give it.
+**Deterministic throughout: no model is asked anything here.** Its reasoning is
+recorded whichever way it goes. It reads all n answers at once, and the rules do
+not change with n. **Every rule below is about the verified answers alone** —
+those whose evidence is a real quotation from the advisory. An answer whose
+quotation is not in the text supports nothing, however many members give it.
 
 - **The verified answers support one value** → that value, with the confidence
   of the weakest of them. Record whether anyone dissented, where **anyone means
@@ -294,6 +294,52 @@ roster look like a problem and a large one look authoritative. Counting distinct
 values is not a vote: it asks whether the verified evidence points one way or
 several. Evidence decides.
 
+## Which findings the council is asked about
+
+**By default, only the ones the published sources do not settle.** The council
+reconciles sources, so a finding whose sources already agree is not its work. Of
+the 18 findings on the repository this project audits, 5 carry sources that
+disagree — a default two-member run makes 80 calls where asking about all 18
+makes 288. `--council-all-findings` asks about all 18. That 5 in 18 is one
+repository and lower than the two in five measured on the 119-finding corpus
+above; how much scoping saves moves with what is being scanned.
+
+**A finding no source scored is asked about, not skipped.** Its sources do not
+agree either — there are none — and `disputed_metrics()` is empty for it, so
+scoping on disagreement alone would drop exactly the findings where a council
+vector is the only severity the finding will ever carry.
+
+**Scoping costs something real, and that is why it is a flag rather than a
+removal.** A council that only ever reads contested findings cannot discover that
+two *agreeing* sources are both wrong — and this file says no source is the
+reference the others are measured against. An operator who cares more about that
+than about the calls turns scoping off.
+
+**Three reasons a finding goes unassessed, and they are three different facts.**
+A finding the council was not put to, a finding it assessed and could not settle,
+and a run where nobody was named to ask are not the same thing. A scoped run that
+recorded nothing for what it passed over would report the first as the third, so
+the record keeps them apart and every rendering names the findings under the
+reason:
+
+```
+COUNCIL (1)
+  CVE-2021-4279  settled  ·  CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H
+  3 findings not asked
+    no published source disagrees, so there is nothing to reconcile
+      CVE-2026-14257, CVE-2026-53550
+    the advisory carries no text for a member to read
+      CVE-2026-99999
+```
+
+That block is constructed to show both reasons at once. Every advisory in the
+audited repository carries text, so a real run there prints only the first — the
+second was a silent drop until scoping landed, folded in with "no council ran".
+
+**The heading counts what was assessed and nothing else.** `COUNCIL (1)` on a run
+that passed over three, because counting the skips into it would claim the
+council did more than it did.
+
 ## Escalation is a policy, not a tier
 
 Order the roster by cost. Ask the cheapest members first, and send only a
@@ -302,6 +348,23 @@ whole CVE. Record which member answered which metric.
 
 Asking every member every time is the other policy: more money, fewer rounds.
 Neither changes what a member returns or what the chairman does with it.
+
+**It is not built, and what is missing is a precondition rather than the will to
+build it.** A metric is contested only when two distinct values *both* verify, so
+one cheap member can never make one. Ask a single cheap member first and every
+metric it can quote comes back settled by it alone: the `contested` trigger never
+fires, the costly member is never reached on the metrics that most need it, and
+the round is marked single-assessor. **That buys speed by deleting the
+cross-check escalation exists to protect.**
+
+It is not a hypothetical. A two-member run on this machine had Qwen and Gemma
+quote the same sentence about `CVE-2021-4279` and give different Attack Vector
+values — a contested metric, found because two cheap members read it. A cheap
+tier of one would have recorded that as settled.
+
+So the condition to build against is a **cheap tier of two or more members that
+can contest something between themselves**. Below that, escalation is not a
+cheaper council; it is a single assessor wearing one.
 
 ## What a hosted member costs
 
@@ -332,10 +395,11 @@ So hosted members are **opt-in per member**, off by default, and the record
 names every member that ran, its provider, and whether it was local or hosted.
 A record that does not say where the text went is not an audit record.
 
-**Money and time.** Calls scale with n × findings × metrics. Hosted members
-bill per call and run in parallel; local members are free and queue on one GPU,
-so n buys latency there instead of money. The roster is fixed per run, before
-the scan, because it is a budget decision as much as a design one.
+**Money and time.** Calls scale with n × the findings the scope leaves × metrics.
+Hosted members bill per call and run in parallel; local members are free and
+queue on one GPU, so n buys latency there instead of money. The roster is fixed
+per run, before the scan, because it is a budget decision as much as a design
+one.
 
 ## A roster as configuration
 
@@ -361,7 +425,6 @@ council:
       model: anthropic/claude-sonnet-5
       family: claude
       egress: allow        # absent or false: skipped, and the skip is reported
-  chairman: large-local
   policy: escalate         # or: ask-all
   escalate_on: [contested, unresolved]
   escalate_to: hosted-other-family
@@ -370,6 +433,19 @@ council:
 Adding a member is a list entry; removing one is deleting it. `egress` is the
 opt-in, and it fails closed: a hosted member without it does not run, and the
 report says it did not.
+
+**There is no `chairman` key, because there is no chairman model.**
+`src/council/chairman.py` makes no model call at all: it keeps the answers whose
+quotation is in the advisory, then asks whether those point at one value or
+several. Every rule this file gives the chairman is mechanical, so code can
+apply all of them.
+
+That is a decision and not a gap waiting on a client. A model in the seat would
+replace an auditable fact — *these two answers verified and agree* — with a
+sentence nobody can re-derive, and asked to reconcile n answers it would reach
+for the count of members, which is the one thing this design forbids at any n.
+The chairman is also the last step before the engine, so a model there would put
+one back inside the path a vector takes to a number.
 
 ## What is kept
 
@@ -387,6 +463,10 @@ provider registry and the local Ollama client in it, the HTTP seam under that,
 the reply parser, the quotation check, the chairman, and the runner that puts
 one advisory to every reachable member metric by metric. `src/cvss` is the
 engine it hands a vector to.
+
+**The scope is built too, and it is not in that package.** `src/cli/council_run.py`
+chooses which findings a run is put to, records each one it passes over with the
+reason, and counts the calls the scope leaves for the progress stream.
 
 **The provider layer is a seam, not a helper.** Which providers this machine can
 reach, and the client that speaks to each, sit apart from the dispatch that puts
@@ -410,7 +490,9 @@ Five things described above are not built, each deferred rather than forgotten:
   an entry in the provider registry; no other module moves.
 - **No escalation policy.** The runner asks every member every metric, which is
   the other policy named above. A contested metric is recorded as contested and
-  nothing re-asks it on a costlier member.
+  nothing re-asks it on a costlier member. It is deferred on a condition rather
+  than on time: the section above gives the measurement and the cheap tier it
+  would need.
 - **The answering model is not recorded.** A reply says which member was asked,
   not which weights answered. That costs nothing while every member is a pinned
   local one, and becomes the reproducibility hole described above on the day a
@@ -432,6 +514,9 @@ Five things described above are not built, each deferred rather than forgotten:
   the guarantee stays honest. A hole that is reported is not the same thing as a
   hole that is hidden.
 
-Nothing orchestrates any of it. No component selects which finding to put to the
-council, and nothing consumes the vector it hands over: `src/council/` imports
-`src/cvss` and nothing imports `src/council/`.
+**`src/cli/` orchestrates all of it**, and that is where to look for the wiring.
+`src/cli/council_run.py` chooses the findings and runs the council over them,
+`src/cli/council_detail.py` turns a run into the record the report holds, and
+`src/cli/organisation_run.py` takes a settled vector into a risk score. The
+package itself stays a component: `src/council/` imports `src/cvss` and nothing
+else of this project's, and only `src/cli/` imports `src/council/`.

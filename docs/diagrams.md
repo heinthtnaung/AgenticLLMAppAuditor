@@ -55,15 +55,16 @@ flowchart TD
     adb --> pre
     adb --> trivy
 
-    fin --> cou["Council, only if members were named<br/>diagram 4"]
+    fin --> cou["Council, only if members were named,<br/>and only for the findings their sources<br/>do not settle — diagram 4"]
     fin --> ctx["Organisation context<br/>scored once per source<br/>diagram 3"]
     ans["Answer file<br/>--answers: the approved questions<br/>answered by id, and who approved"] --> ctx
     cou --> ctx
     fin --> rec["Report record<br/>and what was not assessed"]
     cou --> rec
     ctx --> rec
-    rec --> out["Rendered as text, or as JSON"]
+    rec --> out["--format: rendered as text,<br/>as JSON, or as one HTML page"]
     out --> hum["Human reviews"]
+    cou -. "one line per model call,<br/>printed before that call" .-> err["Progress, on the error stream<br/>never on stdout"]
 ```
 
 The database is fetched out of band so that a scan runs offline against the copy
@@ -98,6 +99,20 @@ argument of this project in one line: where a council settled a vector there is
 one technical severity and the finding takes one score, and everywhere else it
 is scored once per published source, because choosing a source is precedence
 `docs/SCORING_MODEL.md` refuses to set.
+
+One record, three renderings. `--format` gives text for a terminal, JSON for the
+audit artefact, or one self-contained HTML page that fetches nothing — all three
+read the same record and none of them works a number out, so a figure cannot
+differ between them.
+
+The dotted line is the only thing a run writes outside that record, and it goes
+to the error stream because stdout belongs to `--format json`: a council run
+says it is alive without the piped artefact gaining a byte. Each line carries
+counts and no elapsed time, and prints *before* the call it names, so a slow
+member is a line that sits there and the reader supplies the seconds. What that
+costs is an exact figure — the transcript afterwards cannot tell ninety seconds
+from nine minutes — and what it buys is that `src/` reads no clock, which is
+what keeps two runs of the same commit byte-identical.
 
 What this does not show: how a repeat scan is diffed against the last one, which
 is not decided and not built.
@@ -270,6 +285,9 @@ hosted member, and no escalation policy re-asks a contested metric.
 
 ```mermaid
 flowchart TD
+    fnd["A finding, with every source's vector"] --> scope{"Do its published<br/>sources settle it?"}
+    scope -->|"they agree, and one of them scored it"| pass["Not asked, and why<br/>recorded per finding"]
+    scope -->|"they disagree, or none scored it,<br/>or --council-all-findings"| raw
     raw["Advisory text, as the database carries it"] --> red["Redaction<br/>CVE and GHSA ids and vector strings<br/>replaced by markers, not deleted"]
     red --> shown["The text a member sees<br/>no id, no published vector,<br/>no other member's answer"]
 
@@ -314,10 +332,25 @@ flowchart TD
     vec --> eng
     num --> hmn["Human approves or overrides"]
 
-    rec["Record: every member and its provider,<br/>every skip and its reason, every guess,<br/>what the chairman decided from, and the vector"]
+    rec["Record: every member and its provider,<br/>every member skipped and why, every finding<br/>not asked and why, every guess, what the<br/>chairman decided from, and the vector"]
     chr -.-> rec
     skip -.-> rec
+    pass -.-> rec
 ```
+
+**The council is scoped before it is a council.** It reconciles sources, so a
+finding whose sources already agree is not its work: a measured two-member run
+over 18 findings made 288 calls in 43 minutes and 13 of those findings were
+undisputed. A finding **no** source scored takes the other branch, because there
+is no agreement to rely on and a council vector is the only severity it will ever
+carry. `--council-all-findings` sends every finding down the right-hand branch,
+which is the only way to discover that two agreeing sources are both wrong.
+
+The `Not asked` box reaches the record for the same reason the `Skipped` one
+does. A finding the council was passed over, a finding it assessed and could not
+settle, and a run where nobody was named to ask are three different facts, and a
+scoped run that recorded nothing for what it skipped would report the first as
+the third.
 
 One line crosses from the roster into the engine, and it carries **a vector, not
 a number**. That is the boundary made visible: everything above the engine is a
@@ -358,6 +391,18 @@ roster raises no tie — four answers are four pieces of evidence. The chairman
 keeps the ones whose quotation verifies and asks whether they point at one value
 or several; unanimity with nothing verified settles nothing.
 
+**The chairman is not a member and makes no model call.** `src/council/chairman.py`
+is ordinary code: it filters the answers by whether the quotation is in the text,
+then counts distinct values. `docs/COUNCIL.md` explains why it has to be — every
+rule it applies is mechanical, and a model in that seat would turn an auditable
+fact into a sentence nobody can check.
+
+The record box sits outside `src/council/` in the code, and so does the scope
+decision at the top: `src/cli/council_run.py` chooses which findings to put to a
+council and `src/cli/council_detail.py` turns a run into the record, because
+`src/report` imports neither the council nor the scoring engine and the command
+line is the one place allowed to see both.
+
 The hosted box will cost reproducibility. A local member takes a pinned model; a
 hosted one takes no seed, and the weights behind its name change without notice.
 A run holding one could not be repeated, so the vector would stop being
@@ -365,9 +410,10 @@ re-derivable — while the engine below stays deterministic, and the recorded
 vector still re-derives the recorded number.
 
 What this does not show: the shape of the roster file, which is a sketch in
-`docs/COUNCIL.md` rather than a committed format; the arithmetic of cost, which
-is n × findings × metrics and is settled before a scan; and what puts an advisory
-to the council in the first place, because nothing does yet.
+`docs/COUNCIL.md` rather than a committed format; and the arithmetic of cost,
+which is n × the findings the scope leaves × metrics and is settled before a
+scan. What puts an advisory to the council is now the left-hand branch above,
+where nothing did before.
 
 ## 5. Build status
 
@@ -381,27 +427,33 @@ flowchart LR
         b4["src/cvss<br/>vector parser, metric vocabulary,<br/>Base score equations"]
         b5["src/findings<br/>the join, every source's score apart"]
         b7["src/council<br/>roster and the egress gate, redaction,<br/>prompt, provider registry, chairman"]
-        b8["src/report<br/>the record, the text report, the JSON"]
-        b9["src/cli<br/>arguments, preflight, the audit order,<br/>and the exit code a pipeline reads"]
+        b8["src/report<br/>the record, and three renderings of it:<br/>text, JSON, one self-contained HTML page"]
+        b9["src/cli<br/>arguments, preflight, the audit order,<br/>the council's scope and its record, the<br/>stderr progress stream, and the exit<br/>code a pipeline reads"]
         b6["src/scoring<br/>the approved question library, categories<br/>clamped then weighted, and the band"]
         b10["src/organisation<br/>the answer file, the approval record,<br/>one score per source"]
         b0 --> b1
         b0 --> b2
+        b0 --> b3
+        b0 --> b9
+        b1 --> b5
+        b1 --> b8
+        b1 --> b9
         b2 --> b5
-        b4 --> b5
-        b4 --> b7
         b2 --> b8
-        b4 --> b8
-        b5 --> b8
         b2 --> b9
         b3 --> b9
+        b4 --> b5
+        b4 --> b7
+        b4 --> b8
         b4 --> b9
+        b4 --> b10
+        b5 --> b8
         b5 --> b9
+        b5 --> b10
+        b6 --> b8
+        b6 --> b10
         b7 --> b9
         b8 --> b9
-        b4 --> b10
-        b5 --> b10
-        b6 --> b10
         b10 --> b8
         b10 --> b9
     end
@@ -412,7 +464,6 @@ flowchart LR
         d6["Hosted provider client<br/>an adapter, and an entry in<br/>the provider registry"]
         d11["Escalation policy<br/>nothing re-asks a contested metric"]
         d12["An approval command<br/>nothing stamps a decision; the time<br/>arrives with it in the answer file"]
-        d9["Web page"]
     end
 
     d6 --> b7
@@ -434,13 +485,21 @@ arrow in and none out; `src/organisation` imports it, and the path from a
 repository on disk to a banded risk score is closed. Every component the design
 named as load-bearing is now reachable from the command line.
 
-Every arrow in the built column is a real import, read off the source rather
-than off the design. Two are worth naming because their absence is deliberate:
-nothing runs from `src/council` to `src/report`, since the command line holds
-both and hands one to the other, and nothing runs from `src/findings` to
-`src/scoring`, because `src/organisation` stands between them and is the only
-place that decides which technical severity a score is computed from — once per
-published source, or once from the council's vector where it settled one.
+Every arrow in the built column is a real import, read off the source with
+`grep` rather than off the design, **and every real one is drawn** — so a missing
+arrow here means a missing import, not an omission. Two absences are worth
+naming because they are deliberate: nothing runs from `src/council` to
+`src/report`, since the command line holds both and `src/cli/council_detail.py`
+turns one into the other, and nothing runs from `src/findings` to `src/scoring`,
+because `src/organisation` stands between them and is the only place that decides
+which technical severity a score is computed from — once per published source, or
+once from the council's vector where it settled one.
+
+The thinnest arrow on the page is `src/scoring` to `src/report`, and it is one
+name. The HTML rendering imports the `Answer` enum to mark an Unknown, which is
+the vocabulary an answer is written in and not a figure the engine worked out.
+Every number the page shows comes off the record, so there is no second place a
+score could be derived and differ.
 
 What remains in the middle column is smaller than it looks and none of it blocks
 a run. Two are refinements of things that work: a selector would ask fewer
@@ -456,6 +515,14 @@ works and its `egress` gate is enforced, and the hosted client that gate exists
 to guard does not exist. That is why the hosted provider client keeps a box of
 its own with an edge back into the registry it would be registered in.
 
+**The web page left the middle column.** The `src/report/html_*.py` modules
+render the record as one HTML file with the stylesheet inlined and no script, no
+font and no link out, because the page is produced behind a proxy and opened
+from disk. What that is not is a web application: nothing is served, nothing is
+interactive, and there is no build step and no JavaScript — which is the whole of
+`frontend-developer`'s remit, and none of it is written. The box is gone because
+a reader can open the report in a browser today, not because that remit is met.
+
 The third column is there so the page is not read as claiming the rest is
 absent: the rules, the design documents and the agent definitions are written,
 and the third-party tools are installed. None of that is code this project
@@ -464,8 +531,8 @@ wrote.
 What this does not show: an order of work for the middle column, because no such
 plan exists. That column is also not evenly documented — the escalation policy
 and the hosted client are described in `docs/COUNCIL.md`, the selector and the
-answer validation in `docs/SCORING_MODEL.md`, and the web page only as a remit
-in an agent definition.
+answer validation in `docs/SCORING_MODEL.md`, and the approval command only as a
+note there on where an approval's time comes from.
 
 ## Keeping this page true
 
