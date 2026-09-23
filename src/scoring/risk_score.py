@@ -2,7 +2,8 @@
 
 Deterministic by construction -- no model, no clock, no randomness, no network.
 The same answers give the same number on every machine, and the record keeps
-every category beside the total so somebody can re-derive it by hand.
+every category **and the weight it carried** beside the total, so somebody can
+re-derive the number by hand from the record rather than from this file.
 
 The bands are in `scoring.bands`, and they are the organisation bands rather
 than the CVSS ones.
@@ -35,6 +36,14 @@ SCORE_DECIMALS = 2
 
 
 @dataclass(frozen=True)
+class CategoryWeight:
+    """What one category was worth in the total, by the name the design gives it."""
+
+    category: str
+    weight: float
+
+
+@dataclass(frozen=True)
 class RiskScore:
     """One assessment's Organisation Risk Score, with everything it was derived from."""
 
@@ -45,6 +54,7 @@ class RiskScore:
     exposure: CategoryScore
     business: CategoryScore
     threat: CategoryScore
+    weights: tuple[CategoryWeight, ...]
     is_provisional: bool
     unknown_questions: tuple[str, ...]
 
@@ -70,8 +80,19 @@ def organisation_risk_score(
         exposure=exposure,
         business=business,
         threat=threat,
+        weights=recorded_weights(),
         is_provisional=bool(unknown) or is_technical_unknown(technical),
         unknown_questions=unknown,
+    )
+
+
+def recorded_weights() -> tuple[CategoryWeight, ...]:
+    """Record the weighting that combined the categories, in the design's own order."""
+    # On the record and not only in `docs/SCORING_MODEL.md`: every other term of
+    # the total is kept, and a reader should not need a second document to
+    # finish arithmetic the record otherwise fully supports.
+    return tuple(
+        CategoryWeight(category.value, weight) for category, weight in CATEGORY_WEIGHTS.items()
     )
 
 

@@ -6,6 +6,12 @@ carried and what it contributed, and a reader holding the design reaches the sam
 figure without this tool. It is collapsed because eighteen findings by twelve
 questions is not a page anybody reads, and `<details>` costs no JavaScript.
 
+**Every figure here is one the record carries**, the four category weights
+included: the record carries those now, so the page states them rather than
+sending a reader to `docs/SCORING_MODEL.md` to finish the arithmetic. Nothing is
+read off the scoring engine, so there is no second place a weight could differ
+from the audit artefact.
+
 **Four answers, never two.** Yes, No, Unknown and N/A all appear as the
 organisation gave them. Unknown is marked, because it is the answer that makes a
 score provisional -- a page that showed only Yes and No would turn a guess into
@@ -17,10 +23,10 @@ does, which is exactly why a finding is scored per source at all.
 """
 
 from report.html_layout import listing, number, tag, text
-from scoring.question import Answer, Category
-from scoring.risk_score import CATEGORY_WEIGHTS
+from scoring.question import Answer
 
 DERIVATION_SUMMARY = "How this number was reached"
+WEIGHTING_LABEL = "Weighted"
 TECHNICAL_LABEL = "technical"
 UNKNOWN_CLASS = "answer-value flag"
 ANSWER_CLASS = "answer-value"
@@ -28,10 +34,18 @@ ANSWER_CLASS = "answer-value"
 
 def derivation(weighed) -> str:
     """Show every term behind one finding's scores, collapsed until a reader asks."""
-    # The categories come off the first score because they are the same on all of
-    # them: only the technical term differs from one source to the next.
-    behind = technical_list(weighed) + category_blocks(weighed.scores[0])
+    # The categories and the weighting come off the first score because they are
+    # the same on all of them: only the technical term differs from one source
+    # to the next.
+    scored = weighed.scores[0]
+    behind = technical_list(weighed) + category_blocks(scored) + weighting(scored)
     return tag("details", tag("summary", text(DERIVATION_SUMMARY)) + behind)
+
+
+def weighting(scored) -> str:
+    """Give the weighting that combined the categories, which the total alone does not show."""
+    named = ", ".join(f"{one.category} {number(one.weight)}" for one in scored.weights)
+    return tag("p", text(f"{WEIGHTING_LABEL} {named}."), "weighting")
 
 
 def technical_list(weighed) -> str:
@@ -40,12 +54,11 @@ def technical_list(weighed) -> str:
 
 
 def technical_row(scored) -> str:
-    """Give one source's technical severity on the 0-100 category scale, and its weight."""
+    """Give one source's technical severity on the 0-100 category scale."""
     return (
         tag("span", text(TECHNICAL_LABEL), "answer-id")
         + tag("span", text(technical_sentence(scored.technical)), "answer-text")
         + tag("span", text(f"{number(scored.technical_score)} of 100"), ANSWER_CLASS)
-        + tag("span", text(weight_of(Category.TECHNICAL)), "answer-weight")
     )
 
 
@@ -73,10 +86,7 @@ def category_total(category) -> str:
     # Both totals: the clamp is invisible in the score alone, and a reader
     # re-deriving the number by hand needs to see where it was held.
     held = ", clamped" if category.was_clamped else ""
-    return (
-        f"{number(category.score)} of 100 ({weight_of(category.category)}, "
-        f"raw total {number(category.raw_total)}{held})"
-    )
+    return f"{number(category.score)} of 100 (raw total {number(category.raw_total)}{held})"
 
 
 def answer_row(answered) -> str:
@@ -96,8 +106,3 @@ def answer_row(answered) -> str:
 def answer_class(answer) -> str:
     """Mark an Unknown answer, which is the one that leaves a score provisional."""
     return UNKNOWN_CLASS if answer is Answer.UNKNOWN else ANSWER_CLASS
-
-
-def weight_of(category: Category) -> str:
-    """Give the weight the engine applies to a category, read off the engine, not retyped."""
-    return f"weight {number(CATEGORY_WEIGHTS[category])}"

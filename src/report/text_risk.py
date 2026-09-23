@@ -8,6 +8,10 @@ visible from the published scores. Those findings come first.
 A provisional score is marked on its own line rather than footnoted. An
 `Unknown` answer produces a number that is calculated and flagged, never a
 silent `No`, and a flag a reader can miss is the same as no flag.
+
+The weighting that combined the categories heads the block, because it is the
+one term of the arithmetic a reader would otherwise have to fetch from
+`docs/SCORING_MODEL.md`. It comes off the record, never off the engine.
 """
 
 from report.record import Report
@@ -15,6 +19,7 @@ from report.risk_order import bands_contested_first
 from report.text_layout import INDENT, SOURCE_SEPARATOR, section
 
 PROVISIONAL = "provisional"
+WEIGHTING_LABEL = "weighted"
 
 
 def risk_block(report: Report) -> str:
@@ -23,7 +28,16 @@ def risk_block(report: Report) -> str:
         return ""
     weighed = bands_contested_first(report.risk.values())
     entries = [risk_entry(one, id_width(report)) for one in weighed]
-    return section(f"ORGANISATION RISK ({len(weighed)}){headline(report)}", entries)
+    titled = f"ORGANISATION RISK ({len(weighed)}){headline(report)}"
+    return section(titled, [weighting(weighed[0]), *entries])
+
+
+def weighting(weighed) -> str:
+    """Give the weighting that combined the categories, so the total re-derives on the page."""
+    # Off the first score: the weighting is the same on every one of them, and
+    # the same for every finding, so it is said once at the top of the block.
+    named = ", ".join(f"{one.category} {one.weight:g}" for one in weighed.scores[0].weights)
+    return f"{INDENT}{WEIGHTING_LABEL} {named}"
 
 
 def headline(report: Report) -> str:

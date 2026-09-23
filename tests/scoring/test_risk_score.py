@@ -71,6 +71,28 @@ def test_the_weights_are_the_ones_the_table_gives_and_not_the_inline_formula():
     assert CATEGORY_WEIGHTS[Category.THREAT] == 0.20
 
 
+def test_the_score_carries_the_weighting_that_produced_it():
+    # A score nobody can re-derive is not a score. Every other term of the total
+    # is on the record, so the weighting is too, rather than only in the design.
+    result = scored(from_cvss_base_score(8.0, "ghsa"), business=BUSINESS_CRITICAL_ASSET)
+    assert [(one.category, one.weight) for one in result.weights] == [
+        ("Technical severity", 0.30),
+        ("Exposure and reachability", 0.25),
+        ("Business impact", 0.25),
+        ("Threat and exploitation", 0.20),
+    ]
+
+
+def test_the_recorded_weighting_re_derives_the_recorded_score():
+    # The point of recording it: the total follows from the record alone, with
+    # no second document open.
+    result = scored(from_cvss_base_score(8.0, "ghsa"), business=BUSINESS_CRITICAL_ASSET)
+    terms = (result.technical_score, result.exposure.score, result.business.score,
+             result.threat.score)
+    by_hand = math.fsum(term * one.weight for term, one in zip(terms, result.weights))
+    assert round(by_hand, 2) == result.score
+
+
 def test_a_clamped_category_contributes_nothing_rather_than_subtracting():
     # Exposure comes to -45 raw. Clamped first it contributes 0 and the score is
     # the worked example's 44; clamped after weighting it would take 11.25 off
