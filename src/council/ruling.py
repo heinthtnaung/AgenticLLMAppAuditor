@@ -11,8 +11,7 @@ whole point of the council is that a reader can tell.
 from dataclasses import dataclass
 from enum import Enum
 
-from cvss.metrics import METRIC_ORDER
-from cvss.vector import refuse_illegal_pair
+from cvss.metrics import METRIC_ORDER, refuse_illegal_pair
 from council.answer import Confidence, MemberAnswer
 
 

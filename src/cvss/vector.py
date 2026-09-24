@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Mapping
 
-from cvss.metrics import METRIC_ORDER, METRICS_BY_ABBREVIATION, metric_name
+from cvss.metrics import METRIC_ORDER, metric_name, refuse_illegal_pair
 
 VERSION_PREFIX = "CVSS"
 FIELD_SEPARATOR = "/"
@@ -118,20 +118,6 @@ def split_pair(field: str) -> tuple[str, str]:
             f"Malformed metric {field!r}: a CVSS vector is made of 'name:value' pairs"
         )
     return parts[0], parts[1]
-
-
-def refuse_illegal_pair(name: str, value: str) -> None:
-    """Refuse a metric this calculator does not know, or a value that metric forbids."""
-    metric = METRICS_BY_ABBREVIATION.get(name)
-    if metric is None:
-        raise ValueError(
-            f"Unknown metric {name!r}: this calculator reads the eight CVSS Base metrics only"
-        )
-    if value not in metric.values:
-        allowed = ", ".join(metric.values)
-        raise ValueError(
-            f"{value!r} is not a value of {metric.name} ({name}); allowed values are {allowed}"
-        )
 
 
 def refuse_missing_metrics(metrics: Mapping[str, str]) -> None:
