@@ -33,7 +33,6 @@ The sentences this shares with the web page are `report.council_words`.
 
 from collections import Counter
 from itertools import chain
-from textwrap import fill
 
 from report.council_record import (
     CouncilAssessment,
@@ -62,15 +61,13 @@ from report.council_words import (
     who,
 )
 from report.record import Report
-from report.text_layout import INDENT, SOURCE_SEPARATOR, section
+from report.text_layout import SOURCE_SEPARATOR, indented, section, wrapped
 
 # The depths the block indents to, named because four of them read as arithmetic.
 ADVISORY_DEPTH = 1
 METRIC_DEPTH = 2
 MEMBER_DEPTH = 3
 QUOTATION_DEPTH = 4
-# What a re-flowed quotation wraps at, margin included.
-PAGE_WIDTH = 96
 # A quotation is delimited and never escaped, so it shows character for character.
 # Typographic marks, because an apostrophe or a straight quote inside it cannot
 # be mistaken for either of them.
@@ -183,14 +180,3 @@ def evidence_lines(quotation: str) -> list[str]:
         return []
     folded = " ".join(quotation.split())
     return wrapped(f"{OPEN_QUOTE}{folded}{CLOSE_QUOTE}", QUOTATION_DEPTH)
-
-
-def wrapped(said: str, depth: int) -> list[str]:
-    """Re-flow one long line to the width of the page, losing no word of it."""
-    margin = INDENT * depth
-    return fill(said, width=PAGE_WIDTH, initial_indent=margin, subsequent_indent=margin).split("\n")
-
-
-def indented(depth: int, said: str) -> str:
-    """Put one line at its depth on the page."""
-    return f"{INDENT * depth}{said}"

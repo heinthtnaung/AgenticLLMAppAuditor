@@ -2,8 +2,9 @@
 
 `docs/COUNCIL.md` keeps each member's answer and evidence per assessment, and the
 terminal is the rendering most runs produce. So these hold it to the same facts
-the web page shows: the chairman's basis, the quotation whole, whether that
-quotation **verified**, and a run one member answered marked as one. Settled
+the web page shows: the chairman's basis, every member's answer, and a run one
+member answered marked as one; the quotation itself, whole and whether it
+**verified**, is `test_text_council_quotations.py`. Settled
 metrics are counted by their basis rather than printed, because a metric the
 chairman settled by overruling a dissenter reads nothing like one nobody argued
 about.
@@ -16,33 +17,16 @@ is built as `cli.council_run.passed_over` builds one, from its own reasons.
 
 from cli.council_run import NO_TEXT_TO_READ, SOURCES_AGREE
 from council_runs import (
-    ADVISORY, AGREED, ALONE, DECLINED_AND_GUESSED, DISSENTING, EVIDENCE, INVENTED, LONG_QUOTE,
-    OTHER_QUOTE, UNPARSEABLE, UNTAGGED, answering, council_ran, declining, fell_back,
+    AGREED, ALONE, DECLINED_AND_GUESSED, DISSENTING, EVIDENCE, INVENTED, UNPARSEABLE, UNTAGGED,
+    answering, council_ran, declining, fell_back,
 )
 from report.council_record import CouncilNotAsked
 from report.council_words import SINGLE_ASSESSOR
 from report.record import build_report
-from report.text_council import PAGE_WIDTH, council_block
+from report.text_council import council_block
 from report_samples import PROVENANCE, TOTAL_LOSS, catalogue, component, finding
 
 DJANGO = component()
-
-# Longer than the page, so the terminal has to re-flow it to show it whole.
-LONG_QUOTATION = (
-    "An attacker who can reach the administrative endpoint may supply a crafted template "
-    "fragment, which the renderer evaluates before any authorisation check runs"
-)
-# Both members quote the long sentence verbatim and reach different values, so AC
-# is contested over it.
-ARGUED_AT_LENGTH = {
-    "qwen2.5:7b": {"AC": answering("H", LONG_QUOTATION)},
-    "gemma4:latest": {"AC": answering("L", LONG_QUOTATION)},
-}
-# Neither quotation is in the advisory, so nothing settles AV and both stay on show.
-BOTH_INVENTED = {
-    "qwen2.5:7b": {"AV": answering("N", INVENTED)},
-    "gemma4:latest": {"AV": answering("A", INVENTED)},
-}
 
 
 def block(*outcomes) -> str:
@@ -54,11 +38,6 @@ def block(*outcomes) -> str:
 def contested_block() -> str:
     """Render an advisory a real council of two families left AV contested on."""
     return block(council_ran(**DISSENTING))
-
-
-def folded(rendered: str) -> str:
-    """Fold a rendering to one line, so a re-flowed quotation can be looked for whole."""
-    return " ".join(rendered.split())
 
 
 def test_a_run_with_no_council_shows_nothing():
@@ -74,30 +53,6 @@ def test_a_contested_metric_shows_every_member_with_its_evidence():
     assert "AV  ·  contested  ·  2 members" in rendered
     assert "qwen2.5:7b (qwen2.5)  N  ·  high confidence" in rendered
     assert "gemma4:latest (gemma4)  A  ·  high confidence" in rendered
-
-
-def test_a_quotation_is_shown_whole_because_it_is_the_disagreement():
-    # On a contested metric the quotation is the entire reason two models
-    # reached different values.
-    rendered = folded(contested_block())
-    assert LONG_QUOTE in rendered
-    assert OTHER_QUOTE in rendered
-
-
-def test_a_quotation_too_long_for_the_page_is_re_flowed_and_not_shortened():
-    rendered = block(council_ran(details=f"{ADVISORY} {LONG_QUOTATION}.", **ARGUED_AT_LENGTH))
-    assert LONG_QUOTATION in folded(rendered)
-    assert "..." not in rendered
-    assert max(len(line) for line in rendered.split("\n")) <= PAGE_WIDTH
-
-
-def test_whether_a_quotation_verified_is_said_and_not_merely_that_one_was_offered():
-    # `quoted` and `found in the advisory` are different facts, and the evidence
-    # rule turns entirely on the difference. A verified quotation settles its
-    # metric unless another verified one disagrees, so the two marks are shown
-    # by two runs and never by one metric.
-    assert "quotation found in the advisory" in contested_block()
-    assert "quotation not found in the advisory" in block(council_ran(**BOTH_INVENTED))
 
 
 def test_a_metric_settled_over_a_dissent_is_told_apart_from_one_nobody_argued_about():
