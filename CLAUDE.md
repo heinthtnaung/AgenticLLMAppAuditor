@@ -23,7 +23,9 @@ Binding. Work that breaks one is not done.
 
 11. **Group related files in a folder.** One responsibility per folder, one per
     file. When a folder starts doing two jobs, split it.
-12. **Tests mirror the source tree.** `src/thing/x.py` → `tests/thing/test_x.py`.
+12. **Tests mirror what they test.** Code mirrors the source tree,
+    `src/thing/x.py` → `tests/thing/test_x.py`. A document mirrors the document
+    tree, `README.md` → `tests/docs/test_readme_*.py`.
 13. **Never put everything in one file.**
 
 ## Commits

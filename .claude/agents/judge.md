@@ -23,7 +23,7 @@ touches. Check:
 - **Names.** Anything vague. `process`, `handle`, `data`, `do_it`.
 - **Dead code.** Anything unreachable, unused, or commented out.
 - **Layout.** Files that belong in a folder with their siblings. Tests that do
-  not mirror the source tree.
+  not mirror what they test (rule 12).
 - **Tests.** A change with no test is not done. A test that would pass if the
   change were reverted is not a test.
 - **Commit message.** Short, imperative, one change. An "and" in the subject
