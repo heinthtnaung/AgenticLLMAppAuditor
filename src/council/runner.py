@@ -34,9 +34,10 @@ decides who is asked first, which is the cost order the escalation reasoning
 below relies on.
 
 Call order is a difference the reproducibility analysis in
-`measurements/README.md` does not rule out, and the runs recorded in
-`measurements/council_runs/` were asked metric by metric. A run asked in this
-order is a new baseline, not a replication of those.
+`measurements/README.md` does not rule out. Of the runs in
+`measurements/council_runs/`, the CPU runs were asked metric by metric and the
+GPU runs member by member, so the GPU runs are a baseline of their own and not a
+replication of the CPU runs.
 
 **Every reachable member is asked every metric**, which is the ask-all policy
 `docs/COUNCIL.md` names beside escalation. Escalation -- ask the cheapest first,
@@ -48,11 +49,13 @@ contest something between themselves.** A contest requires two distinct
 *verified* values (`ruling.ContestedMetric`), so one member asked alone can only
 settle or leave unresolved. On a roster of one cheap member and one costly one,
 every metric the cheap member settles alone is agreement nobody cross-checked.
-Measured on a two-member roster (`measurements/council_runs/`): 61 of 144 metrics
-came out contested because the second member disagreed, and this trigger would
-have recorded all 61 as settled. `single_assessor` counts the members reached,
-not the members asked about a given metric, so it would not say so; the `SOLE`
-basis on each metric settled by one member's quotation alone would.
+Measured on the CPU full run in `measurements/council_runs/`, Qwen
+(`qwen2.5:7b-instruct`) beside Gemma (`gemma4:latest`): 61 of 144 metrics came out
+contested because the second member disagreed, and this trigger would have
+recorded all 61 as settled. The GPU full run, Qwen beside `llama3.2:latest`,
+contests 13. `single_assessor` counts the members reached, not the members asked
+about a given metric, so it would not say so; the `SOLE` basis on each metric
+settled by one member's quotation alone would.
 
 That holds for a trigger on what members reply, not for escalation in general. A
 trigger on the finding's `disputed_metrics()` -- which `cli.council_run` already
