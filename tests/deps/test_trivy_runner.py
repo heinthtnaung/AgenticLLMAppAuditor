@@ -105,6 +105,7 @@ def test_the_version_asked_for_is_trivys_own_and_not_the_databases(monkeypatch):
 def test_the_version_command_asks_trivy_and_nothing_else(monkeypatch):
     asked = []
     def remember(command):
+        """Keep the command Trivy was run with, and answer as it would."""
         asked.append(command)
         return "Version: 1"
 

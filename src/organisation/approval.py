@@ -1,7 +1,7 @@
 """The human's decision on an assessment: who, what, when, and why.
 
 `docs/SCORING_MODEL.md` keeps the approval record among what is kept per
-assessment, and nothing captured one until now.
+assessment, and this is where one is captured.
 
 **Nothing here reads a clock.** The timestamp is part of the human act being
 recorded, so it arrives with the act rather than being taken when a report is

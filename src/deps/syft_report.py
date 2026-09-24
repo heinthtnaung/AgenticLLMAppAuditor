@@ -10,8 +10,8 @@ catalogues have no package identity by nature -- a workflow calling
 database could ever carry a purl for it. Refusing the whole scan over an
 artifact that could never be joined turns a non-issue into total failure, and
 larger repositories do this constantly. So they are collected and handed on to
-be counted and named: nothing is silently dropped, which was the point of
-refusing in the first place. This is decided by the missing purl and never by
+be counted and named: nothing is silently dropped, which is all that refusing
+them would guarantee. This is decided by the missing purl and never by
 the artifact's type, because the next cataloguer will have a different one.
 """
 
