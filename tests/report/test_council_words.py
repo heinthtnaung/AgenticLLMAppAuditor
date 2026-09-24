@@ -4,16 +4,17 @@ The defect these exist for is drift: two renderings of one record wording the
 same field differently. So the wording is held here, and the last test renders a
 record both ways and asks that the same facts come out worded the same.
 
-**The function tests build a ruling by hand and the record test does not.**
-`chairman_said` is given whatever the projection can hold and the input need not
-be a record any chairman emits; a test that renders a *report* is a claim about
-what a run produces, so that one goes through `council_runs` and the real
-chairman, which puts a `basis` on a settled ruling and nowhere else.
+**Every ruling here comes out of a real chairman**, through `council_runs`. The
+projection has room for a basis on any ruling and the chairman puts one on a
+settled ruling and nowhere else, so a ruling built by hand can be one no run
+produces. A member's row is built by hand only in shapes a run records: a
+guess, a decline, a failed call.
 """
 
 import html
 
 from council_runs import (
+    AGREED,
     ALONE,
     AWKWARD_ADVISORY,
     AWKWARD_QUOTE,
@@ -25,13 +26,7 @@ from council_runs import (
     council_ran,
     fell_back,
 )
-from report.council_record import (
-    MemberIdentity,
-    MemberSaid,
-    MetricRuling,
-    Outcome,
-    SaidKind,
-)
+from report.council_record import MemberIdentity, MemberSaid, SaidKind
 from report.council_words import (
     SINGLE_ASSESSOR,
     UNVERIFIED,
@@ -51,9 +46,6 @@ from report_samples import PROVENANCE, catalogue, component, finding
 DJANGO = component()
 QWEN = MemberIdentity("small-local", "ollama", "qwen2.5:7b", "qwen2.5", True, "v3")
 GEMMA = MemberIdentity("gemma4", "ollama", "gemma4:latest", "gemma4", True, "v3")
-
-QUOTATION = "a remote attacker can inject a crafted template fragment"
-BASIS = "members offering quotations disagreed, and the verified one settled it"
 
 # Both members quote the awkward sentence verbatim and reach different values,
 # so AV is contested and both renderings show the quotation in full.
@@ -90,16 +82,21 @@ def test_a_failed_call_carries_the_reason_it_failed():
     assert unanswered(broken) == "failed: the server said no"
 
 
-def test_the_chairman_gives_what_it_decided_then_why_then_what_it_rested_on():
-    ruling = MetricRuling(
-        "S", Outcome.UNRESOLVED, (), value="U", basis=BASIS, confidence="low",
-        fallback_source="ghsa",
-    )
-    assert chairman_said(ruling) == ["chairman: U", BASIS, "low confidence", "fell back to ghsa"]
+def ruled(outcome, metric: str):
+    """Give the chairman's ruling on one metric, as a real council recorded it."""
+    return next(one for one in outcome.rulings if one.metric == metric)
+
+
+def test_the_chairman_gives_what_it_settled_then_why_then_how_sure():
+    assert chairman_said(ruled(council_ran(), "AV")) == ["chairman: N", AGREED, "high confidence"]
+
+
+def test_a_value_fallen_back_to_names_the_source_it_came_from():
+    assert chairman_said(ruled(fell_back(), "AV")) == ["chairman: N", "fell back to ghsa"]
 
 
 def test_a_ruling_that_decided_nothing_is_given_nothing_to_say():
-    assert chairman_said(MetricRuling("AC", Outcome.CONTESTED, ())) == []
+    assert chairman_said(ruled(council_ran(**DISSENTING), "AV")) == []
 
 
 def test_one_of_a_thing_is_counted_in_the_singular():
