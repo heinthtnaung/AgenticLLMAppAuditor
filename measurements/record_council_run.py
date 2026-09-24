@@ -5,7 +5,7 @@ edits in `src/`, and where Ollama placed the models, which can shift output even
 temperature 0. So this runs the command after `--` into `council_runs/`:
 
     NAME.report.txt      stdout, the report
-    NAME.progress.txt    stderr, one line per model call
+    NAME.progress.txt    stderr: a line per model call, then where the reports went
     NAME.provenance.txt  the command, the commit, `git status --short src/` and
                          `ollama ps` at launch, the start, the end, the exit code,
                          and `ollama ps` at the end
