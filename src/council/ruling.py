@@ -17,16 +17,19 @@ from council.answer import Confidence, MemberAnswer
 
 
 class Basis(Enum):
-    """What settled a metric: nobody who quoted anything dissented, or the verified one did.
+    """What settled a metric: one quotation alone, several without a dissent, or the verified one.
 
-    Both range over the members that **offered a quotation**, whether or not it
-    turned out to be in the advisory. A member that quoted nothing -- one that
-    declined, and one that guessed -- took no part in the disagreement and
-    cannot create one, so a dissenting guess still leaves the basis AGREED.
+    All three range over the members that **offered a quotation**, whether or
+    not it turned out to be in the advisory. A member that quoted nothing -- one
+    that declined, one that guessed, one whose call failed -- took no part in the
+    disagreement and cannot create one, so a dissenting guess does not make the
+    basis EVIDENCE. Nor does it make it AGREED: beside one quotation and nothing
+    else, the basis is SOLE, because agreement needs a second member to agree.
     These strings go into a record a human reads, so they name the set rather
     than leaving "answered" to be worked out.
     """
 
+    SOLE = "one member offered a quotation, and no other member offered one"
     AGREED = "every member that offered a quotation supported this value"
     EVIDENCE = "members offering quotations disagreed, and the verified one settled it"
 

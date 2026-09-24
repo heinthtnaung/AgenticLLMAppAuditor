@@ -22,6 +22,7 @@ from council_runs import (
     EVIDENCE,
     LONG_QUOTE,
     OPEN_TWO_WAYS,
+    SOLE,
     answering,
     council_ran,
     fell_back,
@@ -135,7 +136,7 @@ def test_both_renderings_word_one_record_the_same_way():
     # they share have to be the same sentences.
     report = a_run_of_every_shape()
     said = [
-        SINGLE_ASSESSOR, VERIFIED, UNVERIFIED, EVIDENCE, LONG_QUOTE, "2 members",
+        SINGLE_ASSESSOR, VERIFIED, UNVERIFIED, EVIDENCE, SOLE, LONG_QUOTE, "2 members",
         "guessed A with nothing quoted", "qwen2.5:7b (qwen2.5)", "fell back to ghsa",
         AWKWARD_QUOTE, "7 metrics settled", "could not settle AV", "high confidence",
     ]
