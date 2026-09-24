@@ -67,8 +67,10 @@ def test_a_quotation_is_shown_whole_because_it_is_the_disagreement():
     "quotation", [LONG_QUOTATION, HYPHENATED_AT_THE_EDGE], ids=["long", "hyphen at the edge"]
 )
 def test_a_quotation_too_long_for_the_page_is_re_flowed_and_not_shortened(quotation):
+    # The marks by value, not by constant: an apostrophe or a straight quote in
+    # their place could be read as part of what the member quoted.
     rendered = block(council_ran(details=f"{ADVISORY} {quotation}", **argued_over(quotation)))
-    assert quotation in folded(rendered)
+    assert f"“{quotation}”" in folded(rendered)
     assert "..." not in rendered
     assert max(len(line) for line in rendered.split("\n")) <= PAGE_WIDTH
 
