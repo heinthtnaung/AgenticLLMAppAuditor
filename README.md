@@ -457,8 +457,34 @@ python -m pytest -q
 `requirements.txt` pins the same pytest, and `tests/test_pyproject.py` holds the
 two to each other.
 
-No count is pasted here: the suite grows with every module that lands, so any
-number written down is wrong within the day.
+No total is pasted here: the suite grows with every module that lands, so a
+total written down is wrong within the day. The table below is held instead:
+`tests/docs/test_readme_gated.py` runs each file it names with no flag set, and
+checks that the file skips as many tests as the Tests column says, each for a
+reason naming its flag. Nothing checks the Runs or Needs columns.
+
+**Three files skip unless asked for**, because each needs something the
+ordinary suite may not depend on. A plain run counts their tests as skipped, the
+sum of the Tests column below, and each skip's reason names its flag:
+
+| Flag | Runs | Tests | Needs |
+|---|---|---|---|
+| `COUNCIL_LIVE_OLLAMA=1` | `tests/council/test_ollama_live.py`: asks the pinned model for real, so the recordings the council tests use are checked against it | 3 | `ollama serve` with `qwen2.5:7b-instruct` pulled |
+| `README_LIVE_SCAN=1` | `tests/docs/test_readme_live.py`: reruns this page's marked audits and fails on any printed line that drifted | 1 | `fetched/vulnscout`, Syft, Trivy and the advisory database |
+| `SYFT_LIVE_SCAN=1` | `tests/deps/test_manifests_live.py`: measures the lock-file table above against the real Syft again | 13 | Syft on the path |
+
+All three at once, as one line:
+
+```bash
+NO_PROXY=localhost,127.0.0.1 no_proxy=localhost,127.0.0.1 COUNCIL_LIVE_OLLAMA=1 README_LIVE_SCAN=1 SYFT_LIVE_SCAN=1 python -m pytest -q
+```
+
+The prefix sets the variables for that command alone, so nothing stays
+exported. With every flag on and everything each needs in place, nothing
+skips. A skip that remains names its cause: Syft is not installed; the README
+check's corpus, a scanner or the database is missing; or the model declined
+the one metric a test asks about, which is a result and not a failure. Run as
+root, the tests that provoke a permission refusal skip too.
 
 ## The design in brief
 
