@@ -42,13 +42,21 @@ from a directory on disk to a banded score.
 
 ## Usage
 
-**Nothing is installed and there is no entry point on the path**, so `src` goes
-on `PYTHONPATH` and the module is run directly. The repository being audited is
-an argument and already on disk — this tool never clones one.
+Install it once into a virtual environment, and it is the `audit` command. The
+repository being audited is an argument and already on disk — this tool never
+clones one.
 
 ```bash
-PYTHONPATH=src python -m cli.main fetched/vulnscout
+python -m venv .venv
+. .venv/bin/activate
+pip install -e .
+audit fetched/vulnscout
 ```
+
+The install fetches a build backend, so it needs the corporate proxy **on**,
+like `git clone`. `-e` installs in place, so an edit to `src/` takes effect
+without reinstalling. Uninstalled, `PYTHONPATH=src python -m cli.main` runs the
+same code and prints the same report.
 
 <!-- readme-check: run (elided) -->
 ```
@@ -94,7 +102,7 @@ above; everything else is verbatim.
 | `html` | one page to open in a browser |
 
 ```bash
-PYTHONPATH=src python -m cli.main fetched/vulnscout --format html > report.html
+audit fetched/vulnscout --format html > report.html
 ```
 
 All three render the same record and none of them works a number out, so a
@@ -156,7 +164,7 @@ comes out marked provisional. `approval` is optional, and its timestamp is part
 of the human act, so you write it rather than the tool stamping it.
 
 ```bash
-PYTHONPATH=src python -m cli.main fetched/vulnscout --answers answers.json
+audit fetched/vulnscout --answers answers.json
 ```
 
 <!-- readme-check: run --answers -->
@@ -250,8 +258,8 @@ command line exits with, so every "could not run" leaves by the same door.
 
 ```bash
 export NO_PROXY=localhost,127.0.0.1 no_proxy=localhost,127.0.0.1
-PYTHONPATH=src python -m cli.main fetched/vulnscout \
-    --council-member qwen2.5:7b-instruct --council-member qwen3:8b
+audit fetched/vulnscout \
+    --council-member qwen2.5:7b-instruct --council-member llama3.2:latest
 ```
 
 The `NO_PROXY` line is needed here and not above: a member talks to Ollama on
@@ -269,11 +277,13 @@ its work. Of the 18 findings on this repository, 5 carry sources that disagree,
 and a two-member run is asked about those 5 — **80 model calls rather than 288**,
 eight metrics for each of 5 findings, twice. A finding **no** source scored is
 asked about too: there is no agreement to lean on, and a council vector is the
-only severity it will ever carry.
+only severity it will ever carry. So is a finding carrying a source the
+calculator could not read, because an unread vector is not agreement; this
+repository has none, so the 5 stands.
 
 ```bash
-PYTHONPATH=src python -m cli.main fetched/vulnscout \
-    --council-member qwen2.5:7b-instruct --council-member qwen3:8b \
+audit fetched/vulnscout \
+    --council-member qwen2.5:7b-instruct --council-member llama3.2:latest \
     --council-all-findings
 ```
 
@@ -291,22 +301,32 @@ and a run with no members named are three different facts and read as three.
 
 ### A council run says where it has got to
 
-Calls queue on one GPU, so a second member multiplies the wall clock rather than
-adding to it, and a run that says nothing is indistinguishable from a hung one.
+Local members share one Ollama server, and the council waits for each answer
+before it makes the next call, so every member named adds its calls to the wall
+clock rather than running beside the others. A run that says nothing is
+indistinguishable from a hung one. `measurements/README.md` times a full run
+at 71 min 39 s on one baseline and 7 min 3 s on the next, which changed
+placement, second member, call order and Ollama version at once.
 So a run prints one line per call:
 
 ```
 council 1/80  finding 1/5 CVE-2026-13149  AV  qwen2.5:7b-instruct
-council 2/80  finding 1/5 CVE-2026-13149  AV  qwen3:8b
-council 3/80  finding 1/5 CVE-2026-13149  AC  qwen2.5:7b-instruct
+council 2/80  finding 1/5 CVE-2026-13149  AC  qwen2.5:7b-instruct
 ...
+council 8/80  finding 1/5 CVE-2026-13149  A  qwen2.5:7b-instruct
+council 9/80  finding 1/5 CVE-2026-13149  AV  llama3.2:latest
+...
+council 16/80  finding 1/5 CVE-2026-13149  A  llama3.2:latest
 council 17/80  finding 2/5 CVE-2021-4279  AV  qwen2.5:7b-instruct
-council 18/80  finding 2/5 CVE-2021-4279  AV  qwen3:8b
 ```
 
 The denominators are what this run will actually do: 5 findings after scoping,
 not 18, and only the members it can reach. A total counting calls nobody makes
 is a progress bar that never fills.
+
+One member answers all eight metrics of a finding before the next is asked.
+Two members that do not fit in the GPU's memory together are then swapped once
+per member per finding rather than on every call.
 
 **Every one of those lines goes to stderr and none to stdout.** The report has
 the other stream to itself, so `--format json | jq` receives the artefact alone,
@@ -330,12 +350,16 @@ you like. The proxy section below puts both directions in a table.
 
 ### Running the tests
 
-`pytest` is the only dependency — the runtime is standard library:
+`pytest` is the only development dependency — the runtime is standard library —
+and the `dev` extra installs it:
 
 ```bash
-pip install -r requirements.txt
+pip install -e '.[dev]'
 python -m pytest -q
 ```
+
+`requirements.txt` pins the same pytest, and `tests/test_pyproject.py` holds the
+two to each other.
 
 No count is pasted here: the suite grows with every module that lands, so any
 number written down is wrong within the day.
@@ -380,7 +404,7 @@ machine, not minimums except where stated.
 | git | 2.43.0 | cloning the repositories under audit |
 | Syft | 1.52.0 | building the SBOM |
 | Trivy | 0.74.0 | the advisory database and the CVE join |
-| Ollama | 0.34.2 | the local analyst model |
+| Ollama | 0.34.3 | the local analyst model |
 
 ### The advisory database is a separate step
 
@@ -466,9 +490,11 @@ design document wins.
 ├── LICENSE                   MIT
 ├── .gitignore
 ├── pytest.ini                src on the path, tests under tests/
+├── pyproject.toml            the package, and the `audit` command
 ├── requirements.txt          pytest; the runtime is standard library
 ├── .claude/
 │   └── agents/               six agent definitions
+├── measurements/             the corpus and council runs behind cited figures
 ├── docs/
 │   ├── SCORING_MODEL.md      the Organisation Risk Score
 │   ├── COUNCIL.md            the assessor council
@@ -483,7 +509,7 @@ design document wins.
 │   ├── organisation/         the answer file, the approval, one score per source
 │   ├── report/               the record, and the text, JSON and HTML renderings
 │   └── scoring/              the approved questions and the risk score engine
-└── tests/                    mirrors src/, a test module per source module
+└── tests/                    mirrors what it tests: src/ by module, the README under docs/
 ```
 
 `fetched/` and `artifacts/` are ignored: a repository under audit is an argument,

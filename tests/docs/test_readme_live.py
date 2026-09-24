@@ -124,7 +124,7 @@ def answer_path(run: PrintedRun, page: str, tmp_path: Path) -> Path:
 
 
 def audited(command: list[str]) -> list[str]:
-    """Run one audit the way the README documents it, from the project root."""
+    """Run one audit from the project root as `python -m cli.main`, the `main` behind `audit`."""
     finished = subprocess.run(
         command,
         cwd=PROJECT_ROOT,
