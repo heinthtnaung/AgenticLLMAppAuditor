@@ -1,9 +1,8 @@
 """Run one council audit and record what produced it, beside what it printed.
 
-A council run's output moves with what its command line does not show: the
-commit, edits in `src/`, and where Ollama placed the models, which shifts output
-even at temperature 0. So this runs the command after `--` and records it, the
-commit, source state, placement and times beside its output in `council_runs/`:
+A council run's output moves with what its command line does not show: the commit,
+edits in `src/`, and where Ollama placed the models, which can shift output even at
+temperature 0. So this runs the command after `--` into `council_runs/`:
 
     NAME.report.txt      stdout, the report
     NAME.progress.txt    stderr, one line per model call
@@ -11,9 +10,10 @@ commit, source state, placement and times beside its output in `council_runs/`:
                          `ollama ps` at launch, the start, the end, the exit code,
                          and `ollama ps` at the end
 
-The launch half is written before the command starts, so a run killed half way
-still says what it was, and a name already used is refused rather than a
-recorded run replaced. The times are this script's: `src/` reads no clock.
+`ollama ps` shows what is loaded at that instant, so a member loaded and evicted
+between the two is in neither. The launch half is written first, so a run killed
+half way still says what it was, and a used name is refused rather than a run
+replaced. The times are this script's: `src/` reads no clock.
 
     python measurements/record_council_run.py full -- audit fetched/vulnscout \\
         --council-member qwen2.5:7b-instruct --council-member llama3.2:latest
@@ -123,7 +123,7 @@ def launch_section(command: tuple[str, ...], commit: str, source: str, ollama: s
 
 
 def end_section(ended: str, exit_code: int, ollama: str) -> str:
-    """Write how a run ended, and where Ollama had the models by then."""
+    """Write how a run ended, and what Ollama had loaded by then."""
     return "\n".join([
         f"ended:   {ended}", f"exit:    {exit_code}", "ollama ps at end:", *indented(ollama),
     ]) + "\n"

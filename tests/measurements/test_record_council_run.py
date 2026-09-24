@@ -102,6 +102,13 @@ def test_the_provenance_says_what_the_run_came_from_and_how_it_ended(monkeypatch
     assert lines[10:] == ["ollama ps at end:", *recorder.indented(ollama)]
 
 
+def test_placement_is_read_at_launch_and_at_the_end_and_nowhere_between(tools, tmp_path):
+    # The accepted gap: a member loaded and evicted mid-run is in neither section.
+    _, files = recorded(tmp_path)
+    read = [line for line in files.provenance.read_text().splitlines() if "ollama ps" in line]
+    assert read == ["ollama ps at launch:", "ollama ps at end:"]
+
+
 def test_the_launch_is_on_disk_before_the_command_runs(tools, tmp_path):
     # A run killed half way has to still say what it was.
     provenance = recorder.run_files("full", tmp_path).provenance
