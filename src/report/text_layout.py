@@ -1,13 +1,17 @@
-"""The typography the terminal rendering shares: spacing, columns, and a titled block.
+"""The typography the terminal rendering shares: spacing, columns, re-flowing, a titled block.
 
 Column widths are measured off what is actually there rather than guessed, so a
 GHSA identifier nineteen characters long does not push one row out of line with
 its neighbours and there is no constant to outgrow.
 """
 
+from textwrap import fill
+
 INDENT = "  "
 SOURCE_SEPARATOR = "  ·  "
 NAME_WIDTH = 30
+# What a re-flowed line wraps at, margin included.
+PAGE_WIDTH = 96
 
 
 def section(title: str, entries: list[str]) -> str:
@@ -28,3 +32,14 @@ def identified(finding, width: int) -> str:
 def id_width(findings: tuple) -> int:
     """Widen the id column to the longest id present rather than guessing one."""
     return max((len(one.advisory.advisory_id) for one in findings), default=0)
+
+
+def indented(depth: int, said: str) -> str:
+    """Put one line at its depth on the page."""
+    return f"{INDENT * depth}{said}"
+
+
+def wrapped(said: str, depth: int) -> list[str]:
+    """Re-flow one long line to the width of the page at its depth, losing no word of it."""
+    margin = INDENT * depth
+    return fill(said, width=PAGE_WIDTH, initial_indent=margin, subsequent_indent=margin).split("\n")
