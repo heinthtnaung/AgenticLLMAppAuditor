@@ -28,7 +28,7 @@ leave them out — `NOT ASSESSED`, never a zero and never an omission.
 | `src/council/` | built | the roster and its `egress` gate, redaction, the prompt, a provider registry holding one local Ollama client, the quotation check, the chairman and the runner |
 | `src/organisation/` | built | the answer file, the approval record, and one risk score per published source |
 | `src/report/` | built | the record every run produces, and its three renderings: a terminal report, the JSON audit artefact, and one self-contained HTML page |
-| `src/cli/` | built | the arguments, the preflight refusals, the order the packages run in, which findings the council is put to, the progress it prints to stderr, and the exit code |
+| `src/cli/` | built | the arguments, the preflight refusals, the order the packages run in, which findings the council is put to, the progress it prints to stderr, the three report files in `reports/`, and the exit code |
 | question selector | design | every approved question is asked, rather than the few a CVE's prerequisites call for |
 | answer validation | design | no model reads the answers back for gaps or contradictions |
 | hosted provider client | design | the local client works; nothing reaches OpenRouter or another API, so a hosted member is skipped for want of one. An adapter and a registry entry, and no other module moves |
@@ -44,7 +44,8 @@ from a directory on disk to a banded score.
 
 Install it once into a virtual environment, and it is the `audit` command. The
 repository being audited is an argument and already on disk — this tool never
-clones one.
+clones one. A run prints the report and saves it in three formats into
+`reports/`.
 
 ```bash
 python -m venv .venv
@@ -93,17 +94,40 @@ NOT ASSESSED
 Three of the five disagreements and eleven of the thirteen agreements are elided
 above; everything else is verbatim.
 
-### Three formats, one record
+### Three formats, one record, three files
 
-| `--format` | What it writes |
-|---|---|
-| `text` | the block above, and the default |
-| `json` | the audit artefact, for a pipeline or `jq` |
-| `html` | one page to open in a browser |
+Every run saves the report in all three formats into `reports/`, in the
+directory the command ran from. Each file is named after the repository's
+directory, so the run above, from the project root, leaves:
 
-```bash
-audit fetched/vulnscout --format html > report.html
-```
+| File | `--format` | What it is |
+|---|---|---|
+| `reports/vulnscout.txt` | `text` | the block above, and the default |
+| `reports/vulnscout.json` | `json` | the audit artefact, for a pipeline or `jq` |
+| `reports/vulnscout.html` | `html` | one page to open in a browser |
+
+To read the page, open `reports/vulnscout.html` in a browser; it needs no second
+run. `--format` picks only which of the three is printed on stdout, and the file
+of that format is byte for byte what was printed. After the report, one line on
+stderr says where the three went:
+`reports written to reports/vulnscout.txt, reports/vulnscout.json, reports/vulnscout.html`.
+
+**No time goes in a name**, because `src/` reads no clock. A second run of the
+same repository overwrites its three files, so copy out of `reports/` any run you
+mean to keep. Two repositories with the same directory name, `a/app` and
+`b/app`, write the same three files, and the later run replaces the earlier.
+
+The folder is checked before the scan. A file where `reports/` should be, a
+folder this run cannot write into, or a report there it cannot replace, exits
+`2` with `audit: <reason>` and nothing is scanned, because a council run is too
+long to lose to a folder.
+
+A write that fails after the scan exits `2` too, with the record already on
+stdout. The files are written one at a time, `.txt`, `.json`, then `.html`, so
+the ones before the file it names hold this run and the ones after it still hold
+the last run's, or are missing if there was none, under the same names and with
+nothing marking which is stale. The named file itself may be empty or cut short.
+Rerun once the fault is fixed.
 
 All three render the same record and none of them works a number out, so a
 figure cannot differ between them. The HTML page fetches nothing — the
@@ -247,12 +271,14 @@ under `NOT ASSESSED` rather than printing a zero.
 |---|---|
 | `0` | the audit ran and found nothing |
 | `1` | the audit ran and found something |
-| `2` | the audit could not run |
+| `2` | the audit could not run, or could not save its reports |
 
 **`2` is the one that matters.** A missing database, an absent scanner or a path
 that is not there would otherwise exit 0 beside a genuinely clean repository, and
 a pipeline would go green on a scan that never happened. `2` is also what a bad
-command line exits with, so every "could not run" leaves by the same door.
+command line exits with, so every "could not run" leaves by the same door. A run
+whose reports could not be written exits `2` even with the record on stdout,
+because it did not do everything it was asked to.
 
 ### The council is off unless you ask for it
 
@@ -328,10 +354,11 @@ One member answers all eight metrics of a finding before the next is asked.
 Two members that do not fit in the GPU's memory together are then swapped once
 per member per finding rather than on every call.
 
-**Every one of those lines goes to stderr and none to stdout.** The report has
-the other stream to itself, so `--format json | jq` receives the artefact alone,
-byte for byte the same whether or not anybody was watching. Redirect stdout to a
-file and the progress still reaches your terminal.
+**Every one of those lines goes to stderr and none to stdout.** So does the one
+after the last call, saying where the reports went. The report has the other
+stream to itself, so `--format json | jq` receives the artefact alone, byte for
+byte the same whether or not anybody was watching. Redirect stdout to a file and
+the progress still reaches your terminal.
 
 Counts, and no elapsed time. A line prints *before* the call it names, so a slow
 member is a line that sits there and you supply the seconds yourself. That is
@@ -501,7 +528,7 @@ design document wins.
 │   ├── diagrams.md           every flow, as diagrams
 │   └── sources/              the two documents the design was read from
 ├── src/
-│   ├── cli/                  arguments, preflight, the audit order, the council scope, the exit code
+│   ├── cli/                  arguments, preflight, the audit order, the council scope, the report files, the exit code
 │   ├── council/              the roster, redaction, the providers, the chairman
 │   ├── cvss/                 vector parser, metric vocabulary, Base score
 │   ├── deps/                 the Syft and Trivy runners, the database's build date
@@ -512,7 +539,7 @@ design document wins.
 └── tests/                    mirrors what it tests: src/ by module, the README under docs/
 ```
 
-`fetched/` and `artifacts/` are ignored: a repository under audit is an argument,
+`fetched/` and `reports/` are ignored: a repository under audit is an argument,
 never this project's evidence, and so is what a run writes.
 
 ## Licence

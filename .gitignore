@@ -222,7 +222,7 @@ __marimo__/
 fetched/
 
 # What an audit writes.
-artifacts/
+reports/
 
 # The measurement corpus is package databases at their real Linux paths, so the
 # packaging patterns above take `lib/` and `var/` out of it and leave two of the
