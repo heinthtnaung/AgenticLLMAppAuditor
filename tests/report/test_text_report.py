@@ -5,7 +5,14 @@ import pytest
 from report.provenance import RunProvenance, UnknownAdvisoryDatabase
 from council_runs import OPEN_TWO_WAYS, council_ran, council_states, passed_over_entirely
 from full_runs import fully_assessed
-from report.record import NO_COUNCIL_RUN, NOTHING_ABSENT, NOTHING_WAS_PUT_TO_IT, build_report
+from report.record import (
+    NO_COUNCIL_RUN,
+    NOTHING_ABSENT,
+    NOTHING_WAS_PUT_TO_IT,
+    UNREAD_MANIFEST,
+    Coverage,
+    build_report,
+)
 from report.text_report import as_text
 from report_samples import (
     LOW_CONFIDENTIALITY,
@@ -166,3 +173,9 @@ def test_a_run_that_left_nothing_out_says_so_under_the_heading():
 
 def test_a_run_that_left_something_out_does_not_say_nothing_was():
     assert NOTHING_ABSENT not in rendered()
+
+
+def test_a_manifest_nothing_was_read_from_is_named_under_not_assessed_with_why():
+    page = as_text(fully_assessed(Coverage(unread_manifests=("frontend/package.json",))))
+    named = lines_under("NOT ASSESSED", page)
+    assert named == ["  frontend/package.json", f"    {UNREAD_MANIFEST}"]

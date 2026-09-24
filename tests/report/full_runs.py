@@ -14,7 +14,7 @@ and imports by basename.
 from council_runs import council_ran
 from organisation.approval import Approval, Decision
 from organisation.risk import assess, per_source
-from report.record import Report, build_report
+from report.record import Coverage, Report, build_report
 from report_samples import PROVENANCE, catalogue, component, finding
 from scoring.library import APPROVED_QUESTIONS
 from scoring.question import Answer
@@ -24,7 +24,7 @@ EVERY_ANSWER_NO = {asked.question_id: Answer.NO for asked in APPROVED_QUESTIONS}
 APPROVED = Approval("hein", Decision.APPROVED, "2026-09-23T09:15:00Z", "reviewed on staging")
 
 
-def fully_assessed() -> Report:
+def fully_assessed(coverage: Coverage = Coverage()) -> Report:
     """Build a record whose answers were weighed, which was approved, and which a council read."""
     installed = component()
     one = finding(installed, advisory_id=ADVISORY_ID)
@@ -36,4 +36,5 @@ def fully_assessed() -> Report:
         council=(council_ran(ADVISORY_ID),),
         risk=(assess(one, EVERY_ANSWER_NO, per_source(one)),),
         approval=APPROVED,
+        coverage=coverage,
     )

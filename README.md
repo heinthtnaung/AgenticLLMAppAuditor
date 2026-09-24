@@ -17,11 +17,12 @@ catalogued, advisories joined, every source's published vector scored and kept
 attributed, a council of local models asked if you name one, and every finding
 weighed against your environment into an Organisation Risk Score if you answer
 the approved questions. The two optional halves are named as absent when you
-leave them out — `NOT ASSESSED`, never a zero and never an omission.
+leave them out — `NOT ASSESSED`, never a zero and never an omission. So is every
+manifest the scan could read no version from.
 
 | Part | State | What it is |
 |---|---|---|
-| `src/deps/` | built | Syft and Trivy: the components a directory declares, the advisories published against them, and the database's own build date |
+| `src/deps/` | built | Syft and Trivy: the components a directory declares, the advisories published against them, and the database's own build date; and which manifests have no lock file Syft reads |
 | `src/cvss/` | built | a CVSS Base vector parsed and validated, and its score by the published equations |
 | `src/findings/` | built | the join — a CVE affecting an installed component, with every source's score kept apart and attributed |
 | `src/scoring/` | built | the approved question library, per-question weights, categories clamped then weighted, and the band |
@@ -144,6 +145,63 @@ diff; a styling change rewrites an HTML file the whole way down, which is why
 interactive; there is no JavaScript and no build step. The browser-facing half
 `frontend-developer` exists for is unwritten, and it has no box in diagram 5
 because nothing has designed it either.
+
+### A manifest with no lock file is named, not counted
+
+Syft reads a `package.json`, `composer.json` or `Gemfile` through the lock file
+beside it and through nothing else. One with no lock file yields no package at
+all, so every dependency it declares goes unchecked, and `0 findings` over it
+would read like a clean repository. So before the scan the repository is
+walked and each such manifest is named. `.git/` is skipped, and so are
+`node_modules/` and `vendor/`, the installed trees a lock file describes;
+walking them would name the packages installed there as unread manifests.
+
+| Manifest | Lock files Syft reads it through |
+|---|---|
+| `package.json` | `package-lock.json`, `yarn.lock` or `pnpm-lock.yaml` |
+| `composer.json` | `composer.lock` |
+| `Gemfile` | `Gemfile.lock` |
+
+Each goes first under `NOT ASSESSED`, by its path within the repository, with
+`no lock file Syft reads is beside it, so no version it declares was checked`.
+The summary gains a pointer, so the counts never stand alone: a second line in
+text, and the end of the same summary paragraph on the page. With two such
+manifests it reads
+`Not in these counts: 2 manifests with no lock file Syft reads, named under not assessed.`
+The JSON artefact carries each under `not_assessed`.
+
+**To audit what it declares, write the lock file and audit again.** For npm, in
+the manifest's directory, with the proxy **on** because it asks the registry:
+
+```bash
+npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+```
+
+It writes `package-lock.json` and installs nothing, even where an `.npmrc` sets
+`package-lock=false`, and `--ignore-scripts` keeps the manifest's own scripts
+from running. On a large project it takes minutes. `--no-audit` stops npm
+sending the resolved tree to the registry's audit service and printing its own
+vulnerability count; that count and this tool's findings count different
+things, so do not set one against the other.
+
+What a written lock costs: it holds the versions npm resolves today within the
+manifest's ranges, which need not be the ones deployed, so the audit is of
+those.
+
+The table is what Syft 1.52 was measured reading, and the walk over it falls
+short four ways:
+
+| Case | Named | Why |
+|---|---|---|
+| `package.json` beside only `node_modules/` or `npm-shrinkwrap.json` | yes | Syft reads neither in a directory scan |
+| `Cargo.toml` or `pyproject.toml` with no lock file | no, although Syft reads nothing from either | a Cargo workspace keeps one lock at its root, and a `pyproject.toml` is often tool configuration; a repository of either can still read clean |
+| a workspace member (npm, yarn or pnpm), locked by the root's lock file | yes, wrongly where Syft reads it from the root's lock | only the manifest's own directory is looked in; Syft was measured reading an npm member from the root's lock, and yarn and pnpm were not measured |
+| the project's own manifest inside a folder named `node_modules/` or `vendor/` | no | both names are skipped at any depth as installed trees, so nothing inside is looked at |
+
+A directory the walk cannot list stops the run before the scan, with exit `2`
+and nothing on stdout, because passing over it would pass over every manifest
+inside. The error stream says
+`audit: cannot list <path> to look for manifests: Permission denied`.
 
 ### Scoring a finding against your environment
 
@@ -278,9 +336,16 @@ found there is none either, and rather than claim nobody answered, it reads
 **`2` is the one that matters.** A missing database, an absent scanner or a path
 that is not there would otherwise exit 0 beside a genuinely clean repository, and
 a pipeline would go green on a scan that never happened. `2` is also what a bad
-command line exits with, so every "could not run" leaves by the same door. A run
-whose reports could not be written exits `2` even with the record on stdout,
-because it did not do everything it was asked to.
+command line and a directory the manifest walk cannot list exit with, so every
+"could not run" leaves by the same door. A run whose reports could not be
+written exits `2` even with the record on stdout, because it did not do
+everything it was asked to.
+
+**A manifest with no lock file does not move the code.** The run still exits
+`0` or `1` by what it found, so a pipeline reading only the code goes green on
+a repository whose dependencies were never checked. Read the JSON artefact's
+`not_assessed` as well: each unread manifest is an entry there, named by its
+path, with the lock-file reason as its `because`.
 
 ### The council is off unless you ask for it
 
@@ -535,7 +600,7 @@ design document wins.
 │   ├── cli/                  arguments, preflight, the audit order, the council scope, the report files, the exit code
 │   ├── council/              the roster, redaction, the providers, the chairman
 │   ├── cvss/                 vector parser, metric vocabulary, Base score
-│   ├── deps/                 the Syft and Trivy runners, the database's build date
+│   ├── deps/                 the Syft and Trivy runners, the database's build date, unread manifests
 │   ├── findings/             the join, and every source's score kept apart
 │   ├── organisation/         the answer file, the approval, one score per source
 │   ├── report/               the record, and the text, JSON and HTML renderings

@@ -19,7 +19,14 @@ from report.html_absences import (
     not_assessed_section,
     unidentified_section,
 )
-from report.record import NO_COUNCIL_RUN, NOTHING_ABSENT, NOTHING_WAS_PUT_TO_IT, build_report
+from report.record import (
+    NO_COUNCIL_RUN,
+    NOTHING_ABSENT,
+    NOTHING_WAS_PUT_TO_IT,
+    UNREAD_MANIFEST,
+    Coverage,
+    build_report,
+)
 from report_samples import PROVENANCE, advisory, catalogue, component, finding, unidentified
 
 DJANGO = component()
@@ -121,3 +128,9 @@ def test_a_run_that_left_nothing_out_says_so_under_the_heading():
 
 def test_a_run_that_left_something_out_does_not_say_nothing_was():
     assert NOTHING_ABSENT not in not_assessed_section(report_of())
+
+
+def test_a_manifest_nothing_was_read_from_is_named_with_why():
+    page = not_assessed_section(fully_assessed(Coverage(unread_manifests=("package.json",))))
+    assert '<span class="absence-what">package.json</span>' in page
+    assert UNREAD_MANIFEST in page

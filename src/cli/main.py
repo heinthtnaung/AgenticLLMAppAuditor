@@ -19,6 +19,7 @@ import sys
 from pathlib import Path
 from typing import TextIO
 
+from deps.manifests import ManifestsUnreadable
 from deps.scanner import ScannerFailed, ScannerUnavailable
 from report.html_report import as_html
 from report.json_report import as_json
@@ -44,7 +45,8 @@ from cli.report_files import (
 
 RENDERERS = {TEXT_FORMAT: as_text, JSON_FORMAT: as_json, HTML_FORMAT: as_html}
 REFUSALS = (
-    CannotRun, CannotWriteReports, ScannerFailed, ScannerUnavailable, ValueError, OSError,
+    CannotRun, CannotWriteReports, ManifestsUnreadable, ScannerFailed, ScannerUnavailable,
+    ValueError, OSError,
 )
 
 FOUND_NOTHING = 0

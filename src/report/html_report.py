@@ -33,6 +33,7 @@ from report.html_risk import risk_section
 from report.html_style import STYLESHEET
 from report.provenance import AdvisoryDatabase
 from report.record import Report
+from report.summary_words import unread_pointer
 
 DOCTYPE = "<!DOCTYPE html>"
 LANGUAGE = "en"
@@ -103,10 +104,11 @@ def summary_line(report: Report) -> str:
     """Say how much there is, and how many findings' readable sources disagree."""
     # A vector the calculator refused is not counted as a dissent, whatever it says.
     contested = len([one for one in report.findings if sources_disagree(one)])
-    said = (
+    counts = (
         f"{len(report.findings)} findings across {report.component_count} components. "
         f"{contested} carry sources that disagree."
     )
+    said = " ".join(part for part in (counts, unread_pointer(report)) if part)
     return tag("p", text(said), "count")
 
 
