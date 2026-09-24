@@ -2,8 +2,9 @@
 
 `docs/COUNCIL.md` keeps each member's answer and evidence, the model, provider,
 family and prompt version behind it, whether it ran local or hosted, the
-chairman's reasoning and the final vector. The run has all of it and the record
-used to carry three fields, so this is the step that stopped throwing it away.
+chairman's reasoning and the final vector. The run has all of it, and this is
+the step that carries it into the record -- for a member whose call failed as
+for one that answered.
 
 It sits in `src/cli/` because it is the only place that may see both sides: the
 report depends on neither the council nor the scoring engine, and that boundary
@@ -13,7 +14,7 @@ is worth a conversion.
 from council.answer import MemberAnswer, MemberFoundNoEvidence, MemberGuessed
 from council.evidence import is_quotation_from
 from council.ruling import Basis, ContestedMetric, SettledMetric, UnresolvedMetric
-from council.runner import MemberFailure
+from council.run import MemberFailure
 from report.council_record import (
     MemberIdentity,
     MemberSaid,
@@ -46,13 +47,9 @@ def ruling_of(round_, advisory_shown: str) -> MetricRuling:
 
 def said_by(reply, advisory_shown: str) -> MemberSaid:
     """Record what one member said, naming which of the four things it did."""
-    if isinstance(reply, MemberFailure):
-        return MemberSaid(
-            member=MemberIdentity(reply.member_name, "", "", "", False, ""),
-            kind=SaidKind.FAILED,
-            reason=reply.reason,
-        )
     who = identity_of(reply.member)
+    if isinstance(reply, MemberFailure):
+        return MemberSaid(member=who, kind=SaidKind.FAILED, reason=reply.reason)
     if isinstance(reply, MemberFoundNoEvidence):
         return MemberSaid(member=who, kind=SaidKind.DECLINED)
     if isinstance(reply, MemberGuessed):

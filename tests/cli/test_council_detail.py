@@ -9,24 +9,23 @@ from cli.council_run import FALLBACKS, build_roster
 from council.prompt import build_prompt
 from council.runner import assess
 from report.council_record import Outcome, SaidKind
+from cli_samples import ADVISORY, LEGAL, QUOTATION
 
-TEXT = (
-    "A remote attacker can inject commands through a template option. "
-    "Exploiting it requires a specially crafted payload."
-)
-QUOTED = "A remote attacker can inject commands"
+# `ADVISORY.details` first, so `QUOTATION` is verbatim in it.
+TEXT = f"{ADVISORY.details} Exploiting it requires a specially crafted payload."
 OTHER_QUOTE = "requires a specially crafted payload"
-LEGAL = {"AV": "N", "AC": "L", "PR": "N", "UI": "N", "S": "U", "C": "H", "I": "H", "A": "H"}
 
 
+# Twin of `council_runs.replying`, which `pytest tests/cli` run alone cannot import.
 def answering(**by_member):
     """A client giving each member its own answer, defaulting to a quoted legal one."""
     def said(member, prompt):
+        """Answer one prompt from the member's table, or with a quoted legal value."""
         table = by_member.get(member.name, {})
         if prompt.metric in table:
             return json.dumps(table[prompt.metric])
         return json.dumps(
-            {"value": LEGAL[prompt.metric], "evidence": QUOTED, "confidence": "high"}
+            {"value": LEGAL[prompt.metric], "evidence": QUOTATION, "confidence": "high"}
         )
 
     return {"ollama": said}
@@ -64,7 +63,7 @@ def test_a_members_identity_travels_with_what_it_said():
 def test_an_answer_carries_its_value_evidence_and_confidence():
     said = ruled(answering())["AV"].said[0]
     assert said.kind is SaidKind.ANSWERED
-    assert (said.value, said.evidence, said.confidence) == ("N", QUOTED, "high")
+    assert (said.value, said.evidence, said.confidence) == ("N", QUOTATION, "high")
 
 
 def test_whether_a_quotation_checked_out_travels_with_it():
@@ -90,10 +89,13 @@ def test_a_member_that_guessed_is_recorded_as_guessing_and_keeps_its_value():
 
 
 def test_a_member_whose_reply_could_not_be_read_is_recorded_as_failing():
-    broken = {"AV": {"value": "NONSENSE", "evidence": QUOTED, "confidence": "high"}}
+    broken = {"AV": {"value": "NONSENSE", "evidence": QUOTATION, "confidence": "high"}}
     said = by_name(ruled(answering(**{"qwen2.5:7b": broken}))["AV"])
     assert said["qwen2.5:7b"].kind is SaidKind.FAILED
     assert said["qwen2.5:7b"].reason
+    # Named exactly as it is when it answers: the call that failed is the one
+    # an auditor most needs to trace to a model.
+    assert said["qwen2.5:7b"].member == by_name(ruled(answering())["AV"])["qwen2.5:7b"].member
 
 
 def test_the_chairmans_reasoning_is_recorded_beside_what_it_ruled_on():

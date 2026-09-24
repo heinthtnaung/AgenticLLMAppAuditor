@@ -1,4 +1,4 @@
-"""Putting one advisory to the roster, metric by metric, and collecting the rulings.
+"""Putting one advisory to the roster, member by member, and collecting the rulings.
 
 **This dispatches; it does not decide.** No reconciliation happens here -- that
 is `chairman.rule_on_metric` -- and no number appears anywhere, because the
@@ -22,30 +22,44 @@ and not the run: the failure is recorded and the remaining members are still
 asked. Losing a whole assessment because one model timed out would be the worse
 answer.
 
+**One member answers every metric before the next member is asked.** Local
+members share one Ollama server, and two that do not fit in its memory together
+are swapped whenever the member changes -- a model reload, many times slower
+than a call to a model already loaded. Asked metric by metric, the member would
+change on every call; asked member by member, it changes once per member per
+advisory. The order decides only when a call is made: no member is shown
+another's answer, and a metric is ruled on once every reply to it is in, so
+neither independence nor reconciliation depends on it. Roster order still
+decides who is asked first, which is the cost order the escalation reasoning
+below relies on.
+
+Call order is a difference the reproducibility analysis in
+`measurements/README.md` does not rule out, and the runs recorded in
+`measurements/council_runs/` were asked metric by metric. A run asked in this
+order is a new baseline, not a replication of those.
+
 **Every reachable member is asked every metric**, which is the ask-all policy
 `docs/COUNCIL.md` names beside escalation. Escalation -- ask the cheapest first,
 send only a contested or unresolved metric to a costlier member -- is a dispatch
 change and would be made here.
 
-It has a precondition, and it is not obvious. **Escalation needs a cheap tier of
-two or more members that can contest something between themselves.** A contest
-requires two distinct *verified* values (`ruling.ContestedMetric`), so one member
-asked alone can only settle or leave unresolved -- it cannot produce the outcome
-escalation exists to escalate. On a roster of one cheap member and one costly
-one the policy therefore degrades to "run the cheap one, ask the costly one only
-where the cheap one found nothing", and every metric the cheap member settles
-alone comes back as agreement that was never cross-checked. Measured on a
-two-member roster: 61 of 144 metrics came out contested because the second member
-disagreed, and escalation would have recorded all 61 as settled. `single_assessor`
-would have to say so too, and today it reads the count of members reached rather
-than the count asked about a given metric.
+That trigger has a precondition: **a cheap tier of two or more members that can
+contest something between themselves.** A contest requires two distinct
+*verified* values (`ruling.ContestedMetric`), so one member asked alone can only
+settle or leave unresolved. On a roster of one cheap member and one costly one,
+every metric the cheap member settles alone is agreement nobody cross-checked.
+Measured on a two-member roster (`measurements/council_runs/`): 61 of 144 metrics
+came out contested because the second member disagreed, and this trigger would
+have recorded all 61 as settled. `single_assessor` counts the members reached,
+not the members asked about a given metric, so it would not say so either.
 
-So escalation is worth building on a roster of three or more where at least two
-are cheap, and is a loss on a roster of two. That is a property of the roster,
-not a refusal of the policy.
+That holds for a trigger on what members reply, not for escalation in general. A
+trigger on the finding's `disputed_metrics()` -- which `cli.council_run` already
+reads to scope a run, and which no member's reply changes -- reaches the costly
+member even from a one-member cheap tier. That is a different policy, and
+`docs/COUNCIL.md` names it as one.
 """
 
-from dataclasses import dataclass
 from typing import Callable, Mapping
 
 from cvss.metrics import METRIC_ORDER
@@ -59,58 +73,13 @@ from council.providers import (
     unreachable_members,
 )
 from council.reply import read_reply
-from council.roster import Member, Roster, SkippedMember, members_to_ask
-from council.ruling import Fallback, MetricRuling
+from council.roster import Member, Roster, members_to_ask
+from council.ruling import Fallback
+from council.run import CouncilRun, MemberFailure, MetricRound
 from council.transport import ModelUnavailable
 
-
-@dataclass(frozen=True)
-class MemberFailure:
-    """A member that was asked one metric and gave back nothing usable, and why.
-
-    Not a member that was never asked -- those are `CouncilRun.skipped`, and the
-    two are different facts about a run. This one was reached and its call
-    failed, or it replied and the reply could not be read.
-    """
-
-    member_name: str
-    metric: str
-    reason: str
-
-
-@dataclass(frozen=True)
-class MetricRound:
-    """One metric put to every reachable member: what came back, and the ruling on it."""
-
-    metric: str
-    replies: tuple[MemberReply, ...]
-    failures: tuple[MemberFailure, ...]
-    ruling: MetricRuling
-
-
-@dataclass(frozen=True)
-class CouncilRun:
-    """One council over one advisory: every round, who was asked, and who was not.
-
-    `skipped` is the members never asked, by `egress` or by having no client.
-    `failures` is the calls that were made and gave nothing usable back. They are
-    different facts about a run and a report should not merge them.
-    """
-
-    rounds: tuple[MetricRound, ...]
-    asked: tuple[str, ...]
-    skipped: tuple[SkippedMember, ...]
-    single_assessor: bool
-
-    @property
-    def rulings(self) -> dict[str, MetricRuling]:
-        """The rulings by metric, in the shape `chairman.agreed_vector` takes."""
-        return {round_.metric: round_.ruling for round_ in self.rounds}
-
-    @property
-    def failures(self) -> tuple[MemberFailure, ...]:
-        """Every call that was made and gave back nothing usable, across every metric."""
-        return tuple(failure for round_ in self.rounds for failure in round_.failures)
+# What one call to one member gave back.
+CallOutcome = MemberReply | MemberFailure
 
 
 def nobody_asking(metric: str, member: str) -> None:
@@ -124,13 +93,12 @@ def assess(
     clients: Mapping[str, AskMember] = PROVIDER_CLIENTS,
     asking: Callable[[str, str], None] = nobody_asking,
 ) -> CouncilRun:
-    """Put one advisory to the roster, one metric at a time, and collect the rulings."""
+    """Put one advisory to the roster, one member at a time, and rule on every metric."""
     refuse_incomplete_fallbacks(fallbacks)
     reachable = reachable_members(members_to_ask(roster), clients)
-    rounds = [
-        assess_metric(metric, advisory_text, reachable, clients, fallbacks[metric], asking)
-        for metric in METRIC_ORDER
-    ]
+    prompts = tuple(build_prompt(metric, advisory_text) for metric in METRIC_ORDER)
+    answered = [ask_every_metric(member, prompts, clients, asking) for member in reachable]
+    rounds = [rule_on_round(prompt, answered, fallbacks[prompt.metric]) for prompt in prompts]
     return CouncilRun(
         rounds=tuple(rounds),
         asked=tuple(member.name for member in reachable),
@@ -141,25 +109,29 @@ def assess(
     )
 
 
-def assess_metric(
-    metric: str,
-    advisory_text: str,
-    members: tuple[Member, ...],
+def ask_every_metric(
+    member: Member,
+    prompts: tuple[MemberPrompt, ...],
     clients: Mapping[str, AskMember],
-    fallback: Fallback,
     asking: Callable[[str, str], None] = nobody_asking,
+) -> dict[str, CallOutcome]:
+    """Put every metric's prompt to one member, and give what came back by metric."""
+    return {prompt.metric: ask_one_member(member, prompt, clients, asking) for prompt in prompts}
+
+
+def rule_on_round(
+    prompt: MemberPrompt, answered: list[dict[str, CallOutcome]], fallback: Fallback
 ) -> MetricRound:
-    """Ask every reachable member about one metric and rule on what came back."""
-    prompt = build_prompt(metric, advisory_text)
-    outcomes = [ask_one_member(member, prompt, clients, asking) for member in members]
+    """Gather every member's outcome on one metric, in roster order, and rule on it."""
+    outcomes = [by_metric[prompt.metric] for by_metric in answered]
     replies = tuple(item for item in outcomes if not isinstance(item, MemberFailure))
     return MetricRound(
-        metric=metric,
+        metric=prompt.metric,
         replies=replies,
         failures=tuple(item for item in outcomes if isinstance(item, MemberFailure)),
-        # The redacted text, never `advisory_text`: this is the whole reason the
+        # The redacted text, never the raw advisory: this is the whole reason the
         # runner builds the prompt rather than taking one.
-        ruling=rule_on_metric(metric, replies, prompt.advisory_shown, fallback),
+        ruling=rule_on_metric(prompt.metric, replies, prompt.advisory_shown, fallback),
     )
 
 
@@ -168,18 +140,19 @@ def ask_one_member(
     prompt: MemberPrompt,
     clients: Mapping[str, AskMember],
     asking: Callable[[str, str], None] = nobody_asking,
-) -> MemberReply | MemberFailure:
+) -> CallOutcome:
     """Put one prompt to one member, recording a failure rather than ending the run."""
     # Said before the call, so a member that takes half a minute is a line that
     # sits there rather than a number nobody has yet.
     asking(prompt.metric, member.name)
+    who = member.identify(prompt.version)
     try:
         said = clients[member.provider](member, prompt)
-        return read_reply(said, prompt.metric, member.identify(prompt.version))
+        return read_reply(said, prompt.metric, who)
     # ModelUnavailable is the server; ValueError covers both a reply that cannot
     # be read and one naming a value the metric forbids.
     except (ModelUnavailable, ValueError) as fault:
-        return MemberFailure(member_name=member.name, metric=prompt.metric, reason=str(fault))
+        return MemberFailure(member=who, metric=prompt.metric, reason=str(fault))
 
 
 def refuse_incomplete_fallbacks(fallbacks: Mapping[str, Fallback]) -> None:

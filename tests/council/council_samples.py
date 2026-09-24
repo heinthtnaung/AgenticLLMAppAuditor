@@ -19,6 +19,7 @@ from council.answer import (
     MemberIdentity,
 )
 from council.roster import Member
+from council.ruling import PublishedFallback
 
 # Wrapped the way a feed wraps it, so a quotation spanning a line break is a
 # normal case rather than an awkward one.
@@ -33,9 +34,9 @@ NETWORK_QUOTATION = "unauthenticated remote attacker"
 # Deliberately not `council.prompt.PROMPT_VERSION`, and deliberately not shaped
 # like it. These are the deterministic half's fixtures and they run without the
 # model-facing modules loaded, so the real constant is not importable here
-# without dragging the prompt builder into a test of the roster. It drifted once
-# while pretending to be a copy of the real one; looking nothing like a real one
-# is what stops that. What a run actually records is the prompt's own version,
+# without dragging the prompt builder into a test of the roster. A copy of the
+# real one would drift from it unnoticed; looking nothing like a real one is
+# what stops that. What a run actually records is the prompt's own version,
 # and `tests/council/test_runner.py` pins that end to end.
 SAMPLE_PROMPT_VERSION = "sample-prompt-version"
 ACROSS_A_LINE_BREAK = "remote attacker can send a crafted request"
@@ -122,6 +123,14 @@ DECLINED = json.dumps({"value": "NO_EVIDENCE", "evidence": ""})
 # AC or S, so a client saying one thing everywhere would test the refusal path.
 LEGAL_VALUE = {"AV": "N", "AC": "L", "PR": "N", "UI": "N", "S": "U", "C": "H", "I": "H", "A": "H"}
 OTHER_VALUE = {"AV": "L", "AC": "H", "PR": "L", "UI": "R", "S": "C", "C": "L", "I": "L", "A": "L"}
+
+# One published value ready for every metric, so a run is never refused for want of one.
+FALLBACKS = {
+    metric: PublishedFallback(value=value, source="ghsa")
+    for metric, value in {
+        "AV": "L", "AC": "H", "PR": "H", "UI": "R", "S": "U", "C": "N", "I": "N", "A": "N",
+    }.items()
+}
 
 
 def replying(evidence: str = QUOTABLE):

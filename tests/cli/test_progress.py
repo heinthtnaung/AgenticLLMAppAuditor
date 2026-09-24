@@ -3,6 +3,7 @@
 import io
 import pathlib
 import re
+from itertools import chain, product
 
 from cli.progress import NO_PROGRESS, CouncilProgress
 
@@ -15,19 +16,24 @@ def reporting(findings: int = 3, members: int = 2):
     return CouncilProgress(findings=findings, members=members, out=written), written
 
 
+def asking_everyone(watching: CouncilProgress, advisory: str) -> None:
+    """Start one advisory and ask each member both metrics in turn, as a run would."""
+    watching.starting(advisory)
+    for member, metric in product(("qwen", "gemma"), ("AV", "AC")):
+        watching.asking(metric, member)
+
+
 def test_the_total_is_every_call_the_run_will_make():
-    # Eighteen findings and two members is 288 calls, which is the number a
-    # reader needs to know how far through a seventy-seven minute run they are.
+    # Eighteen findings and two members is 288 calls, the measured full run
+    # (`measurements/council_runs/`), and the number a reader needs to know how
+    # far through it they are.
     assert CouncilProgress(findings=18, members=2, out=io.StringIO()).calls == 288
 
 
 def test_one_line_is_said_for_every_member_asked():
     watching, written = reporting(findings=2, members=2)
     for advisory in ("CVE-1", "CVE-2"):
-        watching.starting(advisory)
-        for metric in ("AV", "AC"):
-            for member in ("qwen", "gemma"):
-                watching.asking(metric, member)
+        asking_everyone(watching, advisory)
     assert len(written.getvalue().strip().split("\n")) == 8
 
 
@@ -79,7 +85,7 @@ def test_every_line_ends_so_a_reader_sees_it_as_it_happens():
 
 
 def test_every_line_is_pushed_out_rather_than_buffered_until_the_run_ends():
-    # The whole point on a seventy-seven minute run: a line held in a buffer
+    # The whole point on a 288-call run: a line held in a buffer
     # until the process exits is silence with extra steps.
     written = RecordingStream()
     watching = CouncilProgress(findings=1, members=1, out=written)
@@ -95,18 +101,19 @@ def test_a_run_nobody_is_watching_says_nothing():
     NO_PROGRESS.asking("AV", "qwen")
 
 
+def clock_reads(path: pathlib.Path) -> list[str]:
+    """Name every line of one source file that reads a clock."""
+    lines = path.read_text(encoding="utf-8").split("\n")
+    return [f"{path}:{number}" for number, line in enumerate(lines, 1) if CLOCK.search(line)]
+
+
 def test_nothing_anywhere_in_src_reads_a_clock():
     # Guarded here because progress is the change that would have introduced the
-    # first one: elapsed timings on a seventy-seven minute run are the obvious
+    # first one: elapsed timings on a 288-call run are the obvious
     # thing to want. A line printed before its call is liveness, and a reader
     # watching a terminal supplies the elapsed time themselves, so counts are
     # enough -- and `README.md`, `docs/diagrams.md` and `docs/SCORING_MODEL.md`
     # all still say there is no clock anywhere in `src/`.
     source = pathlib.Path(__file__).resolve().parents[2] / "src"
-    reading = [
-        f"{path}:{number}"
-        for path in sorted(source.rglob("*.py"))
-        for number, line in enumerate(path.read_text(encoding="utf-8").split("\n"), 1)
-        if CLOCK.search(line)
-    ]
+    reading = list(chain.from_iterable(map(clock_reads, sorted(source.rglob("*.py")))))
     assert reading == []

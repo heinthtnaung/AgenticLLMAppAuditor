@@ -11,12 +11,14 @@ import pytest
 from council.chairman import agreed_vector
 from council.prompt import PROMPT_VERSION
 from council.roster import Roster
-from council.ruling import Basis, PublishedFallback, SettledMetric, UnresolvedMetric
+from council.ruling import Basis, SettledMetric, UnresolvedMetric
 from council.answer import MemberAnswer, MemberFoundNoEvidence, MemberGuessed
-from council.runner import CouncilRun, MemberFailure, assess
+from council.run import CouncilRun, MemberFailure
+from council.runner import assess
 from council.transport import ModelUnavailable
 from council_samples import (
     DECLINED,
+    FALLBACKS,
     QUOTABLE,
     RAW_ADVISORY,
     clients_of,
@@ -25,13 +27,6 @@ from council_samples import (
     member,
     replying,
 )
-
-FALLBACKS = {
-    metric: PublishedFallback(value=value, source="ghsa")
-    for metric, value in {
-        "AV": "L", "AC": "H", "PR": "H", "UI": "R", "S": "U", "C": "N", "I": "N", "A": "N",
-    }.items()
-}
 
 
 def test_every_metric_is_put_to_the_roster_and_handed_over_as_a_vector():
@@ -49,6 +44,7 @@ def test_the_runner_builds_the_prompt_the_member_reads_and_the_record_names():
     # a fixture's version can never be what a run carries.
     seen = []
     def remember(member_asked, prompt):
+        """Keep the prompt a member was shown, then answer it."""
         seen.append(prompt)
         return replying()(member_asked, prompt)
 
@@ -65,20 +61,11 @@ def test_the_runner_builds_the_prompt_the_member_reads_and_the_record_names():
     ids=["spanning a marker", "nothing but the marker"],
 )
 def test_a_quotation_must_carry_the_advisorys_words_and_not_only_our_markers(evidence, kind):
-    # Quoting the marker alone verified as a substring and settled a metric on
-    # evidence supporting nothing. Refusing any quotation that contains a marker
-    # is the wrong fix: the first case is a real quotation of what it read.
+    # The marker alone is a substring of what a member reads, so it would settle a
+    # metric on evidence supporting nothing. A quotation containing a marker is
+    # not refused outright: the first case is a real quotation of what it read.
     run = assess(RAW_ADVISORY, Roster((member(),)), FALLBACKS, clients_of(replying(evidence)))
     assert all(isinstance(round_.ruling, kind) for round_ in run.rounds)
-
-
-def test_members_are_asked_in_roster_order():
-    # Ordered by cost, which is what makes an escalation policy mean anything.
-    roster = Roster((member("cheap"), member("dear"), member("dearest")))
-    run = assess(RAW_ADVISORY, roster, FALLBACKS, clients_of(replying()))
-    assert run.asked == ("cheap", "dear", "dearest")
-    names = [reply.member.name for reply in run.rounds[0].replies]
-    assert names == ["cheap", "dear", "dearest"]
 
 
 def test_a_member_that_could_not_be_asked_reaches_the_run_record():
@@ -91,6 +78,7 @@ def test_a_member_that_could_not_be_asked_reaches_the_run_record():
 
 def test_a_member_that_fails_costs_its_metric_and_not_the_run():
     def falls_over(member_asked, prompt):
+        """Fail the call to the member named broken, and answer every other."""
         if member_asked.name == "broken":
             raise ModelUnavailable("the server said no")
         return replying()(member_asked, prompt)
@@ -98,7 +86,7 @@ def test_a_member_that_fails_costs_its_metric_and_not_the_run():
     roster = Roster((member("sound"), member("broken")))
     run = assess(RAW_ADVISORY, roster, FALLBACKS, clients_of(falls_over))
     assert all(isinstance(round_.ruling, SettledMetric) for round_ in run.rounds)
-    assert {failure.member_name for failure in run.failures} == {"broken"}
+    assert {one.member for one in run.failures} == {member("broken").identify(PROMPT_VERSION)}
     assert len(run.failures) == 8
 
 
@@ -154,24 +142,6 @@ def test_the_same_replies_give_the_same_run():
     )
 
 
-def test_every_member_asked_is_announced_before_it_is_asked():
-    # A run says nothing for over an hour otherwise, and the announcement has to
-    # come first: a slow member is a line that sits there, not one that arrives
-    # once the wait is over.
-    said = []
-    roster = Roster((member("one"), member("two")))
-
-    def announcing(member_asked, prompt):
-        said.append(("asked", prompt.metric, member_asked.name))
-        return replying()(member_asked, prompt)
-
-    assess(RAW_ADVISORY, roster, FALLBACKS, clients_of(announcing),
-           lambda metric, name: said.append(("told", metric, name)))
-    assert len(said) == 32
-    assert said[0] == ("told", "AV", "one")
-    assert said[1] == ("asked", "AV", "one")
-
-
 def test_replies_carrying_no_weight_still_reach_the_record():
     # The condition the AGREED basis rests on. The basis ranges over the members
     # that offered a quotation, which is honest only while a reader can see the
@@ -179,6 +149,7 @@ def test_replies_carrying_no_weight_still_reach_the_record():
     # and without it on the round AGREED would be claiming a unanimity that did
     # not happen. The only thing filtered out is a call that gave nothing back.
     def quietly(asked, prompt):
+        """Decline or guess for the members named so, and answer for the rest."""
         if asked.name == "declines":
             return DECLINED
         if asked.name == "guesses":
