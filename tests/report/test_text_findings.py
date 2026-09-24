@@ -7,7 +7,9 @@ from report_samples import (
     CONFIDENTIALITY_ONLY,
     LOW_CONFIDENTIALITY,
     PROVENANCE,
+    REFUSED_DISSENT,
     TOP_OF_MEDIUM,
+    TEMPORAL_VECTOR,
     TOTAL_LOSS,
     VERSION_2_VECTOR,
     WIDE_WITHIN_MEDIUM,
@@ -88,3 +90,20 @@ def test_a_finding_nobody_scored_gets_its_own_group_and_not_a_zero():
 def test_a_finding_whose_only_source_was_refused_says_which():
     text = rendered((finding(DJANGO, vectors={"nvd": VERSION_2_VECTOR}),))
     assert "no readable vector; refused nvd" in text
+
+
+def test_sources_that_match_beside_a_refused_one_are_not_filed_as_agreeing():
+    # A heading is a claim, and a vector nobody could read may disagree with every
+    # one that was, as ghsa's does on CVE-2020-11023.
+    text = rendered((finding(DJANGO, vectors=REFUSED_DISSENT),))
+    assert "SOURCES AGREE" not in text
+    assert len(lines_under("A SOURCE WAS REFUSED (1)", text)) == 1
+    assert "6.1  Medium    3 sources read  ·  refused ghsa" in text
+
+
+def test_the_findings_with_a_refused_source_come_before_the_agreeing_ones():
+    text = rendered((
+        finding(DJANGO, advisory_id="CVE-2", vectors={"a": TOTAL_LOSS}),
+        finding(PYYAML, advisory_id="CVE-1", vectors={"a": TOTAL_LOSS, "b": TEMPORAL_VECTOR}),
+    ))
+    assert text.index("A SOURCE WAS REFUSED") < text.index("SOURCES AGREE")

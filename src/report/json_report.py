@@ -56,6 +56,8 @@ def run_of(report: Report) -> dict[str, Any]:
         "advisory_database": database_of(provenance.database),
         "component_count": report.component_count,
         "finding_count": len(report.findings),
+        # Readable sources only: a vector the calculator refused is not counted
+        # as a dissent, whatever it says.
         "findings_whose_sources_disagree": sum(
             1 for finding in report.findings if sources_disagree(finding)
         ),

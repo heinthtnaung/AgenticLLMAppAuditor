@@ -1,4 +1,4 @@
-"""How one finding goes on the page, in the three shapes a reader needs.
+"""How one finding goes on the page, in the four shapes a reader needs.
 
 **Every source is a row of its own, and no source has a column.** On the
 repository under test NVD published a vector for 4 findings of 18, so a table
@@ -8,12 +8,21 @@ is not a ranking.
 
 A contested finding gets its spread, the bands it crosses and the metrics its
 sources read differently; an agreeing one gets the same rows without them; one
-nobody scored says so rather than showing a zero. A refused vector is kept on
+whose readable sources match beside a refused vector gets those rows in a group
+of its own, because a vector nobody could read is not agreement; one nobody
+scored says so rather than showing a zero. A refused vector is kept on
 whichever card it belongs to, marked not scored.
 """
 
 from cvss.score import severity_band
-from report.disagreement import bands_crossed, most_contested_first, score_spread, sources_disagree
+from report.disagreement import (
+    agreement_unchecked,
+    bands_crossed,
+    most_contested_first,
+    score_spread,
+    sources_agree,
+    sources_disagree,
+)
 from report.html_layout import listing, number, scored_chip, section, separated, tag, text
 from report.record import Report
 
@@ -25,8 +34,14 @@ CONTESTED_LEDE = (
     "published a vector, in source-name order, which is not a ranking. Ordered by whether "
     "the disagreement crosses a severity band, because that is what moves the response time."
 )
+REFUSED_LEDE = (
+    "The vectors this calculator could read match metric for metric, and another source "
+    "published one it refused. Whether that source agrees is not known, so these are not "
+    "counted as agreeing."
+)
 AGREEING_LEDE = (
-    "The readable vectors match metric for metric. Each source is still shown on its own."
+    "Every source was read, and the vectors match metric for metric. Each source is still "
+    "shown on its own."
 )
 UNSCORED_LEDE = (
     "Nobody published a vector this calculator could read. That is not a score of 0.0: "
@@ -43,9 +58,18 @@ def contested_section(report: Report) -> str:
     return section(f"Sources disagree ({len(contested)})", CONTESTED_LEDE, "".join(cards))
 
 
+def unchecked_section(report: Report) -> str:
+    """List the findings whose readable sources match beside a vector that was refused."""
+    unchecked = [one for one in report.findings if agreement_unchecked(one)]
+    if not unchecked:
+        return ""
+    cards = [finding_card(one, source_list(one)) for one in unchecked]
+    return section(f"A source was refused ({len(unchecked)})", REFUSED_LEDE, "".join(cards))
+
+
 def agreeing_section(report: Report) -> str:
-    """List the findings whose sources say the same thing about every metric."""
-    agreed = [one for one in report.findings if one.is_scored and not sources_disagree(one)]
+    """List the findings whose sources were all read and say the same thing about every metric."""
+    agreed = [one for one in report.findings if sources_agree(one)]
     if not agreed:
         return ""
     cards = [finding_card(one, source_list(one)) for one in agreed]

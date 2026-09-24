@@ -30,6 +30,18 @@ def sources_disagree(finding: Finding) -> bool:
     return bool(finding.disputed_metrics())
 
 
+def sources_agree(finding: Finding) -> bool:
+    """Say whether every source was read and the readings match on every metric."""
+    # A refused vector is an opinion nobody could read, so a finding carrying one
+    # is never counted as agreeing, whatever the sources that were read say.
+    return finding.is_scored and not finding.unreadable and not sources_disagree(finding)
+
+
+def agreement_unchecked(finding: Finding) -> bool:
+    """Say whether the readable sources match beside a source whose vector was refused."""
+    return finding.is_scored and bool(finding.unreadable) and not sources_disagree(finding)
+
+
 def score_spread(finding: Finding) -> float:
     """Give the distance between the highest and lowest score published for a finding."""
     scores = [score.base_score for score in finding.scores]
