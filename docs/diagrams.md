@@ -424,8 +424,8 @@ fact into a sentence nobody can check.
 The record box sits outside `src/council/` in the code, and so does the scope
 decision at the top: `src/cli/council_run.py` chooses which findings to put to a
 council and `src/cli/council_detail.py` turns a run into the record, because
-`src/report` imports neither the council nor the scoring engine and the command
-line is the one place allowed to see both.
+`src/report` does not import the council and the command line is the one place
+allowed to see both a council run and the record.
 
 The hosted box will cost reproducibility. A local member takes a pinned model; a
 hosted one takes no seed, and the weights behind its name change without notice.
@@ -519,10 +519,12 @@ because `src/organisation` stands between them and is the only place that decide
 which technical severity a score is computed from — once per published source, or
 once from the council's vector where it settled one.
 
-The thinnest arrow on the page is `src/scoring` to `src/report`, and it is one
-name. The HTML rendering imports the `Answer` enum to mark an Unknown, which is
-the vocabulary an answer is written in and not a figure the engine worked out.
-Every number the page shows comes off the record, so there is no second place a
+The `src/scoring` to `src/report` arrow is three names in two modules.
+`src/report/html_answers.py` imports the `Answer` enum, to mark an Unknown, and
+`RiskScore`, the type whose weights it prints; `src/report/json_risk.py`
+imports `Category`, to find one category's weight by name. All three are the
+vocabulary the record is written in, not a figure the engine works out. Every
+number the report shows comes off the record, so there is no second place a
 score could be derived and differ.
 
 What remains in the middle column is smaller than it looks and none of it blocks
