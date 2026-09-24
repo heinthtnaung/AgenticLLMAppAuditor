@@ -36,6 +36,13 @@ QUOTED = "A remote attacker can inject commands"
 # that shortened it would no longer contain it.
 LONG_QUOTE = "A remote attacker can inject commands through a template option."
 OTHER_QUOTE = "requires a specially crafted payload"
+# From `measurements/council_runs/gpu-full.report.txt`: at a quotation's depth on
+# the page, `re-escapes` straddles the edge.
+HYPHENATED_AT_THE_EDGE = (
+    "During parsing it runs a legacy decoding pass over the scheme component and never "
+    "re-escapes the result, and serialization writes the scheme back out verbatim, unlike "
+    "the host component which is re-escaped."
+)
 # A sentence the advisory does not contain, so the quotation check refuses it.
 INVENTED = "the maintainers have not replied to the report"
 # A backslash, an apostrophe and straight double quotes, each of which an
