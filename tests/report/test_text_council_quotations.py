@@ -1,12 +1,16 @@
 """Guards on a member's quotation in the terminal: whole, marked, and re-flowed word for word.
 
 On a contested metric the quotation is the disagreement, so the terminal shows it
-whole and between typographic marks, re-flowed rather than shortened. Every record
-here comes out of a real chairman, through `council_runs`.
+whole and between typographic marks, and re-flows it only at spaces: a line broken
+at a hyphen folds back into words the advisory never contained. Every record here
+comes out of a real chairman, through `council_runs`.
 """
 
+import pytest
+
 from council_runs import (
-    ADVISORY, DISSENTING, INVENTED, LONG_QUOTE, OTHER_QUOTE, answering, council_ran,
+    ADVISORY, DISSENTING, HYPHENATED_AT_THE_EDGE, INVENTED, LONG_QUOTE, OTHER_QUOTE, answering,
+    council_ran,
 )
 from report.record import build_report
 from report.text_council import council_block
@@ -20,12 +24,6 @@ LONG_QUOTATION = (
     "An attacker who can reach the administrative endpoint may supply a crafted template "
     "fragment, which the renderer evaluates before any authorisation check runs"
 )
-# Both members quote the long sentence verbatim and reach different values, so AC
-# is contested over it.
-ARGUED_AT_LENGTH = {
-    "qwen2.5:7b": {"AC": answering("H", LONG_QUOTATION)},
-    "gemma4:latest": {"AC": answering("L", LONG_QUOTATION)},
-}
 # Neither quotation is in the advisory, so nothing settles AV and both stay on show.
 BOTH_INVENTED = {
     "qwen2.5:7b": {"AV": answering("N", INVENTED)},
@@ -49,6 +47,14 @@ def folded(rendered: str) -> str:
     return " ".join(rendered.split())
 
 
+def argued_over(quotation: str) -> dict:
+    """Have two members quote one sentence verbatim and read it apart, contesting AC."""
+    return {
+        "qwen2.5:7b": {"AC": answering("H", quotation)},
+        "gemma4:latest": {"AC": answering("L", quotation)},
+    }
+
+
 def test_a_quotation_is_shown_whole_because_it_is_the_disagreement():
     # On a contested metric the quotation is the entire reason two models
     # reached different values.
@@ -57,9 +63,12 @@ def test_a_quotation_is_shown_whole_because_it_is_the_disagreement():
     assert OTHER_QUOTE in rendered
 
 
-def test_a_quotation_too_long_for_the_page_is_re_flowed_and_not_shortened():
-    rendered = block(council_ran(details=f"{ADVISORY} {LONG_QUOTATION}.", **ARGUED_AT_LENGTH))
-    assert LONG_QUOTATION in folded(rendered)
+@pytest.mark.parametrize(
+    "quotation", [LONG_QUOTATION, HYPHENATED_AT_THE_EDGE], ids=["long", "hyphen at the edge"]
+)
+def test_a_quotation_too_long_for_the_page_is_re_flowed_and_not_shortened(quotation):
+    rendered = block(council_ran(details=f"{ADVISORY} {quotation}", **argued_over(quotation)))
+    assert quotation in folded(rendered)
     assert "..." not in rendered
     assert max(len(line) for line in rendered.split("\n")) <= PAGE_WIDTH
 

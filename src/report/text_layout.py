@@ -42,4 +42,11 @@ def indented(depth: int, said: str) -> str:
 def wrapped(said: str, depth: int) -> list[str]:
     """Re-flow one long line to the width of the page at its depth, losing no word of it."""
     margin = INDENT * depth
-    return fill(said, width=PAGE_WIDTH, initial_indent=margin, subsequent_indent=margin).split("\n")
+    # Broken at spaces only. A word broken at its hyphen folds back as two words,
+    # which is text the advisory never contained; a word longer than the page is
+    # left whole and runs past the edge rather than being cut.
+    flowed = fill(
+        said, width=PAGE_WIDTH, initial_indent=margin, subsequent_indent=margin,
+        break_on_hyphens=False, break_long_words=False,
+    )
+    return flowed.split("\n")
