@@ -61,10 +61,9 @@ advisory really does carry a vector.
 
 **The corpus.** 1,187 distinct advisories from seven offline Trivy scans of this
 machine's database snapshot: 254 PyPI, 163 npm, 74 Go, 29 Rust, 608 Debian 11,
-109 Alpine 3.14, and the 18 of the repository under test. It supersedes the
-153-advisory measurement this file used to cite, which did not hold the advisory
-above: none of its 18 vulnscout advisories carries a vector, and the 135 that
-made up the rest came from a manifest that is not in the tree to re-run.
+109 Alpine 3.14, and the 18 of the repository under test. `measurements/` re-runs
+every scan in it, and it holds the advisory above, which the 18 alone could not:
+none of them carries a vector.
 
 The redacted text is what the member saw, so it is also the text its quotation
 must be checked against. `council.evidence` is given this, never the original.

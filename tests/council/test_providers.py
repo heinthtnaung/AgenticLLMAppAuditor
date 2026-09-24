@@ -30,6 +30,7 @@ def test_the_local_client_pins_the_members_own_model(monkeypatch):
     seen = {}
 
     def remember(prompt, pinning):
+        """Keep the model the call was pinned to, and reply as a server would."""
         seen["model"] = pinning.model
         return SimpleNamespace(text="it said this")
 

@@ -28,9 +28,9 @@ IDENTIFIED_ADVISORY = (
 
 # The longest advisory of 1,187 read off this machine's database snapshot --
 # seven offline Trivy scans across PyPI, npm, Go, Rust, Debian and Alpine, and
-# the repository under test. Nearly four times the 4,585 of the 18-advisory
-# corpus this constant used to carry, which is why the number is named with the
-# corpus that produced it: a worst case is only ever the worst so far.
+# the repository under test. Nearly four times the longest of that repository's
+# 18 advisories, at 4,585, which is why the number is named with the corpus that
+# produced it: a worst case is only ever the worst so far.
 LONGEST_ADVISORY_CHARACTERS = 17_893
 
 # Not a rule of thumb. The pinned model counted that advisory's prompt at 4,897

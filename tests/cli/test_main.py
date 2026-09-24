@@ -43,6 +43,7 @@ def test_a_run_that_could_not_happen_exits_two_and_says_why(monkeypatch, tmp_pat
     # Never 0: a broken scan sharing an exit code with a clean repository is how
     # a pipeline goes green on a scan that never ran.
     def refuse(repository):
+        """Refuse the run with the fault under test."""
         raise fault
 
     monkeypatch.setattr(entry, "refuse_unrunnable", refuse)

@@ -48,8 +48,14 @@ MEMBER_HELP = (
 )
 ALL_FINDINGS_HELP = (
     "put every finding to the council, not only those whose published sources "
-    "disagree or that no source scored; slower, and the only way to catch two "
-    "sources that agree and are both wrong"
+    "disagree, include one that could not be read, or scored nothing; slower, "
+    "and the only way to catch two sources that agree and are both wrong"
+)
+# Accepted, the flag would change nothing, and the run would read as one that
+# asked about every finding when it asked about none.
+ALL_FINDINGS_WITHOUT_MEMBERS = (
+    "--council-all-findings needs a --council-member: with nobody named there is "
+    "no council to put the findings to"
 )
 
 
@@ -68,7 +74,10 @@ class Options:
 
 def parse_arguments(argv: list[str] | None = None) -> Options:
     """Read one command line into the options an audit runs with."""
-    parsed = build_parser().parse_args(argv)
+    parser = build_parser()
+    parsed = parser.parse_args(argv)
+    if parsed.council_all_findings and not parsed.council_member:
+        parser.error(ALL_FINDINGS_WITHOUT_MEMBERS)
     return Options(
         repository=Path(parsed.repository),
         report_format=parsed.format,

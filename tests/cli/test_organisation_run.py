@@ -4,8 +4,9 @@ import json
 
 import pytest
 
+from cli.council_run import assess_one, build_roster
 from cli.organisation_run import organisation_of, read_approval, weigh_findings
-from cli_samples import ADVISORY, LODASH
+from cli_samples import ADVISORY, LODASH, answering
 from findings.finding import build_finding
 from organisation.answers import OrganisationAnswers
 from organisation.approval import Approval, NotApproved
@@ -19,7 +20,12 @@ def all_answers(overrides=None) -> dict:
 
 
 FINDING = build_finding(LODASH, ADVISORY)
-SETTLED_VECTOR = "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+
+
+def put_to_council(**replies) -> dict:
+    """Put the finding to a real one-member council, keyed as `weigh_findings` takes it."""
+    outcome = assess_one(FINDING, build_roster(("small",)), answering(**replies))
+    return {outcome.advisory_id: outcome}
 
 
 def written(directory, **document):
@@ -48,7 +54,8 @@ def test_a_finding_is_weighed_once_per_source_when_no_council_settled_it():
 
 def test_a_council_that_settled_a_vector_collapses_the_range_to_one_score():
     # One agreed technical severity, so there is nothing left to choose between.
-    settled = {ADVISORY.advisory_id: CouncilAssessment(ADVISORY.advisory_id, SETTLED_VECTOR, False)}
+    settled = put_to_council()
+    assert isinstance(settled[ADVISORY.advisory_id], CouncilAssessment)
     answers = OrganisationAnswers(everywhere=all_answers({"EXP-1": Answer.YES}))
     weighed = weigh_findings((FINDING,), answers, settled)
     assert len(weighed[0].scores) == 1
@@ -56,9 +63,10 @@ def test_a_council_that_settled_a_vector_collapses_the_range_to_one_score():
 
 
 def test_a_council_that_settled_nothing_leaves_the_sources_side_by_side():
-    open_still = CouncilWithoutVector(ADVISORY.advisory_id, False, ("S",))
+    open_still = put_to_council(declining=("S",))
+    assert isinstance(open_still[ADVISORY.advisory_id], CouncilWithoutVector)
     answers = OrganisationAnswers(everywhere=all_answers({"EXP-1": Answer.YES}))
-    weighed = weigh_findings((FINDING,), answers, {ADVISORY.advisory_id: open_still})
+    weighed = weigh_findings((FINDING,), answers, open_still)
     assert len(weighed[0].scores) == len(FINDING.scores)
 
 

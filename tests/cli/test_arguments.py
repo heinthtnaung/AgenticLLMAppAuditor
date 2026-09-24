@@ -3,6 +3,7 @@
 import pytest
 
 from cli.arguments import JSON_FORMAT, TEXT_FORMAT, parse_arguments
+from cli.main import COULD_NOT_RUN
 
 
 def test_the_repository_is_an_argument_and_nothing_is_hardcoded():
@@ -56,4 +57,14 @@ def test_the_council_is_scoped_to_the_findings_that_need_one():
 def test_an_operator_can_refuse_the_scoping_and_ask_about_every_finding():
     # Scoping cannot discover that two agreeing sources are both wrong, and that
     # loss is the operator's call to accept or refuse.
-    assert parse_arguments(["repo", "--council-all-findings"]).council_all_findings is True
+    given = ["repo", "--council-member", "small", "--council-all-findings"]
+    assert parse_arguments(given).council_all_findings is True
+
+
+def test_asking_about_every_finding_with_nobody_to_ask_is_refused(capsys):
+    # Accepted, it changes nothing: the run exits as one with no council would,
+    # beside a flag that says every finding was put to one.
+    with pytest.raises(SystemExit) as leaving:
+        parse_arguments(["repo", "--council-all-findings"])
+    assert leaving.value.code == COULD_NOT_RUN
+    assert "needs a --council-member" in capsys.readouterr().err

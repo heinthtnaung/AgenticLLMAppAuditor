@@ -1,18 +1,23 @@
 """Putting the council to the findings that need one, when the operator named members.
 
 **Scoped to the findings whose published sources do not settle them.** A measured
-two-member run over 18 findings made 288 calls in 43 minutes, and 13 of those
-findings carried sources that already agreed -- roughly 72% of the time spent
-adjudicating what nothing disputed. The council exists to reconcile sources, so
-a finding with nothing to reconcile is not its work. `--council-all-findings`
-asks about every one of them, because a council that only reads contested
-findings can never discover that agreeing sources are **both** wrong, and
-`docs/COUNCIL.md` says no source is the reference the others are measured
-against. That loss is real and an operator may refuse it.
+two-member run over 18 findings made 288 calls (`measurements/council_runs/`),
+and 13 of those findings carried sources that already agreed -- 208 of the calls
+spent adjudicating what nothing disputed. Scoped, the same audit made 80.
+The council exists to reconcile sources, so a finding with nothing to reconcile
+is not its work. `--council-all-findings` asks about every one of them, because
+a council that only reads contested findings can never discover that agreeing
+sources are **both** wrong, and `docs/COUNCIL.md` says no source is the
+reference the others are measured against. That loss is real and an operator
+may refuse it.
 
 **A finding nobody scored is asked about, not skipped.** Its sources do not agree
 either -- there are none -- and it is the case where a council vector is the only
 severity the finding will ever carry.
+
+**Nor is one carrying a source that could not be read.** Agreement among the
+sources that were read says nothing about the one that was refused, so "no
+published source disagrees" would be a claim the same record contradicts.
 
 **Every skip is recorded with its reason.** A finding the council was not asked
 about, one it assessed and could not settle, and a run where nobody was named to
@@ -31,7 +36,7 @@ The consequence is deliberate and worth stating. A council that leaves any metri
 unresolved produces no vector, so the finding keeps its per-source scores side by
 side with no winner. The vector is discarded; **the fact that a council ran is
 not**, and neither is what it could not settle -- that is the escalation
-policy's input, and throwing it away told the report no council had run at all.
+policy's input, and a record without it would say no council had run at all.
 """
 
 from cvss.metrics import METRIC_ORDER
@@ -117,7 +122,9 @@ def skipped_because(finding: Finding, every_finding: bool) -> str:
     # council is the only severity this finding will ever carry.
     if every_finding or not finding.is_scored:
         return ""
-    if finding.disputed_metrics():
+    # A source that could not be read is an opinion nobody checked, which is not
+    # agreement: its vector may disagree with every one that was read.
+    if finding.unreadable or finding.disputed_metrics():
         return ""
     return SOURCES_AGREE
 
