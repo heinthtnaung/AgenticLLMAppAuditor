@@ -1,0 +1,702 @@
+Audit of fetched/vulnscout
+  syft 1.52.0  ·  trivy 0.74.0  ·  advisory database built 2026-09-22T02:00:05.774028462Z
+
+18 findings across 60 components. 5 carry sources that disagree.
+
+SOURCES DISAGREE (5)
+  CVE-2025-13465  lodash-es 4.17.21
+    2.9 apart  ·  High and Medium  ·  differ on A
+    ghsa 6.5  ·  nvd 5.3  ·  redhat 8.2
+  CVE-2021-4279   fast-json-patch 2.2.1
+    2.5 apart  ·  Critical and High  ·  differ on C, I, A
+    ghsa 7.3  ·  nvd 9.8
+  CVE-2026-13149  brace-expansion 1.1.14
+    2.2 apart  ·  High and Medium  ·  differ on A
+    ghsa 5.3  ·  redhat 7.5
+  CVE-2026-4800   lodash-es 4.17.21
+    1.7 apart  ·  Critical and High  ·  differ on AC
+    ghsa 8.1  ·  nvd 9.8  ·  redhat 8.1
+  CVE-2026-2950   lodash-es 4.17.21
+    1.2 apart  ·  Medium  ·  differ on PR, I, A
+    ghsa 6.5  ·  nvd 5.3  ·  redhat 6.5
+
+SOURCES AGREE (13)
+  CVE-2026-14257       brace-expansion 1.1.14          7.5  High      2 sources
+  CVE-2026-69152       brace-expansion 1.1.14          7.5  High      2 sources
+  CVE-2026-13676       fast-uri 3.1.0                  7.5  High      2 sources
+  CVE-2026-16221       fast-uri 3.1.0                  7.5  High      2 sources
+  CVE-2026-18446       fast-uri 3.1.0                  7.5  High      2 sources
+  CVE-2026-6321        fast-uri 3.1.0                  7.5  High      2 sources
+  CVE-2026-6322        fast-uri 3.1.0                  7.5  High      2 sources
+  CVE-2026-75975       fast-uri 3.1.0                  7.5  High      2 sources
+  CVE-2026-76172       fast-uri 3.1.0                  7.5  High      2 sources
+  CVE-2026-53550       js-yaml 3.14.2                  5.3  Medium    2 sources
+  CVE-2026-59869       js-yaml 3.14.2                  7.5  High      2 sources
+  CVE-2026-84375       js-yaml 3.14.2                  7.5  High      2 sources
+  GHSA-5p4m-2wfm-xmqj  js-yaml 3.14.2                  7.5  High      1 source
+
+ORGANISATION RISK (18)  ·  the source changes the band on 2
+  weighted Technical severity 0.3, Exposure and reachability 0.25, Business impact 0.25, Threat and exploitation 0.2
+  CVE-2021-4279        ghsa 21.9 to nvd 29.4       Medium and Low
+  CVE-2026-4800        ghsa 24.3 to nvd 29.4       Medium and Low
+  CVE-2025-13465       nvd 15.9 to redhat 24.6     Low
+  CVE-2026-13149       ghsa 15.9 to redhat 22.5    Low
+  CVE-2026-13676       22.5                        Low
+  CVE-2026-14257       22.5                        Low
+  CVE-2026-16221       22.5                        Low
+  CVE-2026-18446       22.5                        Low
+  CVE-2026-59869       22.5                        Low
+  CVE-2026-6321        22.5                        Low
+  CVE-2026-6322        22.5                        Low
+  CVE-2026-69152       22.5                        Low
+  CVE-2026-75975       22.5                        Low
+  CVE-2026-76172       22.5                        Low
+  CVE-2026-84375       22.5                        Low
+  GHSA-5p4m-2wfm-xmqj  22.5                        Low
+  CVE-2026-2950        nvd 15.9 to redhat 19.5     Low
+  CVE-2026-53550       15.9                        Low
+
+COUNCIL (18)
+  CVE-2021-4279  no vector  ·  could not settle AC, C, A, AV
+    4 metrics settled
+      4  every member that offered a quotation supported this value
+    AV  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  A  ·  medium confidence  ·  quotation found in the advisory
+        'The attack can be initiated remotely.'
+      gemma4:latest (gemma4)  N  ·  medium confidence  ·  quotation found in the advisory
+        'The attack can be initiated remotely.'
+    AC  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  declined
+      gemma4:latest (gemma4)  declined
+    C  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  guessed N with nothing quoted
+      gemma4:latest (gemma4)  declined
+    A  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  guessed N with nothing quoted
+      gemma4:latest (gemma4)  declined
+  CVE-2025-13465  no vector  ·  could not settle PR, C, I
+    5 metrics settled
+      5  every member that offered a quotation supported this value
+    PR  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  L  ·  medium confidence  ·  quotation found in the advisory
+        'An attacker can pass crafted paths which cause Lodash to delete methods from global
+        prototypes.'
+      gemma4:latest (gemma4)  N  ·  high confidence  ·  quotation found in the advisory
+        'An attacker can pass crafted paths which cause Lodash to delete methods from global
+        prototypes.'
+    C  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  L  ·  medium confidence  ·  quotation found in the advisory
+        'An attacker can pass crafted paths which cause Lodash to delete methods from global
+        prototypes.'
+      gemma4:latest (gemma4)  H  ·  high confidence  ·  quotation found in the advisory
+        'An attacker can pass crafted paths which cause Lodash to delete methods from global
+        prototypes.'
+    I  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  L  ·  medium confidence  ·  quotation found in the advisory
+        'An attacker can pass crafted paths which cause Lodash to delete methods from global
+        prototypes.'
+      gemma4:latest (gemma4)  H  ·  high confidence  ·  quotation found in the advisory
+        'An attacker can pass crafted paths which cause Lodash to delete methods from global
+        prototypes.'
+  CVE-2026-13149  no vector  ·  could not settle AV, AC, PR, UI, S, I
+    2 metrics settled
+      2  every member that offered a quotation supported this value
+    AV  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  declined
+      gemma4:latest (gemma4)  declined
+    AC  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  H  ·  high confidence  ·  quotation found in the advisory
+        'An attacker who passes a crafted string to expand(), directly or transitively, can
+        cause significant CPU consumption and event-loop blocking.'
+      gemma4:latest (gemma4)  L  ·  high confidence  ·  quotation found in the advisory
+        'An attacker who passes a crafted string to expand(), directly or transitively, can
+        cause significant CPU consumption and event-loop blocking.'
+    PR  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  L  ·  medium confidence  ·  quotation found in the advisory
+        'An attacker who passes a crafted string to expand(), directly or transitively, can
+        cause significant CPU consumption and event-loop blocking.'
+      gemma4:latest (gemma4)  N  ·  high confidence  ·  quotation found in the advisory
+        'An attacker who passes a crafted string to expand(), directly or transitively, can
+        cause significant CPU consumption and event-loop blocking.'
+    UI  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  R  ·  medium confidence  ·  quotation found in the advisory
+        'An attacker who passes a crafted string to expand(), directly or transitively, can
+        cause significant CPU consumption and event-loop blocking.'
+      gemma4:latest (gemma4)  N  ·  high confidence  ·  quotation found in the advisory
+        'An attacker who passes a crafted string to expand(), directly or transitively, can
+        cause significant CPU consumption and event-loop blocking.'
+    S  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  C  ·  high confidence  ·  quotation found in the advisory
+        'An attacker who passes a crafted string to expand(), directly or transitively, can
+        cause significant CPU consumption and event-loop blocking.'
+      gemma4:latest (gemma4)  U  ·  high confidence  ·  quotation found in the advisory
+        "The expand() function exhibits exponential-time complexity in the number of consecutive
+        non-expanding '{}' brace groups."
+    I  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  H  ·  high confidence  ·  quotation found in the advisory
+        'An attacker who passes a crafted string to expand(), directly or transitively, can
+        cause significant CPU consumption and event-loop blocking.'
+      gemma4:latest (gemma4)  N  ·  high confidence  ·  quotation found in the advisory
+        "brace-expansion through 5.0.6 is vulnerable to denial of service. The expand() function
+        exhibits exponential-time complexity in the number of consecutive non-expanding '{}'
+        brace groups. An attacker who passes a crafted string to expand(), directly or
+        transitively, can cause significant CPU consumption and event-loop blocking. The max
+        option does not mitigate this, as it bounds the output size rather than the recursion
+        work."
+  CVE-2026-13676  no vector  ·  could not settle AC, UI, S, C, I, A
+    2 metrics settled
+      2  every member that offered a quotation supported this value
+    AC  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  H  ·  medium confidence  ·  quotation found in the advisory
+        "Applications that use fast-uri to enforce host-based policy (denylists, loopback
+        filtering, redirect validation, outbound proxy routing) before passing the same URL to
+        Node's URL or fetch can be bypassed when the two implementations resolve the same input
+        to different hosts."
+      gemma4:latest (gemma4)  L  ·  high confidence  ·  quotation found in the advisory
+        "Applications that use fast-uri to enforce host-based policy (denylists, loopback
+        filtering, redirect validation, outbound proxy routing) before passing the same URL to
+        Node's URL or fetch can be bypassed when the two implementations resolve the same input
+        to different hosts."
+    UI  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  R  ·  medium confidence  ·  quotation found in the advisory
+        "Applications that use fast-uri to enforce host-based policy (denylists, loopback
+        filtering, redirect validation, outbound proxy routing) before passing the same URL to
+        Node's URL or fetch can be bypassed when the two implementations resolve the same input
+        to different hosts."
+      gemma4:latest (gemma4)  N  ·  high confidence  ·  quotation found in the advisory
+        "Applications that use fast-uri to enforce host-based policy (denylists, loopback
+        filtering, redirect validation, outbound proxy routing) before passing the same URL to
+        Node's URL or fetch can be bypassed when the two implementations resolve the same input
+        to different hosts."
+    S  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  C  ·  high confidence  ·  quotation found in the advisory
+        "Applications that use fast-uri to enforce host-based policy (denylists, loopback
+        filtering, redirect validation, outbound proxy routing) before passing the same URL to
+        Node's URL or fetch can be bypassed when the two implementations resolve the same input
+        to different hosts."
+      gemma4:latest (gemma4)  U  ·  high confidence  ·  quotation found in the advisory
+        "Applications that use fast-uri to enforce host-based policy (denylists, loopback
+        filtering, redirect validation, outbound proxy routing) before passing the same URL to
+        Node's URL or fetch can be bypassed when the two implementations resolve the same input
+        to different hosts."
+    C  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  L  ·  medium confidence  ·  quotation found in the advisory
+        "Applications that use fast-uri to enforce host-based policy (denylists, loopback
+        filtering, redirect validation, outbound proxy routing) before passing the same URL to
+        Node's URL or fetch can be bypassed when the two implementations resolve the same input
+        to different hosts."
+      gemma4:latest (gemma4)  N  ·  high confidence  ·  quotation found in the advisory
+        "Applications that use fast-uri to enforce host-based policy (denylists, loopback
+        filtering, redirect validation, outbound proxy routing) before passing the same URL to
+        Node's URL or fetch can be bypassed when the two implementations resolve the same input
+        to different hosts."
+    I  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  H  ·  high confidence  ·  quotation found in the advisory
+        "Applications that use fast-uri to enforce host-based policy (denylists, loopback
+        filtering, redirect validation, outbound proxy routing) before passing the same URL to
+        Node's URL or fetch can be bypassed when the two implementations resolve the same input
+        to different hosts."
+      gemma4:latest (gemma4)  N  ·  high confidence  ·  quotation found in the advisory
+        'fast-uri versions 2.3.1 through 3.1.2 and 4.0.0 fail to canonicalize Unicode (IDN)
+        hostnames for HTTP-family URLs.'
+    A  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  L  ·  medium confidence  ·  quotation found in the advisory
+        "Applications that use fast-uri to enforce host-based policy (denylists, loopback
+        filtering, redirect validation, outbound proxy routing) before passing the same URL to
+        Node's URL or fetch can be bypassed when the two implementations resolve the same input
+        to different hosts."
+      gemma4:latest (gemma4)  N  ·  high confidence  ·  quotation found in the advisory
+        "Applications that use fast-uri to enforce host-based policy (denylists, loopback
+        filtering, redirect validation, outbound proxy routing) before passing the same URL to
+        Node's URL or fetch can be bypassed when the two implementations resolve the same input
+        to different hosts."
+  CVE-2026-14257  no vector  ·  could not settle AC, UI, S
+    5 metrics settled
+      4  every member that offered a quotation supported this value
+      1  members offering quotations disagreed, and the verified one settled it
+    AC  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  H  ·  high confidence  ·  quotation found in the advisory
+        'By chaining multiple brace groups, an attacker keeps the result count under the limit
+        while making each result progressively longer, so total memory scales with both count
+        and string length until the process hits a fatal, uncatchable out-of-memory error.'
+      gemma4:latest (gemma4)  L  ·  high confidence  ·  quotation found in the advisory
+        'By chaining multiple brace groups, an attacker keeps the result count under the limit
+        while making each result progressively longer, so total memory scales with both count
+        and string length until the process hits a fatal, uncatchable out-of-memory error.'
+    UI  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  R  ·  medium confidence  ·  quotation found in the advisory
+        'By chaining multiple brace groups, an attacker keeps the result count under the limit
+        while making each result progressively longer, so total memory scales with both count
+        and string length until the process hits a fatal, uncatchable out-of-memory error.'
+      gemma4:latest (gemma4)  N  ·  high confidence  ·  quotation found in the advisory
+        'Any application that passes attacker-influenced strings to brace-expansion.expand() -
+        directly or transitively via minimatch / glob brace patterns - can be crashed by a small
+        request.'
+    S  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  C  ·  high confidence  ·  quotation found in the advisory
+        'By chaining multiple brace groups, an attacker keeps the result count under the limit
+        while making each result progressively longer, so total memory scales with both count
+        and string length until the process hits a fatal, uncatchable out-of-memory error.'
+      gemma4:latest (gemma4)  U  ·  high confidence  ·  quotation found in the advisory
+        'Any application that passes attacker-influenced strings to brace-expansion.expand() -
+        directly or transitively via minimatch / glob brace patterns - can be crashed by a small
+        request.'
+  CVE-2026-16221  no vector  ·  could not settle AC, PR, UI, S, C, I, A
+    1 metric settled
+      1  every member that offered a quotation supported this value
+    AC  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  H  ·  medium confidence  ·  quotation found in the advisory
+        "Node's native WHATWG URL parser, used by fetch, undici, and Node's http and https
+        clients, normalizes the backslash to a forward slash for special schemes such as http,
+        https, ws, wss, ftp, and file."
+      gemma4:latest (gemma4)  L  ·  high confidence  ·  quotation found in the advisory
+        "Node's native WHATWG URL parser, used by fetch, undici, and Node's http and https
+        clients, normalizes the backslash to a forward slash for special schemes such as http,
+        https, ws, wss, ftp, and file. As a result, the two parsers extract different hosts from
+        the same input string."
+    PR  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  L  ·  medium confidence  ·  quotation found in the advisory
+        "Node's native WHATWG URL parser, used by fetch, undici, and Node's http and https
+        clients, normalizes the backslash to a forward slash for special schemes such as http,
+        https, ws, wss, ftp, and file."
+      gemma4:latest (gemma4)  N  ·  high confidence  ·  quotation found in the advisory
+        "Applications that use fast-uri to enforce host-based policy such as allowlists,
+        denylists, loopback or SSRF filtering, redirect validation, or outbound proxy routing
+        before passing the same URL into Node's URL or fetch consumers can be steered to an
+        unintended destination, including cloud metadata endpoints, loopback, or internal
+        hosts."
+    UI  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  R  ·  medium confidence  ·  quotation found in the advisory
+        "Applications that use fast-uri to enforce host-based policy such as allowlists,
+        denylists, loopback or SSRF filtering, redirect validation, or outbound proxy routing
+        before passing the same URL into Node's URL or fetch consumers can be steered to an
+        unintended destination, including cloud metadata endpoints, loopback, or internal
+        hosts."
+      gemma4:latest (gemma4)  N  ·  high confidence  ·  quotation found in the advisory
+        "Applications that use fast-uri to enforce host-based policy such as allowlists,
+        denylists, loopback or SSRF filtering, redirect validation, or outbound proxy routing
+        before passing the same URL into Node's URL or fetch consumers can be steered to an
+        unintended destination, including cloud metadata endpoints, loopback, or internal
+        hosts."
+    S  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  C  ·  high confidence  ·  quotation found in the advisory
+        "Applications that use fast-uri to enforce host-based policy such as allowlists,
+        denylists, loopback or SSRF filtering, redirect validation, or outbound proxy routing
+        before passing the same URL into Node's URL or fetch consumers can be steered to an
+        unintended destination, including cloud metadata endpoints, loopback, or internal
+        hosts."
+      gemma4:latest (gemma4)  U  ·  high confidence  ·  quotation found in the advisory
+        "Applications that use fast-uri to enforce host-based policy such as allowlists,
+        denylists, loopback or SSRF filtering, redirect validation, or outbound proxy routing
+        before passing the same URL into Node's URL or fetch consumers can be steered to an
+        unintended destination, including cloud metadata endpoints, loopback, or internal
+        hosts."
+    C  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  H  ·  high confidence  ·  quotation found in the advisory
+        "Applications that use fast-uri to enforce host-based policy such as allowlists,
+        denylists, loopback or SSRF filtering, redirect validation, or outbound proxy routing
+        before passing the same URL into Node's URL or fetch consumers can be steered to an
+        unintended destination, including cloud metadata endpoints, loopback, or internal
+        hosts."
+      gemma4:latest (gemma4)  N  ·  high confidence  ·  quotation found in the advisory
+        'As a result, the two parsers extract different hosts from the same input string.'
+    I  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  H  ·  high confidence  ·  quotation found in the advisory
+        "Applications that use fast-uri to enforce host-based policy such as allowlists,
+        denylists, loopback or SSRF filtering, redirect validation, or outbound proxy routing
+        before passing the same URL into Node's URL or fetch consumers can be steered to an
+        unintended destination, including cloud metadata endpoints, loopback, or internal
+        hosts."
+      gemma4:latest (gemma4)  N  ·  high confidence  ·  quotation found in the advisory
+        "Node's native WHATWG URL parser, used by fetch, undici, and Node's http and https
+        clients, normalizes the backslash to a forward slash for special schemes such as http,
+        https, ws, wss, ftp, and file."
+    A  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  L  ·  medium confidence  ·  quotation found in the advisory
+        "Applications that use fast-uri to enforce host-based policy such as allowlists,
+        denylists, loopback or SSRF filtering, redirect validation, or outbound proxy routing
+        before passing the same URL into Node's URL or fetch consumers can be steered to an
+        unintended destination, including cloud metadata endpoints, loopback, or internal
+        hosts."
+      gemma4:latest (gemma4)  N  ·  high confidence  ·  quotation found in the advisory
+        "Applications that use fast-uri to enforce host-based policy such as allowlists,
+        denylists, loopback or SSRF filtering, redirect validation, or outbound proxy routing
+        before passing the same URL into Node's URL or fetch consumers can be steered to an
+        unintended destination, including cloud metadata endpoints, loopback, or internal
+        hosts."
+  CVE-2026-18446  no vector  ·  could not settle PR, AC, UI, A
+    4 metrics settled
+      4  every member that offered a quotation supported this value
+    AC  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  H  ·  medium confidence  ·  quotation found in the advisory
+        'so a reference that uses a backslash based introducer in place of it (backslash
+        backslash, forward slash backslash, or backslash forward slash) is parsed with no
+        authority and folds into the path.'
+      gemma4:latest (gemma4)  L  ·  high confidence  ·  quotation found in the advisory
+        "Applications that use fast-uri to enforce host based policy such as allowlists, SSRF
+        filtering, or redirect validation before passing the same URL into Node's URL or fetch
+        consumers can be steered to an unintended host."
+    PR  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  declined
+      gemma4:latest (gemma4)  guessed N with nothing quoted
+    UI  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  R  ·  medium confidence  ·  quotation found in the advisory
+        "so the two parsers extract different hosts from the same input. Applications that use
+        fast-uri to enforce host based policy such as allowlists, SSRF filtering, or redirect
+        validation before passing the same URL into Node's URL or fetch consumers can be steered
+        to an unintended host."
+      gemma4:latest (gemma4)  N  ·  high confidence  ·  quotation found in the advisory
+        "Applications that use fast-uri to enforce host based policy such as allowlists, SSRF
+        filtering, or redirect validation before passing the same URL into Node's URL or fetch
+        consumers can be steered to an unintended host."
+    A  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  L  ·  medium confidence  ·  quotation found in the advisory
+        'so the two parsers extract different hosts from the same input.'
+      gemma4:latest (gemma4)  N  ·  high confidence  ·  quotation found in the advisory
+        "Applications that use fast-uri to enforce host based policy such as allowlists, SSRF
+        filtering, or redirect validation before passing the same URL into Node's URL or fetch
+        consumers can be steered to an unintended host."
+  CVE-2026-2950  no vector  ·  could not settle PR, C, A
+    5 metrics settled
+      4  every member that offered a quotation supported this value
+      1  members offering quotations disagreed, and the verified one settled it
+    PR  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  L  ·  medium confidence  ·  quotation found in the advisory
+        'This allows deletion of properties from built-in prototypes such as Object.prototype,
+        Number.prototype, and String.prototype.'
+      gemma4:latest (gemma4)  N  ·  high confidence  ·  quotation found in the advisory
+        'Lodash versions 4.17.23 and earlier are vulnerable to prototype pollution in the
+        _.unset and _.omit functions.'
+    C  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  L  ·  medium confidence  ·  quotation found in the advisory
+        'This allows deletion of properties from built-in prototypes such as Object.prototype,
+        Number.prototype, and String.prototype.'
+      gemma4:latest (gemma4)  N  ·  high confidence  ·  quotation found in the advisory
+        'The issue permits deletion of prototype properties but does not allow overwriting their
+        original behavior.'
+    A  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  L  ·  medium confidence  ·  quotation found in the advisory
+        'This allows deletion of properties from built-in prototypes such as Object.prototype,
+        Number.prototype, and String.prototype.'
+      gemma4:latest (gemma4)  N  ·  high confidence  ·  quotation found in the advisory
+        'The issue permits deletion of prototype properties but does not allow overwriting their
+        original behavior.'
+  CVE-2026-4800  no vector  ·  could not settle AC, PR, UI, A
+    4 metrics settled
+      4  every member that offered a quotation supported this value
+    AC  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  H  ·  high confidence  ·  quotation found in the advisory
+        'When an application passes untrusted input as options.imports key names, an attacker
+        can inject default-parameter expressions that execute arbitrary code at template
+        compilation time.'
+      gemma4:latest (gemma4)  L  ·  high confidence  ·  quotation found in the advisory
+        'When an application passes untrusted input as options.imports key names, an attacker
+        can inject default-parameter expressions that execute arbitrary code at template
+        compilation time.'
+    PR  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  H  ·  high confidence  ·  quotation found in the advisory
+        'Both paths flow into the same Function() constructor sink.'
+      gemma4:latest (gemma4)  N  ·  high confidence  ·  quotation found in the advisory
+        'When an application passes untrusted input as options.imports key names, an attacker
+        can inject default-parameter expressions that execute arbitrary code at template
+        compilation time.'
+    UI  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  R  ·  medium confidence  ·  quotation found in the advisory
+        'Do not pass untrusted input as key names in options.imports. Only use developer-
+        controlled, static key names.'
+      gemma4:latest (gemma4)  N  ·  high confidence  ·  quotation found in the advisory
+        'When an application passes untrusted input as options.imports key names, an attacker
+        can inject default-parameter expressions that execute arbitrary code at template
+        compilation time.'
+    A  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  H  ·  high confidence  ·  quotation found in the advisory
+        'Both paths flow into the same Function() constructor sink.'
+      gemma4:latest (gemma4)  N  ·  high confidence  ·  quotation found in the advisory
+        'When an application passes untrusted input as options.imports key names, an attacker
+        can inject default-parameter expressions that execute arbitrary code at template
+        compilation time.'
+  CVE-2026-53550  no vector  ·  could not settle AV, AC, PR, UI, S, C, I
+    1 metric settled
+      1  every member that offered a quotation supported this value
+    AV  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  L  ·  low confidence  ·  quotation found in the advisory
+        'This vulnerability is fixed in 4.2.0 and 3.15.0.'
+      gemma4:latest (gemma4)  N  ·  high confidence  ·  quotation found in the advisory
+        'can trigger algorithmic CPU exhaustion in js-yaml merge-key processing (<<) by
+        repeating the same alias many times in a merge sequence.'
+    AC  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  H  ·  high confidence  ·  quotation found in the advisory
+        'This causes quadratic parse-time behavior relative to input size and can block a
+        Node.js worker/event loop for seconds with a relatively small payload (tens of KB),
+        resulting in denial of service.'
+      gemma4:latest (gemma4)  L  ·  high confidence  ·  quotation found in the advisory
+        'a crafted YAML document can trigger algorithmic CPU exhaustion in js-yaml merge-key
+        processing (<<) by repeating the same alias many times in a merge sequence.'
+    PR  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  L  ·  medium confidence  ·  quotation found in the advisory
+        'Prior to 4.2.0 and 3.15.0, a crafted YAML document can trigger algorithmic CPU
+        exhaustion in js-yaml merge-key processing (<<) by repeating the same alias many times
+        in a merge sequence.'
+      gemma4:latest (gemma4)  N  ·  high confidence  ·  quotation found in the advisory
+        'a crafted YAML document can trigger algorithmic CPU exhaustion in js-yaml merge-key
+        processing (<<) by repeating the same alias many times in a merge sequence.'
+    UI  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  R  ·  medium confidence  ·  quotation found in the advisory
+        'This causes quadratic parse-time behavior relative to input size and can block a
+        Node.js worker/event loop for seconds with a relatively small payload (tens of KB),
+        resulting in denial of service.'
+      gemma4:latest (gemma4)  N  ·  high confidence  ·  quotation found in the advisory
+        'a crafted YAML document can trigger algorithmic CPU exhaustion in js-yaml merge-key
+        processing (<<) by repeating the same alias many times in a merge sequence.'
+    S  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  C  ·  high confidence  ·  quotation found in the advisory
+        'This causes quadratic parse-time behavior relative to input size and can block a
+        Node.js worker/event loop for seconds with a relatively small payload (tens of KB),
+        resulting in denial of service.'
+      gemma4:latest (gemma4)  U  ·  high confidence  ·  quotation found in the advisory
+        'The issue is in merge handling inside lib/loader.js.'
+    C  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  H  ·  high confidence  ·  quotation found in the advisory
+        'This causes quadratic parse-time behavior relative to input size and can block a
+        Node.js worker/event loop for seconds with a relatively small payload (tens of KB),
+        resulting in denial of service.'
+      gemma4:latest (gemma4)  N  ·  high confidence  ·  quotation found in the advisory
+        'resulting in denial of service.'
+    I  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  H  ·  high confidence  ·  quotation found in the advisory
+        'This causes quadratic parse-time behavior relative to input size and can block a
+        Node.js worker/event loop for seconds with a relatively small payload (tens of KB),
+        resulting in denial of service.'
+      gemma4:latest (gemma4)  N  ·  high confidence  ·  quotation found in the advisory
+        'can trigger algorithmic CPU exhaustion in js-yaml merge-key processing (<<) by
+        repeating the same alias many times in a merge sequence.'
+  CVE-2026-59869  no vector  ·  could not settle AV, PR, AC, UI
+    4 metrics settled
+      4  every member that offered a quotation supported this value
+    AV  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  declined
+      gemma4:latest (gemma4)  declined
+    AC  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  H  ·  medium confidence  ·  quotation found in the advisory
+        'This issue is fixed in versions 3.15.0 and 4.3.0.'
+      gemma4:latest (gemma4)  L  ·  high confidence  ·  quotation found in the advisory
+        'js-yaml can spend quadratic CPU time parsing a document whose size grows only linearly
+        when a chain of mappings uses merge keys where each mapping merges the previous one.'
+    PR  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  declined
+      gemma4:latest (gemma4)  guessed N with nothing quoted
+    UI  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  R  ·  medium confidence  ·  quotation found in the advisory
+        'This issue is fixed in versions 3.15.0 and 4.3.0.'
+      gemma4:latest (gemma4)  N  ·  high confidence  ·  quotation found in the advisory
+        'js-yaml can spend quadratic CPU time parsing a document whose size grows only linearly
+        when a chain of mappings uses merge keys where each mapping merges the previous one.'
+  CVE-2026-6321  no vector  ·  could not settle AV, AC, PR, UI, S, I
+    2 metrics settled
+      2  every member that offered a quotation supported this value
+    AV  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  L  ·  medium confidence  ·  quotation found in the advisory
+        'Applications that normalize or compare attacker-controlled URLs to enforce path-based
+        policy can be bypassed, with a path that appears confined under an allowed prefix
+        normalizing to a different location.'
+      gemma4:latest (gemma4)  N  ·  medium confidence  ·  quotation found in the advisory
+        'Applications that normalize or compare attacker-controlled URLs to enforce path-based
+        policy can be bypassed, with a path that appears confined under an allowed prefix
+        normalizing to a different location.'
+    AC  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  H  ·  medium confidence  ·  quotation found in the advisory
+        'Encoded path data was treated like real slashes and parent-directory references, so
+        distinct URIs could collapse onto the same normalized path.'
+      gemma4:latest (gemma4)  L  ·  high confidence  ·  quotation found in the advisory
+        'Applications that normalize or compare attacker-controlled URLs to enforce path-based
+        policy can be bypassed, with a path that appears confined under an allowed prefix
+        normalizing to a different location.'
+    PR  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  L  ·  medium confidence  ·  quotation found in the advisory
+        'Encoded path data was treated like real slashes and parent-directory references, so
+        distinct URIs could collapse onto the same normalized path.'
+      gemma4:latest (gemma4)  N  ·  high confidence  ·  quotation found in the advisory
+        'Applications that normalize or compare attacker-controlled URLs to enforce path-based
+        policy can be bypassed, with a path that appears confined under an allowed prefix
+        normalizing to a different location.'
+    UI  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  R  ·  medium confidence  ·  quotation found in the advisory
+        'Encoded path data was treated like real slashes and parent-directory references, so
+        distinct URIs could collapse onto the same normalized path.'
+      gemma4:latest (gemma4)  N  ·  high confidence  ·  quotation found in the advisory
+        'Applications that normalize or compare attacker-controlled URLs to enforce path-based
+        policy can be bypassed, with a path that appears confined under an allowed prefix
+        normalizing to a different location.'
+    S  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  C  ·  medium confidence  ·  quotation found in the advisory
+        'Encoded path data was treated like real slashes and parent-directory references, so
+        distinct URIs could collapse onto the same normalized path.'
+      gemma4:latest (gemma4)  U  ·  medium confidence  ·  quotation found in the advisory
+        'Applications that normalize or compare attacker-controlled URLs to enforce path-based
+        policy can be bypassed, with a path that appears confined under an allowed prefix
+        normalizing to a different location.'
+    I  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  L  ·  medium confidence  ·  quotation found in the advisory
+        'Encoded path data was treated like real slashes and parent-directory references, so
+        distinct URIs could collapse onto the same normalized path.'
+      gemma4:latest (gemma4)  N  ·  high confidence  ·  quotation found in the advisory
+        'Applications that normalize or compare attacker-controlled URLs to enforce path-based
+        policy can be bypassed, with a path that appears confined under an allowed prefix
+        normalizing to a different location.'
+  CVE-2026-6322  no vector  ·  could not settle PR, C, AC, UI, I
+    3 metrics settled
+      3  every member that offered a quotation supported this value
+    AC  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  H  ·  medium confidence  ·  quotation found in the advisory
+        'Applications that normalize untrusted URLs before host allowlist checks, redirect
+        validation, or outbound request routing can be steered to a different authority than the
+        input appeared to specify.'
+      gemma4:latest (gemma4)  L  ·  high confidence  ·  quotation found in the advisory
+        "A host that combined an allowed domain, an encoded at-sign, and a different domain was
+        re-emitted with the at-sign as a raw userinfo separator, changing the URI's authority to
+        the second domain."
+    PR  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  declined
+      gemma4:latest (gemma4)  guessed N with nothing quoted
+    UI  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  R  ·  medium confidence  ·  quotation found in the advisory
+        'Applications that normalize untrusted URLs before host allowlist checks, redirect
+        validation, or outbound request routing can be steered to a different authority than the
+        input appeared to specify.'
+      gemma4:latest (gemma4)  N  ·  high confidence  ·  quotation found in the advisory
+        'Applications that normalize untrusted URLs before host allowlist checks, redirect
+        validation, or outbound request routing can be steered to a different authority than the
+        input appeared to specify.'
+    C  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  guessed N with nothing quoted
+      gemma4:latest (gemma4)  guessed N with nothing quoted
+    I  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  L  ·  medium confidence  ·  quotation found in the advisory
+        'Applications that normalize untrusted URLs before host allowlist checks, redirect
+        validation, or outbound request routing can be steered to a different authority than the
+        input appeared to specify.'
+      gemma4:latest (gemma4)  H  ·  high confidence  ·  quotation found in the advisory
+        "A host that combined an allowed domain, an encoded at-sign, and a different domain was
+        re-emitted with the at-sign as a raw userinfo separator, changing the URI's authority to
+        the second domain."
+  CVE-2026-69152  no vector  ·  could not settle AV, PR, C, I
+    4 metrics settled
+      4  every member that offered a quotation supported this value
+    AV  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  declined
+      gemma4:latest (gemma4)  declined
+    PR  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  declined
+      gemma4:latest (gemma4)  guessed N with nothing quoted
+    C  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  N  ·  low confidence  ·  quotation not found in the advisory
+        'NO_EVIDENCE'
+      gemma4:latest (gemma4)  guessed N with nothing quoted
+    I  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  N  ·  low confidence  ·  quotation not found in the advisory
+        'NO_EVIDENCE'
+      gemma4:latest (gemma4)  declined
+  CVE-2026-75975  no vector  ·  could not settle AV, UI
+    6 metrics settled
+      5  every member that offered a quotation supported this value
+      1  members offering quotations disagreed, and the verified one settled it
+    AV  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  L  ·  medium confidence  ·  quotation found in the advisory
+        'An application that normalizes untrusted URLs before outbound requests, redirects,
+        proxy routing, or address-policy enforcement can be redirected to a local or private
+        IPv6 target, giving a server-side request forgery and address-policy bypass primitive.'
+      gemma4:latest (gemma4)  N  ·  high confidence  ·  quotation found in the advisory
+        'For example, a bracketed literal with invalid trailing characters is normalized to the
+        unspecified address, which a Node HTTP client then connects to a local service over
+        loopback, and other malformed literals collapse to private-range addresses.'
+    UI  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  R  ·  medium confidence  ·  quotation found in the advisory
+        'For example, a bracketed literal with invalid trailing characters is normalized to the
+        unspecified address, which a Node HTTP client then connects to a local service over
+        loopback, and other malformed literals collapse to private-range addresses.'
+      gemma4:latest (gemma4)  N  ·  high confidence  ·  quotation found in the advisory
+        'No error is set on the parsed result, so an application checking the error field cannot
+        detect the rewrite.'
+  CVE-2026-76172  no vector  ·  could not settle PR, AV, UI, S
+    4 metrics settled
+      3  every member that offered a quotation supported this value
+      1  members offering quotations disagreed, and the verified one settled it
+    AV  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  L  ·  medium confidence  ·  quotation found in the advisory
+        'An application that allowlists on the parsed host, or treats a reference with no
+        authority as safe to resolve against its base, gets the opposite of what it checked,
+        giving an off-site redirect, server-side request forgery, or address-policy bypass.'
+      gemma4:latest (gemma4)  N  ·  high confidence  ·  quotation found in the advisory
+        'An application that allowlists on the parsed host, or treats a reference with no
+        authority as safe to resolve against its base, gets the opposite of what it checked,
+        giving an off-site redirect, server-side request forgery, or address-policy bypass.'
+    PR  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  L  ·  medium confidence  ·  quotation not found in the advisory
+        'ordinary user privileges, typically reaching only settings and files owned by that
+        user, or access to resources that are not sensitive.'
+      gemma4:latest (gemma4)  guessed N with nothing quoted
+    UI  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  R  ·  high confidence  ·  quotation found in the advisory
+        'an input whose scheme carries percent-encoded slashes parses as a scheme with no
+        authority, so the parsed host and error are both undefined, yet resolving or normalizing
+        that same input emits a network-path reference whose authority is attacker-chosen and
+        re-parses to that host.'
+      gemma4:latest (gemma4)  N  ·  high confidence  ·  quotation found in the advisory
+        'An application that allowlists on the parsed host, or treats a reference with no
+        authority as safe to resolve against its base, gets the opposite of what it checked,
+        giving an off-site redirect, server-side request forgery, or address-policy bypass.'
+    S  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  C  ·  high confidence  ·  quotation found in the advisory
+        'resolving or normalizing that same input emits a network-path reference whose authority
+        is attacker-chosen and re-parses to that host.'
+      gemma4:latest (gemma4)  U  ·  high confidence  ·  quotation found in the advisory
+        'The affected versions are 2.3.1 up to but not including 2.4.5, 3.0.0 up to but not
+        including 3.1.6, and 4.0.0 up to but not including 4.1.3. The issue is fixed in 2.4.5,
+        3.1.6, and 4.1.3, which reject a scheme that is not valid after decoding.'
+  CVE-2026-84375  no vector  ·  could not settle AV, AC, I
+    5 metrics settled
+      5  every member that offered a quotation supported this value
+    AV  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  declined
+      gemma4:latest (gemma4)  declined
+    AC  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  H  ·  high confidence  ·  quotation found in the advisory
+        'An attacker can alias a large sequence of empty mappings into many merge targets,
+        causing O(N * K) processing while totalMergeKeys remains unchanged and the configured
+        resource limit is never reached.'
+      gemma4:latest (gemma4)  L  ·  high confidence  ·  quotation found in the advisory
+        'A relatively small YAML document can therefore cause prolonged CPU consumption in
+        applications that parse untrusted YAML, and merge processing is enabled by default on
+        these release lines.'
+    I  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  H  ·  high confidence  ·  quotation found in the advisory
+        'An attacker can alias a large sequence of empty mappings into many merge targets,
+        causing O(N * K) processing while totalMergeKeys remains unchanged and the configured
+        resource limit is never reached.'
+      gemma4:latest (gemma4)  N  ·  high confidence  ·  quotation found in the advisory
+        'A relatively small YAML document can therefore cause prolonged CPU consumption in
+        applications that parse untrusted YAML, and merge processing is enabled by default on
+        these release lines.'
+  GHSA-5p4m-2wfm-xmqj  no vector  ·  could not settle AV, S
+    6 metrics settled
+      3  every member that offered a quotation supported this value
+      3  members offering quotations disagreed, and the verified one settled it
+    AV  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  declined
+      gemma4:latest (gemma4)  declined
+    S  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  C  ·  high confidence  ·  quotation found in the advisory
+        'A modestly sized YAML document therefore consumes disproportionate CPU inside
+        `yaml.load()`, giving a denial of service against any consumer that parses untrusted
+        YAML.'
+      gemma4:latest (gemma4)  U  ·  high confidence  ·  quotation found in the advisory
+        'A modestly sized YAML document therefore consumes disproportionate CPU inside
+        `yaml.load()`'
+
+MATCHED NOTHING
+  55 components carry no advisory
+  0 advisories matched no component
+
+NOT ASSESSED
+  Approval record
+    the answer file carries no approval
