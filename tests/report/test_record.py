@@ -7,8 +7,11 @@ from organisation.risk import assess, per_source
 from council_runs import ALONE, council_ran, passed_over_entirely
 from full_runs import fully_assessed
 from report.record import (
+    Coverage,
     NO_COUNCIL_RUN,
     NOTHING_ABSENT,
+    NOTHING_TO_PUT,
+    NOTHING_TO_WEIGH,
     NOTHING_WAS_PUT_TO_IT,
     Absence,
     Report,
@@ -30,12 +33,12 @@ PYYAML = component("pyyaml", "5.1")
 
 def a_report(
     components=(), findings=(), advisories=None, council=(), unidentified=(),
-    risk=(), approval=None, overridden=(),
+    risk=(), approval=None, overridden=(), coverage=Coverage(),
 ):
     """Build one report from whatever a test is about."""
     found = catalogue(*components, unidentified=unidentified)
     return build_report(
-        PROVENANCE, found, findings, advisories or {}, council, risk, approval, overridden
+        PROVENANCE, found, findings, advisories or {}, council, risk, approval, overridden, coverage
     )
 
 
@@ -185,3 +188,12 @@ def test_the_sentence_for_nothing_absent_names_every_absence_a_bare_run_carries(
     every = a_report().not_assessed
     unnamed = [one.what for one in every if one.what.lower() not in NOTHING_ABSENT.lower()]
     assert every and unnamed == []
+
+
+@pytest.mark.parametrize("asked, what, because", [
+    (Coverage(answers_given=True), "Organisation Risk Score", NOTHING_TO_WEIGH),
+    (Coverage(council_named=True), "Council ruling", NOTHING_TO_PUT),
+])
+def test_asking_for_something_with_no_finding_to_ask_about_names_that_cause(asked, what, because):
+    absent = {one.what: one.because for one in a_report(coverage=asked).not_assessed}
+    assert absent[what] == because

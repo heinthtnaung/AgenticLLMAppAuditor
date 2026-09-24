@@ -10,8 +10,18 @@ from cli import main as entry
 from cli.main import COULD_NOT_RUN, FOUND_NOTHING, FOUND_SOMETHING, main
 from cli.preflight import CannotRun
 from cli.report_files import WRITTEN_TO
-from cli_samples import REPORTS_FOLDER, TRIVY_VERSION, run_command_line
+from cli_samples import REPORTS_FOLDER, TRIVY_VERSION, run_command_line, written_answers
 from deps.scanner import ScannerFailed, ScannerUnavailable
+from report.record import (
+    NO_ANSWERS_GIVEN,
+    NO_COUNCIL_RUN,
+    NOTHING_ABSENT,
+    NOTHING_TO_PUT,
+    NOTHING_TO_WEIGH,
+)
+
+FOUND_NOTHING_AT_ALL = {"components": (), "advisories": {}}
+MEMBER = ["--council-member", "qwen2.5:7b-instruct"]
 
 
 def test_a_run_that_found_something_exits_one(monkeypatch, tmp_path):
@@ -116,3 +126,39 @@ def test_progress_locates_the_run_by_finding_metric_and_member(monkeypatch, tmp_
     assert "CVE-2021-23337" in error
     assert "AV" in error
     assert "qwen2.5:7b-instruct" in error
+
+
+def absent_from(out: str) -> dict[str, str]:
+    """Read what a JSON record names as not assessed, and why."""
+    return {one["what"]: one["because"] for one in json.loads(out)["not_assessed"]}
+
+
+def test_answers_with_no_finding_to_weigh_are_not_reported_as_never_given(monkeypatch, tmp_path):
+    # Found in acceptance testing: the answer file's approval was printed just
+    # above "no organisation answers were supplied".
+    given = ["--answers", str(written_answers(tmp_path)), "--format", "json"]
+    _, out, _ = run_command_line(given, monkeypatch, tmp_path, **FOUND_NOTHING_AT_ALL)
+    absent = absent_from(out)
+    assert absent["Organisation Risk Score"] == NOTHING_TO_WEIGH
+    assert "Approval record" not in absent
+
+
+def test_a_council_with_no_finding_to_put_to_it_is_not_reported_as_never_run(monkeypatch, tmp_path):
+    given = [*MEMBER, "--format", "json"]
+    _, out, _ = run_command_line(given, monkeypatch, tmp_path, **FOUND_NOTHING_AT_ALL)
+    assert absent_from(out)["Council ruling"] == NOTHING_TO_PUT
+
+
+def test_a_run_that_asked_for_nothing_and_found_nothing_still_says_so(monkeypatch, tmp_path):
+    given = ["--format", "json"]
+    _, out, _ = run_command_line(given, monkeypatch, tmp_path, **FOUND_NOTHING_AT_ALL)
+    absent = absent_from(out)
+    assert absent["Organisation Risk Score"] == NO_ANSWERS_GIVEN
+    assert absent["Council ruling"] == NO_COUNCIL_RUN
+
+
+def test_a_run_with_nothing_to_weigh_or_put_is_never_told_nothing_is_absent(monkeypatch, tmp_path):
+    given = ["--answers", str(written_answers(tmp_path)), *MEMBER]
+    _, out, _ = run_command_line(given, monkeypatch, tmp_path, **FOUND_NOTHING_AT_ALL)
+    assert NOTHING_TO_WEIGH in out and NOTHING_TO_PUT in out
+    assert NOTHING_ABSENT not in out
