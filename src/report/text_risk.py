@@ -14,10 +14,11 @@ one term of the arithmetic a reader would otherwise have to fetch from
 `docs/SCORING_MODEL.md`. It comes off the record, never off the engine.
 """
 
-from organisation.risk import FindingRisk
+from organisation.risk import COUNCIL_SOURCE, FindingRisk
 from report.record import Report
 from report.risk_order import bands_contested_first
 from report.text_layout import INDENT, SOURCE_SEPARATOR, section
+from scoring.risk_score import RiskScore
 
 PROVISIONAL = "provisional"
 WEIGHTING_LABEL = "weighted"
@@ -49,26 +50,36 @@ def headline(report: Report) -> str:
     return f"{SOURCE_SEPARATOR}the source changes the band on {len(contested)}"
 
 
-def risk_entry(weighed, width: int) -> str:
+def risk_entry(weighed: FindingRisk, width: int) -> str:
     """Give one finding's score or range, its bands, and whether it is settled."""
     flag = f"{SOURCE_SEPARATOR}{PROVISIONAL}" if weighed.is_provisional else ""
     bands = " and ".join(weighed.bands)
     return f"{INDENT}{weighed.advisory_id.ljust(width)}  {spread(weighed):<28}{bands}{flag}"
 
 
-def spread(weighed) -> str:
+def spread(weighed: FindingRisk) -> str:
     """Give the one score, or the range with the source at each end of it named."""
     # Named on a range and not on a single score: where the band moves, which
     # source sits at which end is the reader's immediate next question, and a
     # range with no attribution invites them to guess. On a single score there
-    # is nothing to attribute between, so the name would only be noise.
+    # is nothing to attribute between, so the name would only be noise -- unless
+    # the score is the council's, which `single` names.
     ends = sorted(weighed.scores, key=lambda one: one.score)
     if ends[0].score == ends[-1].score:
-        return f"{ends[0].score:.1f}"
+        return single(ends[0])
     return f"{labelled(ends[0])} to {labelled(ends[-1])}"
 
 
-def labelled(scored) -> str:
+def single(scored: RiskScore) -> str:
+    """Give the one score, naming its source only where that source is the council."""
+    # A council's score replaced every published one, so a bare number would
+    # read as one source's. Named as the page names it, from the same constant.
+    if getattr(scored.technical, "source", "") == COUNCIL_SOURCE:
+        return labelled(scored)
+    return f"{scored.score:.1f}"
+
+
+def labelled(scored: RiskScore) -> str:
     """Name one end of a range by the source that put it there."""
     named = getattr(scored.technical, "source", "")
     return f"{named} {scored.score:.1f}" if named else f"{scored.score:.1f}"

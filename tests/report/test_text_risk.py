@@ -1,6 +1,7 @@
 """Guards on the organisation score on the page: the contested bands first, flags visible."""
 
-from organisation.risk import assess, per_source
+from full_runs import ADVISORY_ID, fully_assessed
+from organisation.risk import COUNCIL_SOURCE, FindingRisk, assess, per_source
 from report.record import build_report
 from report.text_risk import risk_block
 from report_samples import PROVENANCE, catalogue, component, finding
@@ -117,3 +118,26 @@ def test_a_finding_nobody_scored_is_weighed_and_comes_out_provisional():
     rendered = block(weighed(one, SETTLED))
     assert "CVE-1" in rendered
     assert "provisional" in rendered
+
+
+def test_a_score_weighed_from_the_councils_vector_is_named_as_the_councils():
+    # Found in acceptance testing: a council-settled score read as one source's,
+    # though its published sources had put it anywhere from 8.1 to 9.8.
+    settled = fully_assessed().risk[ADVISORY_ID]
+    line = next(one for one in block(settled).split("\n") if ADVISORY_ID in one)
+    assert f"{COUNCIL_SOURCE} {settled.scores[0].score:.1f}" in line
+
+
+def test_naming_the_council_keeps_the_bands_column_in_line_with_a_range():
+    settled = fully_assessed().risk[ADVISORY_ID]
+    ranged = finding(PYYAML, advisory_id="CVE-2", vectors={"a": HIGH_LOW, "b": TOTAL_LOSS})
+    scored = (settled, weighed(ranged, SETTLED))
+    lines = block(*scored).split("\n")
+    columns = {bands_column(lines, one) for one in scored}
+    assert len(columns) == 1
+
+
+def bands_column(lines: list[str], weighed_one: FindingRisk) -> int:
+    """Give where one finding's bands start on its line of the block."""
+    line = next(one for one in lines if one.strip().startswith(weighed_one.advisory_id))
+    return line.index(" and ".join(weighed_one.bands), len(weighed_one.advisory_id))
