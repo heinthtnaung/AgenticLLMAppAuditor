@@ -101,6 +101,14 @@ def test_sources_that_match_beside_a_refused_one_are_not_filed_as_agreeing():
     assert "6.1  Medium    3 sources read  ·  refused ghsa" in text
 
 
+def test_a_disputed_finding_names_its_refused_source_beside_the_ones_it_read():
+    # As the web page's card does: a refused vector stays on the page, and no
+    # corpus finding carries one beside a dispute, so ghsa's real one is put there.
+    read = {"ghsa": TEMPORAL_VECTOR, "nvd": TOTAL_LOSS, "redhat": LOW_CONFIDENTIALITY}
+    text = rendered((finding(DJANGO, vectors=read),))
+    assert "nvd 9.8  ·  redhat 5.3  ·  refused ghsa" in text
+
+
 def test_the_findings_with_a_refused_source_come_before_the_agreeing_ones():
     text = rendered((
         finding(DJANGO, advisory_id="CVE-2", vectors={"a": TOTAL_LOSS}),
