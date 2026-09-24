@@ -86,8 +86,8 @@ def unmatched_block(report: Report) -> str:
 
 def overrides_line(report: Report) -> list[str]:
     """Name the answer overrides that matched no finding, so a typo cannot be silent."""
-    # A mistyped advisory id used to apply to nothing quietly, and a deliberate
-    # escalation that did not apply moved a finding a band with nothing said.
+    # Unprinted, a mistyped advisory id would apply to nothing quietly, and an
+    # escalation that did not apply would leave a finding a band lower than intended.
     missed = report.overrides_without_findings
     if not missed:
         return []

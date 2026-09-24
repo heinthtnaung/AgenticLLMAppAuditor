@@ -24,6 +24,7 @@ does, which is exactly why a finding is scored per source at all.
 
 from report.html_layout import listing, number, tag, text
 from scoring.question import Answer
+from scoring.risk_score import RiskScore
 
 DERIVATION_SUMMARY = "How this number was reached"
 WEIGHTING_LABEL = "Weighted"
@@ -42,7 +43,7 @@ def derivation(weighed) -> str:
     return tag("details", tag("summary", text(DERIVATION_SUMMARY)) + behind)
 
 
-def weighting(scored) -> str:
+def weighting(scored: RiskScore) -> str:
     """Give the weighting that combined the categories, which the total alone does not show."""
     named = ", ".join(f"{one.category} {number(one.weight)}" for one in scored.weights)
     return tag("p", text(f"{WEIGHTING_LABEL} {named}."), "weighting")

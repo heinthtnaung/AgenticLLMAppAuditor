@@ -8,8 +8,11 @@ from cvss.score import base_score
 from cvss.vector import parse
 from report.json_report import as_dictionary, as_json
 from report.provenance import RunProvenance, UnknownAdvisoryDatabase
-from report.council_record import CouncilAssessment, CouncilNotAsked, CouncilWithoutVector
-from report.record import build_report
+from cli.council_run import SOURCES_AGREE
+from council_runs import (
+    ALONE, OPEN_TWO_WAYS, council_ran, council_states, passed_over_entirely,
+)
+from report.record import NOTHING_WAS_PUT_TO_IT, build_report
 from report_samples import (
     catalogue,
     CONFIDENTIALITY_ONLY,
@@ -85,7 +88,7 @@ def test_a_council_that_did_not_run_is_null_rather_than_absent():
 
 
 def test_a_council_that_settled_a_vector_is_recorded_with_it():
-    settled = CouncilAssessment("CVE-2019-14234", TOTAL_LOSS, True)
+    settled = council_ran(models=ALONE)
     rendered = as_dictionary(a_report((finding(DJANGO),), (settled,)))["findings"][0]
     assert rendered["council"]["ran"]
     assert rendered["council"]["vector"] == TOTAL_LOSS
@@ -93,10 +96,10 @@ def test_a_council_that_settled_a_vector_is_recorded_with_it():
 
 
 def test_a_council_that_ran_and_settled_nothing_says_so_rather_than_looking_absent():
-    # The record used to say no council had run. That is a false statement in an
-    # audit record, and the likely outcome of any real run under the no-fallback
-    # rule, because one unsettled metric of eight discards the whole vector.
-    open_still = CouncilWithoutVector("CVE-2019-14234", False, ("S",), ("AC",))
+    # A record saying no council had run would be false here, and this is the
+    # likely outcome of any real run under the no-fallback rule, because one
+    # unsettled metric of eight discards the whole vector.
+    open_still = council_ran(**OPEN_TWO_WAYS)
     rendered = as_dictionary(a_report((finding(DJANGO),), (open_still,)))["findings"][0]
     assert rendered["council"]["ran"]
     assert rendered["council"]["vector"] is None
@@ -153,24 +156,21 @@ def test_a_run_whose_overrides_all_matched_names_none():
     assert as_dictionary(a_report())["overrides_without_findings"] == []
 
 
-# Every state the council record can be in. A new one that reaches a rendering
-# as an `AttributeError` is the defect this closes: the type says a fact exists
-# and the code that must read it does not know. Adding a fifth breaks this list
-# before it breaks a run.
-COUNCIL_STATES = (
-    CouncilAssessment("CVE-SETTLED", TOTAL_LOSS, single_assessor=False),
-    CouncilWithoutVector("CVE-OPEN", False, ("AV",), ()),
-    CouncilNotAsked("CVE-PASSED", "no published source disagrees"),
-)
-
-
 def test_every_state_the_council_record_can_be_in_renders():
-    raised = tuple(finding(DJANGO, advisory_id=one.advisory_id) for one in COUNCIL_STATES)
-    rendered = as_dictionary(a_report(findings=raised, council=COUNCIL_STATES))
+    states = council_states()
+    raised = tuple(finding(DJANGO, advisory_id=one.advisory_id) for one in states)
+    rendered = as_dictionary(a_report(findings=raised, council=states))
     said = {one["advisory"]["advisory_id"]: one["council"] for one in rendered["findings"]}
     assert said["CVE-SETTLED"]["ran"] is True
     assert said["CVE-OPEN"]["ran"] is True
-    assert said["CVE-PASSED"] == {"ran": False, "because": "no published source disagrees"}
+    assert said["CVE-PASSED"] == {"ran": False, "because": SOURCES_AGREE}
+
+
+def test_a_council_put_to_no_finding_says_so_and_not_that_none_ran():
+    raised = (finding(DJANGO, advisory_id="CVE-PASSED"),)
+    record = as_dictionary(a_report(findings=raised, council=passed_over_entirely()))
+    absent = {entry["what"]: entry["because"] for entry in record["not_assessed"]}
+    assert absent["Council ruling"] == NOTHING_WAS_PUT_TO_IT
 
 
 def test_a_finding_of_a_run_with_no_council_at_all_carries_null():

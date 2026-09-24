@@ -30,13 +30,16 @@ from collections import Counter
 from report.council_record import (
     CouncilAssessment,
     CouncilNotAsked,
+    CouncilWithoutVector,
     MetricRuling,
     Outcome,
     PassedOver,
     grouped_by_reason,
     was_assessed,
 )
-from report.council_words import NOT_ASKED, SINGLE_ASSESSOR, counted
+from report.council_words import (
+    NOT_ASKED, NO_VECTOR, SETTLED, SINGLE_ASSESSOR, could_not_settle, counted, metrics_settled,
+)
 from report.html_layout import listing, section, separated, tag, text
 from report.html_metric import metric_details
 from report.record import Report
@@ -77,28 +80,27 @@ def reason_row(group: PassedOver) -> str:
     return tag("span", text(group.because), "absence-why") + named
 
 
-def council_entry(outcome) -> str:
+def council_entry(outcome: CouncilAssessment | CouncilWithoutVector) -> str:
     """Give one advisory: what the council made of it, then the metrics it left open."""
     unsettled = [one for one in outcome.rulings if one.outcome is not Outcome.SETTLED]
     settled = [one for one in outcome.rulings if one.outcome is Outcome.SETTLED]
     return outcome_line(outcome) + settled_note(settled) + open_metrics(unsettled)
 
 
-def outcome_line(outcome) -> str:
+def outcome_line(outcome: CouncilAssessment | CouncilWithoutVector) -> str:
     """Name the advisory, say whether a vector came out of it, and mark a run of one."""
     named = tag("code", text(outcome.advisory_id))
     return tag("p", separated([named, headline(outcome), single_assessor(outcome)]), "council-name")
 
 
-def headline(outcome) -> str:
+def headline(outcome: CouncilAssessment | CouncilWithoutVector) -> str:
     """Say whether the council handed over a vector, or what stopped it."""
     if isinstance(outcome, CouncilAssessment):
-        return separated([text("settled"), tag("code", text(outcome.vector))])
-    still_open = ", ".join(outcome.unresolved_metrics + outcome.contested_metrics)
-    return separated([text("no vector"), text(f"could not settle {still_open}")])
+        return separated([text(SETTLED), tag("code", text(outcome.vector))])
+    return separated([text(NO_VECTOR), text(could_not_settle(outcome))])
 
 
-def single_assessor(outcome) -> str:
+def single_assessor(outcome: CouncilAssessment | CouncilWithoutVector) -> str:
     """Mark a run only one member answered, so nobody reads a council into it."""
     if not outcome.single_assessor:
         return ""
@@ -109,8 +111,7 @@ def settled_note(settled: list[MetricRuling]) -> str:
     """Count the metrics nobody needs to open, and say what the chairman settled them on."""
     if not settled:
         return ""
-    counting = f"{counted(len(settled), 'metric')} settled"
-    return tag("p", text(counting), "council-settled") + basis_list(settled)
+    return tag("p", text(metrics_settled(len(settled))), "council-settled") + basis_list(settled)
 
 
 def basis_list(settled: list[MetricRuling]) -> str:

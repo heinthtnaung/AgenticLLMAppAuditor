@@ -6,13 +6,14 @@ that spoke and is not on the page is the user's own request unmet in the format
 they read.
 
 **Every record here comes out of a real chairman**, through `council_runs`, and
-not out of a dataclass filled in by hand. The earlier version of this file
-asserted a `basis` on a **contested** ruling, which `src/council/ruling.py` puts
-only on a settled one: it passed, and it pinned a shape the code cannot produce.
-A passing test over an impossible record is worse than no test, because it
-reports coverage of a path that never runs.
+not out of a dataclass filled in by hand. A hand-built record can hold a shape
+no chairman emits -- a `basis` on a **contested** ruling, which
+`src/council/ruling.py` puts only on a settled one -- and a passing test over an
+impossible record is worse than no test, because it reports coverage of a path
+that never runs.
 """
 
+from cli.council_run import NO_TEXT_TO_READ, SOURCES_AGREE
 from council_runs import (
     AGREED, ALONE, DISSENTING, EVIDENCE, INVENTED, answering, council_ran, declining,
 )
@@ -23,10 +24,6 @@ from report.record import build_report
 from report_samples import PROVENANCE, catalogue, component, finding
 
 DJANGO = component()
-
-
-AGREED_SOURCES = "no published source disagrees, so there is nothing to reconcile"
-NO_TEXT = "the advisory carries no text for a member to read"
 
 
 def rendered(*outcomes) -> str:
@@ -46,8 +43,8 @@ def test_a_run_with_no_council_shows_no_section():
 
 
 def test_every_member_that_spoke_is_named_on_the_page():
-    # The defect this file was written for: the page carried the advisory, the
-    # outcome and the vector, and not one member's name.
+    # The advisory, the outcome and the vector with no member's name beside them
+    # leave a reader unable to say who said what.
     page = contested_page()
     assert "qwen2.5:7b (qwen2.5)" in page
     assert "gemma4:latest (gemma4)" in page
@@ -153,20 +150,22 @@ def test_a_finding_the_council_was_not_put_to_is_named_with_the_reason():
     # them, which is a different and false thing.
     page = rendered(
         council_ran(**DISSENTING),
-        CouncilNotAsked("CVE-2", AGREED_SOURCES),
-        CouncilNotAsked("CVE-3", AGREED_SOURCES),
+        CouncilNotAsked("CVE-2", SOURCES_AGREE),
+        CouncilNotAsked("CVE-3", SOURCES_AGREE),
     )
     assert "2 findings not asked" in page
-    assert AGREED_SOURCES in page
+    assert SOURCES_AGREE in page
     assert "CVE-2, CVE-3" in page
 
 
 def test_the_reasons_a_finding_was_passed_over_are_kept_apart():
-    page = rendered(CouncilNotAsked("CVE-2", AGREED_SOURCES), CouncilNotAsked("CVE-3", NO_TEXT))
-    assert AGREED_SOURCES in page
-    assert NO_TEXT in page
+    page = rendered(
+        CouncilNotAsked("CVE-2", SOURCES_AGREE), CouncilNotAsked("CVE-3", NO_TEXT_TO_READ)
+    )
+    assert SOURCES_AGREE in page
+    assert NO_TEXT_TO_READ in page
 
 
 def test_only_the_assessed_findings_are_counted_in_the_heading():
-    page = rendered(council_ran(**DISSENTING), CouncilNotAsked("CVE-2", AGREED_SOURCES))
+    page = rendered(council_ran(**DISSENTING), CouncilNotAsked("CVE-2", SOURCES_AGREE))
     assert "Council (1)" in page

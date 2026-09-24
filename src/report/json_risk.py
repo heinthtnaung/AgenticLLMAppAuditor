@@ -1,9 +1,10 @@
 """The organisation's half of the audit record: its risk scores and its approval.
 
 **A score nobody can re-derive is not a score**, so every answer that produced
-one is here with the weight it carried and what it contributed, and the
-weighting that combined the four categories is here beside them -- a reader
-reaches the same number from this record alone. The raw total is written beside
+one is here with the weight it carried and what it contributed, and each
+category's weight in the total is written inside that category's entry, the
+technical term's beside the technical score -- a reader reaches the same number
+from this record alone, pairing nothing by position. The raw total is written beside
 the clamped score because the clamp is invisible in the score alone, and the
 clamp is the step the design is most particular about.
 
@@ -16,6 +17,7 @@ from typing import Any
 
 from organisation.approval import Approval
 from report.record import Report
+from scoring.question import Category
 
 
 def risk_of(report: Report, advisory_id: str) -> dict[str, Any] | None:
@@ -31,15 +33,15 @@ def risk_of(report: Report, advisory_id: str) -> dict[str, Any] | None:
         "band_depends_on_the_source": weighed.band_depends_on_the_source,
         "provisional": weighed.is_provisional,
         "categories": categories_of(weighed.scores[0]),
-        "category_weights": weights_of(weighed.scores[0]),
     }
 
 
 def scored_of(scored: Any) -> dict[str, Any]:
-    """Give one organisation score and the technical severity it was weighed from."""
+    """Give one organisation score, the technical severity it was weighed from, and its weight."""
     return {
         "technical_from": technical_from(scored.technical),
         "technical_score": scored.technical_score,
+        "technical_weight": weight_of(scored, Category.TECHNICAL),
         "score": scored.score,
         "band": scored.band,
         "provisional": scored.is_provisional,
@@ -53,26 +55,31 @@ def technical_from(technical: Any) -> str:
 
 
 def categories_of(scored: Any) -> dict[str, Any]:
-    """Give every category with the answers and weights that produced it."""
+    """Give every category with its weight in the total and the answers that produced it."""
     named = (
         ("exposure", scored.exposure),
         ("business", scored.business),
         ("threat", scored.threat),
     )
-    return {name: category_of(category) for name, category in named}
+    return {
+        name: category_of(category, weight_of(scored, category.category))
+        for name, category in named
+    }
 
 
-def weights_of(scored: Any) -> list[dict[str, Any]]:
-    """Give the weighting that combined the categories, so the total re-derives too."""
-    return [{"category": one.category, "weight": one.weight} for one in scored.weights]
+def weight_of(scored: Any, category: Category) -> float:
+    """Give what one category was worth in this score's total, found by its name."""
+    weights = {one.category: one.weight for one in scored.weights}
+    return weights[category.value]
 
 
-def category_of(category: Any) -> dict[str, Any]:
+def category_of(category: Any, weight: float) -> dict[str, Any]:
     """Give one category's score, its raw total, and every answer behind it."""
     # Both totals: the clamp is invisible in the score alone, and a reader
     # re-deriving the number by hand needs to see where it was held.
     return {
         "score": category.score,
+        "weight": weight,
         "raw_total": category.raw_total,
         "clamped": category.was_clamped,
         "answers": [answered_of(one) for one in category.answers],

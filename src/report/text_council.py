@@ -38,6 +38,7 @@ from textwrap import fill
 from report.council_record import (
     CouncilAssessment,
     CouncilNotAsked,
+    CouncilWithoutVector,
     MemberSaid,
     MetricRuling,
     Outcome,
@@ -48,13 +49,19 @@ from report.council_record import (
 )
 from report.council_words import (
     NOT_ASKED,
+    NO_VECTOR,
+    SETTLED,
     SINGLE_ASSESSOR,
     chairman_said,
     checked,
+    confident,
+    could_not_settle,
     counted,
+    metrics_settled,
     unanswered,
     who,
 )
+from report.record import Report
 from report.text_layout import INDENT, SOURCE_SEPARATOR, section
 
 # The depths the block indents to, named because four of them read as arithmetic.
@@ -64,9 +71,14 @@ MEMBER_DEPTH = 3
 QUOTATION_DEPTH = 4
 # What a re-flowed quotation wraps at, margin included.
 PAGE_WIDTH = 96
+# A quotation is delimited and never escaped, so it shows character for character.
+# Typographic marks, because an apostrophe or a straight quote inside it cannot
+# be mistaken for either of them.
+OPEN_QUOTE = "“"
+CLOSE_QUOTE = "”"
 
 
-def council_block(report) -> str:
+def council_block(report: Report) -> str:
     """Say what the council assessed, what it could not settle, and what it was never put to."""
     if not report.council:
         return ""
@@ -92,7 +104,7 @@ def reason_lines(group: PassedOver) -> list[str]:
     return [indented(METRIC_DEPTH, group.because), *wrapped(named, MEMBER_DEPTH)]
 
 
-def advisory_lines(outcome) -> list[str]:
+def advisory_lines(outcome: CouncilAssessment | CouncilWithoutVector) -> list[str]:
     """Give one advisory's heading, then the metrics the chairman could not settle."""
     unsettled = [one for one in outcome.rulings if one.outcome is not Outcome.SETTLED]
     settled = [one for one in outcome.rulings if one.outcome is Outcome.SETTLED]
@@ -104,15 +116,14 @@ def advisory_lines(outcome) -> list[str]:
     ]
 
 
-def headline(outcome) -> str:
+def headline(outcome: CouncilAssessment | CouncilWithoutVector) -> str:
     """Say whether the council handed over a vector, or what stopped it."""
     if isinstance(outcome, CouncilAssessment):
-        return f"settled{SOURCE_SEPARATOR}{outcome.vector}"
-    still_open = ", ".join(outcome.unresolved_metrics + outcome.contested_metrics)
-    return f"no vector{SOURCE_SEPARATOR}could not settle {still_open}"
+        return SOURCE_SEPARATOR.join([SETTLED, outcome.vector])
+    return SOURCE_SEPARATOR.join([NO_VECTOR, could_not_settle(outcome)])
 
 
-def single_assessor(outcome) -> list[str]:
+def single_assessor(outcome: CouncilAssessment | CouncilWithoutVector) -> list[str]:
     """Mark a run only one member answered, so nobody reads a council into it."""
     return [SINGLE_ASSESSOR] if outcome.single_assessor else []
 
@@ -123,7 +134,7 @@ def settled_lines(settled: list[MetricRuling]) -> list[str]:
         return []
     bases = Counter(one.basis for one in settled if one.basis)
     return [
-        indented(METRIC_DEPTH, f"{counted(len(settled), 'metric')} settled"),
+        indented(METRIC_DEPTH, metrics_settled(len(settled))),
         *[basis_line(basis, count) for basis, count in sorted(bases.items())],
     ]
 
@@ -156,7 +167,7 @@ def member_lines(said: MemberSaid) -> list[str]:
     if said.kind is not SaidKind.ANSWERED:
         return [indented(MEMBER_DEPTH, f"{named}  {unanswered(said)}")]
     answered = SOURCE_SEPARATOR.join(
-        [said.value, f"{said.confidence} confidence", checked(said.verified)]
+        [said.value, confident(said.confidence), checked(said.verified)]
     )
     return [
         indented(MEMBER_DEPTH, f"{named}  {answered}"),
@@ -171,7 +182,7 @@ def evidence_lines(quotation: str) -> list[str]:
     if not quotation:
         return []
     folded = " ".join(quotation.split())
-    return wrapped(f"{folded!r}", QUOTATION_DEPTH)
+    return wrapped(f"{OPEN_QUOTE}{folded}{CLOSE_QUOTE}", QUOTATION_DEPTH)
 
 
 def wrapped(said: str, depth: int) -> list[str]:

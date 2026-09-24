@@ -59,7 +59,7 @@ class Report:
     provenance: RunProvenance
     findings: tuple[Finding, ...]
     component_count: int
-    # Two different results, and the tool has had both confused for each other.
+    # Two different results, and easily confused for each other.
     # A component nothing was published against looks clean and may be; an
     # advisory matching no component is a CVE that fell out of the join, which
     # is a report that looks clean and is not.
@@ -71,8 +71,8 @@ class Report:
     # not apply moved a finding a band with nothing said, so it is counted.
     overrides_without_findings: tuple[str, ...]
     # A third kind of nothing: catalogued, joinable to nothing by nature, and so
-    # never a finding. Counted rather than dropped, because the reason the
-    # scanner used to refuse these was that dropping one silently loses a CVE.
+    # never a finding. Counted rather than dropped, because a catalogue entry
+    # dropped silently is how a report loses a CVE.
     unidentified_artifacts: tuple[UnidentifiedArtifact, ...]
     not_assessed: tuple[Absence, ...]
     council: Mapping[str, CouncilOutcome] = field(default_factory=dict)

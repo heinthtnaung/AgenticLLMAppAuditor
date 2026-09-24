@@ -3,11 +3,11 @@
 `docs/COUNCIL.md` keeps, per assessment, **each member's answer and evidence**,
 the model, provider, family and prompt version behind it, whether that member
 ran local or hosted, the chairman's reasoning and the final vector. The run
-computes all of it and the record used to carry three fields of it.
+computes all of it, and this record carries all of it.
 
-These are a projection, not the council's own types. `src/report/` depends on
-neither the council nor the scoring engine, and bridging the packages to save a
-few dataclasses would trade a boundary for a shortcut.
+These are a projection, not the council's own types: `src/report/` does not
+import the council, and bridging the packages to save a few dataclasses would
+trade a boundary for a shortcut.
 
 **One record per member with the kind named, rather than four types.** Everywhere
 else in this project an absence has its own type, because confusing it with a
@@ -96,12 +96,11 @@ class CouncilAssessment:
 class CouncilNotAsked:
     """A finding no council was put to, and why -- which is not no council having run.
 
-    Three facts a reader has to tell apart, and this is the one that used to look
-    like the third: a finding the council **was not asked about**, a finding it
-    assessed and could not settle, and a run where nobody was named to ask. A
-    scoped run that simply recorded nothing for the findings it skipped said no
-    council had run on them, which is false and is the same conflation
-    `CouncilWithoutVector` exists to prevent one step earlier.
+    Three facts a reader has to tell apart: a finding the council **was not asked
+    about**, which is this; a finding it assessed and could not settle, which is
+    `CouncilWithoutVector`; and a run where nobody was named to ask, which is no
+    council entry at all. Recording nothing for a finding passed over would report
+    the first as the third, and that is false.
 
     `because` is the record's, not this file's: why a finding was skipped is
     decided where the skip is, so the renderings read the sentence rather than

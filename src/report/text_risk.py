@@ -14,6 +14,7 @@ one term of the arithmetic a reader would otherwise have to fetch from
 `docs/SCORING_MODEL.md`. It comes off the record, never off the engine.
 """
 
+from organisation.risk import FindingRisk
 from report.record import Report
 from report.risk_order import bands_contested_first
 from report.text_layout import INDENT, SOURCE_SEPARATOR, section
@@ -32,7 +33,7 @@ def risk_block(report: Report) -> str:
     return section(titled, [weighting(weighed[0]), *entries])
 
 
-def weighting(weighed) -> str:
+def weighting(weighed: FindingRisk) -> str:
     """Give the weighting that combined the categories, so the total re-derives on the page."""
     # Off the first score: the weighting is the same on every one of them, and
     # the same for every finding, so it is said once at the top of the block.
