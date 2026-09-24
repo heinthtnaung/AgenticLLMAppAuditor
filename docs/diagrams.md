@@ -63,6 +63,7 @@ flowchart TD
     fin --> rec["Report record<br/>and what was not assessed"]
     cou --> rec
     ctx --> rec
+    asked["What was asked for<br/>an answer file, council members<br/>kept even when nothing was found"] --> rec
     rec --> rnd["Rendered as text, as JSON,<br/>and as one HTML page"]
     rnd --> out["stdout: the one --format names"]
     rnd --> saved[("reports/: all three, named after<br/>the repository's directory")]
@@ -98,6 +99,11 @@ there is no Organisation Risk Score and the report names the absence rather than
 printing a zero — a number there would read as a finding assessed and found
 harmless. Without `--council-member` no model has read anything, and the
 per-source scores stand side by side with no winner.
+
+The record also keeps what was asked for, because an absent score or ruling has
+two causes. With `--answers` or `--council-member` and nothing found, there is
+still no score and no ruling, and the reason says there was no finding to weigh
+or to put, rather than that nobody asked.
 
 The council feeds the context as well as the record, and that edge is the whole
 argument of this project in one line: where a council settled a vector there is
@@ -393,7 +399,8 @@ The `Not asked` box reaches the record for the same reason the `Skipped` one
 does. A finding the council was passed over, a finding it assessed and could not
 settle, and a run where nobody was named to ask are three different facts, and a
 scoped run that recorded nothing for what it skipped would report the first as
-the third.
+the third. A run that named members and found nothing is a fourth, and the
+record keeps it apart from the third by keeping whether any were named.
 
 One line crosses from the roster into the engine, and it carries **a vector, not
 a number**. That is the boundary made visible: everything above the engine is a

@@ -37,6 +37,10 @@ NO_COUNCIL_RUN = "no council assessed this run, so no source has been chosen bet
 # council assessed none. Naming no absence there leaves a reader with neither a
 # ruling nor a reason there is none.
 NOTHING_WAS_PUT_TO_IT = "the council was put to no finding, so no source has been chosen between"
+# A run that found nothing has no score and no ruling even when the operator
+# asked for both, and saying nobody asked would be the wrong cause.
+NOTHING_TO_WEIGH = "answers were supplied, but there was no finding to weigh them against"
+NOTHING_TO_PUT = "council members were named, but there was no finding to put to them"
 # Said under the heading when nothing is absent, because an empty heading is the
 # silence the section exists to prevent. It names what is present rather than
 # claiming everything was assessed: a scoped council leaves findings unasked,
@@ -57,6 +61,18 @@ class Absence:
         """Refuse an absence that does not say what is missing or why."""
         if not self.what or not self.because:
             raise ValueError("An absence must say what is missing and why")
+
+
+@dataclass(frozen=True)
+class Coverage:
+    """What the operator asked this run for, which the absences alone read.
+
+    An empty risk score or council can mean nobody asked or there was nothing to
+    ask about, and only this tells the two apart.
+    """
+
+    answers_given: bool = False
+    council_named: bool = False
 
 
 @dataclass(frozen=True)
@@ -85,6 +101,7 @@ class Report:
     council: Mapping[str, CouncilOutcome] = field(default_factory=dict)
     risk: Mapping[str, FindingRisk] = field(default_factory=dict)
     approval: ApprovalOutcome = field(default_factory=lambda: NotApproved(NO_APPROVAL_GIVEN))
+    coverage: Coverage = Coverage()
 
 
 def build_report(
@@ -96,6 +113,7 @@ def build_report(
     risk: Iterable[FindingRisk] = (),
     approval: ApprovalOutcome | None = None,
     overridden: Iterable[str] = (),
+    coverage: Coverage = Coverage(),
 ) -> Report:
     """Gather one run into the record both renderings read."""
     raised = tuple(findings)
@@ -109,10 +127,11 @@ def build_report(
         advisories_without_components=unmatched_purls(catalogue.components, advisories_by_purl),
         unidentified_artifacts=catalogue.unidentified,
         overrides_without_findings=overrides_without_findings(overridden, raised),
-        not_assessed=absences(settled, weighed, decided),
+        not_assessed=absences(settled, weighed, decided, coverage),
         council=settled,
         risk=weighed,
         approval=decided,
+        coverage=coverage,
     )
 
 
@@ -139,18 +158,32 @@ def absences(
     council: Mapping[str, CouncilOutcome],
     risk: Mapping[str, FindingRisk],
     approval: ApprovalOutcome,
+    coverage: Coverage,
 ) -> tuple[Absence, ...]:
     """Name what this run did not assess, so no reader takes silence for a nil result."""
-    named = []
-    if not risk:
-        named.append(Absence("Organisation Risk Score", NO_ANSWERS_GIVEN))
+    named = risk_absence(risk, coverage.answers_given)
     if isinstance(approval, NotApproved):
         named.append(Absence("Approval record", approval.reason))
-    return tuple([*named, *council_absence(council)])
+    return tuple([*named, *council_absence(council, coverage.council_named)])
 
 
-def council_absence(council: Mapping[str, CouncilOutcome]) -> list[Absence]:
+def risk_absence(risk: Mapping[str, FindingRisk], answers_given: bool) -> list[Absence]:
+    """Name a missing risk score, keeping "nothing to weigh" apart from "nobody answered"."""
+    if risk:
+        return []
+    because = NOTHING_TO_WEIGH if answers_given else NO_ANSWERS_GIVEN
+    return [Absence("Organisation Risk Score", because)]
+
+
+def council_absence(council: Mapping[str, CouncilOutcome], council_named: bool) -> list[Absence]:
     """Name a missing council ruling, keeping "asked about nothing" apart from "never ran"."""
     if any(was_assessed(one) for one in council.values()):
         return []
-    return [Absence("Council ruling", NO_COUNCIL_RUN if not council else NOTHING_WAS_PUT_TO_IT)]
+    return [Absence("Council ruling", council_reason(council, council_named))]
+
+
+def council_reason(council: Mapping[str, CouncilOutcome], council_named: bool) -> str:
+    """Say why there is no ruling: every finding passed over, none to put, or no council named."""
+    if council:
+        return NOTHING_WAS_PUT_TO_IT
+    return NOTHING_TO_PUT if council_named else NO_COUNCIL_RUN

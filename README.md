@@ -263,7 +263,9 @@ weights are quoted from the design and which the library chose, and works
 through the design's own example end to end.
 
 Without `--answers` there is no Organisation Risk Score, and the report says so
-under `NOT ASSESSED` rather than printing a zero.
+under `NOT ASSESSED` rather than printing a zero. With `--answers` and nothing
+found there is none either, and rather than claim nobody answered, it reads
+`answers were supplied, but there was no finding to weigh them against`.
 
 ### The exit code says which of three things happened
 
@@ -323,7 +325,9 @@ Every finding the council was not put to is named in the report with the reason
 advisory carries no text for a member to read`. The `COUNCIL (n)` heading counts
 only what was assessed, because counting the skips would claim the council did
 more than it did. A finding it was never asked about, one it could not settle,
-and a run with no members named are three different facts and read as three.
+and a run with no members named are three different facts and read as three. A
+run that named members and found nothing is a fourth, and reads `council members
+were named, but there was no finding to put to them`.
 
 ### A council run says where it has got to
 

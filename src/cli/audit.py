@@ -17,7 +17,7 @@ from typing import TextIO
 from deps import syft_runner, trivy_runner
 from findings.finding import build_findings
 from report.provenance import AdvisoryDatabase, RunProvenance
-from report.record import Report, build_report
+from report.record import Coverage, Report, build_report
 
 from cli.arguments import Options
 from cli.council_run import assessments, build_roster, watching
@@ -42,6 +42,10 @@ def run_audit(
         risk=weighed(findings, answers, options, council),
         approval=approval,
         overridden=tuple(answers.by_advisory),
+        coverage=Coverage(
+            answers_given=options.answers is not None,
+            council_named=bool(options.council_models),
+        ),
     )
 
 

@@ -7,15 +7,19 @@ path and imports by basename, so a second `samples.py` would be shadowed by
 
 import io
 import json
+from pathlib import Path
 
 from deps.syft_report import Catalogue, Component
 from deps.trivy_report import Advisory
+from scoring.library import APPROVED_QUESTIONS
 
 BUILT_AT = "2026-09-22T02:00:05Z"
 # What `run_command_line` calls the repository it audits and the folder its
 # reports go into, both inside the test's own `tmp_path`.
 REPOSITORY_NAME = "vulnscout"
 REPORTS_FOLDER = "reports"
+# What `written_answers` puts in the file, so a run given it names no approval absent.
+APPROVAL_BLOCK = {"approver": "hein", "decision": "approved", "recorded_at": "2026-09-23T09:15:00Z"}
 # Deliberately not shaped like real versions: a fixture that looks real lets a
 # version hardcoded in `src/` pass the very test written to forbid one.
 SYFT_VERSION = "syft-under-test"
@@ -77,6 +81,14 @@ def written_metadata(directory) -> object:
     metadata = directory / "metadata.json"
     metadata.write_text(json.dumps({"UpdatedAt": BUILT_AT}), encoding="utf-8")
     return metadata
+
+
+def written_answers(directory: Path) -> Path:
+    """Write an answer file that answers every approved question No and carries an approval."""
+    answers = directory / "answers.json"
+    every = {asked.question_id: "No" for asked in APPROVED_QUESTIONS}
+    answers.write_text(json.dumps({"answers": every, "approval": APPROVAL_BLOCK}), encoding="utf-8")
+    return answers
 
 
 def scanners_answering(monkeypatch, components=(LODASH,), advisories=None) -> None:
