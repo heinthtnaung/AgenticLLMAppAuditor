@@ -71,6 +71,7 @@ def test_the_version_command_asks_syft_and_nothing_else(monkeypatch):
     asked = []
 
     def remember(command):
+        """Keep the command Syft was run with, and answer as it would."""
         asked.append(command)
         return "syft 1.52.0"
 
