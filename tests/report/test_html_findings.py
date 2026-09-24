@@ -17,10 +17,10 @@ from report.html_report import as_html
 from report.record import build_report
 from report_samples import (
     CONFIDENTIALITY_ONLY,
+    ENVIRONMENTAL_VECTOR,
     LOW_CONFIDENTIALITY,
     PROVENANCE,
     REFUSED_DISSENT,
-    TEMPORAL_VECTOR,
     TOTAL_LOSS,
     VERSION_2_VECTOR,
     catalogue,
@@ -110,13 +110,13 @@ def test_a_scored_finding_keeps_its_refused_source_too():
 
 def test_sources_that_match_beside_a_refused_one_are_not_headed_as_agreeing():
     # A heading is a claim, and a vector nobody could read may disagree with every
-    # one that was, as ghsa's does on CVE-2020-11023.
+    # one that was, as the refused one here does.
     page = as_html(report_of(finding(DJANGO, vectors=REFUSED_DISSENT)))
     assert "Sources agree" not in page
     assert "A source was refused (1)" in page
-    assert TEMPORAL_VECTOR in page
+    assert ENVIRONMENTAL_VECTOR in page
     # Accepted on purpose until it is decided whether a refused vector counts as a
-    # dissent: CVE-2020-11023's ghsa disagrees and is not counted. Counting it turns
+    # dissent: the refused one disagrees and is not counted. Counting it turns
     # this red.
     assert "0 carry sources that disagree." in page
 

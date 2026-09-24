@@ -129,7 +129,7 @@ def test_the_same_record_renders_the_same_bytes():
 
 def test_a_dissent_only_a_refused_source_carries_is_not_counted_as_disagreement():
     # Accepted on purpose until it is decided whether a refused vector counts as a
-    # dissent: CVE-2020-11023's ghsa disagrees and is not counted. Counting it turns
+    # dissent: the refused one disagrees and is not counted. Counting it turns
     # this red.
     record = as_dictionary(a_report((finding(DJANGO, vectors=REFUSED_DISSENT),)))
     assert record["run"]["findings_whose_sources_disagree"] == 0

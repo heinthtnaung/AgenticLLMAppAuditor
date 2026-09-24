@@ -23,7 +23,7 @@ manifest the scan could read no version from.
 | Part | State | What it is |
 |---|---|---|
 | `src/deps/` | built | Syft and Trivy: the components a directory declares, the advisories published against them, and the database's own build date; and which manifests have no lock file Syft reads |
-| `src/cvss/` | built | a CVSS Base vector parsed and validated, and its score by the published equations |
+| `src/cvss/` | built | a CVSS v3 vector parsed and validated, Temporal metrics included, and its Base score by the published equations |
 | `src/findings/` | built | the join — a CVE affecting an installed component, with every source's score kept apart and attributed |
 | `src/scoring/` | built | the approved question library, per-question weights, categories clamped then weighted, and the band |
 | `src/council/` | built | the roster and its `egress` gate, redaction, the prompt, a provider registry holding one local Ollama client, the quotation check, the chairman and the runner |

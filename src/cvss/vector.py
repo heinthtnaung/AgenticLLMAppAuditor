@@ -5,13 +5,25 @@ equations are identical -- v3.1 only clarified the rounding wording -- so
 refusing v3.0 would discard real advisory data for no difference in meaning.
 The declared version is kept on the parsed object all the same, because a
 published v3.0 *score* may differ from ours in the last decimal.
+
+**Temporal metrics are read and left out.** `E`, `RL` and `RC` are checked as
+strictly as the Base metrics -- an unknown value or a metric given twice still
+refuses the vector -- and then not kept, because the Base score cannot depend on
+them. The published string, which the record quotes as its source wrote it,
+still carries them. **Environmental metrics refuse the vector**, by name.
 """
 
 from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Mapping
 
-from cvss.metrics import METRIC_ORDER, metric_name, refuse_illegal_pair
+from cvss.metrics import (
+    METRIC_ORDER,
+    READABLE_METRICS,
+    metric_name,
+    refuse_illegal_pair,
+    refuse_unreadable_pair,
+)
 
 VERSION_PREFIX = "CVSS"
 FIELD_SEPARATOR = "/"
@@ -73,7 +85,7 @@ def parse(text: str) -> CvssVector:
     version = read_version(fields[0], text)
     metrics = read_metrics(fields[1:])
     refuse_missing_metrics(metrics)
-    return CvssVector(version=version, metrics=metrics)
+    return CvssVector(version=version, metrics={name: metrics[name] for name in METRIC_ORDER})
 
 
 def differing_metrics(left: CvssVector, right: CvssVector) -> tuple[str, ...]:
@@ -101,11 +113,10 @@ def read_metrics(fields: list[str]) -> dict[str, str]:
     metrics: dict[str, str] = {}
     for field in fields:
         name, value = split_pair(field)
-        refuse_illegal_pair(name, value)
+        refuse_unreadable_pair(name, value)
         if name in metrics:
-            raise ValueError(
-                f"{metric_name(name)} ({name}) is given twice; a vector states each metric once"
-            )
+            named = READABLE_METRICS[name].name
+            raise ValueError(f"{named} ({name}) is given twice; a vector states each metric once")
         metrics[name] = value
     return metrics
 

@@ -78,13 +78,6 @@ def test_an_unknown_metric_is_refused():
         parse("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/XX:N")
 
 
-def test_a_temporal_metric_is_refused_as_unknown():
-    # This calculator computes Base only; a Temporal metric would silently change
-    # what the number means, so it is refused rather than ignored.
-    with pytest.raises(ValueError, match="Unknown metric 'E'"):
-        parse("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/E:P")
-
-
 def test_an_illegal_value_is_refused_and_the_metric_named_in_words():
     with pytest.raises(ValueError, match="not a value of Attack Vector") as refusal:
         parse("CVSS:3.1/AV:Z/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H")

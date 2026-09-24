@@ -28,9 +28,9 @@ from cli_samples import ADVISORY, LODASH, TOTAL_LOSS, advisory_like, answering
 FINDING = build_finding(LODASH, ADVISORY)
 UNDISPUTED = build_finding(LODASH, advisory_like("CVE-AGREED"))
 UNSCORED = build_finding(LODASH, advisory_like("CVE-UNSCORED", vectors={}))
-# The shape of CVE-2020-11023 on the npm corpus: the readable sources agree, and
-# the one that disagrees publishes a temporal metric, which leaves it unreadable.
-REFUSED = "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:C/C:H/I:L/A:N/E:H"
+# The readable sources agree, and the one that disagrees publishes an
+# Environmental metric, which leaves it unreadable.
+REFUSED = "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:C/C:H/I:L/A:N/CR:H"
 UNREAD_VECTORS = {"nvd": TOTAL_LOSS, "redhat": TOTAL_LOSS, "ghsa": REFUSED}
 UNREAD_DISSENT = build_finding(LODASH, advisory_like("CVE-UNREAD", vectors=UNREAD_VECTORS))
 

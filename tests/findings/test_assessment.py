@@ -33,10 +33,24 @@ def test_the_published_text_is_quoted_as_published():
     assert str(read.parsed_vector) == HARMLESS_VECTOR
 
 
+def test_a_vector_ending_in_temporal_metrics_is_scored_on_its_base_and_quoted_whole():
+    # The shape of CVE-2020-11023's ghsa vector on the npm corpus, which `/E:H`
+    # used to refuse whole, dropping the one source that disagreed.
+    temporal = f"{HARMLESS_VECTOR}/E:H/RL:O/RC:C"
+    read = read_source("ghsa", temporal)
+    assert isinstance(read, SourceScore)
+    assert read.vector == temporal
+    assert read.base_score == HARMLESS_SCORE
+
+
 @pytest.mark.parametrize(
     ("vector_text", "expected"),
-    [(VERSION_2_VECTOR, "CVSS v2"), (VERSION_4_VECTOR, "CVSS v4.0")],
-    ids=["version 2", "version 4.0"],
+    [
+        (VERSION_2_VECTOR, "CVSS v2"),
+        (VERSION_4_VECTOR, "CVSS v4.0"),
+        (f"{GHSA_VECTOR}/CR:H", "Environmental metric"),
+    ],
+    ids=["version 2", "version 4.0", "environmental"],
 )
 def test_a_refused_vector_is_recorded_unscored_with_the_reason(vector_text, expected):
     read = read_source("nvd", vector_text)

@@ -182,7 +182,7 @@ flowchart TD
     end
 
     subgraph ENGINE["Role 3: the engine. Every number, deterministic"]
-        cvs["CVSS calculator<br/>published v3.1 equations<br/>one score per published vector"]
+        cvs["CVSS calculator<br/>published v3.1 equations<br/>one Base score per published vector<br/>Temporal metrics read, not scored"]
         val["Validate model output<br/>typed structure, refused if it does not fit"]
         cal["Weighted calculation<br/>no model in the path"]
     end
@@ -194,7 +194,7 @@ flowchart TD
     pv --> anl
     pv --> cvs
     cvs --> f1["scores<br/>source, vector, base score<br/>one entry per source read"]
-    cvs --> f2["unreadable<br/>source, vector, the refusal<br/>never dropped, never scored 0.0"]
+    cvs --> f2["unreadable<br/>source, vector, the refusal:<br/>v2, v4.0, an Environmental metric<br/>never dropped, never scored 0.0"]
     anl --> sel
     sel --> ans["Organisation answers<br/>Yes / No / Unknown / N/A"]
     ans --> chk
@@ -227,7 +227,9 @@ repository NVD had a vector for 4 findings of 18 while GHSA had all 18.
 
 Each entry's score is computed from that entry's vector, never quoted. The
 vector is what the source published; the number beside it is what the v3.1
-equations give, so a reader can re-derive every one of them.
+equations give, so a reader can re-derive every one of them. A Temporal metric
+stays in the quoted vector and out of the number, because the Base equations
+never read one.
 
 The `validate` box is the boundary, not a formality. Model output reaches the
 engine only as a typed structure that application code has already refused or
