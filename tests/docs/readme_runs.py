@@ -27,6 +27,9 @@ from readme_markers import (
 
 ANSWERS_FLAG = "--answers"
 ELIDED_TOKEN = "(elided)"
+# The repository every documented run audits, spelled as the page spells it.
+FETCHED = "fetched"
+REPOSITORY = f"{FETCHED}/vulnscout"
 
 EDIT = re.compile(r"(?P<question>[A-Z]+-\d+)=(?P<answer>[A-Za-z/]+)")
 

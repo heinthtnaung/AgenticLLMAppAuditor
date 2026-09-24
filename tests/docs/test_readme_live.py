@@ -36,7 +36,7 @@ from cli.main import COULD_NOT_RUN
 from cli.preflight import CannotRun, refuse_unrunnable
 from readme_answers import answers_for
 from readme_markers import PROJECT_ROOT, README_PATH, read_readme, unmarked_note
-from readme_runs import ELIDED_TOKEN, PrintedRun, printed_runs
+from readme_runs import ELIDED_TOKEN, FETCHED, REPOSITORY, PrintedRun, printed_runs
 from readme_drift import Drift, drift_of, looks_elided
 
 LIVE = "README_LIVE_SCAN"
@@ -45,7 +45,6 @@ pytestmark = pytest.mark.skipif(
     not os.environ.get(LIVE), reason=f"set {LIVE}=1 to run the README's own commands for real"
 )
 
-REPOSITORY = "fetched/vulnscout"
 SOURCE_PATH = "src"
 SCAN_TIMEOUT_SECONDS = 600
 
@@ -56,6 +55,7 @@ SELECTION = f"{ELIDED_TOKEN}, so compared loosely: each line must appear, in ord
 def test_every_block_the_readme_prints_still_reproduces(tmp_path):
     """Run each documented command and fail with the new text of every line that drifted."""
     skip_without_a_scannable_corpus()
+    link_the_corpus(tmp_path)
     page = read_readme()
     reports = [report_on(one, page, tmp_path) for one in printed_runs(page)]
     stale = [report for report in reports if report]
@@ -69,6 +69,14 @@ def skip_without_a_scannable_corpus() -> None:
         refuse_unrunnable(PROJECT_ROOT / REPOSITORY)
     except CannotRun as fault:
         pytest.skip(f"{fault}; checking the README needs {REPOSITORY}, Syft, Trivy and a database")
+
+
+def link_the_corpus(tmp_path: Path) -> None:
+    """Make the README's relative repository path resolve from the directory each run starts in."""
+    # Every run writes `reports/` where it starts; from the project root that
+    # would overwrite the operator's own reports of vulnscout. A link, not a
+    # copy, so the page's `fetched/vulnscout` is spelled and scanned unchanged.
+    (tmp_path / FETCHED).symlink_to(PROJECT_ROOT / FETCHED, target_is_directory=True)
 
 
 def report_on(run: PrintedRun, page: str, tmp_path: Path) -> str:
@@ -113,7 +121,7 @@ def output_of(run: PrintedRun, page: str, tmp_path: Path) -> list[str]:
     command = [sys.executable, "-m", "cli.main", REPOSITORY]
     if run.wants_answers:
         command += ["--answers", str(answer_path(run, page, tmp_path))]
-    return audited(command)
+    return audited(command, tmp_path)
 
 
 def answer_path(run: PrintedRun, page: str, tmp_path: Path) -> Path:
@@ -123,12 +131,12 @@ def answer_path(run: PrintedRun, page: str, tmp_path: Path) -> Path:
     return written
 
 
-def audited(command: list[str]) -> list[str]:
-    """Run one audit from the project root as `python -m cli.main`, the `main` behind `audit`."""
+def audited(command: list[str], tmp_path: Path) -> list[str]:
+    """Run one audit from `tmp_path` as `python -m cli.main`, the `main` behind `audit`."""
     finished = subprocess.run(
         command,
-        cwd=PROJECT_ROOT,
-        env={**os.environ, "PYTHONPATH": SOURCE_PATH},
+        cwd=tmp_path,
+        env={**os.environ, "PYTHONPATH": str(PROJECT_ROOT / SOURCE_PATH)},
         capture_output=True,
         text=True,
         timeout=SCAN_TIMEOUT_SECONDS,

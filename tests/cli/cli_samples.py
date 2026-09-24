@@ -5,12 +5,17 @@ path and imports by basename, so a second `samples.py` would be shadowed by
 `tests/deps/samples.py`.
 """
 
+import io
 import json
 
 from deps.syft_report import Catalogue, Component
 from deps.trivy_report import Advisory
 
 BUILT_AT = "2026-09-22T02:00:05Z"
+# What `run_command_line` calls the repository it audits and the folder its
+# reports go into, both inside the test's own `tmp_path`.
+REPOSITORY_NAME = "vulnscout"
+REPORTS_FOLDER = "reports"
 # Deliberately not shaped like real versions: a fixture that looks real lets a
 # version hardcoded in `src/` pass the very test written to forbid one.
 SYFT_VERSION = "syft-under-test"
@@ -87,3 +92,15 @@ def scanners_answering(monkeypatch, components=(LODASH,), advisories=None) -> No
     monkeypatch.setattr(audit.trivy_runner, "installed_version", lambda: TRIVY_VERSION)
     monkeypatch.setattr(syft_runner, "is_available", lambda: True)
     monkeypatch.setattr(trivy_runner, "is_available", lambda: True)
+
+
+def run_command_line(argv, monkeypatch, tmp_path, **scan) -> tuple[int, str, str]:
+    """Run the command line with the scanners answered and every report kept in `tmp_path`."""
+    from cli import main as entry
+
+    scanners_answering(monkeypatch, **scan)
+    monkeypatch.setattr(entry, "refuse_unrunnable", lambda repository: BUILT_AT)
+    out, error = io.StringIO(), io.StringIO()
+    repository = str(tmp_path / REPOSITORY_NAME)
+    code = entry.main([repository, *argv], out=out, error=error, reports=tmp_path / REPORTS_FOLDER)
+    return code, out.getvalue(), error.getvalue()

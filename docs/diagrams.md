@@ -43,7 +43,8 @@ flowchart TD
     subgraph SCAN["The scan: offline, against the database already on disk"]
         pre["Preflight<br/>no repository, no scanner, no database date<br/>= could not run, never found nothing"]
         repo --> pre
-        pre --> syft["Syft scans the directory<br/>lockfiles and manifests, one pass"]
+        pre --> rdir["reports/ made, or checked<br/>a folder the files cannot go into<br/>= could not run, before any scan"]
+        rdir --> syft["Syft scans the directory<br/>lockfiles and manifests, one pass"]
         syft --> comp[("Components<br/>name, version, purl, where found")]
         trivy["Trivy reads the database<br/>advisories per purl, and a published<br/>vector for each source that wrote one"]
         comp --> join["Join on the versioned purl"]
@@ -62,9 +63,13 @@ flowchart TD
     fin --> rec["Report record<br/>and what was not assessed"]
     cou --> rec
     ctx --> rec
-    rec --> out["--format: rendered as text,<br/>as JSON, or as one HTML page"]
+    rec --> rnd["Rendered as text, as JSON,<br/>and as one HTML page"]
+    rnd --> out["stdout: the one --format names"]
+    rnd --> saved[("reports/: all three, named after<br/>the repository's directory")]
     out --> hum["Human reviews"]
-    cou -. "one line per model call,<br/>printed before that call" .-> err["Progress, on the error stream<br/>never on stdout"]
+    saved --> hum
+    cou -. "one line per model call,<br/>printed before that call" .-> err["The error stream, never stdout:<br/>progress, then where the reports went"]
+    saved -. "one line, once all three<br/>are written" .-> err
 ```
 
 The database is fetched out of band so that a scan runs offline against the copy
@@ -100,22 +105,37 @@ one technical severity and the finding takes one score, and everywhere else it
 is scored once per published source, because choosing a source is precedence
 `docs/SCORING_MODEL.md` refuses to set.
 
-One record, three renderings. `--format` gives text for a terminal, JSON for the
-audit artefact, or one self-contained HTML page that fetches nothing — all three
-read the same record and none of them works a number out, so a figure cannot
-differ between them.
+One record, three renderings, all of them saved. Every run renders text for a
+terminal, JSON for the audit artefact, and one self-contained HTML page that
+fetches nothing, and writes all three into `reports/` in the directory it ran
+from. `--format` only picks the one printed on stdout, and that file is byte for
+byte the same. All three read the same record and none of them works a number
+out, so a figure cannot differ between them.
 
-The dotted line is the only thing a run writes outside that record, and it goes
-to the error stream because stdout belongs to `--format json`: a council run
-says it is alive without the piped artefact gaining a byte. Each line carries
-counts and no elapsed time, and prints *before* the call it names, so a slow
-member is a line that sits there and the reader supplies the seconds. What that
-costs is an exact figure — the transcript afterwards cannot tell ninety seconds
-from nine minutes — and what it buys is that `src/` reads no clock, which is
-what keeps two runs of the same commit byte-identical.
+`reports/` appears twice, before the scan and after it. A council run is long,
+so a folder that cannot take the files refuses the run before Syft starts
+rather than after the last model call. A write that still fails afterwards
+leaves the record on stdout and exits "could not run", because the run did not
+do all it was asked.
+
+The files are named after the repository's directory and never after the time,
+since `src/` reads no clock. That costs history: a second run of the same
+repository overwrites the first's three files, and two repositories with the
+same directory name overwrite each other's.
+
+The dotted lines are the only thing a run writes outside that record, and they
+go to the error stream because stdout belongs to `--format json`: a council run
+says it is alive, and a run says where its files went, without the piped
+artefact gaining a byte. Each progress line carries counts and no elapsed time,
+and prints *before* the call it names, so a slow member is a line that sits
+there and the reader supplies the seconds. What that costs is an exact figure —
+the transcript afterwards cannot tell ninety seconds from nine minutes — and
+what it buys is that `src/` reads no clock, which is what keeps two runs of the
+same commit byte-identical.
 
 What this does not show: how a repeat scan is diffed against the last one, which
-is not decided and not built.
+is not decided and not built. A repeat overwrites the last one's files, so
+nothing in `reports/` is kept to diff against.
 
 ## 2. The published scores
 
@@ -452,7 +472,7 @@ flowchart LR
         b5["src/findings<br/>the join, every source's score apart"]
         b7["src/council<br/>roster and the egress gate, redaction,<br/>prompt, provider registry, chairman"]
         b8["src/report<br/>the record, and three renderings of it:<br/>text, JSON, one self-contained HTML page"]
-        b9["src/cli<br/>arguments, preflight, the audit order,<br/>the council's scope and its record, the<br/>stderr progress stream, and the exit<br/>code a pipeline reads"]
+        b9["src/cli<br/>arguments, preflight, the audit order,<br/>the council's scope and its record, the<br/>stderr progress stream, the report files<br/>in reports/, and the exit code a<br/>pipeline reads"]
         b6["src/scoring<br/>the approved question library, categories<br/>clamped then weighted, and the band"]
         b10["src/organisation<br/>the answer file, the approval record,<br/>one score per source"]
         b0 --> b1
