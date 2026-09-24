@@ -6,17 +6,11 @@ import pytest
 
 from scoring.category import CategoryScore, score_category
 from scoring.question import Answer, Category, Question
-from scoring.risk_score import CATEGORY_WEIGHTS, organisation_risk_score
+from scoring.risk_score import CATEGORY_WEIGHTS, RiskScore, organisation_risk_score
 from scoring.technical import TechnicalSeverity, UnknownTechnicalSeverity, from_cvss_base_score
 from scoring_samples import (
-    BUSINESS_QUESTIONS,
-    DISABLED,
-    EXPOSURE_QUESTIONS,
-    EXPLOITED,
-    INTERNET_FACING,
-    SEGMENTED,
-    THREAT_QUESTIONS,
-    all_answered,
+    BUSINESS_QUESTIONS, DISABLED, EXPOSURE_QUESTIONS, EXPLOITED, INTERNET_FACING, SEGMENTED,
+    THREAT_QUESTIONS, all_answered,
 )
 
 NOTHING_EXPOSED = score_category(Category.EXPOSURE, all_answered(EXPOSURE_QUESTIONS, Answer.NO))
@@ -33,10 +27,19 @@ def one_answer(category: Category, weight: float) -> CategoryScore:
     return score_category(category, {question: Answer.YES})
 
 
-def exposure_answering(question: Question, answer: Answer) -> CategoryScore:
-    """Score exposure with every question answered No except one."""
-    return score_category(
-        Category.EXPOSURE, {**all_answered(EXPOSURE_QUESTIONS, Answer.NO), question: answer}
+def no_except(category: Category, questions: tuple[Question, ...],
+              changed: dict[Question, Answer]) -> CategoryScore:
+    """Score one category with every question answered No except the ones given."""
+    return score_category(category, {**all_answered(questions, Answer.NO), **changed})
+
+
+def no_category_zero() -> RiskScore:
+    """Score an assessment where every category is non-zero, so every weight moves the total."""
+    return organisation_risk_score(
+        technical=TechnicalSeverity(score=62.0, derived_from="operator"),
+        exposure=one_answer(Category.EXPOSURE, 13),
+        business=one_answer(Category.BUSINESS, 38),
+        threat=one_answer(Category.THREAT, 70),
     )
 
 
@@ -84,12 +87,16 @@ def test_the_score_carries_the_weighting_that_produced_it():
 
 
 def test_the_recorded_weighting_re_derives_the_recorded_score():
-    # The point of recording it: the total follows from the record alone, with
-    # no second document open.
-    result = scored(from_cvss_base_score(8.0, "ghsa"), business=BUSINESS_CRITICAL_ASSET)
-    terms = (result.technical_score, result.exposure.score, result.business.score,
-             result.threat.score)
-    by_hand = math.fsum(term * one.weight for term, one in zip(terms, result.weights))
+    # The total follows from the record alone, each weight paired with its
+    # category by name, and no category is zero, so no weight goes unchecked.
+    result = no_category_zero()
+    weight = {one.category: one.weight for one in result.weights}
+    by_hand = math.fsum([
+        result.technical_score * weight[Category.TECHNICAL.value],
+        result.exposure.score * weight[Category.EXPOSURE.value],
+        result.business.score * weight[Category.BUSINESS.value],
+        result.threat.score * weight[Category.THREAT.value],
+    ])
     assert round(by_hand, 2) == result.score
 
 
@@ -97,14 +104,8 @@ def test_a_clamped_category_contributes_nothing_rather_than_subtracting():
     # Exposure comes to -45 raw. Clamped first it contributes 0 and the score is
     # the worked example's 44; clamped after weighting it would take 11.25 off
     # the other categories and give 32.75.
-    controlled = score_category(
-        Category.EXPOSURE,
-        {
-            **all_answered(EXPOSURE_QUESTIONS, Answer.NO),
-            SEGMENTED: Answer.YES,
-            DISABLED: Answer.YES,
-        },
-    )
+    isolated = {SEGMENTED: Answer.YES, DISABLED: Answer.YES}
+    controlled = no_except(Category.EXPOSURE, EXPOSURE_QUESTIONS, isolated)
     assert controlled.raw_total == -45
     result = scored(
         from_cvss_base_score(8.0, "ghsa"), exposure=controlled, business=BUSINESS_CRITICAL_ASSET
@@ -116,24 +117,13 @@ def test_the_score_is_not_left_carrying_binary_float_noise():
     # 62x0.30 + 13x0.25 + 38x0.25 + 70x0.20 comes to 45.349999999999994 in binary
     # floating point. A score that prints like that cannot be checked by hand
     # against the record, which is the one thing the record is for.
-    result = organisation_risk_score(
-        technical=TechnicalSeverity(score=62.0, derived_from="operator"),
-        exposure=one_answer(Category.EXPOSURE, 13),
-        business=one_answer(Category.BUSINESS, 38),
-        threat=one_answer(Category.THREAT, 70),
-    )
-    assert result.score == 45.35
+    assert no_category_zero().score == 45.35
 
 
 def test_an_unknown_answer_makes_the_whole_score_provisional():
-    threat = score_category(
-        Category.THREAT, {**all_answered(THREAT_QUESTIONS, Answer.NO), EXPLOITED: Answer.UNKNOWN}
-    )
-    result = scored(
-        from_cvss_base_score(8.0, "ghsa"),
-        exposure=exposure_answering(INTERNET_FACING, Answer.UNKNOWN),
-        threat=threat,
-    )
+    exposure = no_except(Category.EXPOSURE, EXPOSURE_QUESTIONS, {INTERNET_FACING: Answer.UNKNOWN})
+    threat = no_except(Category.THREAT, THREAT_QUESTIONS, {EXPLOITED: Answer.UNKNOWN})
+    result = scored(from_cvss_base_score(8.0, "ghsa"), exposure=exposure, threat=threat)
     assert result.is_provisional
     assert result.unknown_questions == ("EXP-1", "THR-1")
 
@@ -182,17 +172,6 @@ def test_the_same_answers_always_give_the_same_score():
     first = scored(from_cvss_base_score(8.0, "ghsa"), business=BUSINESS_CRITICAL_ASSET)
     second = scored(from_cvss_base_score(8.0, "ghsa"), business=BUSINESS_CRITICAL_ASSET)
     assert first == second
-
-
-def test_the_record_keeps_every_category_so_the_score_re_derives():
-    result = scored(from_cvss_base_score(8.0, "ghsa"), business=BUSINESS_CRITICAL_ASSET)
-    by_hand = math.fsum([
-        result.technical_score * CATEGORY_WEIGHTS[Category.TECHNICAL],
-        result.exposure.score * CATEGORY_WEIGHTS[Category.EXPOSURE],
-        result.business.score * CATEGORY_WEIGHTS[Category.BUSINESS],
-        result.threat.score * CATEGORY_WEIGHTS[Category.THREAT],
-    ])
-    assert round(by_hand, 2) == result.score
 
 
 @pytest.mark.parametrize(
