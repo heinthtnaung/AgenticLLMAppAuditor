@@ -90,7 +90,7 @@ and Ollama version all changed between them. Each run left three files:
 | File | What it is |
 |---|---|
 | `*.report.txt` | stdout: the report |
-| `*.progress.txt` | stderr: one line per model call, printed before the call |
+| `*.progress.txt` | stderr, the whole stream: one line per model call, printed before the call. A run recorded with `audit` as it stands ends with one line more, saying where it wrote its reports; the four here predate that line |
 | `*.provenance.txt` | the command, the commit, the uncommitted `src/` files at launch, start, end and exit code; for the GPU runs, `ollama ps` at launch and at the end as well |
 
 Progress is `.txt` and not `.log` because `.gitignore` ignores `*.log`, and a
@@ -406,7 +406,7 @@ run, against the failure the prompt names.
 | that shape is common, not one case | `docs/COUNCIL.md` | 8 of `scoped`'s 17 contested metrics, and 20 of `full`'s 61, have both members quoting identical text; in the GPU baseline, 2 of 4 and 4 of 13 |
 | 61 of 144 metrics came out contested with two members | `src/council/runner.py`, `docs/COUNCIL.md` | `full.report.txt`, Qwen and Gemma; the GPU baseline contests 13 |
 | reproducible when no other client shares the Ollama server | `docs/COUNCIL.md` | the CPU baseline's subsections above, and the GPU runs agreeing on the five findings they share |
-| 288 calls over 18 findings, 80 after scoping | `README.md`, `docs/COUNCIL.md`, `docs/diagrams.md`, `src/cli/council_run.py`, `src/cli/progress.py`, comments in `tests/cli/test_council_run.py`, `tests/cli/test_progress.py` and `tests/council/test_runner_order.py` | the last line of each progress file |
+| 288 calls over 18 findings, 80 after scoping | `README.md`, `docs/COUNCIL.md`, `docs/diagrams.md`, `src/cli/council_run.py`, `src/cli/progress.py`, comments in `tests/cli/test_council_run.py`, `tests/cli/test_progress.py` and `tests/council/test_runner_order.py` | the last `council` line of each progress file |
 | 13 of 18 findings undisputed, so 5 put to the council | `README.md`, `docs/COUNCIL.md`, `docs/diagrams.md`, `src/cli/council_run.py`, `tests/cli/test_council_run.py` | `scoped.report.txt` lines 218–222 |
 | 208 of the 288 calls went to those 13 | `src/cli/council_run.py`, `tests/cli/test_council_run.py` | the lines of `full.progress.txt` and of `gpu-full.progress.txt` naming them |
 | one member answers every metric of a finding before the next member is asked | `src/council/runner.py`, `README.md`, `docs/COUNCIL.md` | `gpu-*.progress.txt`: 10 and 36 runs of 8 calls to one member; `scoped` and `full` change member on every call |
@@ -433,6 +433,12 @@ python measurements/record_council_run.py gpu-scoped-again -- \
 The full run adds `--council-all-findings`. `audit` is the entry point of the
 editable install in `README.md`, so the venv must be active; the recorder
 refuses to start without it on the path.
+
+The recorder runs `audit` from the project root, so a recorded run also writes
+`reports/vulnscout.txt`, `.json` and `.html` there. They replace whatever a
+plain run of `fetched/vulnscout` from the root left, and the next plain run
+replaces them. `reports/` is ignored, so what is kept of a recorded run is its
+three files in `council_runs/`.
 
 Repeating the GPU baseline needs `061361f` and Ollama 0.34.3 with both models
 on the GPU. Repeating the CPU baseline needs `gemma4:latest`, the runner at
