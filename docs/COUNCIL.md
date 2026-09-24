@@ -90,23 +90,25 @@ freely.
 | local | Ollama on this machine | nothing per call; pinnable; shares one Ollama server with the other local members |
 | hosted | OpenRouter or another API | money per call; not pinnable; the text leaves the machine; an API could answer calls in parallel, but the runner asks each member in turn |
 
-Nothing in the design counts members, so nothing depends on n being three, or
-odd, or anything else. The edges are still real:
+Nothing in the design counts members towards a ruling, so nothing depends on n
+being three, or odd, or anything else. The basis a settled value records is the
+one place a member is counted, and it changes what the record admits, never
+the ruling. The edges are still real:
 
 - **n = 0** is a configuration error. Refuse the run. Do not fall back to the
   published vector and call the result an assessment.
 - **n = 1** is not a council. It degrades to a single assessor: the quotation
   check still runs and the chairman still hands over a vector, but with no
-  cross-check a metric can only come out agreed or unresolved — `contested`
-  can never arise. The record marks the run single-assessor, so no reader
-  takes council-grade confidence from one model. **The count is of the members
-  a run will ask, not of the roster**: three members of whom two are hosted
-  without `egress` cross-check nothing, and that run is marked single-assessor
-  exactly as a roster of one is.
-- **Even n** needs no rule, because nothing is counted. Two members on `S:C`
-  and two on `S:U` is not a tie; it is four pieces of evidence, and the
-  chairman ranks them by whether the quotation verifies. That is the path an
-  odd roster takes too.
+  cross-check a metric can only come out settled, on the `SOLE` basis, or
+  unresolved — `contested` can never arise. The record marks the run
+  single-assessor, so no reader takes council-grade confidence from one
+  model. **The count is of the members a run will ask, not of the roster**:
+  three members of whom two are hosted without `egress` cross-check nothing,
+  and that run is marked single-assessor exactly as a roster of one is.
+- **Even n** needs no rule, because nothing is counted towards a ruling. Two
+  members on `S:C` and two on `S:U` is not a tie; it is four pieces of
+  evidence, and the chairman ranks them by whether the quotation verifies.
+  That is the path an odd roster takes too.
 
 ## Panel, not chain
 
@@ -253,16 +255,30 @@ those whose evidence is a real quotation from the advisory. An answer whose
 quotation is not in the text supports nothing, however many members give it.
 
 - **The verified answers support one value** → that value, with the confidence
-  of the weakest of them. Record whether anyone dissented, where **anyone means
-  any member that offered a value with a quotation**, verified or not —
-  unanimity and an overruled dissenter read differently afterwards. A guess
-  carries no weight here either, so a member that guesses a different value
-  leaves the record saying the members agreed.
+  of the weakest of them, and a record of what it rests on.
 - **They support more than one value** → the metric is contested, and goes to
   the escalation policy.
 - **There are none** → the metric is unresolved. Fall back to a published
   vector, and record both that the fallback happened and which source it came
   from — there is usually more than one, and they often differ.
+
+**What a settled value rests on is one of three bases**, counted over **every
+member that offered a value with a quotation**, verified or not. The record
+carries the basis's own words, from `src/council/ruling.py`:
+
+| Basis | When | What the record says |
+|---|---|---|
+| `SOLE` | one member offered a quotation, and nobody else did | "one member offered a quotation, and no other member offered one" |
+| `AGREED` | two or more offered quotations, all for this value | "every member that offered a quotation supported this value" |
+| `EVIDENCE` | one of them offered a quotation for another value | "members offering quotations disagreed, and the verified one settled it" |
+
+A guess, a decline and a failed call offer no quotation, so none of them
+counts toward a basis. Beside one quotation and nothing else, the record says
+the value stood alone, not that members agreed. A second member's quotation
+that is not in the advisory still counts: for the same value it makes the
+basis `AGREED`, although only one quotation verified. The basis changes what
+the record says and not the ruling — the value is the one the verified
+evidence supports whichever basis it carries.
 
 **A council that settles only some of the eight still leaves a record.** A
 vector needs all eight metrics, so one unresolved metric with no fallback means
@@ -278,11 +294,14 @@ design leaves open, arriving through the back door of an error path. So in
 practice today an unresolved metric produces no vector, and the finding keeps
 its per-source scores side by side with no winner.
 
-**Values are counted; members never are.** Two members agreeing and a third
-dissenting on evidence that does not verify is not a contested metric — one
-value has evidence behind it, so it settles. Counting qualifying members instead
-would escalate on agreement, and would fire on most ordinary disagreements,
-because several members can usually quote an advisory.
+**Values are counted towards a ruling; members never are.** Two members
+agreeing and a third dissenting on evidence that does not verify is not a
+contested metric — one value has evidence behind it, so it settles. Counting
+qualifying members instead would escalate on agreement, and would fire on most
+ordinary disagreements, because several members can usually quote an advisory.
+The basis is the one place a member is counted: one quotation with no other
+beside it reads `SOLE`, and that changes what the record admits, never the
+ruling.
 
 **Agreement is not evidence.** n members agreeing with nothing verified settles
 nothing: that metric is unresolved and falls back to a published vector. It is

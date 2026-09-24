@@ -316,7 +316,7 @@ flowchart TD
     rep -->|"no evidence found"| abs["An absence:<br/>a fact about the advisory"]
     rep -->|"a value it cannot quote"| gue["A guess:<br/>a fact about the member"]
 
-    qc --> chr["Chairman reconciles<br/>the verified answers alone<br/>values are counted, members never"]
+    qc --> chr["Chairman reconciles<br/>the verified answers alone<br/>values are counted towards a ruling,<br/>members never; the basis is the<br/>one place a member is counted"]
     abs -. "no weight" .-> chr
     gue -. "no weight" .-> chr
 
@@ -409,10 +409,11 @@ metric its text is silent on tends to guess rather than decline, so the two get
 mixed by any design that folds them together.
 
 Members are a panel and not a chain. Each sees the advisory text alone, so the
-answers are independent and can be measured. Nothing counts them, so an even
-roster raises no tie — four answers are four pieces of evidence. The chairman
-keeps the ones whose quotation verifies and asks whether they point at one value
-or several; unanimity with nothing verified settles nothing.
+answers are independent and can be measured. Nothing counts them towards a
+ruling, so an even roster raises no tie — four answers are four pieces of
+evidence. The chairman keeps the ones whose quotation verifies and asks whether
+they point at one value or several; unanimity with nothing verified settles
+nothing.
 
 **The chairman is not a member and makes no model call.** `src/council/chairman.py`
 is ordinary code: it filters the answers by whether the quotation is in the text,

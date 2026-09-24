@@ -1,16 +1,18 @@
 """Reconciling n members' answers into one ruling per metric, and then into a vector.
 
-**Nothing here counts members.** `docs/COUNCIL.md` forbids a majority vote at
-any n, because members built on one base model share its mistakes, so four
-answers are four pieces of evidence and not four votes. What decides is whether
-the quotation verifies: an answer whose evidence is not in the advisory supports
-nothing, however many members give it.
+**Nothing here counts members towards a ruling.** `docs/COUNCIL.md` forbids a
+majority vote at any n, because members built on one base model share its
+mistakes, so four answers are four pieces of evidence and not four votes. What
+decides is whether the quotation verifies: an answer whose evidence is not in the
+advisory supports nothing, however many members give it.
 
 That makes the design's first two rules one computation. Among the answers whose
 quotation verified, either they support one value -- settled -- or they do not,
 and the metric is contested and belongs to the escalation policy. The record
-keeps which of the two happened as the `Basis`, because "nobody dissented" and
-"the evidence overruled a dissenter" are different things to read afterwards.
+keeps what a settled value rests on as the `Basis`, because "one member quoted
+it", "nobody dissented" and "the evidence overruled a dissenter" are different
+things to read afterwards. Telling the first from the second is the one place a
+member is counted, and it changes what the record admits, never the ruling.
 
 **The chairman hands over a vector, never a score.** Nothing in this package
 imports `src/scoring/`, and if it ever needs to, something has gone wrong.
@@ -59,17 +61,27 @@ def settle(
     answers: Sequence[MemberAnswer],
     verified: Sequence[MemberAnswer],
 ) -> SettledMetric:
-    """Record a metric the verified evidence agrees on, and whether a quoting member dissented."""
-    dissented = any(answer.value != value for answer in answers)
+    """Record a metric the verified evidence agrees on, and what that agreement rests on."""
     return SettledMetric(
         metric=metric,
         value=value,
         # What the ruling rests on is the verified evidence, so the weakest of
         # those is what the agreement is worth.
         confidence=weakest_confidence(verified),
-        basis=Basis.EVIDENCE if dissented else Basis.AGREED,
+        basis=basis_of(value, answers),
         supporting=tuple(verified),
     )
+
+
+def basis_of(value: str, answers: Sequence[MemberAnswer]) -> Basis:
+    """Say what a settled value rests on: one quotation, no dissent, or a dissent overruled."""
+    # `answers` is every member that offered a quotation, verified or not. One of
+    # them alone agrees with nobody, whatever the others declined or guessed.
+    if len(answers) == 1:
+        return Basis.SOLE
+    if any(answer.value != value for answer in answers):
+        return Basis.EVIDENCE
+    return Basis.AGREED
 
 
 def agreed_vector(rulings: Mapping[str, MetricRuling], version: str) -> CvssVector:

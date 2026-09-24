@@ -51,6 +51,7 @@ INVENTED = "the maintainers have not replied to the report"
 AWKWARD_QUOTE = r"""the pattern /^\s*"(.*)"\s*$/ backtracks on "don't fix" paths like C:\temp"""
 AWKWARD_ADVISORY = f"{ADVISORY} Here {AWKWARD_QUOTE}."
 
+SOLE = Basis.SOLE.value
 AGREED = Basis.AGREED.value
 EVIDENCE = Basis.EVIDENCE.value
 
@@ -65,8 +66,8 @@ LEGAL = {"AV": "N", "AC": "L", "PR": "N", "UI": "N", "S": "U", "C": "H", "I": "H
 # Two members reading one advisory apart. On AV both quote it and reach different
 # values, so nothing settles it and it comes out contested; on AC one quotes text
 # the advisory does not contain, so the verified quotation settles it and the
-# chairman records the EVIDENCE basis. One run, both of the two bases, one
-# contested metric -- which is every shape the page has to render at once.
+# chairman records the EVIDENCE basis. One run, the AGREED and EVIDENCE bases and
+# a contested metric, which a council page has to render side by side.
 DISSENTING = {
     "qwen2.5:7b": {"AV": {"value": "N", "evidence": LONG_QUOTE, "confidence": "high"}},
     "gemma4:latest": {

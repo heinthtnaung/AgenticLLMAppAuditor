@@ -51,7 +51,8 @@ every metric the cheap member settles alone is agreement nobody cross-checked.
 Measured on a two-member roster (`measurements/council_runs/`): 61 of 144 metrics
 came out contested because the second member disagreed, and this trigger would
 have recorded all 61 as settled. `single_assessor` counts the members reached,
-not the members asked about a given metric, so it would not say so either.
+not the members asked about a given metric, so it would not say so; the `SOLE`
+basis on each metric settled by one member's quotation alone would.
 
 That holds for a trigger on what members reply, not for escalation in general. A
 trigger on the finding's `disputed_metrics()` -- which `cli.council_run` already

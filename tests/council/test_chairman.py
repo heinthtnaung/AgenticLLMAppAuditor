@@ -188,8 +188,3 @@ def test_a_guess_cannot_make_a_metric_contested():
 def test_a_guess_is_not_recorded_as_supporting_the_ruling():
     ruling = rule([answer(name="one"), guessed(value="L", name="two")])
     assert [item.member.name for item in ruling.supporting] == ["one"]
-
-
-def test_a_guess_does_not_count_as_a_dissenting_member():
-    # It carries no weight at all, and that includes no weight against.
-    assert rule([answer(name="one"), guessed(value="L", name="two")]).basis is Basis.AGREED

@@ -164,18 +164,25 @@ and a quotation that is not in the advisory supports nothing
 guesses or quotes what is not there, Qwen settles the metric alone, and nothing
 can contest it. 105 settled against 67, and 13 contested against 61, is
 therefore no evidence of better reading. On a metric settled that way the
-council is one assessor, and the run does not say so: `single_assessor` counts
-the members reached, and both were. How many of the 105 rest on Qwen alone is
-not in these files, because the report names no member on a settled metric.
+council is one assessor, and these reports do not say so: `single_assessor`
+counts the members reached, and both were. How many of the 105 rest on Qwen
+alone is not in these files, because the report names no member on a settled
+metric.
 
-**The basis wording reads as agreement.** 99 of the 105 carry "every member that
-offered a quotation supported this value". That is true when only Qwen quoted,
-and it reads as two members agreeing. `docs/COUNCIL.md` states the rule behind
-it: a member that guesses a different value leaves the record saying the
-members agreed. With a second member that guessed on 16 of the 39 metrics where
-its answer is shown, that is not a rare case. It is a limitation of the
-wording, observed with a member that guesses; what to do about it is a design
-question this page leaves open.
+**In these reports, the basis wording reads as agreement.** 99 of the 105 carry
+"every member that offered a quotation supported this value". The chairman
+that rendered them used that wording when only Qwen quoted, and it reads as two
+members agreeing. With a second member that guessed on 16 of the 39 metrics
+where its answer is shown, that was not a rare case.
+
+**The code now tells the case apart; the recorded reports do not.** A value
+one member quoted, beside members that guessed, declined or failed, now carries
+the `SOLE` basis, "one member offered a quotation, and no other member offered
+one" (`src/council/ruling.py`), and `AGREED` needs two or more members
+offering quotations for the value. These reports were rendered before that
+change and keep the old wording, so how many of the 99 would now read `SOLE`
+is not in them. A second member's quotation that is not in the advisory still
+counts toward `AGREED` (`docs/COUNCIL.md`, "What the chairman does").
 
 ### What the baseline does not show
 

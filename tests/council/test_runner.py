@@ -143,11 +143,12 @@ def test_the_same_replies_give_the_same_run():
 
 
 def test_replies_carrying_no_weight_still_reach_the_record():
-    # The condition the AGREED basis rests on. The basis ranges over the members
-    # that offered a quotation, which is honest only while a reader can see the
-    # replies it leaves out: here a guess at AV:L sits beside a ruling of AV:N,
-    # and without it on the round AGREED would be claiming a unanimity that did
-    # not happen. The only thing filtered out is a call that gave nothing back.
+    # The condition the basis rests on. It ranges over the members that offered
+    # a quotation, which is honest only while a reader can see the replies it
+    # leaves out: here a guess at AV:L sits beside a ruling of AV:N that rests on
+    # one quotation, and without it on the round nobody could see that another
+    # member leaned the other way. The only thing filtered out is a call that
+    # gave nothing back.
     def quietly(asked, prompt):
         """Decline or guess for the members named so, and answer for the rest."""
         if asked.name == "declines":
@@ -161,5 +162,5 @@ def test_replies_carrying_no_weight_still_reach_the_record():
     kinds = [type(reply) for reply in round_.replies]
     assert kinds == [MemberAnswer, MemberFoundNoEvidence, MemberGuessed]
     assert (round_.replies[2].member.name, round_.replies[2].value) == ("guesses", "L")
-    assert (round_.ruling.value, round_.ruling.basis) == ("N", Basis.AGREED)
+    assert (round_.ruling.value, round_.ruling.basis) == ("N", Basis.SOLE)
     assert round_.failures == ()
