@@ -6,9 +6,9 @@ chairman's reasoning and the final vector. The run has all of it, and this is
 the step that carries it into the record -- for a member whose call failed as
 for one that answered.
 
-It sits in `src/cli/` because it is the only place that may see both sides: the
-report depends on neither the council nor the scoring engine, and that boundary
-is worth a conversion.
+It sits in `src/cli/` because it is the only place that may see both sides:
+`src/report/` does not import the council, and that boundary is worth a
+conversion.
 """
 
 from council.answer import MemberAnswer, MemberFoundNoEvidence, MemberGuessed
