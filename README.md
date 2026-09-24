@@ -282,7 +282,9 @@ answers and a single number cannot.
 
 A row with one figure and no source, like `CVE-2026-13676` at `68.8`, is a
 finding whose sources agree — there is nothing to attribute between, so nothing
-is named.
+is named. A score from a council's vector is the exception: it replaced every
+published score, so a bare figure would read as one source's, and the row reads
+`the assessor council 21.6` instead. The HTML page and the JSON already name it.
 
 **The environment drives those numbers, not the CVE.** The same file with
 `EXP-1` set to `No` and `EXP-4` to `Yes` — the asset segmented rather than
