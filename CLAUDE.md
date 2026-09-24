@@ -78,6 +78,9 @@ Binding. Work that breaks one is not done.
 21. **Run the tests before saying it works.** Report real output.
 22. **Do not widen scope.** Build what was asked. Flag the rest.
 23. **Say what you did not do**, and why.
+24. **State a limitation as an assertion, not a sentence.** A gap accepted on
+    purpose gets a test asserting it, so closing the gap turns it red. A comment
+    or docstring says what the code does, not what it was meant to do.
 
 ## This machine
 
