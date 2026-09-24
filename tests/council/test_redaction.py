@@ -10,6 +10,9 @@ PUBLISHED = "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H"
 BARE = "AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H"
 BARE_V2 = "AV:N/AC:L/Au:N/C:P/I:P/A:P"
 BARE_V4 = "AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N"
+# Read by the parser now, so its Temporal tail has to go with it.
+TEMPORAL = "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:C/C:H/I:L/A:N/E:H/RL:O/RC:C"
+BARE_TEMPORAL = "AV:N/AC:H/PR:N/UI:R/S:C/C:H/I:L/A:N/E:H"
 
 PLAIN = "A remote attacker can send a crafted request and read arbitrary files."
 
@@ -28,14 +31,16 @@ def test_a_ghsa_id_never_reaches_the_member():
     assert redacted.removed == (GHSA_ID,)
 
 
-def test_a_published_vector_never_reaches_the_member():
-    # Showing the published score measures whether a model can copy one.
-    redacted = redact(f"The vendor scores this {PUBLISHED} on release.")
-    assert "AV:N" not in redacted.text
-    assert redacted.removed == (PUBLISHED,)
+@pytest.mark.parametrize("vector", [PUBLISHED, TEMPORAL])
+def test_a_published_vector_never_reaches_the_member(vector):
+    # Showing the published score measures whether a model can copy one, and no
+    # `/E:H` fragment of it is left behind either.
+    redacted = redact(f"The vendor scores this {vector} on release.")
+    assert redacted.text == f"The vendor scores this {VECTOR_MARKER} on release."
+    assert redacted.removed == (vector,)
 
 
-@pytest.mark.parametrize("vector", [BARE, BARE_V2, BARE_V4])
+@pytest.mark.parametrize("vector", [BARE, BARE_V2, BARE_V4, BARE_TEMPORAL])
 def test_a_vector_written_without_its_prefix_is_the_same_published_score(vector):
     # The sharpest form of the leak: a member asked for Attack Vector, handed
     # `AV:N` in the text it is meant to reason from. The prefix is typography.

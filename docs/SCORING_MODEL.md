@@ -32,9 +32,20 @@ name on every one of them.
 number from the vector by the published equations, so every score on a row
 re-derives from the vector beside it.
 
+**Temporal metrics are read and not scored.** A v3 vector may end with `E`,
+`RL` or `RC`; `src/cvss/` holds each to its v3 values as strictly as a Base
+metric, scores the Base metrics alone, and `vector` keeps the string as
+published. On the npm corpus in `measurements/`, `CVE-2020-11023`'s `ghsa`
+vector ends `/E:H`, scores 6.9, and is quoted with the `/E:H` still on it.
+What that costs: no Temporal score is computed, so a source's `E:H` moves no
+number here, and exploitation reaches the score only through the threat
+questions the organisation answers.
+
 **A source that cannot be read is kept, not dropped.** A published v2 or v4.0
-vector is a real occurrence and this calculator refuses it, so that source goes
-to `unreadable` with the reason. It is never scored 0.0: "nobody scored this"
+vector is a real occurrence and this calculator refuses it, as it refuses a v3
+vector carrying an Environmental metric — those describe one deployment, which
+is what the organisation's answers are for — so that source goes to
+`unreadable` with the reason. It is never scored 0.0: "nobody scored this"
 and "somebody scored this 0.0" are different findings, and one optional number
 would let them be told apart only by remembering to check. The two records are
 separate types for that reason — `src/findings/assessment.py`.

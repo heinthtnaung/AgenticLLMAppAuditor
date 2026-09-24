@@ -5,11 +5,12 @@ from report.text_report import as_text
 from report_samples import (
     BOTTOM_OF_HIGH,
     CONFIDENTIALITY_ONLY,
+    CORPUS_DISSENT,
+    ENVIRONMENTAL_VECTOR,
     LOW_CONFIDENTIALITY,
     PROVENANCE,
     REFUSED_DISSENT,
     TOP_OF_MEDIUM,
-    TEMPORAL_VECTOR,
     TOTAL_LOSS,
     VERSION_2_VECTOR,
     WIDE_WITHIN_MEDIUM,
@@ -94,7 +95,7 @@ def test_a_finding_whose_only_source_was_refused_says_which():
 
 def test_sources_that_match_beside_a_refused_one_are_not_filed_as_agreeing():
     # A heading is a claim, and a vector nobody could read may disagree with every
-    # one that was, as ghsa's does on CVE-2020-11023.
+    # one that was, as the refused one here does.
     text = rendered((finding(DJANGO, vectors=REFUSED_DISSENT),))
     assert "SOURCES AGREE" not in text
     assert len(lines_under("A SOURCE WAS REFUSED (1)", text)) == 1
@@ -103,8 +104,8 @@ def test_sources_that_match_beside_a_refused_one_are_not_filed_as_agreeing():
 
 def test_a_disputed_finding_names_its_refused_source_beside_the_ones_it_read():
     # As the web page's card does: a refused vector stays on the page, and no
-    # corpus finding carries one beside a dispute, so ghsa's real one is put there.
-    read = {"ghsa": TEMPORAL_VECTOR, "nvd": TOTAL_LOSS, "redhat": LOW_CONFIDENTIALITY}
+    # corpus finding carries one beside a dispute, so one is put there.
+    read = {"ghsa": ENVIRONMENTAL_VECTOR, "nvd": TOTAL_LOSS, "redhat": LOW_CONFIDENTIALITY}
     text = rendered((finding(DJANGO, vectors=read),))
     assert "nvd 9.8  ·  redhat 5.3  ·  refused ghsa" in text
 
@@ -112,6 +113,15 @@ def test_a_disputed_finding_names_its_refused_source_beside_the_ones_it_read():
 def test_the_findings_with_a_refused_source_come_before_the_agreeing_ones():
     text = rendered((
         finding(DJANGO, advisory_id="CVE-2", vectors={"a": TOTAL_LOSS}),
-        finding(PYYAML, advisory_id="CVE-1", vectors={"a": TOTAL_LOSS, "b": TEMPORAL_VECTOR}),
+        finding(PYYAML, advisory_id="CVE-1", vectors={"a": TOTAL_LOSS, "b": ENVIRONMENTAL_VECTOR}),
     ))
     assert text.index("A SOURCE WAS REFUSED") < text.index("SOURCES AGREE")
+
+
+def test_a_source_whose_vector_ends_in_a_temporal_metric_is_read_and_disputes():
+    # CVE-2020-11023 on the npm corpus: ghsa's `/E:H` refused its whole vector,
+    # which hid the one source that disagrees with the other three on AC and C.
+    text = rendered((finding(DJANGO, vectors=CORPUS_DISSENT),))
+    assert "A SOURCE WAS REFUSED" not in text
+    assert lines_under("SOURCES DISAGREE (1)", text)
+    assert "AC, C" in text
