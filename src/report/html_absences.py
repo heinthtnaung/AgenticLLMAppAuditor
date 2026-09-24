@@ -15,7 +15,7 @@ cut for space.
 
 from organisation.approval import Approval
 from report.html_layout import listing, section, separated, tag, text
-from report.record import Report
+from report.record import NOTHING_ABSENT, Report
 
 NOTHING_LEDE = (
     "Counted apart on purpose. An advisory matching no component is a CVE that fell out of "
@@ -92,7 +92,8 @@ def approval_section(report: Report) -> str:
 def not_assessed_section(report: Report) -> str:
     """Name what this run did not assess, so no reader reads silence as a nil result."""
     entries = [absence_entry(one) for one in report.not_assessed]
-    return section("Not assessed", NOT_ASSESSED_LEDE, listing(entries, "absences"))
+    body = listing(entries, "absences") if entries else tag("p", text(NOTHING_ABSENT), "note")
+    return section("Not assessed", NOT_ASSESSED_LEDE, body)
 
 
 def absence_entry(absence) -> str:

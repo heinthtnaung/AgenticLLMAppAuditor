@@ -19,7 +19,7 @@ it goes on.
 from report.disagreement import sources_disagree
 from organisation.approval import Approval
 from report.provenance import AdvisoryDatabase
-from report.record import Report
+from report.record import NOTHING_ABSENT, Report
 from report.text_council import council_block
 from report.text_findings import (
     agreeing_block,
@@ -133,4 +133,4 @@ def absences_block(report: Report) -> str:
         f"{INDENT}{absence.what}\n{INDENT}{INDENT}{absence.because}"
         for absence in report.not_assessed
     ]
-    return section("NOT ASSESSED", entries)
+    return section("NOT ASSESSED", entries or [f"{INDENT}{NOTHING_ABSENT}"])

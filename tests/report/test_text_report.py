@@ -4,7 +4,8 @@ import pytest
 
 from report.provenance import RunProvenance, UnknownAdvisoryDatabase
 from council_runs import OPEN_TWO_WAYS, council_ran, council_states, passed_over_entirely
-from report.record import NO_COUNCIL_RUN, NOTHING_WAS_PUT_TO_IT, build_report
+from full_runs import fully_assessed
+from report.record import NO_COUNCIL_RUN, NOTHING_ABSENT, NOTHING_WAS_PUT_TO_IT, build_report
 from report.text_report import as_text
 from report_samples import (
     LOW_CONFIDENTIALITY,
@@ -155,3 +156,13 @@ def test_a_run_with_no_council_at_all_renders_and_names_the_absence():
     page = rendered(findings=(finding(DJANGO),))
     assert "COUNCIL" not in page
     assert "Council ruling" in page
+
+
+def test_a_run_that_left_nothing_out_says_so_under_the_heading():
+    # An empty heading is the silence the section exists to prevent.
+    page = as_text(fully_assessed())
+    assert lines_under("NOT ASSESSED", page) == [f"  {NOTHING_ABSENT}"]
+
+
+def test_a_run_that_left_something_out_does_not_say_nothing_was():
+    assert NOTHING_ABSENT not in rendered()
