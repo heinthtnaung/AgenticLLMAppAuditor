@@ -99,12 +99,23 @@ log saved that way would be left out of a commit without a word.
 is committable.
 
 `record_council_run.py` wrote the GPU runs; an earlier wrapper, which recorded
-no `ollama ps`, wrote the CPU runs. `gpu-scoped` was recorded part-way through
-edits to the recorder's docstrings and `gpu-full` after them, and both
-provenance files carry the same sections in the same order. **The tool did not
-time any run:** `src/` reads no clock. The start and end are the wrapper's,
-taken outside the process, and cover the whole command, the Syft and Trivy scan
-as well as the council.
+no `ollama ps`, wrote the CPU runs. Both GPU provenance files carry the same
+sections in the same order, and `78a0390` holds the recorder as it stood after
+the GPU runs, at its 19:56:50 write.
+
+The recorder changed around the GPU runs. **These times were read before the
+work was committed and cannot be read again**: committing rewrote every file's
+modification time, the recorder's included.
+
+| When | What | Whose record |
+|---|---|---|
+| 19:47:51 | the last edit to the recorder's docstrings, during `gpu-scoped` (launched 19:46:18) and before `gpu-full` launched at 19:48:13 | `python-developer`'s own report of the edit |
+| 19:56:50 | the recorder's last write, after `gpu-full` ended at 19:55:16 | its modification time, read by the judge before the commits |
+| — | that write changed the usage example from `gemma4:latest` to `llama3.2:latest`, held back until the recording was done | the session's record, not a file time |
+
+**The tool did not time any run:** `src/` reads no clock. The start and end are
+the wrapper's, taken outside the process, and cover the whole command, the
+Syft and Trivy scan as well as the council.
 
 | | `scoped` | `full` | `gpu-scoped` | `gpu-full` |
 |---|---|---|---|---|
@@ -112,7 +123,7 @@ as well as the council.
 | where the models ran | CPU | CPU | GPU | GPU |
 | call order | metric by metric | metric by metric | member by member within a finding | member by member within a finding |
 | Ollama | 0.34.2, one server started 2026-09-21 10:26:14 | the same server | 0.34.3, one server started 19:30:20 | the same server |
-| code | `4111b95`, `src/` unmodified | `4111b95`; three `src/` docstrings edited, no code | `4111b95` and 14 uncommitted `src/` files | `4111b95` and 17 |
+| code | `4111b95`, `src/` unmodified | `4111b95`; three `src/` docstrings edited, no code | launched at `4111b95` with 14 uncommitted `src/` files; the code of `061361f` | launched at `4111b95` with 17; the code of `061361f` |
 | findings put to the council | 5 of 18 | 18 of 18 | 5 of 18 | 18 of 18 |
 | model calls | 80 = 5 × 8 metrics × 2 members | 288 = 18 × 8 × 2 | 80 | 288 |
 | started | 17:25:39 | 17:46:36 | 19:46:18 | 19:48:13 |
@@ -128,10 +139,21 @@ and `gemma4:latest` as `c6eb396dbd59`, both pulled before any run here, and
 run's `src/` edits are the docstring corrections that point here; parsed with
 docstrings removed, all three files match `4111b95`.
 
-**The GPU runs' code is in no commit.** Their provenance names the uncommitted
-files and does not hold them, and `gpu-full` launched with three more than
-`gpu-scoped`: `src/council/redaction.py`, `src/report/record.py` and
-`src/report/text_report.py`.
+**The GPU runs' code is `061361f`.** Both were launched at `4111b95` with
+uncommitted `src/` files, which the provenance names and does not hold.
+
+What can be checked today is a compare of the parsed code with docstrings
+removed. At `061361f`, `src/council/redaction.py`, `src/report/record.py`,
+`src/report/text_report.py`, `src/deps/syft_report.py` and
+`src/organisation/approval.py` differ from `4111b95` in docstrings alone. The
+first three are the files `gpu-full` launched with beyond `gpu-scoped`'s, so
+`gpu-scoped` ran them as `4111b95` holds them; neither provenance file names
+the last two, so both runs did. In each case that is `061361f`'s code.
+
+Everything else depends on the judge's reading of modification times before
+the commits, which cannot be repeated: every `src/` file changed after the 19:46:18
+launch matched `061361f` once docstrings were removed, and every other modified
+file was last written before the launch.
 
 **The GPU baseline is faster, and no single change is why.** A full run took
 7 min 3 s against 71 min 39 s, and a scoped one 1 min 54 s against 20 min 57 s,
@@ -412,7 +434,7 @@ The full run adds `--council-all-findings`. `audit` is the entry point of the
 editable install in `README.md`, so the venv must be active; the recorder
 refuses to start without it on the path.
 
-Repeating the GPU baseline needs the member-by-member runner and Ollama 0.34.3
-with both models on the GPU. Repeating the CPU baseline needs `gemma4:latest`,
-the runner at `4111b95`, and Ollama 0.34.2 on the CPU; this machine's Ollama has
-started on CUDA since 19:30 on 2026-09-23.
+Repeating the GPU baseline needs `061361f` and Ollama 0.34.3 with both models
+on the GPU. Repeating the CPU baseline needs `gemma4:latest`, the runner at
+`4111b95`, and Ollama 0.34.2 on the CPU; this machine's Ollama has started on
+CUDA since 19:30 on 2026-09-23.
