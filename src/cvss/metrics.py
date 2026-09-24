@@ -1,7 +1,9 @@
 """The eight CVSS Base metrics: their order, their names in words, their legal values.
 
 The vocabulary lives here so that the parser and the equations agree on it by
-construction rather than by both remembering the same table.
+construction rather than by both remembering the same table -- and so does the
+check that holds a metric and its value to it, which the council's answers and
+rulings are held to as well.
 """
 
 from dataclasses import dataclass
@@ -62,3 +64,17 @@ def metric_name(abbreviation: str) -> str:
             f"the eight are {', '.join(METRIC_ORDER)}"
         )
     return metric.name
+
+
+def refuse_illegal_pair(name: str, value: str) -> None:
+    """Refuse a metric this calculator does not know, or a value that metric forbids."""
+    metric = METRICS_BY_ABBREVIATION.get(name)
+    if metric is None:
+        raise ValueError(
+            f"Unknown metric {name!r}: this calculator reads the eight CVSS Base metrics only"
+        )
+    if value not in metric.values:
+        allowed = ", ".join(metric.values)
+        raise ValueError(
+            f"{value!r} is not a value of {metric.name} ({name}); allowed values are {allowed}"
+        )
