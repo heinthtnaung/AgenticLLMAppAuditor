@@ -9,6 +9,7 @@ from report.text_report import as_text
 from report_samples import (
     LOW_CONFIDENTIALITY,
     PROVENANCE,
+    REFUSED_DISSENT,
     TOTAL_LOSS,
     catalogue,
     component,
@@ -36,6 +37,14 @@ def lines_under(heading: str, text: str) -> list[str]:
     """Give the indented lines of one section, so a test can read its order."""
     after = text.split(heading)[1].split("\n\n")[0]
     return [line for line in after.split("\n") if line.startswith("  ")]
+
+
+def test_a_dissent_only_a_refused_source_carries_is_not_counted_in_the_summary():
+    # Accepted on purpose until it is decided whether a refused vector counts as a
+    # dissent: CVE-2020-11023's ghsa disagrees and is not counted. Counting it turns
+    # this red.
+    text = rendered((finding(DJANGO, vectors=REFUSED_DISSENT),))
+    assert "0 carry sources that disagree." in text
 
 
 def test_the_two_kinds_of_nothing_are_counted_apart():

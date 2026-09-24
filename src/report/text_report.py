@@ -21,7 +21,12 @@ from organisation.approval import Approval
 from report.provenance import AdvisoryDatabase
 from report.record import Report
 from report.text_council import council_block
-from report.text_findings import agreeing_block, contested_block, unscored_block
+from report.text_findings import (
+    agreeing_block,
+    contested_block,
+    unchecked_block,
+    unscored_block,
+)
 from report.text_layout import INDENT, SOURCE_SEPARATOR, section
 from report.text_risk import risk_block
 
@@ -34,6 +39,7 @@ def as_text(report: Report) -> str:
         heading(report),
         summary(report),
         contested_block(report),
+        unchecked_block(report),
         agreeing_block(report),
         unscored_block(report),
         risk_block(report),
@@ -66,7 +72,8 @@ def database_line(run) -> str:
 
 
 def summary(report: Report) -> str:
-    """Say how much there is, and how much of it the sources argue about."""
+    """Say how much there is, and how many findings' readable sources disagree."""
+    # A vector the calculator refused is not counted as a dissent, whatever it says.
     contested = len([one for one in report.findings if sources_disagree(one)])
     return (
         f"{len(report.findings)} findings across {report.component_count} components. "

@@ -19,6 +19,7 @@ from report_samples import (
     DATABASE,
     LOW_CONFIDENTIALITY,
     PROVENANCE,
+    REFUSED_DISSENT,
     TOTAL_LOSS,
     VERSION_2_VECTOR,
     component,
@@ -123,6 +124,14 @@ def test_a_run_that_could_not_read_a_database_says_so_rather_than_looking_clean(
 def test_the_same_record_renders_the_same_bytes():
     report = a_report((finding(DJANGO, vectors=DISAGREEING),))
     assert as_json(report) == as_json(report)
+
+
+def test_a_dissent_only_a_refused_source_carries_is_not_counted_as_disagreement():
+    # Accepted on purpose until it is decided whether a refused vector counts as a
+    # dissent: CVE-2020-11023's ghsa disagrees and is not counted. Counting it turns
+    # this red.
+    record = as_dictionary(a_report((finding(DJANGO, vectors=REFUSED_DISSENT),)))
+    assert record["run"]["findings_whose_sources_disagree"] == 0
 
 
 def test_the_artefact_is_json_and_ends_in_a_newline():

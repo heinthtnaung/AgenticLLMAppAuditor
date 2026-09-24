@@ -31,6 +31,16 @@ TOP_OF_MEDIUM = "CVSS:3.1/AV:N/AC:L/PR:H/UI:R/S:C/C:H/I:L/A:N"  # 6.9 Medium
 BOTTOM_OF_HIGH = "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:L/A:L"  # 7.0 High
 
 VERSION_2_VECTOR = "AV:N/AC:L/Au:N/C:P/I:P/A:P"
+# ghsa's vector for CVE-2020-11023, refused for the temporal metric on its end.
+TEMPORAL_VECTOR = "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:C/C:H/I:L/A:N/E:H"
+# CVE-2020-11023's four sources on the npm corpus: three read alike at 6.1, and
+# ghsa's refused vector disagrees with them on AC and C.
+REFUSED_DISSENT = {
+    "bitnami": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N",
+    "nvd": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N",
+    "redhat": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N",
+    "ghsa": TEMPORAL_VECTOR,
+}
 
 DATABASE = AdvisoryDatabase(built_at="2026-09-22T02:00:05Z")
 

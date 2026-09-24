@@ -22,7 +22,12 @@ from report.html_absences import (
     unidentified_section,
 )
 from report.html_council import council_section
-from report.html_findings import agreeing_section, contested_section, unscored_section
+from report.html_findings import (
+    agreeing_section,
+    contested_section,
+    unchecked_section,
+    unscored_section,
+)
 from report.html_layout import separated, tag, text
 from report.html_risk import risk_section
 from report.html_style import STYLESHEET
@@ -48,6 +53,7 @@ def as_html(report: Report) -> str:
         run_header(report),
         legend(),
         contested_section(report),
+        unchecked_section(report),
         agreeing_section(report),
         unscored_section(report),
         risk_section(report),
@@ -94,7 +100,8 @@ def database_line(run) -> str:
 
 
 def summary_line(report: Report) -> str:
-    """Say how much there is, and how much of it the sources argue about."""
+    """Say how much there is, and how many findings' readable sources disagree."""
+    # A vector the calculator refused is not counted as a dissent, whatever it says.
     contested = len([one for one in report.findings if sources_disagree(one)])
     said = (
         f"{len(report.findings)} findings across {report.component_count} components. "

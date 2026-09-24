@@ -7,12 +7,20 @@ the finding carries -- and that a source nobody could read stays on the card,
 marked not scored, rather than becoming a zero.
 """
 
-from report.html_findings import agreeing_section, contested_section, unscored_section
+from report.html_findings import (
+    agreeing_section,
+    contested_section,
+    unchecked_section,
+    unscored_section,
+)
+from report.html_report import as_html
 from report.record import build_report
 from report_samples import (
     CONFIDENTIALITY_ONLY,
     LOW_CONFIDENTIALITY,
     PROVENANCE,
+    REFUSED_DISSENT,
+    TEMPORAL_VECTOR,
     TOTAL_LOSS,
     VERSION_2_VECTOR,
     catalogue,
@@ -94,9 +102,23 @@ def test_a_refused_source_keeps_the_reason_the_calculator_would_not_read_it():
 
 def test_a_scored_finding_keeps_its_refused_source_too():
     both = finding(DJANGO, vectors={"ghsa": CONFIDENTIALITY_ONLY, "nvd": VERSION_2_VECTOR})
-    page = agreeing_section(report_of(both))
+    page = unchecked_section(report_of(both))
     assert "not scored" in page
     assert '<span class="source-name">ghsa</span>' in page
+    assert '<span class="source-name">nvd</span>' in page
+
+
+def test_sources_that_match_beside_a_refused_one_are_not_headed_as_agreeing():
+    # A heading is a claim, and a vector nobody could read may disagree with every
+    # one that was, as ghsa's does on CVE-2020-11023.
+    page = as_html(report_of(finding(DJANGO, vectors=REFUSED_DISSENT)))
+    assert "Sources agree" not in page
+    assert "A source was refused (1)" in page
+    assert TEMPORAL_VECTOR in page
+    # Accepted on purpose until it is decided whether a refused vector counts as a
+    # dissent: CVE-2020-11023's ghsa disagrees and is not counted. Counting it turns
+    # this red.
+    assert "0 carry sources that disagree." in page
 
 
 def test_the_page_names_the_component_a_finding_was_raised_against():
