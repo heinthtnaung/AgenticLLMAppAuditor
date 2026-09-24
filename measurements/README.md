@@ -419,9 +419,10 @@ run, against the failure the prompt names.
 
 **One run at a time, with nothing else asking the same Ollama server.** Every
 run needs Ollama with its members pulled, Syft, Trivy, and the advisory database
-built 2026-09-22T02:00:05Z; a newer database finds different advisories, and
-every count above moves with it. The recorder runs the command after `--` and
-writes the three files into `council_runs/`, refusing a name already used:
+built 2026-09-22T02:00:05Z; a newer database can find different advisories,
+and every count above can move with it. The recorder runs the command after
+`--` and writes the three files into `council_runs/`, refusing a name already
+used:
 
 ```bash
 export NO_PROXY=localhost,127.0.0.1 no_proxy=localhost,127.0.0.1

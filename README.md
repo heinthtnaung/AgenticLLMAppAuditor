@@ -63,7 +63,7 @@ same code and prints the same report.
 <!-- readme-check: run (elided) -->
 ```
 Audit of fetched/vulnscout
-  syft 1.52.0  ·  trivy 0.74.0  ·  advisory database built 2026-09-22T02:00:05.774028462Z
+  syft 1.52.0  ·  trivy 0.74.0  ·  advisory database built 2026-09-23T20:20:57.734988316Z
 
 18 findings across 60 components. 5 carry sources that disagree.
 
@@ -543,14 +543,27 @@ trivy image --download-db-only
 
 Progress bar elided. The download is 116 MiB and lands in `~/.cache/trivy`.
 
-It is a separate step because scans will run offline, with
-`--skip-db-update`, so that a scan is reproducible and pinned to a known
-database. The cost of that choice: **an empty or stale cache produces a clean
-report rather than an error.** Trivy finds no advisories, reports no
-vulnerabilities, exits 0, and nothing in the output says the database was
-missing. Every CVE is missed silently.
+It is a separate step because scans run offline, with `--skip-db-update`, so
+that a scan is reproducible and pinned to a known database. Running `trivy`
+yourself without that flag can update the cache as a side effect, and every
+audit after it reads the newer database; to update it on purpose, run the
+download above with the proxy on.
 
-So check the database before trusting a scan:
+The cost of that choice: **Trivy alone, given an empty cache, produces a clean
+report rather than an error.** It finds no advisories, exits 0, and nothing in
+its output says the database was missing. So `audit` reads the database's own
+build date, `UpdatedAt` in `~/.cache/trivy/db/metadata.json`, before anything
+is scanned, and exits `2` with nothing on stdout when that file is missing,
+unreadable or carries no build date. A build date with no database beside it
+gets past that check, and then Trivy refuses the offline scan, so `audit`
+exits `2` with Trivy's own error.
+
+**A stale database is not refused.** It is there and it has a date, so the run
+goes ahead and every report carries that date: `advisory database built` in
+the text header, `run.advisory_database.built_at` in JSON, and on the HTML page.
+Nothing compares it with today, because `src/` reads no clock, so whether it is
+too old is yours to judge. `trivy version` shows it beside the date Trivy calls
+it due for an update:
 
 ```bash
 trivy version
@@ -560,9 +573,9 @@ trivy version
 Version: 0.74.0
 Vulnerability DB:
   Version: 2
-  UpdatedAt: 2026-09-22 02:00:05.774028462 +0000 UTC
-  NextUpdate: 2026-09-23 02:00:05.774027771 +0000 UTC
-  DownloadedAt: 2026-09-22 04:06:38.609232067 +0000 UTC
+  UpdatedAt: 2026-09-23 20:20:57.734988316 +0000 UTC
+  NextUpdate: 2026-09-24 20:20:57.734987855 +0000 UTC
+  DownloadedAt: 2026-09-24 06:03:45.881932713 +0000 UTC
 ```
 
 ## The proxy on this machine
