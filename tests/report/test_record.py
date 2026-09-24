@@ -5,8 +5,10 @@ import pytest
 from organisation.approval import Approval, Decision, NotApproved
 from organisation.risk import assess, per_source
 from council_runs import ALONE, council_ran, passed_over_entirely
+from full_runs import fully_assessed
 from report.record import (
     NO_COUNCIL_RUN,
+    NOTHING_ABSENT,
     NOTHING_WAS_PUT_TO_IT,
     Absence,
     Report,
@@ -172,3 +174,14 @@ def test_an_override_that_matched_nothing_does_not_stop_the_run():
 def test_overrides_that_matched_nothing_are_sorted_so_two_runs_agree():
     report = a_report(overridden=("CVE-2", "CVE-1"))
     assert report.overrides_without_findings == ("CVE-1", "CVE-2")
+
+
+def test_a_run_with_answers_an_approval_and_a_council_has_nothing_absent():
+    assert fully_assessed().not_assessed == ()
+
+
+def test_the_sentence_for_nothing_absent_names_every_absence_a_bare_run_carries():
+    # A new kind of absence a bare run carries turns this red until the sentence names it.
+    every = a_report().not_assessed
+    unnamed = [one.what for one in every if one.what.lower() not in NOTHING_ABSENT.lower()]
+    assert every and unnamed == []

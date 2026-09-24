@@ -37,6 +37,13 @@ NO_COUNCIL_RUN = "no council assessed this run, so no source has been chosen bet
 # council assessed none. Naming no absence there leaves a reader with neither a
 # ruling nor a reason there is none.
 NOTHING_WAS_PUT_TO_IT = "the council was put to no finding, so no source has been chosen between"
+# Said under the heading when nothing is absent, because an empty heading is the
+# silence the section exists to prevent. It names what is present rather than
+# claiming everything was assessed: a scoped council leaves findings unasked,
+# and says so in its own section.
+NOTHING_ABSENT = (
+    "Nothing: the Organisation Risk Score, the approval record and a council ruling are all here."
+)
 
 
 @dataclass(frozen=True)

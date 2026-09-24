@@ -12,6 +12,7 @@ from cli.council_run import SOURCES_AGREE
 from council_runs import (
     ALONE, OPEN_TWO_WAYS, council_ran, council_states, passed_over_entirely,
 )
+from full_runs import fully_assessed
 from report.record import NOTHING_WAS_PUT_TO_IT, build_report
 from report_samples import (
     catalogue,
@@ -186,3 +187,8 @@ def test_a_finding_of_a_run_with_no_council_at_all_carries_null():
     # Null is the fourth state and only the fourth: no council ran on this audit.
     rendered = as_dictionary(a_report(findings=(finding(DJANGO),)))
     assert rendered["findings"][0]["council"] is None
+
+
+def test_a_run_that_left_nothing_out_records_an_empty_list_and_no_sentence():
+    # The sentence is how a page says "nothing"; the record says it by being empty.
+    assert json.loads(as_json(fully_assessed()))["not_assessed"] == []

@@ -11,6 +11,7 @@ partly-built tool is worth more than a complete-looking one.
 """
 
 from council_runs import passed_over_entirely
+from full_runs import fully_assessed
 from organisation.approval import Approval, Decision
 from report.html_absences import (
     approval_section,
@@ -18,7 +19,7 @@ from report.html_absences import (
     not_assessed_section,
     unidentified_section,
 )
-from report.record import NO_COUNCIL_RUN, NOTHING_WAS_PUT_TO_IT, build_report
+from report.record import NO_COUNCIL_RUN, NOTHING_ABSENT, NOTHING_WAS_PUT_TO_IT, build_report
 from report_samples import PROVENANCE, advisory, catalogue, component, finding, unidentified
 
 DJANGO = component()
@@ -108,3 +109,15 @@ def test_a_council_put_to_no_finding_is_told_apart_from_no_council_at_all():
     assert NOTHING_WAS_PUT_TO_IT in passed_over
     assert NO_COUNCIL_RUN not in passed_over
     assert NO_COUNCIL_RUN in not_assessed_section(report_of())
+
+
+def test_a_run_that_left_nothing_out_says_so_under_the_heading():
+    # An empty heading and an empty list are the silence the section exists to prevent.
+    page = not_assessed_section(fully_assessed())
+    assert "<h2>Not assessed</h2>" in page
+    assert f'<p class="note">{NOTHING_ABSENT}</p>' in page
+    assert '<ul class="absences">' not in page
+
+
+def test_a_run_that_left_something_out_does_not_say_nothing_was():
+    assert NOTHING_ABSENT not in not_assessed_section(report_of())
