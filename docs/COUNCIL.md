@@ -87,8 +87,8 @@ freely.
 
 | Kind | Reached through | What it costs |
 |---|---|---|
-| local | Ollama on this machine | nothing per call; pinnable; queues on one GPU |
-| hosted | OpenRouter or another API | money per call; parallel; not pinnable; the text leaves the machine |
+| local | Ollama on this machine | nothing per call; pinnable; shares one Ollama server with the other local members |
+| hosted | OpenRouter or another API | money per call; not pinnable; the text leaves the machine; an API could answer calls in parallel, but the runner asks each member in turn |
 
 Nothing in the design counts members, so nothing depends on n being three, or
 odd, or anything else. The edges are still real:
@@ -309,6 +309,11 @@ agree either — there are none — and `disputed_metrics()` is empty for it, so
 scoping on disagreement alone would drop exactly the findings where a council
 vector is the only severity the finding will ever carry.
 
+**Nor is a finding carrying a source the calculator could not read.** A vector
+that failed to parse is an opinion nobody checked, so the readable sources
+agreeing says nothing about it — its value may disagree with every one of them.
+No finding on the audited repository carries one, so the 5 in 18 stands.
+
 **Scoping costs something real, and that is why it is a flag rather than a
 removal.** A council that only ever reads contested findings cannot discover that
 two *agreeing* sources are both wrong — and this file says no source is the
@@ -360,11 +365,26 @@ cross-check escalation exists to protect.**
 It is not a hypothetical. A two-member run on this machine had Qwen and Gemma
 quote the same sentence about `CVE-2021-4279` and give different Attack Vector
 values — a contested metric, found because two cheap members read it. A cheap
-tier of one would have recorded that as settled.
+tier of one would have recorded that as settled. Both Qwen–Gemma runs in
+`measurements/council_runs/`, `scoped` and `full`, show it at lines 63–67 of
+each report, and the shape is common: 8 of the scoped run's 17 contested
+metrics have it, and 20 of the full run's 61.
 
-So the condition to build against is a **cheap tier of two or more members that
-can contest something between themselves**. Below that, escalation is not a
-cheaper council; it is a single assessor wearing one.
+It belongs to that roster. With `llama3.2:latest` in Gemma's place the same
+metric settled, and `measurements/README.md` shows why that is not better
+reading: the second member guessed rather than declined, and a guess cannot
+contest anything.
+
+The argument holds for the trigger this section defines, a metric that came
+out contested or unresolved, and not for escalation in general. A trigger on the
+finding instead — the metrics its published sources dispute — would reach the
+costly member even from a one-member cheap tier, because that disagreement
+exists before any member answers. It is a different policy from the one
+described here.
+
+So, for this trigger, the condition to build against is a **cheap tier of two
+or more members that can contest something between themselves**. Below that,
+escalation is not a cheaper council; it is a single assessor wearing one.
 
 ## What a hosted member costs
 
@@ -384,6 +404,25 @@ deterministic — the recorded vector re-derives the recorded number exactly. It
 is the *vector* that stops being re-derivable. Only an all-local pinned roster
 may claim a reproducible assessment, and a run records which kind it was.
 
+**Pinning is necessary and, as observed here, not sufficient.** An all-local
+pinned roster reproduced its full-run outcome to the metric — 67 settled, 61
+contested, 16 unresolved of 144 — across two runs two and a half hours and a
+renderer change apart, and two later runs agreed byte for byte on four of the
+five findings they shared. The fifth differed in the one run that shared the
+Ollama server with another council run. The server answers each model one
+request at a time, so the two runs' calls to one model queued rather than
+batched; one run's call to Qwen and the other's to Gemma could still compute at
+the same moment. So the claim carries a precondition: **reproducible when no
+other client is sending requests to the same Ollama server.** That is one divergence
+in one contended run, on one corpus and one CPU-only server, not a law.
+
+**The mechanism is untested.** Ollama's own log rules out three: requests
+batched together, a model reloaded between runs, and a model placed on a GPU.
+The candidate left is the server's reuse of a cached prompt prefix, where the
+request that came before decides what is reused, and another client's requests
+change that. `measurements/README.md` has the runs in `council_runs/` and the
+log evidence beside them.
+
 **What leaves the machine.** A hosted member is sent the prompt and the
 advisory text — public text, by the panel rule, carrying no CVE id and no
 published scores. The organisation's answers never reach any member; the
@@ -396,10 +435,13 @@ names every member that ran, its provider, and whether it was local or hosted.
 A record that does not say where the text went is not an audit record.
 
 **Money and time.** Calls scale with n × the findings the scope leaves × metrics.
-Hosted members bill per call and run in parallel; local members are free and
-queue on one GPU, so n buys latency there instead of money. The roster is fixed
-per run, before the scan, because it is a budget decision as much as a design
-one.
+The runner asks every member in turn, local or hosted, and waits for each
+answer before it makes the next call. Local members are free and share one
+Ollama server, so for them n buys latency instead of money. A hosted member
+would cost both: money per call, and its turn in the same wait, because a
+hosted API could answer calls in parallel but the runner as built does not send
+them that way. The roster is fixed per run, before the scan, because it is a
+budget decision as much as a design one.
 
 ## A roster as configuration
 
@@ -461,8 +503,9 @@ nobody can reconstruct is not a council.
 and its `egress` gate, the redaction, the prompt and the wire contract, the
 provider registry and the local Ollama client in it, the HTTP seam under that,
 the reply parser, the quotation check, the chairman, and the runner that puts
-one advisory to every reachable member metric by metric. `src/cvss` is the
-engine it hands a vector to.
+one advisory to every reachable member, one member at a time: a member answers
+all eight metrics before the next is asked. `src/cvss` is the engine it hands a
+vector to.
 
 **The scope is built too, and it is not in that package.** `src/cli/council_run.py`
 chooses which findings a run is put to, records each one it passes over with the

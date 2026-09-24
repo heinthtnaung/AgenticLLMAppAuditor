@@ -30,8 +30,8 @@ them.
 
 ## 1. The audit pipeline
 
-**Built, and it runs.** `PYTHONPATH=src python -m cli.main <repository>` walks
-this path, all of it, given an answer file and council members.
+**Built, and it runs.** `audit <repository>` walks this path, all of it, given
+an answer file and council members.
 
 ```mermaid
 flowchart TD
@@ -285,9 +285,11 @@ hosted member, and no escalation policy re-asks a contested metric.
 
 ```mermaid
 flowchart TD
-    fnd["A finding, with every source's vector"] --> scope{"Do its published<br/>sources settle it?"}
-    scope -->|"they agree, and one of them scored it"| pass["Not asked, and why<br/>recorded per finding"]
-    scope -->|"they disagree, or none scored it,<br/>or --council-all-findings"| raw
+    fnd["A finding, with every source's vector"] --> txt{"Does its advisory<br/>carry any text?"}
+    txt -->|"no, even under<br/>--council-all-findings"| pass["Not asked, and why<br/>recorded per finding"]
+    txt -->|"yes"| scope{"Do its published<br/>sources settle it?"}
+    scope -->|"every source was read,<br/>they agree, and one scored it"| pass
+    scope -->|"they disagree, none scored it,<br/>one could not be read,<br/>or --council-all-findings"| raw
     raw["Advisory text, as the database carries it"] --> red["Redaction<br/>CVE and GHSA ids and vector strings<br/>replaced by markers, not deleted"]
     red --> shown["The text a member sees<br/>no id, no published vector,<br/>no other member's answer"]
 
@@ -318,11 +320,15 @@ flowchart TD
     abs -. "no weight" .-> chr
     gue -. "no weight" .-> chr
 
-    chr --> st{"What do the verified<br/>answers support?"}
-    st -->|"one value"| vec["One agreed vector<br/>plus rationale plus confidence"]
-    st -->|"more than one value"| pol["Contested, and recorded as contested<br/>no policy re-asks it yet"]
-    st -->|"nothing verified"| fbk["Unresolved: fall back to a published<br/>vector and record which source"]
-    fbk --> vec
+    chr --> st{"What do the verified answers<br/>support, metric by metric?"}
+    st -->|"one value"| settled["Settled"]
+    st -->|"more than one value"| pol["Contested<br/>no policy re-asks it yet"]
+    st -->|"nothing verified"| unr["Unresolved<br/>the command line names no<br/>published source to fall back to"]
+    settled --> all{"All eight<br/>metrics settled?"}
+    all -->|"yes"| vec["One agreed vector<br/>plus rationale plus confidence"]
+    all -->|"no"| novec["No vector<br/>the finding keeps its per-source scores"]
+    pol --> novec
+    unr --> novec
 
     subgraph DETERM["Engine: the only place a number appears"]
         eng["Published CVSS equations<br/>deterministic, no model"]
@@ -332,19 +338,36 @@ flowchart TD
     vec --> eng
     num --> hmn["Human approves or overrides"]
 
-    rec["Record: every member and its provider,<br/>every member skipped and why, every finding<br/>not asked and why, every guess, what the<br/>chairman decided from, and the vector"]
+    rec["Record: every member and its provider,<br/>every member skipped and why, every finding<br/>not asked and why, every guess, what the<br/>chairman decided from, and the vector or<br/>the metrics that stopped one"]
     chr -.-> rec
     skip -.-> rec
     pass -.-> rec
+    novec -.-> rec
 ```
 
 **The council is scoped before it is a council.** It reconciles sources, so a
-finding whose sources already agree is not its work: a measured two-member run
-over 18 findings made 288 calls in 43 minutes and 13 of those findings were
-undisputed. A finding **no** source scored takes the other branch, because there
-is no agreement to rely on and a council vector is the only severity it will ever
-carry. `--council-all-findings` sends every finding down the right-hand branch,
-which is the only way to discover that two agreeing sources are both wrong.
+finding whose sources already agree is not its work. On the audited repository
+13 of 18 findings are undisputed, so a two-member run makes 80 calls where
+`--council-all-findings` makes 288; runs of both kinds are kept in
+`measurements/council_runs/`. A finding **no** source scored takes the other
+branch, and so does one carrying a source the calculator could not read: in
+neither case has anyone checked that the sources agree, and for the first a
+council vector is the only severity it will ever carry. `--council-all-findings`
+sends every finding with text down that branch, which is the only way to
+discover that two agreeing sources are both wrong. A finding whose advisory has
+no text is passed over even then, because there is nothing for a member to
+read.
+
+**Most findings end with no vector, and the diagram draws why.** A vector needs
+all eight metrics. A contested metric has two verified values and no winner, and
+an unresolved one could only take a value from a published source — which the
+command line refuses to choose, since choosing is the precedence
+`docs/SCORING_MODEL.md` leaves open. So one unsettled metric means no vector,
+the run is still recorded with what it could not settle, and the finding keeps
+its per-source scores side by side. In the two Qwen–Gemma runs kept, no
+finding reached a vector: 0 of 5, and 0 of 18. With `llama3.2:latest` in
+Gemma's place, 1 of 5 and 4 of 18 did, and `measurements/README.md` says why
+that is not better reading.
 
 The `Not asked` box reaches the record for the same reason the `Skipped` one
 does. A finding the council was passed over, a finding it assessed and could not
