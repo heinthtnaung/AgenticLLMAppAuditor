@@ -1,10 +1,9 @@
 """Saying a council run is alive, on the error stream and never on stdout.
 
-A two-member roster over eighteen findings is 288 model calls, and local members
-share one Ollama server, which serves requests one at a time: every call waits
-for the one before it. The recorded run took about an hour with the models on the
-CPU (`measurements/README.md`), and that much silence is indistinguishable from a
-hung run.
+A two-member roster over eighteen findings is 288 model calls, and the runner
+makes them one after another: every call waits for the one before it. The CPU
+full run took 71 min 39 s (`measurements/README.md`), and that much silence is
+indistinguishable from a hung run.
 
 **Never stdout.** `--format json` writes the audit record there and it has to
 stay pipeable and byte-identical; progress and the record share a process and
