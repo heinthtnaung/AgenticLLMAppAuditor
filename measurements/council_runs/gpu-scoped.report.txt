@@ -1,0 +1,142 @@
+Audit of fetched/vulnscout
+  syft 1.52.0  ·  trivy 0.74.0  ·  advisory database built 2026-09-22T02:00:05.774028462Z
+
+18 findings across 60 components. 5 carry sources that disagree.
+
+SOURCES DISAGREE (5)
+  CVE-2025-13465  lodash-es 4.17.21
+    2.9 apart  ·  High and Medium  ·  differ on A
+    ghsa 6.5  ·  nvd 5.3  ·  redhat 8.2
+  CVE-2021-4279   fast-json-patch 2.2.1
+    2.5 apart  ·  Critical and High  ·  differ on C, I, A
+    ghsa 7.3  ·  nvd 9.8
+  CVE-2026-13149  brace-expansion 1.1.14
+    2.2 apart  ·  High and Medium  ·  differ on A
+    ghsa 5.3  ·  redhat 7.5
+  CVE-2026-4800   lodash-es 4.17.21
+    1.7 apart  ·  Critical and High  ·  differ on AC
+    ghsa 8.1  ·  nvd 9.8  ·  redhat 8.1
+  CVE-2026-2950   lodash-es 4.17.21
+    1.2 apart  ·  Medium  ·  differ on PR, I, A
+    ghsa 6.5  ·  nvd 5.3  ·  redhat 6.5
+
+SOURCES AGREE (13)
+  CVE-2026-14257       brace-expansion 1.1.14          7.5  High      2 sources
+  CVE-2026-69152       brace-expansion 1.1.14          7.5  High      2 sources
+  CVE-2026-13676       fast-uri 3.1.0                  7.5  High      2 sources
+  CVE-2026-16221       fast-uri 3.1.0                  7.5  High      2 sources
+  CVE-2026-18446       fast-uri 3.1.0                  7.5  High      2 sources
+  CVE-2026-6321        fast-uri 3.1.0                  7.5  High      2 sources
+  CVE-2026-6322        fast-uri 3.1.0                  7.5  High      2 sources
+  CVE-2026-75975       fast-uri 3.1.0                  7.5  High      2 sources
+  CVE-2026-76172       fast-uri 3.1.0                  7.5  High      2 sources
+  CVE-2026-53550       js-yaml 3.14.2                  5.3  Medium    2 sources
+  CVE-2026-59869       js-yaml 3.14.2                  7.5  High      2 sources
+  CVE-2026-84375       js-yaml 3.14.2                  7.5  High      2 sources
+  GHSA-5p4m-2wfm-xmqj  js-yaml 3.14.2                  7.5  High      1 source
+
+ORGANISATION RISK (18)  ·  the source changes the band on 1
+  weighted Technical severity 0.3, Exposure and reachability 0.25, Business impact 0.25, Threat and exploitation 0.2
+  CVE-2021-4279        ghsa 21.9 to nvd 29.4       Medium and Low
+  CVE-2025-13465       nvd 15.9 to redhat 24.6     Low
+  CVE-2026-13149       ghsa 15.9 to redhat 22.5    Low
+  CVE-2026-13676       22.5                        Low
+  CVE-2026-14257       22.5                        Low
+  CVE-2026-16221       22.5                        Low
+  CVE-2026-18446       22.5                        Low
+  CVE-2026-59869       22.5                        Low
+  CVE-2026-6321        22.5                        Low
+  CVE-2026-6322        22.5                        Low
+  CVE-2026-69152       22.5                        Low
+  CVE-2026-75975       22.5                        Low
+  CVE-2026-76172       22.5                        Low
+  CVE-2026-84375       22.5                        Low
+  GHSA-5p4m-2wfm-xmqj  22.5                        Low
+  CVE-2026-4800        21.6                        Low
+  CVE-2026-2950        nvd 15.9 to redhat 19.5     Low
+  CVE-2026-53550       15.9                        Low
+
+COUNCIL (5)
+  CVE-2021-4279  no vector  ·  could not settle AC, PR, UI, S, C, A
+    2 metrics settled
+      2  every member that offered a quotation supported this value
+    AC  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  declined
+      llama3.2:latest (llama3.2)  guessed H with nothing quoted
+    PR  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  declined
+      llama3.2:latest (llama3.2)  guessed N with nothing quoted
+    UI  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  declined
+      llama3.2:latest (llama3.2)  guessed R with nothing quoted
+    S  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  declined
+      llama3.2:latest (llama3.2)  guessed C with nothing quoted
+    C  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  guessed N with nothing quoted
+      llama3.2:latest (llama3.2)  guessed H with nothing quoted
+    A  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  guessed N with nothing quoted
+      llama3.2:latest (llama3.2)  guessed H with nothing quoted
+  CVE-2025-13465  no vector  ·  could not settle S
+    7 metrics settled
+      7  every member that offered a quotation supported this value
+    S  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  U  ·  medium confidence  ·  quotation found in the advisory
+        “An attacker can pass crafted paths which cause Lodash to delete methods from global
+        prototypes.”
+      llama3.2:latest (llama3.2)  C  ·  high confidence  ·  quotation found in the advisory
+        “An attacker can pass crafted paths which cause Lodash to delete methods from global
+        prototypes.”
+  CVE-2026-13149  no vector  ·  could not settle I, A
+    6 metrics settled
+      6  every member that offered a quotation supported this value
+    I  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  H  ·  high confidence  ·  quotation found in the advisory
+        “An attacker who passes a crafted string to expand(), directly or transitively, can
+        cause significant CPU consumption and event-loop blocking.”
+      llama3.2:latest (llama3.2)  L  ·  low confidence  ·  quotation found in the advisory
+        “An attacker who passes a crafted string to expand(), directly or transitively, can
+        cause significant CPU consumption and event-loop blocking.”
+    A  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  H  ·  high confidence  ·  quotation found in the advisory
+        “An attacker who passes a crafted string to expand(), directly or transitively, can
+        cause significant CPU consumption and event-loop blocking.”
+      llama3.2:latest (llama3.2)  L  ·  medium confidence  ·  quotation found in the advisory
+        “The max option does not mitigate this, as it bounds the output size rather than the
+        recursion work.”
+  CVE-2026-2950  no vector  ·  could not settle AC, UI
+    6 metrics settled
+      2  every member that offered a quotation supported this value
+      4  members offering quotations disagreed, and the verified one settled it
+    AC  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  H  ·  medium confidence  ·  quotation not found in the advisory
+        “Success depends on conditions the attacker does not control: the target must be
+        prepared or measured first, a protection such as address space randomisation must be
+        defeated, a race must be won, or the attacker must already sit between two parties. The
+        attack cannot be mounted at will.”
+      llama3.2:latest (llama3.2)  H  ·  high confidence  ·  quotation not found in the advisory
+        “This allows deletion of prototype properties but does not allow overwriting their
+        original behavior.”
+    UI  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  N  ·  medium confidence  ·  quotation found in the advisory
+        “The issue permits deletion of prototype properties but does not allow overwriting their
+        original behavior.”
+      llama3.2:latest (llama3.2)  R  ·  high confidence  ·  quotation found in the advisory
+        “This issue is patched in 4.18.0.”
+  CVE-2026-4800  settled  ·  CVSS:3.1/AV:L/AC:H/PR:H/UI:R/S:C/C:H/I:H/A:H
+    8 metrics settled
+      8  every member that offered a quotation supported this value
+  13 findings not asked
+    no published source disagrees, so there is nothing to reconcile
+      CVE-2026-13676, CVE-2026-14257, CVE-2026-16221, CVE-2026-18446, CVE-2026-53550,
+      CVE-2026-59869, CVE-2026-6321, CVE-2026-6322, CVE-2026-69152, CVE-2026-75975,
+      CVE-2026-76172, CVE-2026-84375, GHSA-5p4m-2wfm-xmqj
+
+MATCHED NOTHING
+  55 components carry no advisory
+  0 advisories matched no component
+
+NOT ASSESSED
+  Approval record
+    the answer file carries no approval
