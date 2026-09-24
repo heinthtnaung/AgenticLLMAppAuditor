@@ -1,0 +1,230 @@
+Audit of fetched/vulnscout
+  syft 1.52.0  ·  trivy 0.74.0  ·  advisory database built 2026-09-22T02:00:05.774028462Z
+
+18 findings across 60 components. 5 carry sources that disagree.
+
+SOURCES DISAGREE (5)
+  CVE-2025-13465  lodash-es 4.17.21
+    2.9 apart  ·  High and Medium  ·  differ on A
+    ghsa 6.5  ·  nvd 5.3  ·  redhat 8.2
+  CVE-2021-4279   fast-json-patch 2.2.1
+    2.5 apart  ·  Critical and High  ·  differ on C, I, A
+    ghsa 7.3  ·  nvd 9.8
+  CVE-2026-13149  brace-expansion 1.1.14
+    2.2 apart  ·  High and Medium  ·  differ on A
+    ghsa 5.3  ·  redhat 7.5
+  CVE-2026-4800   lodash-es 4.17.21
+    1.7 apart  ·  Critical and High  ·  differ on AC
+    ghsa 8.1  ·  nvd 9.8  ·  redhat 8.1
+  CVE-2026-2950   lodash-es 4.17.21
+    1.2 apart  ·  Medium  ·  differ on PR, I, A
+    ghsa 6.5  ·  nvd 5.3  ·  redhat 6.5
+
+SOURCES AGREE (13)
+  CVE-2026-14257       brace-expansion 1.1.14          7.5  High      2 sources
+  CVE-2026-69152       brace-expansion 1.1.14          7.5  High      2 sources
+  CVE-2026-13676       fast-uri 3.1.0                  7.5  High      2 sources
+  CVE-2026-16221       fast-uri 3.1.0                  7.5  High      2 sources
+  CVE-2026-18446       fast-uri 3.1.0                  7.5  High      2 sources
+  CVE-2026-6321        fast-uri 3.1.0                  7.5  High      2 sources
+  CVE-2026-6322        fast-uri 3.1.0                  7.5  High      2 sources
+  CVE-2026-75975       fast-uri 3.1.0                  7.5  High      2 sources
+  CVE-2026-76172       fast-uri 3.1.0                  7.5  High      2 sources
+  CVE-2026-53550       js-yaml 3.14.2                  5.3  Medium    2 sources
+  CVE-2026-59869       js-yaml 3.14.2                  7.5  High      2 sources
+  CVE-2026-84375       js-yaml 3.14.2                  7.5  High      2 sources
+  GHSA-5p4m-2wfm-xmqj  js-yaml 3.14.2                  7.5  High      1 source
+
+ORGANISATION RISK (18)  ·  the source changes the band on 2
+  weighted Technical severity 0.3, Exposure and reachability 0.25, Business impact 0.25, Threat and exploitation 0.2
+  CVE-2021-4279        ghsa 21.9 to nvd 29.4       Medium and Low
+  CVE-2026-4800        ghsa 24.3 to nvd 29.4       Medium and Low
+  CVE-2025-13465       nvd 15.9 to redhat 24.6     Low
+  CVE-2026-13149       ghsa 15.9 to redhat 22.5    Low
+  CVE-2026-13676       22.5                        Low
+  CVE-2026-14257       22.5                        Low
+  CVE-2026-16221       22.5                        Low
+  CVE-2026-18446       22.5                        Low
+  CVE-2026-59869       22.5                        Low
+  CVE-2026-6321        22.5                        Low
+  CVE-2026-6322        22.5                        Low
+  CVE-2026-69152       22.5                        Low
+  CVE-2026-75975       22.5                        Low
+  CVE-2026-76172       22.5                        Low
+  CVE-2026-84375       22.5                        Low
+  GHSA-5p4m-2wfm-xmqj  22.5                        Low
+  CVE-2026-2950        nvd 15.9 to redhat 19.5     Low
+  CVE-2026-53550       15.9                        Low
+
+COUNCIL (5)
+  CVE-2021-4279  no vector  ·  could not settle AC, C, A, AV
+    4 metrics settled
+      4  every member that offered a quotation supported this value
+    AV  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  A  ·  medium confidence  ·  quotation found in the advisory
+        'The attack can be initiated remotely.'
+      gemma4:latest (gemma4)  N  ·  medium confidence  ·  quotation found in the advisory
+        'The attack can be initiated remotely.'
+    AC  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  declined
+      gemma4:latest (gemma4)  declined
+    C  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  guessed N with nothing quoted
+      gemma4:latest (gemma4)  declined
+    A  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  guessed N with nothing quoted
+      gemma4:latest (gemma4)  declined
+  CVE-2025-13465  no vector  ·  could not settle PR, C, I
+    5 metrics settled
+      5  every member that offered a quotation supported this value
+    PR  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  L  ·  medium confidence  ·  quotation found in the advisory
+        'An attacker can pass crafted paths which cause Lodash to delete methods from global
+        prototypes.'
+      gemma4:latest (gemma4)  N  ·  high confidence  ·  quotation found in the advisory
+        'An attacker can pass crafted paths which cause Lodash to delete methods from global
+        prototypes.'
+    C  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  L  ·  medium confidence  ·  quotation found in the advisory
+        'An attacker can pass crafted paths which cause Lodash to delete methods from global
+        prototypes.'
+      gemma4:latest (gemma4)  H  ·  high confidence  ·  quotation found in the advisory
+        'An attacker can pass crafted paths which cause Lodash to delete methods from global
+        prototypes.'
+    I  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  L  ·  medium confidence  ·  quotation found in the advisory
+        'An attacker can pass crafted paths which cause Lodash to delete methods from global
+        prototypes.'
+      gemma4:latest (gemma4)  H  ·  high confidence  ·  quotation found in the advisory
+        'An attacker can pass crafted paths which cause Lodash to delete methods from global
+        prototypes.'
+  CVE-2026-13149  no vector  ·  could not settle AV, AC, PR, UI, S, I
+    2 metrics settled
+      2  every member that offered a quotation supported this value
+    AV  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  declined
+      gemma4:latest (gemma4)  declined
+    AC  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  H  ·  high confidence  ·  quotation found in the advisory
+        'An attacker who passes a crafted string to expand(), directly or transitively, can
+        cause significant CPU consumption and event-loop blocking.'
+      gemma4:latest (gemma4)  L  ·  high confidence  ·  quotation found in the advisory
+        'An attacker who passes a crafted string to expand(), directly or transitively, can
+        cause significant CPU consumption and event-loop blocking.'
+    PR  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  L  ·  medium confidence  ·  quotation found in the advisory
+        'An attacker who passes a crafted string to expand(), directly or transitively, can
+        cause significant CPU consumption and event-loop blocking.'
+      gemma4:latest (gemma4)  N  ·  high confidence  ·  quotation found in the advisory
+        'An attacker who passes a crafted string to expand(), directly or transitively, can
+        cause significant CPU consumption and event-loop blocking.'
+    UI  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  R  ·  medium confidence  ·  quotation found in the advisory
+        'An attacker who passes a crafted string to expand(), directly or transitively, can
+        cause significant CPU consumption and event-loop blocking.'
+      gemma4:latest (gemma4)  N  ·  high confidence  ·  quotation found in the advisory
+        'An attacker who passes a crafted string to expand(), directly or transitively, can
+        cause significant CPU consumption and event-loop blocking.'
+    S  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  C  ·  high confidence  ·  quotation found in the advisory
+        'An attacker who passes a crafted string to expand(), directly or transitively, can
+        cause significant CPU consumption and event-loop blocking.'
+      gemma4:latest (gemma4)  U  ·  high confidence  ·  quotation found in the advisory
+        "The expand() function exhibits exponential-time complexity in the number of consecutive
+        non-expanding '{}' brace groups."
+    I  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  H  ·  high confidence  ·  quotation found in the advisory
+        'An attacker who passes a crafted string to expand(), directly or transitively, can
+        cause significant CPU consumption and event-loop blocking.'
+      gemma4:latest (gemma4)  N  ·  high confidence  ·  quotation found in the advisory
+        "brace-expansion through 5.0.6 is vulnerable to denial of service. The expand() function
+        exhibits exponential-time complexity in the number of consecutive non-expanding '{}'
+        brace groups. An attacker who passes a crafted string to expand(), directly or
+        transitively, can cause significant CPU consumption and event-loop blocking. The max
+        option does not mitigate this, as it bounds the output size rather than the recursion
+        work."
+  CVE-2026-2950  no vector  ·  could not settle AV, PR, S, C, A
+    3 metrics settled
+      2  every member that offered a quotation supported this value
+      1  members offering quotations disagreed, and the verified one settled it
+    AV  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  L  ·  medium confidence  ·  quotation not found in the advisory
+        'The attacker works through read, write or execute capabilities on the machine, at a
+        console or over a remote shell, or relies on another person to run something on their
+        behalf.'
+      gemma4:latest (gemma4)  declined
+    PR  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  L  ·  medium confidence  ·  quotation found in the advisory
+        'This allows deletion of properties from built-in prototypes such as Object.prototype,
+        Number.prototype, and String.prototype.'
+      gemma4:latest (gemma4)  N  ·  high confidence  ·  quotation found in the advisory
+        'Lodash versions 4.17.23 and earlier are vulnerable to prototype pollution in the
+        _.unset and _.omit functions.'
+    S  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  C  ·  high confidence  ·  quotation found in the advisory
+        'This allows deletion of properties from built-in prototypes such as Object.prototype,
+        Number.prototype, and String.prototype.'
+      gemma4:latest (gemma4)  U  ·  high confidence  ·  quotation found in the advisory
+        'Lodash versions 4.17.23 and earlier are vulnerable to prototype pollution in the
+        _.unset and _.omit functions.'
+    C  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  L  ·  medium confidence  ·  quotation found in the advisory
+        'This allows deletion of properties from built-in prototypes such as Object.prototype,
+        Number.prototype, and String.prototype.'
+      gemma4:latest (gemma4)  N  ·  high confidence  ·  quotation found in the advisory
+        'The issue permits deletion of prototype properties but does not allow overwriting their
+        original behavior.'
+    A  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  L  ·  medium confidence  ·  quotation found in the advisory
+        'This allows deletion of properties from built-in prototypes such as Object.prototype,
+        Number.prototype, and String.prototype.'
+      gemma4:latest (gemma4)  N  ·  high confidence  ·  quotation found in the advisory
+        'The issue permits deletion of prototype properties but does not allow overwriting their
+        original behavior.'
+  CVE-2026-4800  no vector  ·  could not settle AC, PR, UI, A
+    4 metrics settled
+      4  every member that offered a quotation supported this value
+    AC  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  H  ·  high confidence  ·  quotation found in the advisory
+        'When an application passes untrusted input as options.imports key names, an attacker
+        can inject default-parameter expressions that execute arbitrary code at template
+        compilation time.'
+      gemma4:latest (gemma4)  L  ·  high confidence  ·  quotation found in the advisory
+        'When an application passes untrusted input as options.imports key names, an attacker
+        can inject default-parameter expressions that execute arbitrary code at template
+        compilation time.'
+    PR  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  H  ·  high confidence  ·  quotation found in the advisory
+        'Both paths flow into the same Function() constructor sink.'
+      gemma4:latest (gemma4)  N  ·  high confidence  ·  quotation found in the advisory
+        'When an application passes untrusted input as options.imports key names, an attacker
+        can inject default-parameter expressions that execute arbitrary code at template
+        compilation time.'
+    UI  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  R  ·  medium confidence  ·  quotation found in the advisory
+        'Do not pass untrusted input as key names in options.imports. Only use developer-
+        controlled, static key names.'
+      gemma4:latest (gemma4)  N  ·  high confidence  ·  quotation found in the advisory
+        'When an application passes untrusted input as options.imports key names, an attacker
+        can inject default-parameter expressions that execute arbitrary code at template
+        compilation time.'
+    A  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  H  ·  high confidence  ·  quotation found in the advisory
+        'Both paths flow into the same Function() constructor sink.'
+      gemma4:latest (gemma4)  N  ·  high confidence  ·  quotation found in the advisory
+        'When an application passes untrusted input as options.imports key names, an attacker
+        can inject default-parameter expressions that execute arbitrary code at template
+        compilation time.'
+  13 findings not asked
+    no published source disagrees, so there is nothing to reconcile
+      CVE-2026-13676, CVE-2026-14257, CVE-2026-16221, CVE-2026-18446, CVE-2026-53550,
+      CVE-2026-59869, CVE-2026-6321, CVE-2026-6322, CVE-2026-69152, CVE-2026-75975,
+      CVE-2026-76172, CVE-2026-84375, GHSA-5p4m-2wfm-xmqj
+
+MATCHED NOTHING
+  55 components carry no advisory
+  0 advisories matched no component
+
+NOT ASSESSED
+  Approval record
+    the answer file carries no approval
