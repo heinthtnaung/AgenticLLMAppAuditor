@@ -113,6 +113,10 @@ def run_command_line(argv, monkeypatch, tmp_path, **scan) -> tuple[int, str, str
     scanners_answering(monkeypatch, **scan)
     monkeypatch.setattr(entry, "refuse_unrunnable", lambda repository: BUILT_AT)
     out, error = io.StringIO(), io.StringIO()
-    repository = str(tmp_path / REPOSITORY_NAME)
-    code = entry.main([repository, *argv], out=out, error=error, reports=tmp_path / REPORTS_FOLDER)
+    # Made, because the run walks it for manifests even with both scanners answered.
+    repository = tmp_path / REPOSITORY_NAME
+    repository.mkdir(exist_ok=True)
+    code = entry.main(
+        [str(repository), *argv], out=out, error=error, reports=tmp_path / REPORTS_FOLDER
+    )
     return code, out.getvalue(), error.getvalue()

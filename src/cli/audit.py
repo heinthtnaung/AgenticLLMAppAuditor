@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 from typing import TextIO
 
-from deps import syft_runner, trivy_runner
+from deps import manifests, syft_runner, trivy_runner
 from findings.finding import build_findings
 from report.provenance import AdvisoryDatabase, RunProvenance
 from report.record import Coverage, Report, build_report
@@ -28,6 +28,8 @@ def run_audit(
     options: Options, database_built_at: str, progress_to: TextIO = sys.stderr
 ) -> Report:
     """Scan one repository against the pinned database and gather everything into a record."""
+    # Walked first: a directory nobody can list stops the run before the scan.
+    unread = manifests.unread_manifests(options.repository)
     catalogue = syft_runner.scan_directory(options.repository)
     advisories = trivy_runner.scan_directory(options.repository)
     findings = build_findings(catalogue.components, advisories)
@@ -45,6 +47,7 @@ def run_audit(
         coverage=Coverage(
             answers_given=options.answers is not None,
             council_named=bool(options.council_models),
+            unread_manifests=unread,
         ),
     )
 

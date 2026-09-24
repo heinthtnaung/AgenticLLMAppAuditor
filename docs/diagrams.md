@@ -44,7 +44,8 @@ flowchart TD
         pre["Preflight<br/>no repository, no scanner, no database date<br/>= could not run, never found nothing"]
         repo --> pre
         pre --> rdir["reports/ made, or checked<br/>a folder the files cannot go into<br/>= could not run, before any scan"]
-        rdir --> syft["Syft scans the directory<br/>lockfiles and manifests, one pass"]
+        rdir --> walk["Manifest walk<br/>each package.json, composer.json or Gemfile<br/>with no lock file Syft reads beside it<br/>a directory it cannot list = could not run"]
+        walk --> syft["Syft scans the directory<br/>lockfiles and manifests, one pass"]
         syft --> comp[("Components<br/>name, version, purl, where found")]
         trivy["Trivy reads the database<br/>advisories per purl, and a published<br/>vector for each source that wrote one"]
         comp --> join["Join on the versioned purl"]
@@ -55,6 +56,7 @@ flowchart TD
 
     adb --> pre
     adb --> trivy
+    walk -->|"the manifests read from nothing,<br/>named first under not assessed"| rec
 
     fin --> cou["Council, only if members were named,<br/>and only for the findings their sources<br/>do not settle — diagram 4"]
     fin --> ctx["Organisation context<br/>scored once per source<br/>diagram 3"]
@@ -87,8 +89,21 @@ before anything is scanned, and a run that cannot read one does not start. Every
 refusal there is "could not run", which a pipeline must be able to tell from
 "found nothing" — conflating the two is how a broken scan goes green.
 
+The manifest walk exists for the same reason. Syft reads a `package.json`,
+`composer.json` or `Gemfile` through the lock file beside it and through nothing
+else, so one with no lock file yields no package, and `0 findings` over it reads
+like a clean repository. The walk names each one, and the record lists it first
+under not assessed with a line in the summary saying the counts leave it out;
+a directory it cannot list is "could not run" rather than passed over.
+
+Unlike those refusals, an unread manifest does not move the exit code: the run
+still exits by what it found, so a pipeline reading only the code goes green,
+and has to read `not_assessed` in the JSON to see it. What counts as read was
+measured against Syft 1.52, and `README.md` names the four ways the walk falls
+short.
+
 Syft is one box because it is one call: it finds the manifests and catalogues
-them in the same pass, so there is no separate discovery component. The
+them in the same pass; the walk before it feeds it nothing. The
 calculator sits inside the scan because that is where it runs — every source's
 vector is parsed and scored as the finding is assembled, not in a pass over the
 findings afterwards.
@@ -475,6 +490,7 @@ flowchart LR
         b1["src/deps/syft_runner, syft_report<br/>run Syft, and read what it wrote"]
         b2["src/deps/trivy_runner, trivy_report<br/>run Trivy, and read what it wrote"]
         b3["src/deps/trivy_database<br/>the database's own build date"]
+        b11["src/deps/manifests<br/>the manifests no lock file<br/>Syft reads is beside"]
         b4["src/cvss<br/>vector parser, metric vocabulary,<br/>Base score equations"]
         b5["src/findings<br/>the join, every source's score apart"]
         b7["src/council<br/>roster and the egress gate, redaction,<br/>prompt, provider registry, chairman"]
@@ -493,6 +509,7 @@ flowchart LR
         b2 --> b8
         b2 --> b9
         b3 --> b9
+        b11 --> b9
         b4 --> b5
         b4 --> b7
         b4 --> b8

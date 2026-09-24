@@ -20,6 +20,7 @@ from report.disagreement import sources_disagree
 from organisation.approval import Approval
 from report.provenance import AdvisoryDatabase
 from report.record import NOTHING_ABSENT, Report
+from report.summary_words import unread_pointer
 from report.text_council import council_block
 from report.text_findings import (
     agreeing_block,
@@ -75,10 +76,11 @@ def summary(report: Report) -> str:
     """Say how much there is, and how many findings' readable sources disagree."""
     # A vector the calculator refused is not counted as a dissent, whatever it says.
     contested = len([one for one in report.findings if sources_disagree(one)])
-    return (
+    counts = (
         f"{len(report.findings)} findings across {report.component_count} components. "
         f"{contested} carry sources that disagree."
     )
+    return "\n".join(line for line in (counts, unread_pointer(report)) if line)
 
 
 def unmatched_block(report: Report) -> str:
