@@ -105,7 +105,8 @@ def refused(finding) -> str:
 
 
 def sources_line(finding) -> str:
-    """Put every source's score side by side, in name order, which is not a ranking."""
-    return SOURCE_SEPARATOR.join(
-        f"{score.source} {score.base_score:.1f}" for score in finding.scores
-    )
+    """Put every source side by side, scores in name order, which is no ranking, then refusals."""
+    said = [f"{score.source} {score.base_score:.1f}" for score in finding.scores]
+    if finding.unreadable:
+        said.append(f"refused {refused(finding)}")
+    return SOURCE_SEPARATOR.join(said)
