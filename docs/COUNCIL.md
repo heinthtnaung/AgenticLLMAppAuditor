@@ -390,9 +390,12 @@ each report, and the shape is common: 8 of the scoped run's 17 contested
 metrics have it, and 20 of the full run's 61.
 
 It belongs to that roster. With `llama3.2:latest` in Gemma's place the same
-metric settled, and `measurements/README.md` shows why that is not better
-reading: the second member guessed rather than declined, and a guess cannot
-contest anything.
+metric settled, and the recorded report cannot say why: it names no member on
+a settled metric and predates the `SOLE` basis, so Llama quoting the same
+value, guessing and declining all read alike there. Where the report does
+show Llama's answer, on the 39 metrics the full run could not settle, it
+guessed 16 times and declined none, and a guess cannot contest anything.
+`measurements/README.md` has the counts.
 
 The argument holds for the trigger this section defines, a metric that came
 out contested or unresolved, and not for escalation in general. A trigger on the
@@ -432,8 +435,8 @@ Ollama server with another council run. The server answers each model one
 request at a time, so the two runs' calls to one model queued rather than
 batched; one run's call to Qwen and the other's to Gemma could still compute at
 the same moment. So the claim carries a precondition: **reproducible when no
-other client is sending requests to the same Ollama server.** That is one divergence
-in one contended run, on one corpus and one CPU-only server, not a law.
+other client is sending requests to the same Ollama server.** That is one
+divergence in one contended run, on one corpus and one CPU-only server, not a law.
 
 **The mechanism is untested.** Ollama's own log rules out three: requests
 batched together, a model reloaded between runs, and a model placed on a GPU.
