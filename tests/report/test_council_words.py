@@ -1,31 +1,29 @@
 """Guards on the sentences both council renderings say, and on the two saying them.
 
-The defect these exist for is drift: the terminal said `quoted` where the page
-said `quotation found in the advisory`, and the two were describing one field of
-one record. So the wording is held here, and the last test renders a record both
-ways and asks that the same facts come out worded the same.
+The defect these exist for is drift: two renderings of one record wording the
+same field differently. So the wording is held here, and the last test renders a
+record both ways and asks that the same facts come out worded the same.
 
 **The function tests build a ruling by hand and the record test does not.**
 `chairman_said` is given whatever the projection can hold and the input need not
 be a record any chairman emits; a test that renders a *report* is a claim about
 what a run produces, so that one goes through `council_runs` and the real
-chairman. This file shipped the difference the wrong way round: a `basis` on an
-unresolved ruling, which `src/council/ruling.py` puts on a settled one and
-nowhere else.
+chairman, which puts a `basis` on a settled ruling and nowhere else.
 """
 
-from cli.council_run import FALLBACKS
+import html
+
 from council_runs import (
     ALONE,
+    AWKWARD_ADVISORY,
+    AWKWARD_QUOTE,
     DISSENTING,
     EVIDENCE,
-    INVENTED,
     LONG_QUOTE,
+    OPEN_TWO_WAYS,
     answering,
     council_ran,
-    outcome_from,
-    published,
-    rulings_with_fallbacks,
+    fell_back,
 )
 from report.council_record import (
     MemberIdentity,
@@ -40,6 +38,7 @@ from report.council_words import (
     VERIFIED,
     chairman_said,
     checked,
+    could_not_settle,
     counted,
     unanswered,
     who,
@@ -56,11 +55,11 @@ GEMMA = MemberIdentity("gemma4", "ollama", "gemma4:latest", "gemma4", True, "v3"
 QUOTATION = "a remote attacker can inject a crafted template fragment"
 BASIS = "members offering quotations disagreed, and the verified one settled it"
 
-# One member quotes text the advisory does not carry and the other quotes nothing
-# at all, so no evidence settles the metric and the published fallback fills it.
-NOTHING_VERIFIED = {
-    "qwen2.5:7b": {"AV": answering("N", INVENTED)},
-    "gemma4:latest": {"AV": answering("A", "")},
+# Both members quote the awkward sentence verbatim and reach different values,
+# so AV is contested and both renderings show the quotation in full.
+QUOTING_AWKWARDLY = {
+    "qwen2.5:7b": {"AV": answering("N", AWKWARD_QUOTE)},
+    "gemma4:latest": {"AV": answering("A", AWKWARD_QUOTE)},
 }
 
 
@@ -109,19 +108,26 @@ def test_one_of_a_thing_is_counted_in_the_singular():
     assert counted(0, "member") == "0 members"
 
 
+def test_what_a_council_could_not_settle_is_named_in_specification_order():
+    # Unresolved and contested are recorded apart, and a reader looking for AC
+    # finds it where the specification puts it, not after every unresolved one.
+    assert could_not_settle(council_ran(**OPEN_TWO_WAYS)) == "could not settle AC, S"
+
+
 def a_run_of_every_shape():
     """Give a report whose council records every sentence the two renderings share.
 
-    Three real runs rather than one, because no single advisory produces them
+    Four real runs rather than one, because no single advisory produces them
     all: a contested metric needs two members quoting and disagreeing, a
-    published fallback needs nobody's quotation to verify, and single-assessor
-    needs a roster of one.
+    published fallback needs nobody's quotation to verify, single-assessor
+    needs a roster of one, and a quotation an escaping renderer would change
+    needs an advisory that contains it.
     """
-    fell_back = rulings_with_fallbacks({**FALLBACKS, "AV": published("N")}, **NOTHING_VERIFIED)
     outcomes = (
         council_ran(**DISSENTING),
-        outcome_from(fell_back, advisory_id="CVE-FALLBACK"),
+        fell_back(),
         council_ran(advisory_id="CVE-ALONE", models=ALONE),
+        council_ran(advisory_id="CVE-AWKWARD", details=AWKWARD_ADVISORY, **QUOTING_AWKWARDLY),
     )
     raised = tuple(finding(DJANGO, advisory_id=one.advisory_id) for one in outcomes)
     return build_report(PROVENANCE, catalogue(DJANGO), raised, {}, outcomes)
@@ -134,7 +140,10 @@ def test_both_renderings_word_one_record_the_same_way():
     said = [
         SINGLE_ASSESSOR, VERIFIED, UNVERIFIED, EVIDENCE, LONG_QUOTE, "2 members",
         "guessed A with nothing quoted", "qwen2.5:7b (qwen2.5)", "fell back to ghsa",
+        AWKWARD_QUOTE, "7 metrics settled", "could not settle AV", "high confidence",
     ]
-    page, terminal = council_section(report), " ".join(council_block(report).split())
+    # Unescaped, because the page is compared on the text a reader sees.
+    page = html.unescape(council_section(report))
+    terminal = " ".join(council_block(report).split())
     assert [one for one in said if one not in page] == []
     assert [one for one in said if one not in terminal] == []

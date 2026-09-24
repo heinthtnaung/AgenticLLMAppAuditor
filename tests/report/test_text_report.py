@@ -3,8 +3,8 @@
 import pytest
 
 from report.provenance import RunProvenance, UnknownAdvisoryDatabase
-from report.council_record import CouncilAssessment, CouncilNotAsked, CouncilWithoutVector
-from report.record import build_report
+from council_runs import OPEN_TWO_WAYS, council_ran, council_states, passed_over_entirely
+from report.record import NO_COUNCIL_RUN, NOTHING_WAS_PUT_TO_IT, build_report
 from report.text_report import as_text
 from report_samples import (
     LOW_CONFIDENTIALITY,
@@ -91,8 +91,7 @@ def test_a_run_with_no_council_shows_no_council_section_and_names_the_absence():
 
 
 def test_a_council_that_settled_a_vector_says_so_with_the_vector():
-    settled = CouncilAssessment("CVE-2019-14234", TOTAL_LOSS, single_assessor=False)
-    text = rendered((finding(DJANGO),), council=(settled,))
+    text = rendered((finding(DJANGO),), council=(council_ran(),))
     assert f"CVE-2019-14234  settled  ·  {TOTAL_LOSS}" in text
     assert "no council assessed this run" not in text
 
@@ -100,17 +99,16 @@ def test_a_council_that_settled_a_vector_says_so_with_the_vector():
 def test_a_council_that_ran_and_settled_nothing_is_not_read_as_no_council():
     # The bug this pins: the record said no council had run, which is a false
     # statement in an audit record and the likely outcome of any real run.
-    open_still = CouncilWithoutVector("CVE-2019-14234", False, ("S",), ("AC",))
-    text = rendered((finding(DJANGO),), council=(open_still,))
+    text = rendered((finding(DJANGO),), council=(council_ran(**OPEN_TWO_WAYS),))
     assert "COUNCIL (1)" in text
-    assert "no vector  ·  could not settle S, AC" in text
+    assert "no vector  ·  could not settle AC, S" in text
     assert "no council assessed this run" not in text
 
 
 def test_the_three_council_states_read_differently():
     none_ran = rendered((finding(DJANGO),))
-    settled = rendered((finding(DJANGO),), council=(CouncilAssessment("CVE-1", TOTAL_LOSS, False),))
-    ran_open = rendered((finding(DJANGO),), council=(CouncilWithoutVector("CVE-1", False, ("S",)),))
+    settled = rendered((finding(DJANGO),), council=(council_ran(),))
+    ran_open = rendered((finding(DJANGO),), council=(council_ran(**OPEN_TWO_WAYS),))
     assert none_ran != settled != ran_open != none_ran
 
 
@@ -130,21 +128,18 @@ def test_a_run_whose_overrides_all_matched_says_nothing_about_them():
     assert "matched no finding" not in text
 
 
-# Every state the council record can be in. A new one that reaches a rendering
-# as an `AttributeError` is the defect this closes: the type says a fact exists
-# and the code that must read it does not know. Adding a fifth breaks this list
-# before it breaks a run.
-COUNCIL_STATES = (
-    CouncilAssessment("CVE-SETTLED", TOTAL_LOSS, single_assessor=False),
-    CouncilWithoutVector("CVE-OPEN", False, ("AV",), ()),
-    CouncilNotAsked("CVE-PASSED", "no published source disagrees"),
-)
-
-
 def test_every_state_the_council_record_can_be_in_renders():
-    raised = tuple(finding(DJANGO, advisory_id=one.advisory_id) for one in COUNCIL_STATES)
-    page = rendered(findings=raised, council=COUNCIL_STATES)
-    assert [one.advisory_id for one in COUNCIL_STATES if one.advisory_id not in page] == []
+    states = council_states()
+    raised = tuple(finding(DJANGO, advisory_id=one.advisory_id) for one in states)
+    page = rendered(findings=raised, council=states)
+    assert [one.advisory_id for one in states if one.advisory_id not in page] == []
+
+
+def test_a_council_put_to_no_finding_says_so_and_not_that_none_ran():
+    raised = (finding(DJANGO, advisory_id="CVE-PASSED"),)
+    page = rendered(findings=raised, council=passed_over_entirely())
+    assert NOTHING_WAS_PUT_TO_IT in page
+    assert NO_COUNCIL_RUN not in page
 
 
 def test_a_run_with_no_council_at_all_renders_and_names_the_absence():

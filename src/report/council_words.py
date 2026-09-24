@@ -1,8 +1,8 @@
 """The sentences both council renderings say, in one place so the two cannot drift.
 
-The terminal and the web page describe one record, and two renderings that word
-the same fact differently is a defect this project has found more than once. The
-wording lives here; the spacing, the indenting and the markup stay with each
+The terminal and the web page describe one record, and a fact worded two ways
+reads as two facts to anyone holding both. The wording lives here; the
+spacing, the indenting and the markup stay with each
 rendering, because those are the part that genuinely differs between a browser
 and a terminal.
 
@@ -15,8 +15,17 @@ Nothing here is formatted. Each function gives a phrase or a list of phrases, an
 the caller joins them with whatever its medium separates things by.
 """
 
-from report.council_record import MemberIdentity, MemberSaid, MetricRuling, SaidKind
+from cvss.metrics import METRIC_ORDER
+from report.council_record import (
+    CouncilWithoutVector,
+    MemberIdentity,
+    MemberSaid,
+    MetricRuling,
+    SaidKind,
+)
 
+SETTLED = "settled"
+NO_VECTOR = "no vector"
 SINGLE_ASSESSOR = "single assessor, nothing cross-checked"
 NOT_ASKED = "not asked"
 VERIFIED = "quotation found in the advisory"
@@ -49,7 +58,7 @@ def chairman_said(ruling: MetricRuling) -> list[str]:
     said = [
         f"chairman: {ruling.value}" if ruling.value else "",
         ruling.basis,
-        f"{ruling.confidence} confidence" if ruling.confidence else "",
+        confident(ruling.confidence) if ruling.confidence else "",
         f"fell back to {ruling.fallback_source}" if ruling.fallback_source else "",
     ]
     return [one for one in said if one]
@@ -58,3 +67,19 @@ def chairman_said(ruling: MetricRuling) -> list[str]:
 def counted(count: int, noun: str) -> str:
     """Give a count with its noun, singular when there is one of them."""
     return f"{count} {noun}" if count == 1 else f"{count} {noun}s"
+
+
+def confident(level: str) -> str:
+    """Say how confident a member or the chairman was."""
+    return f"{level} confidence"
+
+
+def metrics_settled(count: int) -> str:
+    """Count the metrics the chairman settled."""
+    return f"{counted(count, 'metric')} {SETTLED}"
+
+
+def could_not_settle(outcome: CouncilWithoutVector) -> str:
+    """Name the metrics a council left open, in specification order however each stayed open."""
+    still_open = {*outcome.unresolved_metrics, *outcome.contested_metrics}
+    return "could not settle " + ", ".join(one for one in METRIC_ORDER if one in still_open)

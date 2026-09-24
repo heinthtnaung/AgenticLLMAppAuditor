@@ -5,7 +5,7 @@ because a projection has to hold three council rulings in one shape. The
 council's own types do not: `src/council/ruling.py` puts `basis` on
 `SettledMetric` **and nowhere else**, so a contested ruling carrying a basis is a
 record no chairman can emit -- and a test that pins one reports coverage of a
-path that never runs. This project has shipped that defect twice.
+path that never runs.
 
 So these build the record the one way that cannot lie about its shape: a roster,
 the real runner, the real chairman, and the real conversion in
@@ -19,25 +19,30 @@ path and imports by basename.
 import json
 
 from cli.council_detail import rulings_of
-from cli.council_run import assess_one, build_roster
+from cli.council_run import FALLBACKS, assess_one, build_roster, passed_over
 from council.prompt import build_prompt
 from council.ruling import Basis, PublishedFallback
 from council.runner import assess
 from cvss.metrics import METRIC_ORDER
-from report.council_record import CouncilWithoutVector, Outcome
-from report_samples import component, finding
+from report.council_record import CouncilNotAsked, CouncilOutcome, CouncilWithoutVector, Outcome
+from report_samples import TOTAL_LOSS, component, finding
 
 ADVISORY = (
     "A remote attacker can inject commands through a template option. "
     "Exploiting it requires a specially crafted payload."
 )
 QUOTED = "A remote attacker can inject commands"
-# Longer than the sixty characters a terminal used to cut a quotation at, and
-# verbatim, so a test that it survives whole is testing a quotation that verifies.
+# The advisory's whole first sentence, verbatim, so it verifies, and a rendering
+# that shortened it would no longer contain it.
 LONG_QUOTE = "A remote attacker can inject commands through a template option."
 OTHER_QUOTE = "requires a specially crafted payload"
 # A sentence the advisory does not contain, so the quotation check refuses it.
 INVENTED = "the maintainers have not replied to the report"
+# A backslash, an apostrophe and straight double quotes, each of which an
+# escaping renderer turns into text the advisory never contained. Verbatim in
+# `AWKWARD_ADVISORY`, so a member quoting it offers a quotation that verifies.
+AWKWARD_QUOTE = r"""the pattern /^\s*"(.*)"\s*$/ backtracks on "don't fix" paths like C:\temp"""
+AWKWARD_ADVISORY = f"{ADVISORY} Here {AWKWARD_QUOTE}."
 
 AGREED = Basis.AGREED.value
 EVIDENCE = Basis.EVIDENCE.value
@@ -62,11 +67,42 @@ DISSENTING = {
         "AC": {"value": "H", "evidence": INVENTED, "confidence": "high"},
     },
 }
+# On AC both members quote the advisory and read it apart, so it is contested; on
+# S both find nothing to quote, so it is unresolved. One record, both open states.
+OPEN_TWO_WAYS = {
+    "qwen2.5:7b": {
+        "AC": {"value": "H", "evidence": LONG_QUOTE, "confidence": "high"},
+        "S": {"value": "NO_EVIDENCE", "evidence": ""},
+    },
+    "gemma4:latest": {
+        "AC": {"value": "L", "evidence": OTHER_QUOTE, "confidence": "high"},
+        "S": {"value": "NO_EVIDENCE", "evidence": ""},
+    },
+}
+# On AV one member quotes text the advisory does not carry and the other quotes
+# nothing at all, so no evidence settles it and only an offered fallback fills it.
+NOTHING_VERIFIED = {
+    "qwen2.5:7b": {"AV": {"value": "N", "evidence": INVENTED, "confidence": "high"}},
+    "gemma4:latest": {"AV": {"value": "A", "evidence": "", "confidence": "high"}},
+}
+# On UI one member finds nothing to quote and the other answers quoting nothing,
+# so one open metric carries a decline beside a guess.
+DECLINED_AND_GUESSED = {
+    "qwen2.5:7b": {"UI": {"value": "NO_EVIDENCE", "evidence": ""}},
+    "gemma4:latest": {"UI": {"value": "R", "evidence": "", "confidence": "high"}},
+}
+# On AV one member declines and the other replies with a value AV does not have,
+# so its call is recorded as failed, with the reason its reply was refused.
+UNPARSEABLE = {
+    "qwen2.5:7b": {"AV": {"value": "NO_EVIDENCE", "evidence": ""}},
+    "gemma4:latest": {"AV": {"value": "NONSENSE", "evidence": QUOTED, "confidence": "high"}},
+}
 
 
 def replying(**by_member):
     """Give a provider registry whose members answer from a table, quoting the advisory."""
     def said(member, prompt):
+        """Answer one prompt from the table, or with a legal value and a real quotation."""
         table = by_member.get(member.name, {})
         if prompt.metric in table:
             return json.dumps(table[prompt.metric])
@@ -77,9 +113,11 @@ def replying(**by_member):
     return {"ollama": said}
 
 
-def council_ran(advisory_id: str = "CVE-2019-14234", models=BOTH, **by_member):
+def council_ran(
+    advisory_id: str = "CVE-2019-14234", models=BOTH, details: str = ADVISORY, **by_member
+):
     """Put one advisory to a real council by the path the command line takes."""
-    one = finding(component(), advisory_id=advisory_id, summary=ADVISORY, details=ADVISORY)
+    one = finding(component(), advisory_id=advisory_id, summary=details, details=details)
     return assess_one(one, build_roster(models), replying(**by_member))
 
 
@@ -114,3 +152,28 @@ def outcome_from(rulings, advisory_id: str = "CVE-2019-14234", single_assessor: 
     unresolved = tuple(one.metric for one in rulings if one.outcome is Outcome.UNRESOLVED)
     contested = tuple(one.metric for one in rulings if one.outcome is Outcome.CONTESTED)
     return CouncilWithoutVector(advisory_id, single_assessor, unresolved, contested, rulings)
+
+
+def fell_back(advisory_id: str = "CVE-FALLBACK") -> CouncilWithoutVector:
+    """Give a real record of AV left unresolved and filled from ghsa's published value."""
+    offered = {**FALLBACKS, "AV": published("N")}
+    return outcome_from(rulings_with_fallbacks(offered, **NOTHING_VERIFIED), advisory_id)
+
+
+def council_states() -> tuple[CouncilOutcome, ...]:
+    """Give one record of every state a finding's council entry can be in."""
+    # Each renderer's test renders these, and `test_council_record.py` holds their
+    # types equal to `CouncilOutcome`: a state added to the union fails there until
+    # it is added here, and from here every renderer is shown it.
+    return (
+        council_ran(advisory_id="CVE-SETTLED"),
+        council_ran(advisory_id="CVE-OPEN", **DISSENTING),
+        *passed_over_entirely(),
+    )
+
+
+def passed_over_entirely() -> tuple[CouncilNotAsked, ...]:
+    """Give the record of a run whose members were named and whose every finding was passed over."""
+    both_agree = {"ghsa": TOTAL_LOSS, "nvd": TOTAL_LOSS}
+    agreeing = finding(component(), advisory_id="CVE-PASSED", vectors=both_agree)
+    return passed_over((agreeing,), every_finding=False)

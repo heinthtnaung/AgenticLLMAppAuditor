@@ -12,25 +12,16 @@ markup says -- never its tone, its contrast or its spacing.
 
 import re
 
-from council_runs import INVENTED, OTHER_QUOTE, answering, council_ran
+from council_runs import INVENTED, OTHER_QUOTE, answering, council_ran, council_states
 from organisation.approval import Approval, Decision
-from organisation.risk import assess, per_source
-from report.council_record import CouncilAssessment, CouncilNotAsked, CouncilWithoutVector
+from organisation.risk import FindingRisk, assess, per_source
 from report.html_report import as_html
 from report.json_report import as_dictionary
 from report.provenance import RunProvenance, UnknownAdvisoryDatabase
 from report.record import Report, build_report
 from report_samples import (
-    CONFIDENTIALITY_ONLY,
-    LOW_CONFIDENTIALITY,
-    PROVENANCE,
-    TOTAL_LOSS,
-    VERSION_2_VECTOR,
-    advisory,
-    catalogue,
-    component,
-    finding,
-    unidentified,
+    CONFIDENTIALITY_ONLY, LOW_CONFIDENTIALITY, PROVENANCE, TOTAL_LOSS, VERSION_2_VECTOR,
+    advisory, catalogue, component, finding, unidentified,
 )
 from scoring.library import APPROVED_QUESTIONS
 from scoring.question import Answer
@@ -122,22 +113,26 @@ def test_the_page_states_no_figure_the_record_does_not_carry():
     assert stated - figures_in(as_dictionary(report)) == set()
 
 
+def published_scores(finding_record: dict) -> set[str]:
+    """Give every published base score on one finding of the audit record."""
+    return {str(score["base_score"]) for score in finding_record["scores"]}
+
+
+def organisation_scores(risk: FindingRisk) -> set[str]:
+    """Give every Organisation Risk Score weighed for one finding."""
+    return {str(one.score) for one in risk.scores}
+
+
 def test_every_published_score_the_record_carries_reaches_the_page():
     report = full_report()
-    published = {
-        str(score["base_score"])
-        for one in as_dictionary(report)["findings"]
-        for score in one["scores"]
-    }
+    published = set().union(*map(published_scores, as_dictionary(report)["findings"]))
     assert published
     assert published <= figures_on(as_html(report))
 
 
 def test_every_organisation_score_the_record_carries_reaches_the_page():
     report = full_report()
-    weighed = {
-        str(one.score) for risk in report.risk.values() for one in risk.scores
-    }
+    weighed = set().union(*map(organisation_scores, report.risk.values()))
     assert weighed
     assert weighed <= figures_on(as_html(report))
 
@@ -152,7 +147,8 @@ def test_the_category_weighting_on_the_page_is_the_one_the_record_carries():
         for one in as_dictionary(report)["findings"]
         if one["organisation_risk"]
     )
-    carried = [str(one["weight"]) for one in weighed["category_weights"]]
+    carried = [str(weighed["scores"][0]["technical_weight"])]
+    carried += [str(category["weight"]) for category in weighed["categories"].values()]
     said = WEIGHTING.search(as_html(report)).group(1)
     assert NUMBER.findall(said) == carried
 
@@ -190,22 +186,11 @@ def test_a_run_with_no_advisory_database_shouts_rather_than_looking_clean():
     assert 'class="alarm">NO ADVISORY DATABASE DATE: trivy said nothing' in as_html(report)
 
 
-# Every state the council record can be in. A new one that reaches a rendering
-# as an `AttributeError` is the defect this closes: the type says a fact exists
-# and the code that must read it does not know. Adding a fifth breaks this list
-# before it breaks a run.
-COUNCIL_STATES = (
-    CouncilAssessment("CVE-SETTLED", TOTAL_LOSS, single_assessor=False),
-    CouncilWithoutVector("CVE-OPEN", False, ("AV",), ()),
-    CouncilNotAsked("CVE-PASSED", "no published source disagrees"),
-)
-
-
 def test_every_state_the_council_record_can_be_in_renders():
-    raised = tuple(finding(DJANGO, advisory_id=one.advisory_id) for one in COUNCIL_STATES)
-    report = build_report(PROVENANCE, catalogue(DJANGO), raised, {}, COUNCIL_STATES)
-    page = as_html(report)
-    assert [one.advisory_id for one in COUNCIL_STATES if one.advisory_id not in page] == []
+    states = council_states()
+    raised = tuple(finding(DJANGO, advisory_id=one.advisory_id) for one in states)
+    page = as_html(build_report(PROVENANCE, catalogue(DJANGO), raised, {}, states))
+    assert [one.advisory_id for one in states if one.advisory_id not in page] == []
 
 
 def test_a_run_with_no_council_at_all_renders_and_names_the_absence():

@@ -1,34 +1,22 @@
-"""Guards on the council in the audit record: everything the design keeps, kept."""
+"""Guards on the council in the audit record: everything the design keeps, kept.
 
-from report.council_record import (
-    CouncilAssessment,
-    CouncilNotAsked,
-    CouncilWithoutVector,
-    MemberIdentity,
-    MemberSaid,
-    MetricRuling,
-    Outcome,
-    SaidKind,
+**Every assessed record here comes out of a real chairman**, through
+`council_runs`: an assessment handing over a vector never carries a contested or
+unresolved metric, and a record filled in by hand can say it does. A finding
+passed over is built as `cli.council_run.passed_over` builds one.
+"""
+
+from cli.council_run import SOURCES_AGREE
+from council.prompt import PROMPT_VERSION
+from council_runs import (
+    AGREED, DECLINED_AND_GUESSED, DISSENTING, LONG_QUOTE, UNPARSEABLE, council_ran, fell_back,
 )
+from report.council_record import CouncilNotAsked
 from report.json_council import council_of
 from report.record import build_report
-from report_samples import PROVENANCE, TOTAL_LOSS, catalogue, component, finding
+from report_samples import PROVENANCE, catalogue, component, finding
 
 DJANGO = component()
-QWEN = MemberIdentity("qwen2.5:7b", "ollama", "qwen2.5:7b", "qwen2.5", True, "member-base-metric-3")
-GEMMA = MemberIdentity("gemma4", "ollama", "gemma4:latest", "gemma4", True, "member-base-metric-3")
-
-
-def contested() -> MetricRuling:
-    """One metric two families read differently, each with a quotation that verifies."""
-    return MetricRuling(
-        metric="AC",
-        outcome=Outcome.CONTESTED,
-        said=(
-            MemberSaid(QWEN, SaidKind.ANSWERED, "H", "a crafted payload", "high", verified=True),
-            MemberSaid(GEMMA, SaidKind.ANSWERED, "L", "a remote attacker", "high", verified=True),
-        ),
-    )
 
 
 def rendered(outcome):
@@ -38,68 +26,75 @@ def rendered(outcome):
     return council_of(report, outcome.advisory_id)
 
 
+def metric_of(outcome, metric: str) -> dict:
+    """Give one metric's entry from an advisory's council record."""
+    return next(one for one in rendered(outcome)["metrics"] if one["metric"] == metric)
+
+
+def contested() -> dict:
+    """Give AV's entry, which a real council of two families left contested."""
+    return metric_of(council_ran(**DISSENTING), "AV")
+
+
 def test_every_member_that_spoke_is_in_the_record():
-    settled = CouncilAssessment("CVE-1", TOTAL_LOSS, False, (contested(),))
-    members = rendered(settled)["metrics"][0]["members"]
-    assert [one["member"] for one in members] == ["qwen2.5:7b", "gemma4"]
+    assert [one["member"] for one in contested()["members"]] == ["qwen2.5:7b", "gemma4:latest"]
 
 
 def test_a_members_lineage_is_recorded_because_agreement_without_it_means_nothing():
-    settled = CouncilAssessment("CVE-1", TOTAL_LOSS, False, (contested(),))
-    members = rendered(settled)["metrics"][0]["members"]
+    members = contested()["members"]
     assert [one["family"] for one in members] == ["qwen2.5", "gemma4"]
     assert all(one["provider"] and one["model"] and one["prompt_version"] for one in members)
 
 
 def test_an_answer_is_recorded_with_its_evidence_and_whether_it_checked_out():
-    settled = CouncilAssessment("CVE-1", TOTAL_LOSS, False, (contested(),))
-    first = rendered(settled)["metrics"][0]["members"][0]
+    first = contested()["members"][0]
     assert first["said"] == "answered"
-    assert (first["value"], first["confidence"]) == ("H", "high")
-    assert first["evidence"] == "a crafted payload"
+    assert (first["value"], first["confidence"]) == ("N", "high")
+    assert first["evidence"] == LONG_QUOTE
     assert first["evidence_verified"] is True
 
 
 def test_the_chairmans_decision_is_recorded_beside_the_members():
-    settled = CouncilAssessment("CVE-1", TOTAL_LOSS, False, (contested(),))
-    metric = rendered(settled)["metrics"][0]
-    assert metric["metric"] == "AC"
+    metric = contested()
     assert metric["outcome"] == "contested"
     assert metric["value"] is None
 
 
 def test_a_settled_metric_records_what_settled_it():
-    ruling = MetricRuling("AV", Outcome.SETTLED, (), value="N", basis="nobody dissented",
-                          confidence="high")
-    metric = rendered(CouncilAssessment("CVE-1", TOTAL_LOSS, False, (ruling,)))["metrics"][0]
+    metric = metric_of(council_ran(), "AV")
     assert metric["value"] == "N"
-    assert (metric["basis"], metric["confidence"]) == ("nobody dissented", "high")
+    assert (metric["basis"], metric["confidence"]) == (AGREED, "high")
 
 
 def test_an_unresolved_metric_records_which_source_it_fell_back_to():
-    ruling = MetricRuling("S", Outcome.UNRESOLVED, (), value="U", fallback_source="ghsa")
-    metric = rendered(CouncilAssessment("CVE-1", TOTAL_LOSS, False, (ruling,)))["metrics"][0]
-    assert metric["fallback_source"] == "ghsa"
+    metric = metric_of(fell_back(), "AV")
+    assert metric["outcome"] == "unresolved"
+    assert (metric["value"], metric["fallback_source"]) == ("N", "ghsa")
 
 
 def test_a_member_that_declined_is_told_apart_from_one_that_guessed():
-    ruling = MetricRuling("UI", Outcome.UNRESOLVED, (
-        MemberSaid(QWEN, SaidKind.DECLINED),
-        MemberSaid(GEMMA, SaidKind.GUESSED, value="N"),
-    ))
-    members = rendered(CouncilWithoutVector("CVE-1", False, ("UI",), (), (ruling,)))["metrics"][0]
-    assert [one["said"] for one in members["members"]] == ["declined", "guessed"]
-    assert members["members"][0]["value"] is None
-    assert members["members"][1]["value"] == "N"
+    members = metric_of(council_ran(**DECLINED_AND_GUESSED), "UI")["members"]
+    assert [one["said"] for one in members] == ["declined", "guessed"]
+    assert members[0]["value"] is None
+    assert members[1]["value"] == "R"
 
 
 def test_a_member_whose_call_failed_records_why():
-    ruling = MetricRuling("AV", Outcome.UNRESOLVED, (
-        MemberSaid(QWEN, SaidKind.FAILED, reason="the server said no"),
-    ))
-    first = rendered(CouncilWithoutVector("CVE-1", False, ("AV",), (), (ruling,)))["metrics"][0]
-    assert first["members"][0]["said"] == "failed"
-    assert first["members"][0]["reason"] == "the server said no"
+    failed = metric_of(council_ran(**UNPARSEABLE), "AV")["members"][1]
+    assert failed["said"] == "failed"
+    assert "'NONSENSE' is not a value of Attack Vector" in failed["reason"]
+
+
+def test_a_member_whose_call_failed_is_named_as_fully_as_one_that_answered():
+    # The call an auditor most needs to trace to a model, and a local member
+    # recorded without its model or as hosted is a false fact about the run.
+    failed = metric_of(council_ran(**UNPARSEABLE), "AV")["members"][1]
+    named = {key: failed[key] for key in ("member", "provider", "model", "family", "ran_local")}
+    assert named == {
+        "member": "gemma4:latest", "provider": "ollama", "model": "gemma4:latest",
+        "family": "gemma4", "ran_local": True,
+    }
+    assert failed["prompt_version"] == PROMPT_VERSION
 
 
 def test_a_council_that_did_not_run_on_an_advisory_is_null():
@@ -111,8 +106,8 @@ def test_a_finding_the_council_was_not_put_to_says_so_and_says_why():
     # Three states, and null is only the third: no council in this run at all.
     # A scoped run that wrote null here would report a finding it passed over as
     # a finding nothing ran on.
-    passed = CouncilNotAsked("CVE-1", "no published source disagrees")
-    assert rendered(passed) == {"ran": False, "because": "no published source disagrees"}
+    passed = CouncilNotAsked("CVE-1", SOURCES_AGREE)
+    assert rendered(passed) == {"ran": False, "because": SOURCES_AGREE}
 
 
 def test_a_finding_of_a_run_with_no_council_at_all_is_null():
@@ -121,6 +116,6 @@ def test_a_finding_of_a_run_with_no_council_at_all_is_null():
     assert council_of(report, "CVE-1") is None
 
 
-def test_an_assessed_finding_says_a_council_ran_on_it():
-    assessed = CouncilAssessment("CVE-1", TOTAL_LOSS, False, ())
-    assert rendered(assessed)["ran"] is True
+def test_an_assessed_finding_says_a_council_ran_on_it_whether_or_not_it_settled():
+    assert rendered(council_ran())["ran"] is True
+    assert rendered(council_ran(**DISSENTING))["ran"] is True

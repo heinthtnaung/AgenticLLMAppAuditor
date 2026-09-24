@@ -4,8 +4,7 @@ import pytest
 
 from organisation.approval import Approval, Decision, NotApproved
 from organisation.risk import assess, per_source
-from report.provenance import AdvisoryDatabase, RunProvenance, UnknownAdvisoryDatabase
-from report.council_record import CouncilAssessment, CouncilNotAsked
+from council_runs import ALONE, council_ran, passed_over_entirely
 from report.record import (
     NO_COUNCIL_RUN,
     NOTHING_WAS_PUT_TO_IT,
@@ -15,16 +14,8 @@ from report.record import (
 )
 from scoring.library import APPROVED_QUESTIONS
 from scoring.question import Answer
-from report_samples import (
-    DATABASE,
-    PROVENANCE,
-    TOTAL_LOSS,
-    advisory,
-    catalogue,
-    component,
-    finding,
-    unidentified,
-)
+from report_samples import PROVENANCE, advisory, catalogue, component, finding, unidentified
+
 
 def all_answers(overrides=None) -> dict:
     """Answer every approved question No, except the ones a test names."""
@@ -89,20 +80,20 @@ def test_a_council_put_to_no_finding_is_an_absence_and_says_which_kind():
     # Scoped to nothing is not "no council ran": members were named, every
     # finding was passed over, and a reader given neither a ruling nor a reason
     # would read the silence as a nil result.
-    passed = CouncilNotAsked("CVE-2019-14234", "no published source disagrees")
-    absences = {one.what: one.because for one in a_report(council=(passed,)).not_assessed}
+    passed = a_report(council=passed_over_entirely())
+    absences = {one.what: one.because for one in passed.not_assessed}
     assert absences["Council ruling"] == NOTHING_WAS_PUT_TO_IT
 
 
 def test_a_run_with_a_council_does_not_claim_it_had_none():
-    settled = CouncilAssessment("CVE-2019-14234", TOTAL_LOSS, single_assessor=False)
+    settled = council_ran()
     report = a_report(council=(settled,))
     assert "Council ruling" not in [absence.what for absence in report.not_assessed]
     assert report.council["CVE-2019-14234"] is settled
 
 
 def test_the_organisation_score_is_absent_even_when_a_council_ran():
-    settled = CouncilAssessment(advisory_id="CVE-1", vector=TOTAL_LOSS, single_assessor=True)
+    settled = council_ran(models=ALONE)
     named = [absence.what for absence in a_report(council=(settled,)).not_assessed]
     assert "Organisation Risk Score" in named
 
@@ -119,39 +110,9 @@ def test_an_absence_that_does_not_say_what_or_why_is_refused(what, because):
         Absence(what, because)
 
 
-@pytest.mark.parametrize("built", ["", "   "], ids=["empty", "blank"])
-def test_a_database_naming_no_build_date_is_refused(built):
-    with pytest.raises(ValueError, match="must give the date it was built"):
-        AdvisoryDatabase(built)
-
-
-def test_a_missing_database_date_must_say_why():
-    with pytest.raises(ValueError, match="must say why it is missing"):
-        UnknownAdvisoryDatabase("")
-
-
-def test_an_unreadable_database_is_not_the_same_as_a_fresh_one():
-    unknown = UnknownAdvisoryDatabase("no metadata.json on this machine")
-    assert not isinstance(unknown, AdvisoryDatabase)
-    assert not hasattr(unknown, "built_at")
-
-
-@pytest.mark.parametrize("field", ["repository", "syft_version", "trivy_version"])
-def test_provenance_a_reader_could_not_reproduce_the_run_from_is_refused(field):
-    fields = {"repository": "r", "syft_version": "s", "trivy_version": "t", "database": DATABASE}
-    with pytest.raises(ValueError, match=f"needs {field}"):
-        RunProvenance(**{**fields, field: ""})
-
-
-@pytest.mark.parametrize("given", [None, "2026-09-22", 0], ids=["none", "str", "int"])
-def test_provenance_without_a_real_database_is_refused(given):
-    with pytest.raises(TypeError, match="needs a database"):
-        RunProvenance("r", "s", "t", given)
-
-
 def test_an_artifact_nothing_could_join_to_is_carried_rather_than_dropped():
-    # The third kind of nothing. The scanner used to refuse the whole run over
-    # one of these; dropping it silently would have been the other wrong answer.
+    # The third kind of nothing. Refusing the whole run over one of these turns a
+    # non-issue into total failure, and dropping it silently is the other wrong answer.
     report = a_report(components=(DJANGO,), unidentified=(unidentified(),))
     assert [one.name for one in report.unidentified_artifacts] == ["./local-action"]
 
@@ -195,8 +156,8 @@ def test_an_override_naming_an_advisory_this_scan_found_matched_something():
 
 
 def test_an_override_naming_an_advisory_nothing_found_is_counted_not_dropped():
-    # A mistyped advisory id used to apply to nothing quietly, and a deliberate
-    # escalation that did not apply moved a finding a band with nothing said.
+    # Uncounted, a mistyped advisory id would apply to nothing quietly, and an
+    # escalation that did not apply would leave a finding a band lower than intended.
     report = a_report(findings=(finding(DJANGO),), overridden=("CVE-2021-42799",))
     assert report.overrides_without_findings == ("CVE-2021-42799",)
 

@@ -51,27 +51,21 @@ def test_the_weighting_that_combined_the_categories_is_in_the_record():
     # weighting lived only in `docs/SCORING_MODEL.md`.
     one = finding(DJANGO)
     rendered = risk_of(a_report((one,), (weighed(one),)), one.advisory.advisory_id)
-    assert rendered["category_weights"] == [
-        {"category": "Technical severity", "weight": 0.30},
-        {"category": "Exposure and reachability", "weight": 0.25},
-        {"category": "Business impact", "weight": 0.25},
-        {"category": "Threat and exploitation", "weight": 0.20},
-    ]
+    assert rendered["scores"][0]["technical_weight"] == 0.30
+    weights = {name: entry["weight"] for name, entry in rendered["categories"].items()}
+    assert weights == {"exposure": 0.25, "business": 0.25, "threat": 0.20}
 
 
 def test_the_recorded_weighting_re_derives_the_recorded_total():
+    # Every weight sits beside the term it multiplies, so the total re-derives
+    # with nothing paired by position.
     one = finding(DJANGO)
     rendered = risk_of(a_report((one,), (weighed(one),)), one.advisory.advisory_id)
-    categories = rendered["categories"]
-    terms = [
-        rendered["scores"][0]["technical_score"],
-        categories["exposure"]["score"],
-        categories["business"]["score"],
-        categories["threat"]["score"],
-    ]
-    weights = [entry["weight"] for entry in rendered["category_weights"]]
-    by_hand = math.fsum(term * weight for term, weight in zip(terms, weights))
-    assert round(by_hand, 2) == rendered["scores"][0]["score"]
+    score = rendered["scores"][0]
+    categories = rendered["categories"].values()
+    terms = [score["technical_score"] * score["technical_weight"]]
+    terms += [category["score"] * category["weight"] for category in categories]
+    assert round(math.fsum(terms), 2) == score["score"]
 
 
 def test_a_category_carries_its_raw_total_beside_the_clamped_score():

@@ -10,6 +10,7 @@ so these hold them apart.
 partly-built tool is worth more than a complete-looking one.
 """
 
+from council_runs import passed_over_entirely
 from organisation.approval import Approval, Decision
 from report.html_absences import (
     approval_section,
@@ -17,7 +18,7 @@ from report.html_absences import (
     not_assessed_section,
     unidentified_section,
 )
-from report.record import build_report
+from report.record import NO_COUNCIL_RUN, NOTHING_WAS_PUT_TO_IT, build_report
 from report_samples import PROVENANCE, advisory, catalogue, component, finding, unidentified
 
 DJANGO = component()
@@ -38,7 +39,7 @@ def report_of(**overrides):
         fields["catalogue"],
         fields["findings"],
         fields["advisories_by_purl"],
-        (),
+        fields.get("council", ()),
         (),
         fields.get("approval"),
         fields.get("overridden", ()),
@@ -100,3 +101,10 @@ def test_an_absence_puts_what_is_missing_and_why_on_their_own_lines():
     page = not_assessed_section(report_of())
     assert '<span class="absence-what">Council ruling</span>' in page
     assert '<span class="absence-why">' in page
+
+
+def test_a_council_put_to_no_finding_is_told_apart_from_no_council_at_all():
+    passed_over = not_assessed_section(report_of(council=passed_over_entirely()))
+    assert NOTHING_WAS_PUT_TO_IT in passed_over
+    assert NO_COUNCIL_RUN not in passed_over
+    assert NO_COUNCIL_RUN in not_assessed_section(report_of())

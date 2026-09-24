@@ -16,7 +16,7 @@ so the two cannot come to word one record differently.
 """
 
 from report.council_record import MemberSaid, MetricRuling, SaidKind
-from report.council_words import chairman_said, checked, counted, unanswered, who
+from report.council_words import chairman_said, checked, confident, counted, unanswered, who
 from report.html_layout import listing, separated, tag, text
 
 # Marked, because it is the one a reader scanning a column of near-identical
@@ -55,7 +55,7 @@ def member_row(said: MemberSaid) -> str:
         return named + tag("span", text(unanswered(said)), "refusal")
     answered = [
         tag("span", text(said.value), "member-value"),
-        text(f"{said.confidence} confidence"),
+        text(confident(said.confidence)),
         checked_mark(said.verified),
     ]
     return named + separated(answered) + evidence(said.evidence)
