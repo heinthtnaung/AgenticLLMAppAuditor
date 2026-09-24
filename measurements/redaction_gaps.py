@@ -10,6 +10,7 @@ nothing on real advisories, and worth refusing when it eats them.
 
 import re
 import sys
+from itertools import chain
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -87,7 +88,7 @@ def report_vector_shapes(texts: dict[str, str], redacted: dict[str, str]) -> Non
 def report_namespaces(redacted: dict[str, str]) -> None:
     """Say which identifier namespaces reach a member after CVE and GHSA are taken out."""
     hits = matching(redacted, NAMESPACE_IDENTIFIER)
-    found = sorted({identifier for founds in hits.values() for identifier in founds})
+    found = sorted(set(chain.from_iterable(hits.values())))
     print(f"\nidentifiers in other namespaces surviving redaction: {len(hits)} advisories {found}")
     carrying_own_id = [
         advisory_id for advisory_id, text in redacted.items() if advisory_id.lower() in text.lower()

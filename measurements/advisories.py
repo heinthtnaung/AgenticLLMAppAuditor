@@ -11,6 +11,7 @@ the same CVE reached through two ecosystems counts once.
 """
 
 import sys
+from itertools import chain
 from pathlib import Path
 
 REPOSITORY_ROOT = Path(__file__).resolve().parent.parent
@@ -63,7 +64,7 @@ def scan(subcommand: str, target: Path) -> tuple[Advisory, ...]:
     if not target.exists():
         raise FileNotFoundError(f"{target} is not on this machine; nothing to scan")
     indexed = read_advisories(run_json_scanner(build_command(subcommand, target)))
-    return tuple(advisory for group in indexed.values() for advisory in group)
+    return tuple(chain.from_iterable(indexed.values()))
 
 
 def advisory_texts() -> dict[str, str]:
