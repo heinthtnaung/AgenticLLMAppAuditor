@@ -408,7 +408,16 @@ clock rather than running beside the others. A run that says nothing is
 indistinguishable from a hung one. `measurements/README.md` times a full run
 at 71 min 39 s on one baseline and 7 min 3 s on the next, which changed
 placement, second member, call order and Ollama version at once.
-So a run prints one line per call:
+So a run prints one line per call. The recorded `gpu-scoped` run in
+`measurements/council_runs/` was the scoped two-member command, given the answer
+skeleton as well:
+
+```bash
+audit fetched/vulnscout --answers answers.example.json \
+    --council-member qwen2.5:7b-instruct --council-member llama3.2:latest
+```
+
+Its stderr, from `gpu-scoped.progress.txt`:
 
 ```
 council 1/80  finding 1/5 CVE-2026-13149  AV  qwen2.5:7b-instruct
