@@ -615,9 +615,15 @@ python measurements/council_eval turns --excerpt $R/ollama-journal.run1.tsv
 ```
 
 `dataset` prints `18 items frozen to …`. Run again on 2026-09-25, on the same
-database, it wrote the pilot's dataset byte for byte, and `server-log` over
-run 3's window wrote its excerpt byte for byte. On a window holding both
-passes and nothing else, `turns` reads `turns: 36; not of 8 calls: none`.
+database and with the code of the time, it wrote the pilot's dataset byte for
+byte. It now writes the Trivy cache relative to the home directory, so a
+re-freeze today differs from the pilot's file on line 7 alone: the pilot's
+names the cache by its absolute path, and the re-freeze writes
+`"trivy_cache": "~/.cache/trivy"`. The 18 findings, their order, the scanner
+versions and the database's build time all match; the re-freeze's SHA-256 is
+`acaf92c7…`, and the pilot's file keeps `2575a983…`. `server-log` over run 3's
+window wrote its excerpt byte for byte. On a window holding both passes and
+nothing else, `turns` reads `turns: 36; not of 8 calls: none`.
 
 ### The pilot
 

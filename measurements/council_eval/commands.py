@@ -11,7 +11,7 @@ import argparse
 import os
 from functools import partial
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 
 from deps import syft_runner, trivy_runner
 from deps.trivy_database import database_built_at, metadata_of, trivy_cache_directory
@@ -37,6 +37,8 @@ from council_eval.variants import BASELINE, VARIANTS
 from council_eval.vectors import vector_measures
 
 GATE_FAILED = 1
+HOME_VARIABLE = "HOME"
+HOME_MARK = "~"
 
 
 def main(argv: list[str]) -> int:
@@ -85,11 +87,19 @@ def run_dataset(options: Any) -> int:
         "syft": syft_runner.installed_version(),
         "trivy": trivy_runner.installed_version(),
         "database_built_at": built,
-        "trivy_cache": str(cache),
+        "trivy_cache": home_relative(cache, os.environ),
     }
     write_dataset(items, built_from, options.out)
     print(f"{len(items)} items frozen to {options.out}")
     return 0
+
+
+def home_relative(path: Path, environment: Mapping[str, str]) -> str:
+    """Name a path under the home directory from `~`, so a dataset does not say whose it was."""
+    home = environment.get(HOME_VARIABLE)
+    if not home or not path.is_relative_to(home):
+        return str(path)
+    return str(Path(HOME_MARK) / path.relative_to(home))
 
 
 def run_collect(options: Any) -> int:
