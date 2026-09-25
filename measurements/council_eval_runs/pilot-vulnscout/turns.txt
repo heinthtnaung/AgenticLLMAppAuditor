@@ -1,0 +1,12 @@
+# run1
+requests: 3 GET /api/ps, 2 GET /api/tags, 2 GET /api/version, 3 HEAD /, 328 POST /api/generate
+loads: 22 Qwen2.5 7B Instruct, 22 Llama 3.2 3B Instruct
+turns: 36; not of 8 calls: 2026-09-24T18:54:36+08:00 (12)
+# run2
+requests: 4 GET /api/ps, 2 GET /api/tags, 2 GET /api/version, 4 HEAD /, 328 POST /api/generate
+loads: 18 Llama 3.2 3B Instruct, 18 Qwen2.5 7B Instruct
+turns: 36; not of 8 calls: 2026-09-24T19:03:22+08:00 (12)
+# run3
+requests: 1 GET /api/ps, 2 GET /api/tags, 2 GET /api/version, 1 HEAD /, 324 POST /api/generate
+loads: 18 Qwen2.5 7B Instruct, 18 Llama 3.2 3B Instruct
+turns: 36; not of 8 calls: none

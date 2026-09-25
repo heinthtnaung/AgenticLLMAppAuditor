@@ -4,7 +4,8 @@ The corpus behind the numbers in `src/council/redaction.py`,
 `src/council/ollama.py`, `src/council/definitions.py` and `docs/COUNCIL.md`,
 and the council runs behind the counts in `src/cli/`, `src/council/runner.py`,
 `README.md`, `docs/COUNCIL.md` and `docs/diagrams.md`, and behind the one
-timing the code gives, in `src/cli/progress.py`.
+timing the code gives, in `src/cli/progress.py`. It also holds a harness that
+scores the council against published vectors, and what its first run found.
 
 A measurement nobody can re-run is an assertion. Everything here exists so a
 reader can disagree with a number by producing a different one.
@@ -23,6 +24,8 @@ reader can disagree with a number by producing a different one.
 | `run_directory.py` | where a recorded audit runs, so the project's `reports/` is never written, and the copying out of its three renderings |
 | `council_runs/` | audits of `fetched/vulnscout` with a two-member council: what each run printed or wrote, and when |
 | `thinking_and_load/` | a probe of the `think` field and of load state on three models: the script, its 22 envelopes, and what they do and do not show |
+| `council_eval/` | the evaluation harness, `python measurements/council_eval <step>`: the steps `dataset`, `collect`, `gate` and `score`, and the checks `compare`, `quoting`, `server-log` and `turns` |
+| `council_eval_runs/` | one folder per evaluation: what it ran, every call it saved, an excerpt of the server's journal for each run window, and what each step printed |
 
 The manifests and package databases are written by hand, not captured from a
 real system. They are chosen to reach different advisory feeds — GHSA, OSV,
@@ -213,9 +216,10 @@ guesses or quotes what is not there, Qwen settles the metric alone, and nothing
 can contest it. 105 settled against 67, and 13 contested against 61, is
 therefore no evidence of better reading. On a metric settled that way the
 council is one assessor, and these reports do not say so: `single_assessor`
-counts the members reached, and both were. How many of the 105 rest on Qwen
-alone is not in these files, because the report names no member on a settled
-metric.
+counts the members reached, and both were. How many of the 105 rest on one
+member is not in these files, because the report names no member on a settled
+metric. The pilot's replay counts 36: 27 on Qwen's quotation alone and 9 on
+Llama's ("The pilot", below).
 
 **In these reports, the basis wording reads as agreement.** 99 of the 105 carry
 "every member that offered a quotation supported this value". The chairman
@@ -258,6 +262,10 @@ scores are `src/cvss/score.py` run on the vectors in `gpu-full.report.txt`:
 | `CVE-2026-18446` | 7.5, two sources agreeing | `AV:L/AC:H/PR:L/UI:R/S:C/C:L/I:L/A:L` | 5.0 |
 | `CVE-2026-53550` | 5.3, two sources agreeing | `AV:L/AC:H/PR:H/UI:R/S:C/C:H/I:H/A:H` | 7.2 |
 
+None scores inside the range its sources published, and each departs on four
+to eight metrics from R1, the published reference the pilot scores against
+("The pilot", below).
+
 All four read `AV:L`, `AC:H`, `UI:R` and `S:C`. Three are findings whose
 published sources already agreed. `gpu-scoped` did not ask about them, and in
 `gpu-full` the council's vector moved their organisation risk:
@@ -276,6 +284,10 @@ straight after it, each state repeating byte for byte (`docs/COUNCIL.md`). So
 on a card that holds both members at once, where Qwen's turns start warm, these
 two runs would not be reproduced — inferred, not measured. The probe and its
 envelopes are in `thinking_and_load/`.
+
+The cold case has since been repeated. The pilot below took three passes of
+each member with every turn starting from a fresh load, and its clean passes
+gave 288 of 288 replies byte for byte the same.
 
 ### Both models ran on the GPU
 
@@ -463,13 +475,14 @@ run, against the failure the prompt names.
 | that shape is common, not one case | `docs/COUNCIL.md` | 8 of `scoped`'s 17 contested metrics, and 20 of `full`'s 61, have both members quoting identical text; in the GPU baseline, 2 of 4 and 4 of 13 |
 | 61 of 144 metrics came out contested with two members | `src/council/runner.py`, `docs/COUNCIL.md` | `full.report.txt`, Qwen and Gemma; the GPU baseline contests 13 |
 | reproducible when no other client shares the Ollama server, and each model meets each request in the same load state | `docs/COUNCIL.md` | the CPU baseline's subsections above, the GPU runs agreeing on the five findings they share, and Qwen cold and warm in `thinking_and_load/probe_state.jsonl` |
+| with every turn starting from a fresh load, a member's replies repeat byte for byte | `docs/COUNCIL.md` | `council_eval_runs/pilot-vulnscout/compare.txt`: 288 of 288 across the clean passes, 144 per model |
 | 288 calls over 18 findings, 80 after scoping | `README.md`, `docs/COUNCIL.md`, `docs/diagrams.md`, `src/cli/council_run.py`, `src/cli/progress.py`, comments in `tests/cli/test_council_run.py`, `tests/cli/test_progress.py` and `tests/council/test_runner_order.py` | the last `council` line of each progress file |
 | 13 of 18 findings undisputed, so 5 put to the council | `README.md`, `docs/COUNCIL.md`, `docs/diagrams.md`, `src/cli/council_run.py`, `tests/cli/test_council_run.py` | `scoped.report.txt` lines 218–222 |
 | 208 of the 288 calls went to those 13 | `src/cli/council_run.py`, `tests/cli/test_council_run.py` | the lines of `full.progress.txt` and of `gpu-full.progress.txt` naming them |
 | one member answers every metric of a finding before the next member is asked | `src/council/runner.py`, `README.md`, `docs/COUNCIL.md` | `gpu-*.progress.txt`: 10 and 36 runs of 8 calls to one member; `scoped` and `full` change member on every call |
 | the CPU baseline ran on the CPU | `docs/COUNCIL.md`, `src/cli/progress.py` | Ollama's journal and `ollama ps`, above: nothing in this folder records it |
 | the recorded full run took about an hour with the models on the CPU | `src/cli/progress.py` | `full.provenance.txt`, 71 min 39 s, and the lost earlier full run, 58 min 4 s: both whole commands on a shared CPU, so neither is a benchmark |
-| `llama3.2:latest` guesses rather than declines | `docs/COUNCIL.md` | 0 declines and 16 guesses on the 39 unsettled metrics of `gpu-full.report.txt`, the only ones where a report shows its answer |
+| `llama3.2:latest` guesses rather than declines | `docs/COUNCIL.md` | 0 declines and 16 guesses on the 39 unsettled metrics of `gpu-full.report.txt`, the only ones where a report shows its answer; over all 144 in the pilot's passes, 0 declines and 43 guesses |
 | no Qwen–Gemma run reached a vector | `docs/diagrams.md` | 0 of 5 and 0 of 18: every council heading in `scoped` and `full` says `no vector`; the GPU baseline reached 1 of 5 and 4 of 18 |
 
 ## Regenerating them
@@ -517,3 +530,154 @@ Qwen and Llama made no difference on the one prompt measured. Repeating the CPU
 baseline needs `gemma4:latest`, the runner and client at `4111b95`, which send
 no `think` field, and Ollama 0.34.2 on the CPU; this machine's Ollama has
 started on CUDA since 19:30 on 2026-09-23.
+
+## Evaluating the council
+
+**`council_eval/` scores a roster's readings without asking a model twice.**
+`collect` puts every item of a frozen dataset to one model and saves every
+call. `gate`, `score` and the checks rebuild any roster from those passes,
+through the audit's own runner and chairman, with no model and no scan. One
+pass per model buys every roster the models can form.
+
+That rests on two things. The first is the panel rule: a member sees nothing
+of another's answer, so what a roster decides is fixed by what each member said
+alone (`council_eval/compose.py`). The second is a member's reply not
+depending on what was loaded or asked before it. For Qwen it does
+(`thinking_and_load/`), so `collect` unloads the model before each item and
+every turn starts from a fresh load, as in `gpu-full`. **The cost: the harness
+replays rosters whose turns start cold.** A roster run warm, on a card that
+holds both members, is not what it measures, and every item costs a model load.
+
+The replay answers only the request that was recorded. It rebuilds each request
+with the product's code and refuses one whose fingerprint differs — a prompt
+reworded, a redaction widened, a pinning moved — so a pass is never scored
+against a question it was not asked (`council_eval/replies.py`).
+
+| Step | What it does | What it needs |
+|---|---|---|
+| `dataset` | freezes a repository's findings in the audit's own join and order, with the Syft and Trivy versions and when the database was built | Syft, Trivy, and the database in the cache `audit` finds (`README.md`) |
+| `collect` | one pass: every item put to one model, the model unloaded before each item, every call saved an item at a time | Ollama with the model pulled |
+| `gate` | replays the passes' models as one roster and compares it with a recorded text report; exits 1 on any difference | the files |
+| `score` | every roster the passes can build, each model alone up to all together: each metric against R1 and the baseline, each vector beside R1 and the published scores | the files |
+| `compare` | two passes of one model, call by call: the same request, a byte-identical reply, a reload part way through an item | the files |
+| `quoting` | whose quotation each value settled on one quotation rests on, and which unverified quotations are the prompt's own | the files |
+| `server-log` | cuts a journal to its request and load lines | the output of `journalctl -u ollama -o short-iso` |
+| `turns` | counts an excerpt's requests and loads, and names every turn not of eight calls | an excerpt |
+
+`dataset`, `collect` and `server-log` refuse to write over a file.
+
+**R1 is the reference: a metric's value where Red Hat's vector and NVD's or
+GHSA's read it alike** (`council_eval/reference.py`). Where they do not, R1 has
+no value, and a settled answer there is counted beside the rate, not in it. R1
+is a measuring stick, not the truth: `docs/COUNCIL.md` names no source the
+others are measured against, and two sources agreeing can both be wrong.
+
+**The baseline answers every scored item with R1's commonest value among those
+same items**, and lift is the roster's rate minus the baseline's
+(`council_eval/measures.py`). It is scored on the items the roster settled, so
+a roster that settles few is set against a constant on those same few, not on
+all. Picked with R1 in hand, it is the best constant in hindsight.
+Intervals are Wilson's, at 95%.
+
+### Taking a pass
+
+**One pass at a time, with nothing else asking the same Ollama server.** The
+server's journal is the only witness to another client, so keep an excerpt of
+each run window and count its turns. `collect` asks a model; nothing else here
+does.
+
+```bash
+export NO_PROXY=localhost,127.0.0.1 no_proxy=localhost,127.0.0.1
+R=measurements/council_eval_runs/next-run && mkdir $R
+python measurements/council_eval dataset --repository fetched/vulnscout \
+    --out $R/vulnscout.dataset.json
+START=$(date '+%F %T')
+python measurements/council_eval collect --dataset $R/vulnscout.dataset.json \
+    --model qwen2.5:7b-instruct --out $R/qwen2.5-7b-instruct.run1.replies.jsonl
+python measurements/council_eval collect --dataset $R/vulnscout.dataset.json \
+    --model llama3.2:latest --out $R/llama3.2-latest.run1.replies.jsonl
+journalctl -u ollama -o short-iso --since "$START" |
+    python measurements/council_eval server-log --journal /dev/stdin \
+    --out $R/ollama-journal.run1.tsv
+python measurements/council_eval turns --excerpt $R/ollama-journal.run1.tsv
+```
+
+`dataset` prints `18 items frozen to …`. Run again on 2026-09-25, on the same
+database, it wrote the pilot's dataset byte for byte, and `server-log` over
+run 3's window wrote its excerpt byte for byte. On a window holding both
+passes and nothing else, `turns` reads `turns: 36; not of 8 calls: none`.
+
+### The pilot
+
+**`qwen2.5:7b-instruct` and `llama3.2:latest`, three passes each, over the 18
+findings of `fetched/vulnscout`**, pinned at temperature 0, seed 11 and
+`think: false`, on the database built 2026-09-23T20:20:57Z. The pair is
+`gpu-full`'s roster. `council_eval_runs/pilot-vulnscout/README.md` is the
+record: what ran and when, the two windows another client shared the server,
+and the commands that re-derive every figure below from its files.
+
+**Against R1, the pair scores below the baseline on every metric, and none of
+its four vectors lands inside the range its sources published.** What the pilot
+cannot show bounds that, so it comes first.
+
+| Limit | Why |
+|---|---|
+| one repository | 18 advisories, every one npm, from `fetched/vulnscout` |
+| the baseline is perfect by construction on four metrics | on AV, PR, UI and S, R1 gives a single value wherever it has one — `N`, `N`, `N` and `U`, on 16, 15, 16 and 16 findings — so the baseline scores 1.00 there and lift can at best reach 0 |
+| a wrong reading and another convention look alike | where the pair departs from R1, the pilot cannot tell a misreading from a different scoring convention for libraries; only labels made by hand from the advisory text can |
+| anchoring is untested | Llama's constant values are each the last the prompt lists, below; reading cannot be told from list-order anchoring without a control that reverses the order |
+
+**The harness reproduces a run the product recorded.** The pair rebuilt
+offline prints what `gpu-full` printed: 105 settled, 13 contested and 26
+unresolved of 144, the same four vectors, and every unsettled line
+(`gate.txt`). The dataset is not on `gpu-full`'s database, and the gate is the
+check that this did not matter. It sees a settled metric only through its
+finding's basis counts and the four vectors, since `gpu-full` names no member
+there.
+
+**With every turn starting cold, the replies repeat.** The clean passes —
+Qwen's first and third, Llama's second and third, on 2026-09-24 and 2026-09-25
+— gave 288 of 288 replies byte for byte the same (`compare.txt`). The two
+passes another client shared match too, Llama's four calls reloaded part way
+through `CVE-2026-13676` included: all 144 of each model agree across all three
+runs.
+
+**The pair against R1, from `pilot.score.txt`.** Scored counts the settled
+values R1 has a value for. Each model alone scores below the baseline on every
+metric as well.
+
+| Metric | Scored | Agreed with R1 | Rate [95% CI] | Baseline value | Baseline rate | Lift |
+|---|---|---|---|---|---|---|
+| AV | 11 | 0 | 0.00 [0.00, 0.26] | `N` | 1.00 | -1.00 |
+| AC | 14 | 2 | 0.14 [0.04, 0.40] | `L` | 0.93 | -0.79 |
+| PR | 9 | 0 | 0.00 [0.00, 0.30] | `N` | 1.00 | -1.00 |
+| UI | 13 | 0 | 0.00 [0.00, 0.23] | `N` | 1.00 | -1.00 |
+| S | 13 | 1 | 0.08 [0.01, 0.33] | `U` | 1.00 | -0.92 |
+| C | 13 | 1 | 0.08 [0.01, 0.33] | `N` | 0.92 | -0.85 |
+| I | 12 | 5 | 0.42 [0.19, 0.68] | `H` | 0.58 | -0.17 |
+| A | 12 | 2 | 0.17 [0.05, 0.45] | `N` | 0.58 | -0.42 |
+
+Of the 13 contested metrics, R1 has a value for 12. On 6 of them R1's value was
+among the verified answers, so the contest kept a value R1 disagrees with out
+of a vector. On the other 6, no verified answer matched R1.
+
+**Llama never declines.** Over all 144 metrics it declined 0 times, guessed 43,
+and offered 30 quotations that are not in the advisory, 14 of them the prompt's
+own definitions (`quoting.txt`). It gave one value throughout on AC (`H`), UI
+(`R`) and S (`C`), each the last the prompt lists for its metric.
+
+**In the replay, 36 of the 105 settled values rest on one member's
+quotation**, 27 on Qwen's and 9 on Llama's. On those the council was one
+assessor, which `gpu-full`'s report could not say.
+
+**Every vector departs from R1, and none scores inside its published range:**
+
+| Finding | Council score | R1 band | Departs from R1 on | Published |
+|---|---|---|---|---|
+| `CVE-2026-16221` | 7.2, High | High | AV, AC, PR, UI, S, C, A | ghsa 7.5, redhat 7.5 |
+| `CVE-2026-18446` | 5.0, Medium | High | all eight | ghsa 7.5, redhat 7.5 |
+| `CVE-2026-53550` | 7.2, High | Medium | all eight | ghsa 5.3, redhat 5.3 |
+| `CVE-2026-4800` | 7.2, High | High | AV, PR, UI, S | ghsa 8.1, nvd 9.8, redhat 8.1 |
+
+R1 has a value on all eight metrics of all four findings, so each has an R1
+band.
