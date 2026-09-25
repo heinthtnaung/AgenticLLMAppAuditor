@@ -3,9 +3,10 @@
 **Pinning is the whole point of a local member.** `docs/COUNCIL.md` says a
 hosted member cannot be reproduced run to run and a local one can, so the four
 things that make that true are set here and are not left to a default: a fixed
-model, temperature 0, a seed, and no thinking. Temperature and thinking are
-constants rather than fields -- a member sampling at 0.8 is a different
-instrument, and the record would still call it reproducible.
+model, temperature 0, a seed, and no thinking. Temperature, seed and thinking
+are constants here rather than settings -- a member sampling at 0.8 is a
+different instrument, and the record would still call it reproducible. The
+server, the window and the timeout are the operator's, in `council.settings`.
 
 **Thinking is off for every member, because the default differs by model.**
 On Ollama 0.34.3, `gemma4:latest` answers the one prompt probed without `think`
@@ -14,8 +15,8 @@ byte, no `thinking` field -- where `think: false` gives 552 and another reply;
 that the two tokens mark thinking mode is inferred. Qwen and Llama replied the
 same either way in one load state; see `measurements/thinking_and_load/`.
 
-The context length is set explicitly for the same reason, and `build_request`
-refuses a prompt too long for it. An advisory that overflows the window is cut
+The context length is pinned for the same reason, and `build_request` refuses a
+prompt too long for it. An advisory that overflows the window is cut
 by the server without saying so, and a member then assesses half an advisory and
 answers with confidence -- the record shows an assessment and nothing shows that
 most of the text was missing. Measured on Ollama 0.34.3: 9,378 tokens against the
@@ -29,40 +30,23 @@ model the server named beside it, read by `council.envelope`, and `council.reply
 turns those into an answer.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 from urllib.parse import urlsplit
 
 from council.envelope import MODEL_FIELD, PROMPT_COUNT_FIELD, ModelReply, read_envelope
 from council.prompt import MemberPrompt
+from council.settings import LOOPBACK_HOSTS, current_settings
 from council.transport import ModelUnavailable, Transport, post_json
 
-DEFAULT_HOST = "http://127.0.0.1:11434"
 GENERATE_PATH = "/api/generate"
 
-DEFAULT_MODEL = "qwen2.5:7b-instruct"
-DEFAULT_SEED = 11
-
-# Not a field. See the module docstring: a member that samples is not pinned.
+# Not settings, and not fields but the seed. See the module docstring: a member
+# that samples, draws another seed, or thinks by its own default is not pinned.
 PINNED_TEMPERATURE = 0
-
-# Not a field either, and sent to every model, so no model's own default decides.
+PINNED_SEED = 11
+# Sent to every model, so no model's own default decides.
 PINNED_THINKING = False
-
-# Measured, and pinned rather than generous. The pinned model counts the whole
-# prompt -- one metric's definitions, the instructions and the reply schema --
-# at 421 tokens with the advisory taken out, and the worst advisory of 1,187
-# read off this machine's database snapshot takes it to 4,897; Gemma counts that
-# one at 5,689. So the margin is 1.4x to 1.7x, not the several times an
-# 18-advisory corpus suggested.
-#
-# It stays at 8,192 anyway. The window is one of the things a local member pins,
-# and `docs/COUNCIL.md` rests the reproducibility claim on the pinning, so
-# moving it changes what a run is comparable with. `refuse_overlong_prompt`
-# below makes the failure impossible instead of rare, and its firing is the
-# evidence that would justify raising this -- nothing has come near the limit
-# yet, and the day something does is the day to raise it knowingly.
-DEFAULT_CONTEXT_TOKENS = 8192
 
 # Four characters to the token. Rough, and every model counts its own way: the
 # worst advisory, estimated at 4,936, Qwen counts 0.8% under, Llama 2.9% under
@@ -84,8 +68,6 @@ CUT_PROMPT_FRACTION = 0.7
 
 JSON_REPLY_FORMAT = "json"
 
-LOOPBACK_HOSTS = ("127.0.0.1", "localhost", "::1")
-
 
 @dataclass(frozen=True)
 class LocalModel:
@@ -96,10 +78,11 @@ class LocalModel:
     on a record an observation rather than a label.
     """
 
-    model: str = DEFAULT_MODEL
-    seed: int = DEFAULT_SEED
-    context_tokens: int = DEFAULT_CONTEXT_TOKENS
-    host: str = DEFAULT_HOST
+    # The operator's where none is given: `council.settings`, read once a process.
+    model: str = field(default_factory=lambda: current_settings().model)
+    seed: int = PINNED_SEED
+    context_tokens: int = field(default_factory=lambda: current_settings().context_tokens)
+    host: str = field(default_factory=lambda: current_settings().server)
 
     def __post_init__(self) -> None:
         """Refuse a pinning that is not one, and a host that is not this machine."""

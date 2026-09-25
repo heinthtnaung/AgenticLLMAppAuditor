@@ -2,7 +2,10 @@
 
 import pytest
 
+import council.ollama
 import eval_samples as samples
+from council.settings import Settings
+from council_eval import pass_provenance
 from council_eval.pass_provenance import file_digest, model_digest, pass_header
 from council_eval.variants import BASELINE, LIBRARY_REVERSED, Variant
 
@@ -30,6 +33,14 @@ def test_the_pinning_recorded_is_what_the_product_sends(tmp_path):
     assert (written["temperature"], written["seed"], written["num_ctx"]) == (0, 11, 8192)
     assert written["think"] is False
     assert written["prompt_version"] == "member-base-metric-3"
+
+
+def test_the_window_and_timeout_recorded_are_the_operator_s_settings(tmp_path, monkeypatch):
+    chosen = Settings("small:1b", "http://localhost:11434", 600.0, 16_384)
+    monkeypatch.setattr(council.ollama, "current_settings", lambda: chosen)
+    monkeypatch.setattr(pass_provenance, "current_settings", lambda: chosen)
+    written = header(tmp_path)
+    assert (written["num_ctx"], written["timeout_seconds"]) == (16_384, 600.0)
 
 
 def test_the_weights_are_named_by_the_digest_the_server_holds(tmp_path):

@@ -343,7 +343,7 @@ flowchart TD
     red --> shown["The text a member sees<br/>no id, no published vector,<br/>no other member's answer"]
 
     subgraph ROSTER["The roster: n members, added and removed by the operator"]
-        subgraph LOCALM["Local: Ollama on this machine"]
+        subgraph LOCALM["Local: Ollama on this machine<br/>server, window and timeout from AUDITOR_* settings<br/>temperature, seed and think pinned in code"]
             m1["Member 1, local"]
             m2["Member 2, local"]
             mdot["... to member n"]
@@ -501,7 +501,7 @@ flowchart LR
         b11["src/deps/manifests<br/>the manifests no lock file<br/>Syft reads is beside"]
         b4["src/cvss<br/>vector parser, metric vocabulary,<br/>Base score equations"]
         b5["src/findings<br/>the join, every source's score apart"]
-        b7["src/council<br/>roster and the egress gate, redaction,<br/>prompt, provider registry, chairman"]
+        b7["src/council<br/>roster and the egress gate, redaction,<br/>prompt, provider registry, chairman,<br/>the local server's settings"]
         b8["src/report<br/>the record, and three renderings of it:<br/>text, JSON, one self-contained HTML page"]
         b9["src/cli<br/>arguments, preflight, the audit order,<br/>the council's scope and its record, the<br/>stderr progress stream, the report files<br/>in reports/, and the exit code a<br/>pipeline reads"]
         b6["src/scoring<br/>the approved question library, categories<br/>clamped then weighted, and the band"]

@@ -205,9 +205,10 @@ member's family, so a reader can judge what a roster's agreement was worth.
 
 **A member's whole input fits in its context, so there is nothing to retrieve.**
 A prompt carries one metric's definitions and one advisory — never all eight
-metrics — and a local member pins its window at 8,192 tokens rather than taking
-whatever maximum the model offers. Measured against the prompt that runs, with
-the tokens counted by `qwen2.5:7b-instruct`:
+metrics — and a local member pins its window, 8,192 tokens by default
+(`AUDITOR_CONTEXT_TOKENS`, `README.md`), rather than taking whatever maximum the
+model offers; the record states the window a run used. Measured against the
+prompt that runs, with the tokens counted by `qwen2.5:7b-instruct`:
 
 | Input | Size |
 |---|---|
@@ -487,11 +488,15 @@ because the default differs by model: on Ollama 0.34.3 `gemma4:latest` answers
 the one prompt probed without the field exactly as with `think: true`, 554
 prompt tokens against 552 with `think: false` and a different reply, while
 Qwen's and Llama's replies to it are byte for byte the same either way
-(`measurements/thinking_and_load/`). A hosted model takes no seed, and the
-weights behind a name change without notice. **A council holding one hosted
-member is not reproducible run to run**, and every figure downstream inherits
-that — the vector can differ, so the CVSS figure shown beside the risk score
-can differ. `organisation_risk_score` cannot, because it never reads the
+(`measurements/thinking_and_load/`). Temperature, seed and thinking are pinned
+in code and are not settings, because a run whose sampling a file can change is
+not comparable with the last. The server, the window and the timeout are the
+operator's (`README.md`), and the record states the ones a run used, because the
+window and the timeout can change a result too. A hosted model takes no seed,
+and the weights behind a name change without notice. **A council holding one
+hosted member is not reproducible run to run**, and every figure downstream
+inherits that — the vector can differ, so the CVSS figure shown beside the risk
+score can differ. `organisation_risk_score` cannot, because it never reads the
 vector.
 
 What survives is narrower, and saying which is the point. The engine stays

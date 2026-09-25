@@ -14,11 +14,13 @@ import sys
 from pathlib import Path
 from typing import TextIO
 
+from council.ollama import PINNED_SEED, PINNED_TEMPERATURE, PINNED_THINKING
+from council.settings import current_settings
 from deps import manifests, syft_runner, trivy_runner
 from deps.trivy_database import DatedDatabase
 from findings.finding import build_findings
 from report.absences import Coverage
-from report.provenance import AdvisoryDatabase, RunProvenance
+from report.provenance import AdvisoryDatabase, LocalModels, RunProvenance
 from report.record import Report, build_report
 
 from cli.arguments import Options
@@ -30,6 +32,8 @@ def run_audit(
     options: Options, database: DatedDatabase, progress_to: TextIO = sys.stderr
 ) -> Report:
     """Scan one repository against the pinned database and gather everything into a record."""
+    # Read first, like the walk below: a bad setting stops the run before the scan.
+    local = local_models_of(options)
     # Walked first: a directory nobody can list stops the run before the scan.
     unread = manifests.unread_manifests(options.repository)
     catalogue = syft_runner.scan_directory(options.repository)
@@ -38,7 +42,7 @@ def run_audit(
     council = council_of(findings, options, progress_to)
     answers, approval = organisation_of(options.answers)
     return build_report(
-        provenance=provenance_of(options.repository, database.built_at),
+        provenance=provenance_of(options.repository, database.built_at, local),
         catalogue=catalogue,
         findings=findings,
         advisories_by_purl=advisories,
@@ -54,13 +58,32 @@ def run_audit(
     )
 
 
-def provenance_of(repository: Path, database_built_at: str) -> RunProvenance:
+def provenance_of(
+    repository: Path, database_built_at: str, local: LocalModels | None
+) -> RunProvenance:
     """Record what produced this run, asking each tool its own version."""
     return RunProvenance(
         repository=str(repository),
         syft_version=syft_runner.installed_version(),
         trivy_version=trivy_runner.installed_version(),
         database=AdvisoryDatabase(built_at=database_built_at),
+        local_models=local,
+    )
+
+
+def local_models_of(options: Options) -> LocalModels | None:
+    """Say how every local member will be asked, or nothing, for a run that names none."""
+    # The members come from `--council-member` alone: the settings never start a council.
+    if not options.council_models:
+        return None
+    chosen = current_settings()
+    return LocalModels(
+        server=chosen.server,
+        context_tokens=chosen.context_tokens,
+        timeout_seconds=chosen.timeout_seconds,
+        temperature=PINNED_TEMPERATURE,
+        seed=PINNED_SEED,
+        think=PINNED_THINKING,
     )
 
 

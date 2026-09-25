@@ -11,14 +11,20 @@ ordinary suite. Like the rest of `tests/docs`, it tests the guard and not the
 page: green here says a mistyped change is refused, not that the README is true.
 """
 
+from pathlib import Path
+
 import pytest
+
+from cli.arguments import parse_arguments
 
 from docs_samples import marker_changed, run_changing_an_answer
 from readme_markers import read_readme
-from readme_runs import printed_runs
+from readme_runs import arguments_of, printed_runs
 
 UNREADABLE = "!"
 NOT_A_CHANGE = "not a QUESTION=Answer change"
+# Only parsed, never opened: the CLI's parser does not look for the file.
+ANSWER_FILE = Path("answers.json")
 
 
 def test_a_change_token_that_cannot_be_read_is_refused():
@@ -30,3 +36,17 @@ def test_a_change_token_that_cannot_be_read_is_refused():
     damaged = marker_changed(page, run, written, f"{written}{UNREADABLE}")
     with pytest.raises(ValueError, match=NOT_A_CHANGE):
         printed_runs(damaged)
+
+
+def test_no_documented_run_names_a_council_member_so_none_reads_the_operator_s_settings():
+    """The live check runs each block in a child process, which reads `.env` for a council run."""
+    # `tests/conftest.py` keeps the operator's settings out of this process only,
+    # and `cli.audit` reads them for a run naming `--council-member`. The
+    # arguments are the ones the live check runs, read by the CLI's own parser.
+    runs = printed_runs(read_readme())
+    council = [
+        run.directive
+        for run in runs
+        if parse_arguments(arguments_of(run, ANSWER_FILE)).council_models
+    ]
+    assert council == []

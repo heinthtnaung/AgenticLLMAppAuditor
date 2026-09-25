@@ -20,7 +20,7 @@ from council.roster import Roster
 from report.council_record import CouncilOutcome
 
 from council_eval.dataset import Item
-from council_eval.replies import PROMPT_VERSION_FIELD, ReplayClient, Replies
+from council_eval.replies import PROMPT_VERSION_FIELD, WINDOW_FIELD, ReplayClient, Replies
 from council_eval.variants import Variant, variant_asked
 
 
@@ -29,13 +29,15 @@ def replay_roster(
 ) -> tuple[CouncilOutcome, ...]:
     """Rebuild what one roster decides on every item, from the calls its members' passes saved."""
     roster = build_roster(models)
-    variant = pass_variant(replies)
-    return tuple(replay_item(item, roster, replies, variant) for item in items)
+    variant, window = pass_variant(replies), pass_window(replies)
+    return tuple(replay_item(item, roster, replies, variant, window) for item in items)
 
 
-def replay_item(item: Item, roster: Roster, replies: Replies, variant: Variant) -> CouncilOutcome:
+def replay_item(
+    item: Item, roster: Roster, replies: Replies, variant: Variant, window: int
+) -> CouncilOutcome:
     """Rebuild one item's council record, every member answering from its recorded calls."""
-    client = ReplayClient(item.key, replies.calls, variant)
+    client = ReplayClient(item.key, replies.calls, variant, window)
     return assess_one(item.finding, roster, {OLLAMA_PROVIDER: client})
 
 
@@ -46,6 +48,16 @@ def pass_variant(replies: Replies) -> Variant:
     if len(versions) != 1:
         raise ValueError(f"passes asked under {sorted(versions)} cannot form one roster")
     return variant_asked(versions.pop())
+
+
+def pass_window(replies: Replies) -> int:
+    """Give the one window the passes were recorded at, whatever this machine's settings say."""
+    # The request carries the window, so a replay at another one is refused call by call.
+    windows = {header.get(WINDOW_FIELD) for header in replies.headers}
+    if len(windows) != 1 or not isinstance(next(iter(windows)), int):
+        named = sorted(map(str, windows))
+        raise ValueError(f"passes recorded at windows {named} cannot form one roster")
+    return windows.pop()
 
 
 def rosters(models: tuple[str, ...]) -> tuple[tuple[str, ...], ...]:

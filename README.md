@@ -390,6 +390,35 @@ no council, which is the default: the published scores stand side by side, and
 a council, when one runs, adds its own reading beside them without choosing
 among them.
 
+### The server, window and timeout are settings; the sampling is not
+
+Four `AUDITOR_*` keys set how local members are asked. Each is read from the
+environment first, then from `.env` at the project root, then its default.
+`.env.example` holds all four at their defaults: copy it to `.env`, which git
+ignores, and change what you need.
+
+| Key | Default | What it sets |
+|---|---|---|
+| `AUDITOR_SERVER_URL` | `http://127.0.0.1:11434` | the Ollama server. It must be this machine, `127.0.0.1`, `localhost` or `::1`, or it is refused; an address ending `/api/generate`, the older form, is read without it |
+| `AUDITOR_TIMEOUT_SECONDS` | `180` | how long one call may wait; a call that waits longer fails as `did not answer within N s` |
+| `AUDITOR_CONTEXT_TOKENS` | `8192` | the window every member is pinned to, which the context guard scales with |
+| `AUDITOR_MODEL` | `qwen2.5:7b-instruct` | the model a measurement asks when it names none. It never starts a council: members come from `--council-member` alone |
+
+Temperature 0, seed 11 and `think: false` are not settings. They are what makes
+a local member reproducible, and a run whose sampling a file can change is not
+comparable with the last one (`docs/COUNCIL.md`). The window and the timeout
+can change a result too, so the JSON record's `run.local_models` states the
+server, window and timeout a council run used, beside those three, and is
+`null` for a run with no member.
+
+**Only `AUDITOR_*` lines of `.env` are read**, so the file can hold other keys:
+every other line is passed over unparsed and never quoted. A misspelt
+`AUDITOR_*` key, a key written twice and a bad value are each refused, the value
+named with where it came from, and `audit` exits `2` before it scans. It reads
+the settings only when a `--council-member` is named, so a run with none is
+untouched by `.env`. No test reads them either: `tests/conftest.py` runs every
+test on the defaults.
+
 ### It is asked only about the findings the sources do not settle
 
 The council reconciles sources, so a finding whose sources already agree is not
@@ -512,7 +541,7 @@ sum of the Tests column below, and each skip's reason names its flag:
 
 | Flag | Runs | Tests | Needs |
 |---|---|---|---|
-| `COUNCIL_LIVE_OLLAMA=1` | `tests/council/test_ollama_live.py`: asks a model for real, the pinned one unless `COUNCIL_LIVE_MODEL` names another, so the recordings the council tests use are checked against it and a new model is checked the same way: it answers in the council's shape, quotes the advisory, and gives the same reply from two cold starts | 3 | `ollama serve` with `qwen2.5:7b-instruct` pulled, or the model `COUNCIL_LIVE_MODEL` names (for example `COUNCIL_LIVE_MODEL=gemma4:latest`); it skips, naming the model, when that model is not pulled |
+| `COUNCIL_LIVE_OLLAMA=1` | `tests/council/test_ollama_live.py`: asks a model for real, the default `qwen2.5:7b-instruct` unless `COUNCIL_LIVE_MODEL` names another, so the recordings the council tests use are checked against it and a new model is checked the same way: it answers in the council's shape, quotes the advisory, and gives the same reply from two cold starts | 3 | `ollama serve` with `qwen2.5:7b-instruct` pulled, or the model `COUNCIL_LIVE_MODEL` names (for example `COUNCIL_LIVE_MODEL=gemma4:latest`); it skips, naming the model, when that model is not pulled |
 | `README_LIVE_SCAN=1` | `tests/docs/test_readme_live.py`: reruns this page's marked audits and fails on any printed line that drifted | 1 | `fetched/vulnscout`, Syft, Trivy and the advisory database |
 | `SYFT_LIVE_SCAN=1` | `tests/deps/test_manifests_live.py`: measures the lock-file table above against the real Syft again | 13 | Syft on the path |
 

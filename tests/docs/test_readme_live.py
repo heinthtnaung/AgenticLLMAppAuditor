@@ -37,7 +37,9 @@ from cli.preflight import CannotRun, refuse_unrunnable
 from deps.trivy_database import trivy_cache_directory
 from readme_answers import answers_for
 from readme_markers import PROJECT_ROOT, README_PATH, read_readme, unmarked_note
-from readme_runs import ELIDED_TOKEN, FETCHED, REPOSITORY, PrintedRun, printed_runs
+from readme_runs import (
+    ELIDED_TOKEN, FETCHED, REPOSITORY, PrintedRun, arguments_of, printed_runs,
+)
 from readme_drift import Drift, drift_of, looks_elided
 
 LIVE = "README_LIVE_SCAN"
@@ -119,14 +121,13 @@ def how_to_elide(run: PrintedRun, printed_now: list[str]) -> list[str]:
 
 def output_of(run: PrintedRun, page: str, tmp_path: Path) -> list[str]:
     """Run the command one README block documents and give the lines it prints."""
-    command = [sys.executable, "-m", "cli.main", REPOSITORY]
-    if run.wants_answers:
-        command += ["--answers", str(answer_path(run, page, tmp_path))]
-    return audited(command, tmp_path)
+    # Built by `arguments_of`, so what the check runs is what the marker tests read.
+    arguments = arguments_of(run, answer_path(run, page, tmp_path))
+    return audited([sys.executable, "-m", "cli.main", *arguments], tmp_path)
 
 
 def answer_path(run: PrintedRun, page: str, tmp_path: Path) -> Path:
-    """Write the answer file one run is handed: the README's own, with its marker's edits."""
+    """Write the answer file one run would be handed: the README's own, with its marker's edits."""
     written = tmp_path / f"answers-{run.line_number}.json"
     written.write_text(json.dumps(answers_for(run, page)), encoding="utf-8")
     return written

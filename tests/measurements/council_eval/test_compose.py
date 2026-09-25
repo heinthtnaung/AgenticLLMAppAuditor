@@ -4,6 +4,7 @@ from itertools import chain
 
 import pytest
 
+import council.ollama
 import eval_samples as samples
 from cli.council_run import OLLAMA_PROVIDER, assess_one, build_roster
 from council.prompt import PROMPT_VERSION
@@ -12,6 +13,7 @@ from council_eval.compose import pass_models, replay_roster, rosters
 from council_eval.recording import RecordingClient
 from council_eval.replies import Replies
 from council_eval.variants import BASELINE, LIBRARY, REVERSED, Variant
+from council.settings import Settings
 
 # The second member disagrees on AV with a verified quotation, and declines UI.
 OTHER_ANSWERS = samples.ANSWERS | {"AV": samples.reply("L"), "UI": samples.DECLINED}
@@ -100,3 +102,27 @@ def test_a_variant_s_record_names_the_product_s_prompt_version_on_its_members():
     everyone = chain.from_iterable(ruling.said for ruling in outcome.rulings)
     named = {said.member.prompt_version for said in everyone}
     assert named == {PROMPT_VERSION}
+
+
+def test_a_pass_replays_at_the_window_it_was_recorded_at_whatever_the_settings_say(monkeypatch):
+    # An operator's `AUDITOR_CONTEXT_TOKENS` is for new passes; a saved one keeps its own.
+    recorded = passes()
+    wider = Settings("small:1b", "http://127.0.0.1:11434", 180.0, 16_384)
+    monkeypatch.setattr(council.ollama, "current_settings", lambda: wider)
+    (outcome,) = replay_roster((samples.item(),), (samples.MODEL,), recorded)
+    monkeypatch.undo()
+    assert outcome == asked_live((samples.MODEL,))
+
+
+def test_passes_recorded_at_two_windows_cannot_form_one_roster():
+    both = passes()
+    narrow = both.headers[0] | {"num_ctx": 4096}
+    mixed = Replies(headers=(narrow, both.headers[1]), calls=both.calls)
+    with pytest.raises(ValueError, match="recorded at windows"):
+        replay_roster((samples.item(),), (samples.MODEL, samples.OTHER_MODEL), mixed)
+
+
+def test_a_pass_that_names_no_window_is_refused():
+    unnamed = {key: value for key, value in samples.header().items() if key != "num_ctx"}
+    with pytest.raises(ValueError, match=r"recorded at windows \['None'\]"):
+        replay_roster((samples.item(),), (samples.MODEL,), Replies(headers=(unnamed,), calls={}))

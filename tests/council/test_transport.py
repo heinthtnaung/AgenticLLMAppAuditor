@@ -6,12 +6,15 @@ import threading
 import time
 import urllib.error
 import urllib.request
+from contextlib import contextmanager
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from typing import Iterator
 
 import pytest
 
 import model_shapes as shapes
 from council import transport
+from council.settings import Settings
 from council.transport import (
     JSON_CONTENT_TYPE,
     ModelUnavailable,
@@ -150,16 +153,28 @@ class Slow(BaseHTTPRequestHandler):
         """Keep the test's output quiet."""
 
 
-def test_a_server_slower_than_the_timeout_is_named_as_slow_and_not_as_absent():
+@contextmanager
+def slow_server() -> Iterator[str]:
+    """Serve slowly on a free loopback port for as long as a test needs it."""
     server = ThreadingHTTPServer(("127.0.0.1", 0), Slow)
     threading.Thread(target=server.serve_forever, daemon=True).start()
-    url = f"http://127.0.0.1:{server.server_port}/api/generate"
     try:
-        with pytest.raises(ModelUnavailable, match="did not answer within 0.2 s"):
-            post_json(url, PAYLOAD, timeout=PATIENCE_SECONDS)
+        yield f"http://127.0.0.1:{server.server_port}/api/generate"
     finally:
         server.shutdown()
         server.server_close()
+
+
+def test_a_server_slower_than_the_timeout_is_named_as_slow_and_not_as_absent():
+    with slow_server() as url, pytest.raises(ModelUnavailable, match="did not answer within 0.2 s"):
+        post_json(url, PAYLOAD, timeout=PATIENCE_SECONDS)
+
+
+def test_with_no_timeout_given_the_operator_s_setting_is_what_is_waited(monkeypatch):
+    patient = Settings("any:1b", "http://127.0.0.1:11434", PATIENCE_SECONDS, 8192)
+    monkeypatch.setattr(transport, "current_settings", lambda: patient)
+    with slow_server() as url, pytest.raises(ModelUnavailable, match="did not answer within 0.2 s"):
+        post_json(url, PAYLOAD)
 
 
 def test_a_connection_that_timed_out_is_named_as_slow_too(monkeypatch):

@@ -22,7 +22,7 @@ import urllib.error
 import urllib.request
 from typing import Any, Protocol
 
-DEFAULT_TIMEOUT_SECONDS = 180.0
+from council.settings import current_settings
 
 JSON_CONTENT_TYPE = "application/json"
 
@@ -51,10 +51,12 @@ class Transport(Protocol):
         """Post one request and return the parsed reply envelope."""
 
 
-def post_json(
-    url: str, payload: dict[str, Any], timeout: float = DEFAULT_TIMEOUT_SECONDS
-) -> Any:
-    """Post a JSON payload and give back the parsed reply, refusing anything else."""
+def post_json(url: str, payload: dict[str, Any], timeout: float | None = None) -> Any:
+    """Post a JSON payload and give back the parsed reply, refusing anything else.
+
+    With no `timeout` given, the operator's `AUDITOR_TIMEOUT_SECONDS` is waited.
+    """
+    timeout = current_settings().timeout_seconds if timeout is None else timeout
     request = build_request(url, payload)
     try:
         with NO_PROXY_OPENER.open(request, timeout=timeout) as response:
