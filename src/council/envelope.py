@@ -34,6 +34,7 @@ RESPONSE_FIELD = "response"
 ERROR_FIELD = "error"
 THINKING_FIELD = "thinking"
 DONE_REASON_FIELD = "done_reason"
+PROMPT_COUNT_FIELD = "prompt_eval_count"
 CUT_OFF = "length"
 
 

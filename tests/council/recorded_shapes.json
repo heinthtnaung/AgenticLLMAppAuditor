@@ -29,6 +29,45 @@
    "total_duration": 6384866126
   }
  },
+ "cut prompts": {
+  "gemma4:latest in 8192": {
+   "envelope": {
+    "done_reason": "stop",
+    "eval_count": 79,
+    "model": "gemma4:latest",
+    "prompt_eval_count": 4099,
+    "response": "{\n  \"value\": \"H\",\n  \"evidence\": \"A single fix closes all instances of this class: call `curl.reset()` at the start of `_curl_setup_request` and then re-apply the per-request options, so no state from a prior request can persist on the reused handle.\",\n  \"confidence\": \"high\"\n}"
+   },
+   "estimated": 9406,
+   "num_ctx": 8192,
+   "prompt": "build_prompt('AC', GHSA-pw6j-qg29-8w7f's text twice)"
+  },
+  "qwen2.5:7b-instruct in 256": {
+   "envelope": {
+    "done_reason": "stop",
+    "eval_count": 32,
+    "model": "qwen2.5:7b-instruct",
+    "prompt_eval_count": 130,
+    "response": "{\n  \"value\": \"P\",\n  \"evidence\": \"The component does not validate the supplied path.\",\n  \"confidence\": \"medium\"\n}"
+   },
+   "estimated": 601,
+   "num_ctx": 256,
+   "prompt": "build_prompt('AV', council_samples.ADVISORY)"
+  },
+  "qwen2.5:7b-instruct in 8192": {
+   "envelope": {
+    "done_reason": "stop",
+    "eval_count": 73,
+    "model": "qwen2.5:7b-instruct",
+    "prompt_eval_count": 4098,
+    "response": "{\n  \"value\": \"H\",\n  \"evidence\": \"A request that sets a *new* `proxy_host` without `proxy_username` updates `PROXY`/`PROXYPORT` but never reaches the `else`, so the previous request's credentials persist and are sent to the new proxy.\",\n  \"confidence\": \"high\"\n}"
+   },
+   "estimated": 9406,
+   "num_ctx": 8192,
+   "prompt": "build_prompt('AC', GHSA-pw6j-qg29-8w7f's text twice)"
+  },
+  "recorded": "2026-09-25, 11:50:40 to 11:55:08 +08:00, Ollama 0.34.3; the journal logged each as 'truncating input prompt'"
+ },
  "recorded": {
   "digests": {
    "gemma4:latest": "c6eb396dbd5992bbe3f5cdb947e8bbc0ee413d7c17e2beaae69f5d569cf982eb",

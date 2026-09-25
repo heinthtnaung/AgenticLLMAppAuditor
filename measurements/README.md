@@ -18,7 +18,8 @@ reader can disagree with a number by producing a different one.
 | `rootfs/debian`, `rootfs/alpine` | two synthetic root filesystems: an `os-release`, a version marker and a package database listing old packages |
 | `advisories.py` | runs the seven scans and reads them into one set of advisory texts |
 | `redaction_gaps.py` | what `council.redaction` catches, lets past, and would cost to widen |
-| `prompt_tokens.py` | what a member's prompt costs the pinned model, counted by the model |
+| `prompt_tokens.py` | what a member's prompt costs a model, counted by that model: the pinned one, or each one named |
+| `prompt_tokens.2026-09-25.txt` | that count on 2026-09-25 for `qwen2.5:7b-instruct`, `llama3.2:latest`, `gemma4:latest` and `qwen2.5-coder:7b-instruct` |
 | `record_council_run.py` | runs one council audit and keeps what it printed and wrote beside what produced it |
 | `run_provenance.py` | what a recorded run was launched from and how it ended: git and `ollama ps` at launch, the clock and `ollama ps` at the end |
 | `run_directory.py` | where a recorded audit runs, so the project's `reports/` is never written, and the copying out of its three renderings |
@@ -49,8 +50,9 @@ python measurements/prompt_tokens.py
 finds for itself, since these scripts pass it no `--cache-dir`: by Trivy 0.74's
 own order, `TRIVY_CACHE_DIR`, a `cache.dir` in a `trivy.yaml` where it runs,
 `$XDG_CACHE_HOME/trivy`, then `~/.cache/trivy`. It touches no network and no
-model. `prompt_tokens.py` additionally needs `ollama serve` up with
-`qwen2.5:7b-instruct` pulled; it talks to loopback only.
+model. `prompt_tokens.py` additionally needs `ollama serve` up with each model
+it names pulled, `qwen2.5:7b-instruct` when it names none
+(`python measurements/prompt_tokens.py [MODEL ...]`); it talks to loopback only.
 The `NO_PROXY` export is this machine's corporate proxy, which otherwise answers
 502 for a loopback request.
 
@@ -72,7 +74,7 @@ table was measured on that database.
 | **0** advisories containing their own id | every identifier in advisory text is a cross-reference |
 | **421** tokens for a prompt with no advisory in it | one metric's definitions, instructions and reply schema — not the 2,700 of the whole table |
 | **4,897** tokens for the worst advisory's prompt | against 8,192 pinned: a 1.7× margin, not the "several times" an 18-advisory corpus suggested |
-| **39** tokens of error on the guard's estimate | 0.8%, which is what makes four-characters-to-the-token acceptable in `refuse_overlong_prompt` |
+| **39** tokens of error on the guard's estimate | 0.8% on Qwen's tokenizer, which is what made four-characters-to-the-token acceptable in `refuse_overlong_prompt`; how much of the window the guard allows is now set by four tokenizers, below |
 
 **On its successor, built 2026-09-23T20:20:57Z, the count is 1,189.** That
 database replaced the pinned one on this machine on 2026-09-24. Debian 11 rises
@@ -86,8 +88,14 @@ was not kept, so they are identified by date, not by comparing the lists, and
 `redaction_gaps.py` on the successor gives 880 advisories carrying an `x.y`
 number where the table says 878, and every other redaction count the same. The
 longest advisory is still `GHSA-pw6j-qg29-8w7f` at 17,893 characters.
-`prompt_tokens.py` has not been run on it, so its three token counts are the
-pinned database's alone.
+Run on 2026-09-25 over four models, `prompt_tokens.py` gives Qwen the same
+421, 4,897 and 39 (`prompt_tokens.2026-09-25.txt`). The file does not name the
+database it read; by date it was the successor. On the worst prompt, estimated
+at 4,936 tokens, `llama3.2:latest` counts 4,791 (−2.9%), `gemma4:latest` 5,689
+(+15.3%), and `qwen2.5-coder:7b-instruct` the same as Qwen. That spread is why
+`refuse_overlong_prompt` now allows 75% of the window, where it allowed 90%: at
+15% over, a prompt at the limit still leaves an eighth of the window for the
+reply.
 
 The corpus supersedes an earlier 153-advisory measurement — 18 vulnscout
 advisories and 135 from a PyPI manifest that was never committed. That manifest

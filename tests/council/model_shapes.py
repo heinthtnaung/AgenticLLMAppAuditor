@@ -5,7 +5,9 @@ machine's Ollama 0.34.3 with the product's own request: what
 `qwen2.5-coder:7b-instruct` and `gemma4:latest` answered, what the server said
 to a model that cannot generate and to a `think` the model does not support,
 and `gemma4:latest` asked with `think` true and no `format`, which is the one
-envelope here that carries reasoning.
+envelope here that carries reasoning. `cut prompts` are three answers to a prompt
+too long for its window, which Ollama cut to half the window and answered with a
+200 and `done_reason` `stop` -- the one trace being the count it reports.
 
 The made-up ones are the shapes no pulled model has sent the product's request,
 each named for what it stands in for. Nothing here asks a model.
@@ -19,6 +21,7 @@ RECORDED = json.loads((Path(__file__).parent / "recorded_shapes.json").read_text
 ANSWERED = RECORDED["answered"]
 REFUSED = RECORDED["refused"]
 THINKING_WITHOUT_FORMAT = RECORDED["thinking without format"]
+CUT_PROMPTS = {name: cut for name, cut in RECORDED["cut prompts"].items() if name != "recorded"}
 
 DRAFT = '{"value": "L", "evidence": "the host", "confidence": "low"}'
 ANSWER = '{"value": "N", "evidence": "unauthenticated remote attacker", "confidence": "high"}'

@@ -19,7 +19,7 @@ from itertools import chain
 from pathlib import Path
 from typing import Any, Mapping
 
-from council.ollama import LocalModel, build_request, read_envelope
+from council.ollama import LocalModel, build_request, read_answer
 from council.prompt import MemberPrompt
 from council.roster import Member
 from council.transport import ModelUnavailable
@@ -100,13 +100,14 @@ class ReplayClient:
         """Answer as the recorded call did, or refuse a request that was never recorded."""
         pinning = LocalModel(model=member.model)
         # Built first, as `ask` builds it: a prompt the live call refused is refused here.
-        request = build_request(variant_prompt(prompt, self.variant), pinning)
+        asked = variant_prompt(prompt, self.variant)
+        request = build_request(asked, pinning)
         recorded = self.recorded(member.model, prompt.metric)
         if recorded.request_sha256 != request_digest(request):
             raise ReplayMismatch(f"{self.key} {prompt.metric}: {member.model} was asked otherwise")
         if recorded.envelope is None:
             raise ModelUnavailable(f"{member.model} sent nothing back for {prompt.metric}")
-        return read_envelope(recorded.envelope, pinning).text
+        return read_answer(recorded.envelope, asked, pinning).text
 
     def recorded(self, model: str, metric: str) -> CallRecord:
         """Find the call recorded for one model and metric of this item."""
