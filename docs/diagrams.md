@@ -99,11 +99,12 @@ like a clean repository. The walk names each one, and the record lists it first
 under not assessed with a line in the summary saying the counts leave it out;
 a directory it cannot list is "could not run" rather than passed over.
 
-Unlike those refusals, an unread manifest does not move the exit code: the run
-still exits by what it found, so a pipeline reading only the code goes green,
-and has to read `not_assessed` in the JSON to see it. What counts as read was
-measured against Syft 1.52, and `README.md` names the four ways the walk falls
-short.
+Unlike those refusals, an unread manifest does not stop the run; it changes
+what nothing found is called. A run that finds nothing exits `3` rather than
+`0` while one is unread, so a pipeline reading only the code does not go green
+on it. A run that finds something exits `1` either way, and `not_assessed` in
+the JSON is where the unread ones are named. What counts as read was measured
+against Syft 1.52, and `README.md` names the four ways the walk falls short.
 
 Syft is one box because it is one call: it finds the manifests and catalogues
 them in the same pass; the walk before it feeds it nothing. The

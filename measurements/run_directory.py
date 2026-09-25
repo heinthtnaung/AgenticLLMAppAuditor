@@ -23,12 +23,12 @@ from run_provenance import REPOSITORY_ROOT, RecordingFailed
 sys.path.insert(0, str(REPOSITORY_ROOT / "src"))
 
 from cli.arguments import HTML_FORMAT, JSON_FORMAT, TEXT_FORMAT  # noqa: E402
-from cli.main import FOUND_NOTHING, FOUND_SOMETHING  # noqa: E402
+from cli.main import FOUND_NOTHING, FOUND_NOTHING_BUT_UNREAD, FOUND_SOMETHING  # noqa: E402
 from cli.report_files import REPORTS_DIRECTORY, SUFFIXES  # noqa: E402
 
 # An audit that exits with one of these ran, and so wrote its reports; one that
 # could not run wrote none, and its exit code in the provenance already says so.
-AUDIT_RAN = (FOUND_NOTHING, FOUND_SOMETHING)
+AUDIT_RAN = (FOUND_NOTHING, FOUND_SOMETHING, FOUND_NOTHING_BUT_UNREAD)
 
 
 def link_project(root: Path, directory: Path) -> None:

@@ -1,4 +1,4 @@
-"""Guards on the entry point: three outcomes a pipeline can tell apart."""
+"""Guards on the entry point: four outcomes a pipeline can tell apart."""
 
 import io
 import json
@@ -7,7 +7,7 @@ import pytest
 
 from cli import audit as audit_module
 from cli import main as entry
-from cli.main import COULD_NOT_RUN, FOUND_NOTHING, FOUND_SOMETHING, main
+from cli.main import COULD_NOT_RUN, FOUND_NOTHING, FOUND_NOTHING_BUT_UNREAD, FOUND_SOMETHING, main
 from cli.preflight import CannotRun
 from cli.report_files import WRITTEN_TO
 from cli_samples import REPORTS_FOLDER, TRIVY_VERSION, run_command_line, written_answers
@@ -57,8 +57,8 @@ def test_a_run_that_could_not_happen_exits_two_and_says_why(monkeypatch, tmp_pat
     assert str(fault) in error.getvalue()
 
 
-def test_the_three_outcomes_are_three_different_codes():
-    assert len({FOUND_NOTHING, FOUND_SOMETHING, COULD_NOT_RUN}) == 3
+def test_the_four_outcomes_are_four_different_codes():
+    assert len({FOUND_NOTHING, FOUND_SOMETHING, COULD_NOT_RUN, FOUND_NOTHING_BUT_UNREAD}) == 4
 
 
 def test_a_bad_command_line_also_leaves_by_the_could_not_run_door():

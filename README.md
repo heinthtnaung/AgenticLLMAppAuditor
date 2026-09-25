@@ -168,7 +168,8 @@ The summary gains a pointer, so the counts never stand alone: a second line in
 text, and the end of the same summary paragraph on the page. With two such
 manifests it reads
 `Not in these counts: 2 manifests with no lock file Syft reads, named under not assessed.`
-The JSON artefact carries each under `not_assessed`.
+The JSON artefact carries each under `not_assessed`. A run that finds nothing
+while one is named exits `3`, not `0`.
 
 **To audit what it declares, write the lock file and audit again.** For npm, in
 the manifest's directory, with the proxy **on** because it asks the registry:
@@ -327,13 +328,14 @@ under `NOT ASSESSED` rather than printing a zero. With `--answers` and nothing
 found there is none either, and rather than claim nobody answered, it reads
 `answers were supplied, but there was no finding to weigh them against`.
 
-### The exit code says which of three things happened
+### The exit code says which of four things happened
 
 | Code | Meaning |
 |---|---|
-| `0` | the audit ran and found nothing |
+| `0` | the audit ran, found nothing, and read every manifest |
 | `1` | the audit ran and found something |
 | `2` | the audit could not run, or could not save its reports |
+| `3` | the audit ran and found nothing, but could not read a manifest |
 
 **`2` is the one that matters.** A missing database, an absent scanner or a path
 that is not there would otherwise exit 0 beside a genuinely clean repository, and
@@ -343,11 +345,13 @@ command line and a directory the manifest walk cannot list exit with, so every
 written exits `2` even with the record on stdout, because it did not do
 everything it was asked to.
 
-**A manifest with no lock file does not move the code.** The run still exits
-`0` or `1` by what it found, so a pipeline reading only the code goes green on
-a repository whose dependencies were never checked. Read the JSON artefact's
-`not_assessed` as well: each unread manifest is an entry there, named by its
-path, with the lock-file reason as its `because`.
+**`3` keeps nothing found over an unread manifest apart from `0`.** A
+`package.json` with no lock file yields no package, so `0` there would put a
+green build on dependencies nobody checked; a pipeline that passes only on `0`
+stops on `3`. A run with findings exits `1` whether or not it read every
+manifest, because the findings already stop the build, so on `1` read the JSON
+artefact's `not_assessed` as well: each unread manifest is an entry there,
+named by its path, with the lock-file reason as its `because`.
 
 ### The council is off unless you ask for it
 
