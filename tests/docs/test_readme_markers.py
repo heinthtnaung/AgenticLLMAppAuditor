@@ -29,6 +29,7 @@ from readme_markers import (
     read_readme,
 )
 from readme_runs import printed_runs
+from readme_tool_output import unmarked_tool_output
 
 MARKER_NAME = "readme-check"
 MISSPELLING = "readme-checks"
@@ -115,6 +116,19 @@ def test_a_block_pasted_with_no_marker_is_not_noticed_which_is_the_known_gap():
     # new behaviour. Deleting it instead puts the page back to trusting nobody.
     page = page_with(read_readme(), UNMARKED_OUTPUT)
     assert len(printed_runs(page)) == EXPECTED_RUN_BLOCKS
+    assert len(unmarked_tool_output(page)) == len(unmarked_tool_output(read_readme()))
+
+
+def test_the_council_progress_is_the_one_output_of_this_tool_the_page_leaves_unmarked():
+    """The one unchecked output fence, pinned so that no second one can join it unnoticed."""
+    # RED HERE MEANS THE SET OF UNCHECKED OUTPUT CHANGED. The council's progress
+    # is a council run's stderr and needs Ollama, so no marker reruns it. If it
+    # now carries one, `readme_markers`'s docstring and this test both need
+    # rewriting for the page as it is. If another fence of this tool's output
+    # turned up with no marker, the fix is a marker on it, not a longer list here.
+    unmarked = unmarked_tool_output(read_readme())
+    assert len(unmarked) == 1, f"{len(unmarked)} unmarked fences of this tool's output"
+    assert any(run.council_models for run in unmarked[0]), "it follows no council run"
 
 
 def marker_lines(page: str, directive_word: str) -> list[int]:
