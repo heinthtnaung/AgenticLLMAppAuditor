@@ -1,6 +1,8 @@
 """Guards on the subcommands: the gate passes on a faithful replay and fails on a changed one."""
 
 import io
+import json
+from pathlib import Path
 
 import pytest
 
@@ -99,6 +101,32 @@ def test_a_pass_is_asked_in_the_product_s_words_unless_it_names_a_variant():
 def test_a_variant_nobody_defined_is_refused():
     with pytest.raises(SystemExit):
         commands.main(["collect", "--dataset", "d", "--model", "m", "--out", "o", "--variant", "x"])
+
+
+def test_a_dataset_names_a_cache_in_the_home_directory_from_the_home_mark():
+    home = {"HOME": "/home/someone"}
+    assert commands.home_relative(Path("/home/someone/.cache/trivy"), home) == "~/.cache/trivy"
+
+
+def test_a_frozen_dataset_names_its_cache_from_the_home_mark(tmp_path, monkeypatch):
+    # The scanners are stubbed; the cache, its date and the file written are real.
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.delenv("TRIVY_CACHE_DIR", raising=False)
+    monkeypatch.delenv("XDG_CACHE_HOME", raising=False)
+    metadata = tmp_path / ".cache" / "trivy" / "db" / "metadata.json"
+    metadata.parent.mkdir(parents=True)
+    metadata.write_text('{"UpdatedAt": "2026-09-23T20:20:57Z"}')
+    monkeypatch.setattr(commands, "vulnscout_items", lambda repository, cache: (samples.item(),))
+    monkeypatch.setattr(commands.syft_runner, "installed_version", lambda: "1.52.0")
+    monkeypatch.setattr(commands.trivy_runner, "installed_version", lambda: "0.74.0")
+    out = tmp_path / "dataset.json"
+    commands.main(["dataset", "--repository", "repo", "--out", str(out)])
+    assert json.loads(out.read_text())["built_from"]["trivy_cache"] == "~/.cache/trivy"
+
+
+@pytest.mark.parametrize("home", [{"HOME": "/home/someone"}, {}])
+def test_a_cache_outside_the_home_directory_is_named_whole(home):
+    assert commands.home_relative(Path("/var/cache/trivy"), home) == "/var/cache/trivy"
 
 
 def test_an_unknown_step_is_refused():
