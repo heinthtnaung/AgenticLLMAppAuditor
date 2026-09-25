@@ -16,7 +16,8 @@ from cli.organisation_run import weigh_findings
 from council_runs import council_ran
 from organisation.answers import OrganisationAnswers
 from organisation.approval import Approval, Decision
-from report.record import Coverage, Report, build_report
+from report.absences import Coverage
+from report.record import Report, build_report
 from report_samples import PROVENANCE, catalogue, component, finding
 from scoring.library import APPROVED_QUESTIONS
 from scoring.question import Answer

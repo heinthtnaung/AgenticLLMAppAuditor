@@ -7,8 +7,9 @@ both put it on their summary line and neither leaves it off.
 import html
 
 from full_runs import fully_assessed
+from report.absences import Coverage
 from report.html_report import as_html
-from report.record import Coverage, Report
+from report.record import Report
 from report.summary_words import unread_pointer
 from report.text_report import as_text
 

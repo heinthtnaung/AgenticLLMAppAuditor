@@ -15,7 +15,8 @@ cut for space.
 
 from organisation.approval import Approval
 from report.html_layout import listing, section, separated, tag, text
-from report.record import NOTHING_ABSENT, Report
+from report.absences import NOTHING_ABSENT
+from report.record import Report
 
 NOTHING_LEDE = (
     "Counted apart on purpose. An advisory matching no component is a CVE that fell out of "

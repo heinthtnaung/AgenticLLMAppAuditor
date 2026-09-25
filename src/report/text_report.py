@@ -19,7 +19,8 @@ it goes on.
 from report.disagreement import sources_disagree
 from organisation.approval import Approval
 from report.provenance import AdvisoryDatabase
-from report.record import NOTHING_ABSENT, Report
+from report.absences import NOTHING_ABSENT
+from report.record import Report
 from report.summary_words import unread_pointer
 from report.text_council import council_block
 from report.text_findings import (
