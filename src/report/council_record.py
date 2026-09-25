@@ -90,6 +90,11 @@ class CouncilAssessment:
     vector: str
     single_assessor: bool
     rulings: tuple[MetricRuling, ...] = ()
+    # Nothing on the vector was cross-checked: the run reached one member, or
+    # every basis was "sole", each metric resting on one member's quotation alone
+    # though not always the same member's. Worked out in `cli.council_run`, which
+    # knows the council's own types, because this package does not import them.
+    nothing_cross_checked: bool = False
 
 
 @dataclass(frozen=True)

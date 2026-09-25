@@ -9,7 +9,8 @@ passed over is built as `cli.council_run.passed_over` builds one.
 from cli.council_run import SOURCES_AGREE
 from council.prompt import PROMPT_VERSION
 from council_runs import (
-    AGREED, DECLINED_AND_GUESSED, DISSENTING, LONG_QUOTE, UNPARSEABLE, council_ran, fell_back,
+    AGREED, DECLINED_AND_GUESSED, DECLINED_ON_AV, DISSENTING, LONG_QUOTE, QUOTED_BY_ONE,
+    UNPARSEABLE, council_ran, fell_back,
 )
 from report.council_record import CouncilNotAsked
 from report.json_council import council_of
@@ -119,3 +120,10 @@ def test_a_finding_of_a_run_with_no_council_at_all_is_null():
 def test_an_assessed_finding_says_a_council_ran_on_it_whether_or_not_it_settled():
     assert rendered(council_ran())["ran"] is True
     assert rendered(council_ran(**DISSENTING))["ran"] is True
+
+
+def test_a_vector_says_whether_anything_was_cross_checked_and_no_vector_says_nothing():
+    assert rendered(council_ran(**QUOTED_BY_ONE))["nothing_cross_checked"] is True
+    assert rendered(council_ran(**DECLINED_ON_AV))["nothing_cross_checked"] is False
+    assert rendered(council_ran())["nothing_cross_checked"] is False
+    assert rendered(fell_back())["nothing_cross_checked"] is None

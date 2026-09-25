@@ -50,7 +50,6 @@ from report.council_words import (
     NOT_ASKED,
     NO_VECTOR,
     SETTLED,
-    SINGLE_ASSESSOR,
     chairman_said,
     checked,
     confident,
@@ -58,6 +57,7 @@ from report.council_words import (
     counted,
     metrics_settled,
     unanswered,
+    uncross_checked,
     who,
 )
 from report.record import Report
@@ -105,7 +105,7 @@ def advisory_lines(outcome: CouncilAssessment | CouncilWithoutVector) -> list[st
     """Give one advisory's heading, then the metrics the chairman could not settle."""
     unsettled = [one for one in outcome.rulings if one.outcome is not Outcome.SETTLED]
     settled = [one for one in outcome.rulings if one.outcome is Outcome.SETTLED]
-    heading = SOURCE_SEPARATOR.join([headline(outcome), *single_assessor(outcome)])
+    heading = SOURCE_SEPARATOR.join([headline(outcome), *uncross_checked(outcome)])
     return [
         indented(ADVISORY_DEPTH, f"{outcome.advisory_id}  {heading}"),
         *settled_lines(settled),
@@ -118,11 +118,6 @@ def headline(outcome: CouncilAssessment | CouncilWithoutVector) -> str:
     if isinstance(outcome, CouncilAssessment):
         return SOURCE_SEPARATOR.join([SETTLED, outcome.vector])
     return SOURCE_SEPARATOR.join([NO_VECTOR, could_not_settle(outcome)])
-
-
-def single_assessor(outcome: CouncilAssessment | CouncilWithoutVector) -> list[str]:
-    """Mark a run only one member answered, so nobody reads a council into it."""
-    return [SINGLE_ASSESSOR] if outcome.single_assessor else []
 
 
 def settled_lines(settled: list[MetricRuling]) -> list[str]:

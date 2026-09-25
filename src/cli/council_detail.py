@@ -101,6 +101,15 @@ def value_of(ruling) -> str:
     return ""
 
 
+def nothing_cross_checked(run) -> bool:
+    """Say whether nothing in a run was cross-checked: one member reached, or every basis sole."""
+    # Two members reached is not two members checked: one that guessed every
+    # metric leaves each resting on the other's quotation alone.
+    return run.single_assessor or all(
+        getattr(round_.ruling, "basis", None) is Basis.SOLE for round_ in run.rounds
+    )
+
+
 def basis_of(ruling) -> str:
     """Say what settled a metric, in the chairman's own words."""
     basis = getattr(ruling, "basis", None)

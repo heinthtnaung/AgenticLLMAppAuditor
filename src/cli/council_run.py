@@ -46,7 +46,7 @@ from council.prompt import build_prompt
 from council.runner import PROVIDER_CLIENTS, assess
 from council.ruling import ContestedMetric, NoFallbackPublished, UnresolvedMetric
 from findings.finding import Finding
-from cli.council_detail import rulings_of
+from cli.council_detail import nothing_cross_checked, rulings_of
 from cli.progress import NO_PROGRESS, CouncilProgress
 from report.council_record import (
     CouncilAssessment,
@@ -155,6 +155,7 @@ def assess_one(finding: Finding, roster: Roster, clients, progress=NO_PROGRESS) 
         vector=str(agreed_vector(run.rulings, VECTOR_VERSION)),
         single_assessor=run.single_assessor,
         rulings=rulings,
+        nothing_cross_checked=nothing_cross_checked(run),
     )
 
 

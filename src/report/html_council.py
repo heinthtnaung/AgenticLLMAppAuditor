@@ -38,7 +38,7 @@ from report.council_record import (
     was_assessed,
 )
 from report.council_words import (
-    NOT_ASKED, NO_VECTOR, SETTLED, SINGLE_ASSESSOR, could_not_settle, counted, metrics_settled,
+    NOT_ASKED, NO_VECTOR, SETTLED, could_not_settle, counted, metrics_settled, uncross_checked,
 )
 from report.html_layout import listing, section, separated, tag, text
 from report.html_metric import metric_details
@@ -88,9 +88,10 @@ def council_entry(outcome: CouncilAssessment | CouncilWithoutVector) -> str:
 
 
 def outcome_line(outcome: CouncilAssessment | CouncilWithoutVector) -> str:
-    """Name the advisory, say whether a vector came out of it, and mark a run of one."""
+    """Name the advisory, say whether a vector came out of it, and mark one nothing checked."""
     named = tag("code", text(outcome.advisory_id))
-    return tag("p", separated([named, headline(outcome), single_assessor(outcome)]), "council-name")
+    flagged = separated([named, headline(outcome), cross_check_flags(outcome)])
+    return tag("p", flagged, "council-name")
 
 
 def headline(outcome: CouncilAssessment | CouncilWithoutVector) -> str:
@@ -100,11 +101,9 @@ def headline(outcome: CouncilAssessment | CouncilWithoutVector) -> str:
     return separated([text(NO_VECTOR), text(could_not_settle(outcome))])
 
 
-def single_assessor(outcome: CouncilAssessment | CouncilWithoutVector) -> str:
-    """Mark a run only one member answered, so nobody reads a council into it."""
-    if not outcome.single_assessor:
-        return ""
-    return tag("span", text(SINGLE_ASSESSOR), "flag")
+def cross_check_flags(outcome: CouncilAssessment | CouncilWithoutVector) -> str:
+    """Flag a result nothing in which was cross-checked, so nobody reads a council into it."""
+    return "".join(tag("span", text(one), "flag") for one in uncross_checked(outcome))
 
 
 def settled_note(settled: list[MetricRuling]) -> str:

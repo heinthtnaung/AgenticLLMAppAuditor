@@ -231,6 +231,13 @@ change and keep the old wording, so how many of the 99 would now read `SOLE`
 is not in them. A second member's quotation that is not in the advisory still
 counts toward `AGREED` (`docs/COUNCIL.md`, "What the chairman does").
 
+**The code now also marks a vector that rests that way whole.** One all eight
+of whose metrics read `SOLE` is marked `every metric on one member's quotation,
+nothing cross-checked`, and the JSON carries `nothing_cross_checked`. The four
+vectors `gpu-full` reached predate the mark and the `SOLE` basis both, so
+whether any would carry it is not in these reports; a run recorded now carries
+the mark, and its kept JSON names every member on every metric.
+
 ### What the baseline does not show
 
 **The headline disagreement belongs to Qwen and Gemma.** `CVE-2021-4279`'s

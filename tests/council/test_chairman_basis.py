@@ -7,6 +7,7 @@ not, so a member that declined, guessed or failed neither agrees nor dissents.
 
 import pytest
 
+from cli.council_detail import nothing_cross_checked
 from council.chairman import rule_on_metric
 from council.roster import Roster
 from council.ruling import Basis, PublishedFallback
@@ -54,10 +55,11 @@ def test_the_basis_changes_what_the_record_admits_and_never_the_ruling():
     )
 
 
-def test_a_member_guessing_every_metric_leaves_each_resting_on_one_quotation():
-    # Two members reached, so no single-assessor mark, and yet nothing on the
-    # record was agreed with: one quoted the advisory on every metric and the
-    # other guessed every one.
+def test_a_member_guessing_every_metric_leaves_the_vector_marked_as_resting_on_one_member():
+    # Once the accepted gap, with no mark: two members reached, so no single
+    # assessor, and yet nothing on the record was agreed with -- one quoted the
+    # advisory on every metric and the other guessed every one. The rulings are
+    # unchanged; what reaches the record now says nothing was cross-checked.
     def quietly(asked, prompt):
         """Guess every metric for the member named so, and answer for the other."""
         if asked.name == "guesses":
@@ -68,3 +70,4 @@ def test_a_member_guessing_every_metric_leaves_each_resting_on_one_quotation():
     run = assess(RAW_ADVISORY, roster, FALLBACKS, clients_of(quietly))
     assert not run.single_assessor
     assert [round_.ruling.basis for round_ in run.rounds] == [Basis.SOLE] * 8
+    assert nothing_cross_checked(run)

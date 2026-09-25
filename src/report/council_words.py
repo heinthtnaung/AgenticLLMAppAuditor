@@ -17,6 +17,7 @@ the caller joins them with whatever its medium separates things by.
 
 from cvss.metrics import METRIC_ORDER
 from report.council_record import (
+    CouncilAssessment,
     CouncilWithoutVector,
     MemberIdentity,
     MemberSaid,
@@ -27,6 +28,9 @@ from report.council_record import (
 SETTLED = "settled"
 NO_VECTOR = "no vector"
 SINGLE_ASSESSOR = "single assessor, nothing cross-checked"
+# A vector from a run that reached more than one member, every settled metric of
+# which still rests on one member's quotation alone.
+ONE_QUOTATION_EACH = "every metric on one member's quotation, nothing cross-checked"
 NOT_ASKED = "not asked"
 VERIFIED = "quotation found in the advisory"
 UNVERIFIED = "quotation not found in the advisory"
@@ -37,6 +41,15 @@ def who(member: MemberIdentity) -> str:
     if member.family == member.name:
         return member.name
     return f"{member.name} ({member.family})"
+
+
+def uncross_checked(outcome: CouncilAssessment | CouncilWithoutVector) -> list[str]:
+    """Mark a result nothing in which was cross-checked, saying which way it was not."""
+    if outcome.single_assessor:
+        return [SINGLE_ASSESSOR]
+    if isinstance(outcome, CouncilAssessment) and outcome.nothing_cross_checked:
+        return [ONE_QUOTATION_EACH]
+    return []
 
 
 def checked(verified: bool) -> str:
