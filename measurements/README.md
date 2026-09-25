@@ -28,6 +28,7 @@ reader can disagree with a number by producing a different one.
 | `council_eval/` | the evaluation harness, `python measurements/council_eval <step>`: the steps `dataset`, `collect`, `gate` and `score`, and the checks `compare`, `quoting`, `values`, `server-log` and `turns` |
 | `council_eval_runs/` | one folder per evaluation: what it ran, every call it saved, an excerpt of the server's journal for each run window, and what each step printed |
 | `council_eval_runs/library-vulnscout/`, `reversed-vulnscout/`, `library-reversed-vulnscout/` | the 2 × 2's three variant cells, one pass per model each; `council_eval_runs/README.md` holds the design, fixed before any variant pass, and the results |
+| `council_eval_runs/gemma4-vulnscout/`, `qwen2.5-coder-vulnscout/` | one pass each of `gemma4:latest` and `qwen2.5-coder:7b-instruct` over the pilot's findings, scored alone and beside the pilot's Qwen |
 
 The manifests and package databases are written by hand, not captured from a
 real system. They are chosen to reach different advisory feeds — GHSA, OSV,
@@ -95,9 +96,12 @@ Run on 2026-09-25 over four models, `prompt_tokens.py` gives Qwen the same
 database it read; by date it was the successor. On the worst prompt, estimated
 at 4,936 tokens, `llama3.2:latest` counts 4,791 (−2.9%), `gemma4:latest` 5,689
 (+15.3%), and `qwen2.5-coder:7b-instruct` the same as Qwen. That spread is why
-`refuse_overlong_prompt` now allows 75% of the window, where it allowed 90%: at
-15% over, a prompt at the limit still leaves an eighth of the window for the
-reply.
+`refuse_overlong_prompt` now allows 75% of the window, where it allowed 90%.
+Across 1,440 saved calls of four models the most any counted past the estimate
+is 23%, Gemma on one of the pilot's prompts
+(`tests/measurements/test_prompt_tokens_records.py`). At 23% over, a prompt at
+the limit still leaves about 600 of 8,192 tokens for a reply; the longest
+recorded is 121.
 
 The corpus supersedes an earlier 153-advisory measurement — 18 vulnscout
 advisories and 135 from a PyPI manifest that was never committed. That manifest
@@ -811,12 +815,59 @@ reversal moves every metric's order at once. And the design's limits stand: 18
 npm findings, one roster, one seed, one wording of the convention, and R1
 constant on four metrics, so lift can at best reach 0 there in any cell.
 
+### Two more models, one pass each
+
+**`gemma4:latest` and `qwen2.5-coder:7b-instruct` each went through the pilot's
+18 findings in the product's words**, scored alone and beside the pilot's Qwen
+pass. Each folder's README is the record, with the commands that re-derive its
+figures.
+
+**Alone, Gemma agrees with R1 far more than the pilot's pair did, and beats the
+baseline on two metrics.** It settles 129 of 144 metrics and reaches 12
+vectors, 2 of them inside the range their sources published. Agreed of scored,
+with the baseline's rate on the same items:
+
+| Metric | Agreed | Baseline | Lift |
+|---|---|---|---|
+| AV | 9/12 | 1.00 | -0.25 |
+| AC | 14/15 | 0.93 | +0.00 |
+| PR | 13/13 | 1.00 | +0.00 |
+| UI | 14/14 | 1.00 | +0.00 |
+| S | 6/15 | 1.00 | -0.60 |
+| C | 11/16 | 0.94 | -0.25 |
+| I | 13/15 | 0.53 | +0.33 |
+| A | 8/13 | 0.54 | +0.08 |
+
+**Its PR, UI and AC cannot be told from anchoring on the option listed first.**
+Gemma names N on PR and on UI on 18 of 18, and L on AC on 16 of 18. Those are
+R1's values there, and also the options the product's prompt lists first, so a
+constant matching a constant reference scores the baseline and no more. The
+reversed-order control was not run on Gemma, so the pattern is not separated
+from reading. Scope is its weak metric: C on 9 of 18, where R1 is U on every
+finding it scores.
+
+It quotes cleanly: 1 unverified quotation in 144 replies, and none of them the
+prompt's own definitions. Beside Qwen, the pair settles 65, contests 69 and
+leaves 10 unresolved, and reaches no vector. The two read most metrics
+differently, and the chairman settles nothing they dispute.
+
+**The coder declines almost everything.** 106 of its 144 replies are declines:
+all 18 on PR and on UI, 17 on S and 16 on AV. Alone it settles 21 metrics and
+reaches no vector, too few to read against R1. Beside Qwen the pair settles
+103, contests 5 and leaves 36 unresolved, close to Qwen alone, and reaches 4
+vectors, none inside the published range. Whether its declines are right, the
+text saying too little, R1 cannot tell: it has no label for "the advisory is
+silent".
+
+**Each is one pass**, one seed and never rerun, on 18 npm findings, so nothing
+here shows either model repeats itself as the pilot's did.
+
 ### Evaluating a model you want to use
 
-**Every finding above is about `qwen2.5:7b-instruct` and `llama3.2:latest`, not
-about the tool.** A model you want as a member is a new instrument, and its
-readings are not to be trusted until it has been through the pilot's findings
-the same way. From the project root, with nothing else using Ollama:
+**Every finding above is about the models it names, not about the tool.** A
+model you want as a member is a new instrument, and its readings are not to be
+trusted until it has been through the pilot's findings the same way. From the
+project root, with nothing else using Ollama:
 
 ```bash
 source .venv/bin/activate

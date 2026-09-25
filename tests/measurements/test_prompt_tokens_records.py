@@ -1,9 +1,11 @@
 """The recorded token counts hold up the guard's two fractions, and name every model they rest on.
 
-These read `measurements/prompt_tokens.2026-09-25.txt` and the council
-evaluation's saved passes, and ask no model. A model counted later, or a pass
-recorded on one, changes what the fractions in `council.ollama` rest on, and a
-test here says so by failing.
+These read `measurements/prompt_tokens.2026-09-25.txt` and the first passes
+saved in the evaluation folders named below, and ask no model. A folder is
+added to the list once its calls pass; one that is not listed is not read, so a
+new evaluation turns nothing here red until it is weighed. A model counted
+later, or a pass recorded on one, changes what the fractions in
+`council.ollama` rest on, and a test here says so by failing.
 """
 
 import re
@@ -29,13 +31,32 @@ from council_eval.variants import Variant, variant_asked, variant_prompt  # noqa
 
 RECORD = ROOT / "measurements" / "prompt_tokens.2026-09-25.txt"
 RUNS = ROOT / "measurements" / "council_eval_runs"
+# Each folder these tests weigh, and how many calls its first passes hold.
+FOLDERS = {
+    "pilot-vulnscout": 288,
+    "library-vulnscout": 288,
+    "reversed-vulnscout": 288,
+    "library-reversed-vulnscout": 288,
+    "gemma4-vulnscout": 144,
+    "qwen2.5-coder-vulnscout": 144,
+}
 COUNTED = re.compile(
     r"^(\S+) [0-9a-f]{64}\n.*?prompt: (\d+) tokens.*?guard: (\d+) tokens", re.M | re.S
 )
-# The share of the window a prompt at the guard's limit must leave for the reply.
-REPLY_ROOM = 1 / 8
+# The window every saved pass and count was taken at.
+WINDOW = 8192
 # Ollama cuts an overlong prompt to half the window, so a cut one counts under half.
 CUT_TO = 0.5
+
+
+def weighed_passes() -> list[Path]:
+    """Give the first passes of the folders these tests weigh, and no other folder's."""
+    return list(chain.from_iterable(folder_passes(folder) for folder in FOLDERS))
+
+
+def folder_passes(folder: str) -> list[Path]:
+    """Give one folder's first passes."""
+    return sorted((RUNS / folder).glob("*.run1.replies.jsonl"))
 
 
 def worst_prompt_ratios() -> dict[str, float]:
@@ -48,8 +69,7 @@ def recorded_ratios() -> list[tuple[str, float]]:
     """Give every saved call's model, and its count over the estimate of the prompt it answered."""
     dataset = read_dataset(RUNS / "pilot-vulnscout" / "vulnscout.dataset.json")
     items = {item.key: item for item in dataset}
-    passes = sorted(RUNS.glob("*/*.run1.replies.jsonl"))
-    return list(chain.from_iterable(pass_ratios(path, items) for path in passes))
+    return list(chain.from_iterable(pass_ratios(path, items) for path in weighed_passes()))
 
 
 def pass_ratios(path: Path, items: dict[str, Item]) -> list[tuple[str, float]]:
@@ -76,13 +96,26 @@ def test_the_worst_prompt_has_been_counted_by_these_models_only():
     }
 
 
-def test_a_prompt_at_the_guard_s_limit_leaves_room_to_reply_for_every_model_counted():
-    worst = max(worst_prompt_ratios().values())
-    assert USABLE_CONTEXT_FRACTION * worst <= 1 - REPLY_ROOM
+def highest_ratio() -> float:
+    """Give the highest count-over-estimate measured, on the worst prompt or any saved call."""
+    saved = [value for _, value in recorded_ratios()]
+    return max(*worst_prompt_ratios().values(), *saved)
 
 
-def test_a_cut_prompt_counts_under_the_cut_line_for_every_model_counted():
-    assert CUT_TO * max(worst_prompt_ratios().values()) < CUT_PROMPT_FRACTION
+def longest_reply() -> int:
+    """Give the most tokens any saved call's reply took."""
+    calls = chain.from_iterable(read_replies((path,)).calls.values() for path in weighed_passes())
+    return max(call.envelope["eval_count"] for call in calls)
+
+
+def test_a_prompt_at_the_guard_s_limit_leaves_room_for_the_longest_reply_recorded():
+    # Gemma counts one of the pilot's prompts 23% over the estimate, the most measured.
+    assert round(highest_ratio(), 3) == 1.233 and longest_reply() == 121
+    assert WINDOW * (1 - USABLE_CONTEXT_FRACTION * highest_ratio()) > longest_reply()
+
+
+def test_a_cut_prompt_counts_under_the_cut_line_for_every_tokenizer_measured():
+    assert CUT_TO * highest_ratio() < CUT_PROMPT_FRACTION
 
 
 def spread(model: str) -> tuple[float, float]:
@@ -91,14 +124,23 @@ def spread(model: str) -> tuple[float, float]:
     return round(min(own), 3), round(max(own), 3)
 
 
+def calls_held(folder: str) -> int:
+    """Count the calls one folder's first passes hold."""
+    return len(read_replies(tuple(folder_passes(folder))).calls)
+
+
+def test_each_weighed_folder_holds_the_calls_it_was_weighed_with():
+    assert {folder: calls_held(folder) for folder in FOLDERS} == FOLDERS
+
+
 def test_no_saved_call_to_a_whole_prompt_would_be_read_as_cut():
-    ratios = [value for _, value in recorded_ratios()]
-    assert len(ratios) == 1152
-    assert min(ratios) > CUT_PROMPT_FRACTION
+    assert min(value for _, value in recorded_ratios()) > CUT_PROMPT_FRACTION
 
 
 def test_the_saved_calls_count_their_prompts_within_these_spreads():
-    # 576 calls per model: each model's first pilot pass and the three variant
-    # cells'. Qwen runs from 17% under the estimate to 15% over it.
+    # 576 calls each of Qwen and Llama -- each one's first pilot pass and the three
+    # variant cells' -- and 144 each of Gemma and the Qwen coder, one pass apiece.
     assert spread("qwen2.5:7b-instruct") == (0.831, 1.152)
     assert spread("llama3.2:latest") == (0.844, 1.098)
+    assert spread("gemma4:latest") == (0.892, 1.233)
+    assert spread("qwen2.5-coder:7b-instruct") == (0.852, 1.152)

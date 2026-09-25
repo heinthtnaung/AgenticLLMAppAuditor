@@ -1,0 +1,3 @@
+requests: 1 GET /api/tags, 1 GET /api/version, 162 POST /api/generate
+loads: 18 n/a
+turns: 18; not of 8 calls: none

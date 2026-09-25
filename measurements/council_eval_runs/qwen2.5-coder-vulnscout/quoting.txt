@@ -1,0 +1,9 @@
+member                     settled on its quotation alone  unverified  of which the prompt's
+qwen2.5-coder:7b-instruct  1                               14          2
+qwen2.5:7b-instruct        76                              10          7
+
+member                     metric  prompt quoted
+qwen2.5-coder:7b-instruct  AC      2
+qwen2.5:7b-instruct        A       2
+qwen2.5:7b-instruct        AC      4
+qwen2.5:7b-instruct        C       1
