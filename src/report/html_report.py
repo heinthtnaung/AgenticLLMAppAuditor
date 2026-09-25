@@ -14,7 +14,6 @@ findings lead, because a disagreement that crosses a severity band changes the
 response time, and what the run did not assess is last and never cut.
 """
 
-from report.disagreement import sources_disagree
 from report.html_absences import (
     approval_section,
     matched_nothing_section,
@@ -33,7 +32,7 @@ from report.html_risk import risk_section
 from report.html_style import STYLESHEET
 from report.provenance import AdvisoryDatabase
 from report.record import Report
-from report.summary_words import unread_pointer
+from report.summary_words import counts, unread_pointer
 
 DOCTYPE = "<!DOCTYPE html>"
 LANGUAGE = "en"
@@ -101,14 +100,8 @@ def database_line(run) -> str:
 
 
 def summary_line(report: Report) -> str:
-    """Say how much there is, and how many findings' readable sources disagree."""
-    # A vector the calculator refused is not counted as a dissent, whatever it says.
-    contested = len([one for one in report.findings if sources_disagree(one)])
-    counts = (
-        f"{len(report.findings)} findings across {report.component_count} components. "
-        f"{contested} carry sources that disagree."
-    )
-    said = " ".join(part for part in (counts, unread_pointer(report)) if part)
+    """Say how much there is, with the pointer to what was left out, in one paragraph."""
+    said = " ".join(part for part in (counts(report), unread_pointer(report)) if part)
     return tag("p", text(said), "count")
 
 

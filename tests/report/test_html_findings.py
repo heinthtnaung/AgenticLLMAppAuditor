@@ -115,10 +115,12 @@ def test_sources_that_match_beside_a_refused_one_are_not_headed_as_agreeing():
     assert "Sources agree" not in page
     assert "A source was refused (1)" in page
     assert ENVIRONMENTAL_VECTOR in page
-    # Accepted on purpose until it is decided whether a refused vector counts as a
-    # dissent: the refused one disagrees and is not counted. Counting it turns
-    # this red.
-    assert "0 carry sources that disagree." in page
+    # Decided: a refused vector cannot be compared, so it is no dissent, but the
+    # finding carrying it is counted on its own rather than left unsaid.
+    counted = (
+        "0 carry sources that disagree; 1 carries a source this calculator could not read."
+    )
+    assert counted in page
 
 
 def test_the_page_names_the_component_a_finding_was_raised_against():
