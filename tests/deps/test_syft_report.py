@@ -98,11 +98,24 @@ def test_an_unidentifiable_artifact_with_no_name_is_still_carried():
 
 
 def test_a_scan_that_identified_nothing_at_all_is_still_loud():
-    # Not a repository with no packages: artifacts found and not one identified
-    # is Syft going wrong, and it must not read as a clean scan.
+    # Not a repository with no packages: artifacts found and not one identified.
+    # A Syft that stripped every purl would look exactly like this, and must not
+    # read as a clean scan -- though a real repository can too, pinned below.
     nothing_joinable = syft_report_of(syft_artifact(purl=""), syft_artifact(name="o", purl=""))
     with pytest.raises(ScannerFailed, match="catalogued 2 artifacts and identified none"):
         read_catalogue(nothing_joinable)
+
+
+def test_a_rust_crate_with_no_dependencies_is_refused_although_nothing_went_wrong():
+    # Accepted: the one artifact Syft 1.52 catalogues from such a crate's Cargo.lock
+    # is the crate itself, measured with no purl, because it has no `source`. The
+    # run exits 2 on it. Telling it apart from a failed cataloguer turns this red.
+    lone_crate = syft_artifact(
+        name="lone", version="0.1.0", type="rust-crate", purl="",
+        locations=[{"path": "/Cargo.lock", "accessPath": "/Cargo.lock"}],
+    )
+    with pytest.raises(ScannerFailed, match="catalogued 1 artifact and identified none"):
+        read_catalogue(syft_report_of(lone_crate))
 
 
 def test_a_repository_with_no_packages_is_not_a_failure():

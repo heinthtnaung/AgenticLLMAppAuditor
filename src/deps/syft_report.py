@@ -81,10 +81,13 @@ def read_catalogue(report: Any) -> Catalogue:
 
 
 def refuse_a_catalogue_of_nothing_joinable(catalogued: Catalogue) -> None:
-    """Refuse a scan that identified nothing at all, which is a cataloguer that failed."""
-    # A repository with no packages catalogues nothing and is not this. This is
-    # artifacts found and not one of them identified, which is Syft going wrong
-    # rather than a repository being empty, and it must not read as a clean scan.
+    """Refuse a scan in which Syft catalogued artifacts and gave not one of them a purl."""
+    # A repository with no packages catalogues nothing and is not refused. This
+    # refuses the other case, because it is what a Syft regression that stripped
+    # every purl would look like, and letting that exit 0 as a clean scan would be
+    # the worse error. It also refuses a Rust crate with no dependencies: its
+    # Cargo.lock lists only the crate itself, which has no `source`, so Syft gives
+    # it no purl, and that run is refused although nothing went wrong.
     if catalogued.components or not catalogued.unidentified:
         return
     found = len(catalogued.unidentified)
