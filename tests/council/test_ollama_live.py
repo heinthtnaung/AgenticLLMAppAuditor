@@ -6,24 +6,39 @@ default because a suite that needs a 4.7GB model running is a suite nobody runs:
 
     COUNCIL_LIVE_OLLAMA=1 python -m pytest tests/council/test_ollama_live.py
 
-It needs `ollama serve` up with the pinned model pulled. It cannot be caught by
-the proxy that answers 502 for loopback, because `council.transport` bypasses
-the proxy rather than relying on NO_PROXY being exported.
+It asks the pinned model unless `COUNCIL_LIVE_MODEL` names another, so a newer
+model is checked the same way before it joins a council:
+
+    COUNCIL_LIVE_OLLAMA=1 COUNCIL_LIVE_MODEL=gemma4:latest python -m pytest ...
+
+It needs `ollama serve` up with that model pulled, and skips naming the model
+when it is not. It cannot be caught by the proxy that answers 502 for loopback,
+because `council.transport` bypasses the proxy rather than relying on NO_PROXY
+being exported.
 """
 
+import json
 import os
 
 import pytest
 
 from council.answer import MemberAnswer, MemberFoundNoEvidence, MemberIdentity
 from council.evidence import is_quotation_from
-from council.ollama import DEFAULT_MODEL, LocalModel, ask, generate_url
+from council.ollama import DEFAULT_HOST, DEFAULT_MODEL, LocalModel, ask, generate_url
 from council.prompt import PROMPT_VERSION, build_prompt
 from council.reply import read_reply
-from council.transport import post_json
+from council.transport import NO_PROXY_OPENER, post_json
 from council_samples import ADVISORY
 
 LIVE = "COUNCIL_LIVE_OLLAMA"
+# Not a flag: which model to ask, for an operator trying one the pair is not.
+MODEL_VARIABLE = "COUNCIL_LIVE_MODEL"
+MODEL = os.environ.get(MODEL_VARIABLE) or DEFAULT_MODEL
+FAMILY_SEPARATOR = ":"
+# The tag Ollama assumes when a name carries none, as `llama3.2` for `llama3.2:latest`.
+DEFAULT_TAG = ":latest"
+TAGS_PATH = "/api/tags"
+TAGS_TIMEOUT_SECONDS = 10
 # What Ollama answers a request to keep a model loaded for no time.
 UNLOADED = "unload"
 
@@ -32,24 +47,44 @@ pytestmark = pytest.mark.skipif(
 )
 
 MEMBER = MemberIdentity(
-    name="small-local",
+    name=MODEL,
     provider="ollama",
-    model=DEFAULT_MODEL,
-    family="qwen",
+    model=MODEL,
+    family=MODEL.split(FAMILY_SEPARATOR)[0],
     ran_local=True,
     prompt_version=PROMPT_VERSION,
 )
 
 
-def test_the_pinned_model_answers_a_metric_in_the_shape_the_council_reads():
-    reply = ask(build_prompt("AV", ADVISORY), LocalModel())
+def held_models() -> set[str]:
+    """Name the models this machine's Ollama holds, failing loudly if it is not there."""
+    url = f"{DEFAULT_HOST}{TAGS_PATH}"
+    try:
+        with NO_PROXY_OPENER.open(url, timeout=TAGS_TIMEOUT_SECONDS) as response:
+            tags = json.loads(response.read().decode("utf-8"))
+    except OSError as fault:
+        pytest.fail(f"{url} could not be reached, so no model can be asked: {fault}")
+    return {entry["name"] for entry in tags.get("models", [])}
+
+
+@pytest.fixture(autouse=True, scope="module")
+def model_is_pulled() -> None:
+    """Skip, naming the model, when the one asked for is not pulled here."""
+    held = held_models()
+    if MODEL in held or f"{MODEL}{DEFAULT_TAG}" in held:
+        return
+    pytest.skip(f"{MODEL} is not pulled here; pull it, or set {MODEL_VARIABLE} to one that is")
+
+
+def test_the_model_answers_a_metric_in_the_shape_the_council_reads():
+    reply = ask(build_prompt("AV", ADVISORY), LocalModel(model=MODEL))
     answer = read_reply(reply.text, "AV", MEMBER)
     assert isinstance(answer, (MemberAnswer, MemberFoundNoEvidence))
 
 
 def test_a_real_answer_quotes_the_advisory_it_was_given():
     asked = build_prompt("AV", ADVISORY)
-    answer = read_reply(ask(asked, LocalModel()).text, "AV", MEMBER)
+    answer = read_reply(ask(asked, LocalModel(model=MODEL)).text, "AV", MEMBER)
     if isinstance(answer, MemberFoundNoEvidence):
         pytest.skip("the model declined this metric, which is a result and not a failure")
     assert is_quotation_from(answer.evidence, asked.advisory_shown)
@@ -80,4 +115,5 @@ def test_the_same_question_twice_gets_the_same_answer():
     request that varies between calls -- which would make two cold calls differ.
     """
     asked = build_prompt("AV", ADVISORY)
-    assert cold_answer(asked, LocalModel()) == cold_answer(asked, LocalModel())
+    pinning = LocalModel(model=MODEL)
+    assert cold_answer(asked, pinning) == cold_answer(asked, pinning)

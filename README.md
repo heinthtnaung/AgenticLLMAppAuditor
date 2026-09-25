@@ -294,10 +294,11 @@ page shows it on a CVSS chip, beside the vector and the same words. In the
 JSON, each finding's `organisation_risk` carries a `council_figure` beside
 `scores`, with `used_in_score: false`, or `null` where no vector was settled.
 
-Measured against published vectors on this repository, the council's settled
-values scored below answering one value throughout on every metric, so a
-reader weighs its vector and the score does not. `measurements/README.md` has
-the figures, and what they cannot show.
+Measured against published vectors on this repository, the settled values of
+`qwen2.5:7b-instruct` and `llama3.2:latest` scored below answering one value
+throughout on every metric. So a reader weighs a council's vector and the score
+does not, whatever the roster. `measurements/README.md` has the figures, and
+what they cannot show.
 
 **The environment drives those numbers, not the CVE.** The same file with
 `EXP-1` set to `No` and `EXP-4` to `Yes` — the asset segmented rather than
@@ -376,6 +377,13 @@ audit fetched/vulnscout \
 The `NO_PROXY` line is needed here and not above: a member talks to Ollama on
 loopback, and without it those requests go to the corporate proxy, which answers
 502. A scan with no council needs nothing exported.
+
+**Any model pulled into the local Ollama can be a member.** The two named here,
+`qwen2.5:7b-instruct` and `llama3.2:latest`, are examples: the pair this project
+measured, not a requirement. What `measurements/README.md` found of their
+readings is about that pair, not the tool, so a model you switch to needs its
+own evaluation on the same findings before its readings are trusted, and
+`measurements/README.md` says how.
 
 Each `--council-member` names one local Ollama model. With none named there is
 no council, which is the default: the published scores stand side by side, and
@@ -497,7 +505,7 @@ sum of the Tests column below, and each skip's reason names its flag:
 
 | Flag | Runs | Tests | Needs |
 |---|---|---|---|
-| `COUNCIL_LIVE_OLLAMA=1` | `tests/council/test_ollama_live.py`: asks the pinned model for real, so the recordings the council tests use are checked against it | 3 | `ollama serve` with `qwen2.5:7b-instruct` pulled |
+| `COUNCIL_LIVE_OLLAMA=1` | `tests/council/test_ollama_live.py`: asks a model for real, the pinned one unless `COUNCIL_LIVE_MODEL` names another, so the recordings the council tests use are checked against it and a new model is checked the same way: it answers in the council's shape, quotes the advisory, and gives the same reply from two cold starts | 3 | `ollama serve` with `qwen2.5:7b-instruct` pulled, or the model `COUNCIL_LIVE_MODEL` names (for example `COUNCIL_LIVE_MODEL=gemma4:latest`); it skips, naming the model, when that model is not pulled |
 | `README_LIVE_SCAN=1` | `tests/docs/test_readme_live.py`: reruns this page's marked audits and fails on any printed line that drifted | 1 | `fetched/vulnscout`, Syft, Trivy and the advisory database |
 | `SYFT_LIVE_SCAN=1` | `tests/deps/test_manifests_live.py`: measures the lock-file table above against the real Syft again | 13 | Syft on the path |
 
