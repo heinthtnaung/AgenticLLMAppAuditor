@@ -23,16 +23,17 @@ records as unresolved and falls back on. The two are not worth the same, so the
 refusal is a guard and not a warning.
 
 Nothing here parses the model's words: `ask` gives back the reply text and the
-model the server named beside it -- see `ModelReply` for what that name is worth
--- and `council.reply` turns those into an answer.
+model the server named beside it, read by `council.envelope`, and `council.reply`
+turns those into an answer.
 """
 
 from dataclasses import dataclass
-from typing import Any, Mapping
+from typing import Any
 from urllib.parse import urlsplit
 
+from council.envelope import MODEL_FIELD, ModelReply, read_envelope
 from council.prompt import MemberPrompt
-from council.transport import ModelUnavailable, Transport, post_json
+from council.transport import Transport, post_json
 
 DEFAULT_HOST = "http://127.0.0.1:11434"
 GENERATE_PATH = "/api/generate"
@@ -75,10 +76,6 @@ JSON_REPLY_FORMAT = "json"
 
 LOOPBACK_HOSTS = ("127.0.0.1", "localhost", "::1")
 
-MODEL_FIELD = "model"
-RESPONSE_FIELD = "response"
-ERROR_FIELD = "error"
-
 
 @dataclass(frozen=True)
 class LocalModel:
@@ -101,24 +98,6 @@ class LocalModel:
         if self.context_tokens <= 0:
             raise ValueError(f"{self.model} needs a context length, not {self.context_tokens}")
         refuse_remote_host(self.host)
-
-
-@dataclass(frozen=True)
-class ModelReply:
-    """What came back: the words, and which model answered -- if the server said.
-
-    `model` is the name the server reported, and the pinned name when it
-    reported none. Those are an observation and a claim, and this field does not
-    distinguish them. It matters because `docs/COUNCIL.md` rests reproducibility
-    on knowing which weights answered: a record saying `qwen2.5:7b-instruct`
-    may mean the server confirmed it or only that nobody contradicted it. Ollama
-    does name the model on every reply seen so far, so the fallback is for a
-    server that stops -- it is not the ordinary path, and it is not a lie the
-    reader can spot.
-    """
-
-    text: str
-    model: str
 
 
 def ask(
@@ -154,18 +133,6 @@ def build_request(prompt: MemberPrompt, pinning: LocalModel) -> dict[str, Any]:
             "num_ctx": pinning.context_tokens,
         },
     }
-
-
-def read_envelope(envelope: Any, pinning: LocalModel) -> ModelReply:
-    """Read Ollama's reply envelope, refusing one that carries no answer."""
-    if not isinstance(envelope, Mapping):
-        raise ModelUnavailable(f"{pinning.model} returned {type(envelope).__name__}, not an object")
-    if envelope.get(ERROR_FIELD):
-        raise ModelUnavailable(f"{pinning.model} refused the request: {envelope[ERROR_FIELD]}")
-    text = envelope.get(RESPONSE_FIELD)
-    if not isinstance(text, str) or not text.strip():
-        raise ModelUnavailable(f"{pinning.model} answered with no text at all")
-    return ModelReply(text=text, model=envelope.get(MODEL_FIELD) or pinning.model)
 
 
 def estimated_tokens(prompt: MemberPrompt) -> int:
