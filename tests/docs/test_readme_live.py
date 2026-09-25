@@ -34,6 +34,7 @@ import pytest
 
 from cli.main import COULD_NOT_RUN
 from cli.preflight import CannotRun, refuse_unrunnable
+from deps.trivy_database import trivy_cache_directory
 from readme_answers import answers_for
 from readme_markers import PROJECT_ROOT, README_PATH, read_readme, unmarked_note
 from readme_runs import ELIDED_TOKEN, FETCHED, REPOSITORY, PrintedRun, printed_runs
@@ -66,7 +67,7 @@ def test_every_block_the_readme_prints_still_reproduces(tmp_path):
 def skip_without_a_scannable_corpus() -> None:
     """Skip where the repository, the scanners or the advisory database are not on this machine."""
     try:
-        refuse_unrunnable(PROJECT_ROOT / REPOSITORY)
+        refuse_unrunnable(PROJECT_ROOT / REPOSITORY, trivy_cache_directory(os.environ))
     except CannotRun as fault:
         pytest.skip(f"{fault}; checking the README needs {REPOSITORY}, Syft, Trivy and a database")
 

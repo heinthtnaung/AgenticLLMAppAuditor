@@ -543,7 +543,23 @@ trivy image --download-db-only
 2026-09-22T12:06:38+08:00	INFO	[vulndb] Artifact successfully downloaded	repo="mirror.gcr.io/aquasec/trivy-db:2"
 ```
 
-Progress bar elided. The download is 116 MiB and lands in `~/.cache/trivy`.
+Progress bar elided. The download is 116 MiB and lands in Trivy's cache:
+`$TRIVY_CACHE_DIR` if that is set, else `$XDG_CACHE_HOME/trivy`, else
+`~/.cache/trivy`.
+
+**`audit` finds the cache the same way and hands it to the scan.** It reads the
+same two variables in the same order, a relative `TRIVY_CACHE_DIR` taken from
+where you run it, dates the database it finds there, and passes that directory
+to Trivy as `--cache-dir`, so the database dated is the database scanned. Set
+either variable for `audit` and set it for the download and for `trivy version`
+too, or they read different caches. A relative `XDG_CACHE_HOME`, or no `HOME`
+with neither variable set, is refused with `audit: …` and exit `2` rather than
+followed into a temporary directory.
+
+**A `cache.dir` in a `trivy.yaml` is never read.** The download follows one in
+the directory it runs from, and `audit`'s `--cache-dir` overrides it, so a
+cache moved that way is downloaded to and never scanned. Move it with a
+variable.
 
 It is a separate step because scans run offline, with `--skip-db-update`, so
 that a scan is reproducible and pinned to a known database. Running `trivy`
@@ -554,7 +570,7 @@ download above with the proxy on.
 The cost of that choice: **Trivy alone, given an empty cache, produces a clean
 report rather than an error.** It finds no advisories, exits 0, and nothing in
 its output says the database was missing. So `audit` reads the database's own
-build date, `UpdatedAt` in `~/.cache/trivy/db/metadata.json`, before anything
+build date, `UpdatedAt` in `db/metadata.json` inside that cache, before anything
 is scanned, and exits `2` with nothing on stdout when that file is missing,
 unreadable or carries no build date. A build date with no database beside it
 gets past that check, and then Trivy refuses the offline scan, so `audit`

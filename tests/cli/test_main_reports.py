@@ -28,12 +28,12 @@ def files_in_reports(tmp_path: Path) -> list[str]:
     return sorted(one.name for one in (tmp_path / REPORTS_FOLDER).iterdir())
 
 
-def scan_that_must_not_start(options, database_built_at, error):
+def scan_that_must_not_start(options, database, error):
     """Fail the test, because a run that should have been refused reached the scan."""
     raise AssertionError("the scan started although the reports could not be written")
 
 
-def refused_by_the_preflight(repository):
+def refused_by_the_preflight(repository, cache):
     """Refuse the run the way a missing database does."""
     raise CannotRun("no database")
 

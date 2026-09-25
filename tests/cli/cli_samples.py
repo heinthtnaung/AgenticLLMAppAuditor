@@ -10,10 +10,13 @@ import json
 from pathlib import Path
 
 from deps.syft_report import Catalogue, Component
+from deps.trivy_database import DatedDatabase
 from deps.trivy_report import Advisory
 from scoring.library import APPROVED_QUESTIONS
 
 BUILT_AT = "2026-09-22T02:00:05Z"
+# A dated database for a run whose scanners are answered, so its cache is never read.
+DATED = DatedDatabase(cache=Path("/no/trivy/cache/is/read"), built_at=BUILT_AT)
 # What `run_command_line` calls the repository it audits and the folder its
 # reports go into, both inside the test's own `tmp_path`.
 REPOSITORY_NAME = "vulnscout"
@@ -99,7 +102,7 @@ def scanners_answering(monkeypatch, components=(LODASH,), advisories=None) -> No
     indexed = {ADVISORY.purl: (ADVISORY,)} if advisories is None else advisories
     found = Catalogue(components=tuple(components), unidentified=())
     monkeypatch.setattr(audit.syft_runner, "scan_directory", lambda path: found)
-    monkeypatch.setattr(audit.trivy_runner, "scan_directory", lambda path: indexed)
+    monkeypatch.setattr(audit.trivy_runner, "scan_directory", lambda path, cache: indexed)
     monkeypatch.setattr(audit.syft_runner, "installed_version", lambda: SYFT_VERSION)
     monkeypatch.setattr(audit.trivy_runner, "installed_version", lambda: TRIVY_VERSION)
     monkeypatch.setattr(syft_runner, "is_available", lambda: True)
@@ -111,7 +114,7 @@ def run_command_line(argv, monkeypatch, tmp_path, **scan) -> tuple[int, str, str
     from cli import main as entry
 
     scanners_answering(monkeypatch, **scan)
-    monkeypatch.setattr(entry, "refuse_unrunnable", lambda repository: BUILT_AT)
+    monkeypatch.setattr(entry, "refuse_unrunnable", lambda repository, cache: DATED)
     out, error = io.StringIO(), io.StringIO()
     # Made, because the run walks it for manifests even with both scanners answered.
     repository = tmp_path / REPOSITORY_NAME
