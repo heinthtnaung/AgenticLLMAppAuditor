@@ -18,8 +18,10 @@ reader can disagree with a number by producing a different one.
 | `advisories.py` | runs the seven scans and reads them into one set of advisory texts |
 | `redaction_gaps.py` | what `council.redaction` catches, lets past, and would cost to widen |
 | `prompt_tokens.py` | what a member's prompt costs the pinned model, counted by the model |
-| `record_council_run.py` | runs one council audit and writes what it printed beside what produced it |
-| `council_runs/` | audits of `fetched/vulnscout` with a two-member council: what each run printed, and when |
+| `record_council_run.py` | runs one council audit and keeps what it printed and wrote beside what produced it |
+| `run_provenance.py` | what a recorded run was launched from and how it ended: git and `ollama ps` at launch, the clock and `ollama ps` at the end |
+| `run_directory.py` | where a recorded audit runs, so the project's `reports/` is never written, and the copying out of its three renderings |
+| `council_runs/` | audits of `fetched/vulnscout` with a two-member council: what each run printed or wrote, and when |
 
 The manifests and package databases are written by hand, not captured from a
 real system. They are chosen to reach different advisory feeds — GHSA, OSV,
@@ -102,13 +104,16 @@ corpus does not cover.
 Four audits of `fetched/vulnscout` in two baselines, each written straight into
 `council_runs/` as it ran, never copied there afterwards. **The two baselines
 must not be diffed against each other:** placement, second member, call order
-and Ollama version all changed between them. Each run left three files:
+and Ollama version all changed between them. Each of the four left the first
+three files below; a run recorded now leaves all five:
 
 | File | What it is |
 |---|---|
-| `*.report.txt` | stdout: the report |
-| `*.progress.txt` | stderr, the whole stream: one line per model call, printed before the call. A run recorded with `audit` as it stands ends with one line more, saying where it wrote its reports; the four here predate that line |
+| `*.report.txt` | the text report. For a run recorded now, the text rendering copied byte for byte from the audit's `reports/`, whatever `--format` said; for the four here, their stdout, which was the text rendering |
+| `*.progress.txt` | stderr, the whole stream: one line per model call, printed before the call. A run recorded now ends with one line more, naming the reports it wrote in a working directory that is gone by the time the run is kept; the four here predate that line |
 | `*.provenance.txt` | the command, the commit, the uncommitted `src/` files at launch, start, end and exit code; for the GPU runs, `ollama ps` at launch and at the end as well |
+| `*.report.json` | the audit record, copied byte for byte: every member's answer on every metric, a settled one included; none of the four has one |
+| `*.report.html` | the page, copied byte for byte; none of the four has one |
 
 Progress is `.txt` and not `.log` because `.gitignore` ignores `*.log`, and a
 log saved that way would be left out of a commit without a word.
@@ -438,8 +443,8 @@ run, against the failure the prompt names.
 run needs Ollama with its members pulled, Syft, Trivy, and the advisory database
 built 2026-09-22T02:00:05Z; a newer database can find different advisories,
 and every count above can move with it. The recorder runs the command after
-`--` and writes the three files into `council_runs/`, refusing a name already
-used:
+`--` and writes five files into `council_runs/`, refusing a name if any of the
+five already exists:
 
 ```bash
 export NO_PROXY=localhost,127.0.0.1 no_proxy=localhost,127.0.0.1
@@ -452,11 +457,23 @@ The full run adds `--council-all-findings`. `audit` is the entry point of the
 editable install in `README.md`, so the venv must be active; the recorder
 refuses to start without it on the path.
 
-The recorder runs `audit` from the project root, so a recorded run also writes
-`reports/vulnscout.txt`, `.json` and `.html` there. They replace whatever a
-plain run of `fetched/vulnscout` from the root left, and the next plain run
-replaces them. `reports/` is ignored, so what is kept of a recorded run is its
-three files in `council_runs/`.
+The audit does not run in the project root. It runs in a temporary directory
+named `council-run-…`, which holds a link to every top-level entry of the
+project but `reports/`, so relative paths in the command resolve as written,
+the report still reads `Audit of fetched/vulnscout`, and the project's own
+`reports/` is never written. All three renderings are copied out byte for byte
+before that directory is removed, whatever `--format` the command gave.
+
+Stdout is not kept. When the audit ran it is one of the three; when it could
+not run it is nothing, and the reason is on stderr, which the progress file
+keeps. **One edge loses a rendering:** an audit whose scan ran and whose report
+write then failed exits 2, and its stdout, which held the only full rendering,
+is not kept.
+
+The recorder exits with the audit's code. An audit that exits 0 or 1 without
+leaving all three renderings makes it exit 2 instead, after copying those it
+did write. An audit that exits 2 is recorded with whichever it wrote, which is
+none unless a report failed to write after the scan.
 
 Repeating the GPU baseline needs `061361f` and Ollama 0.34.3 with both models
 on the GPU. Repeating the CPU baseline needs `gemma4:latest`, the runner at
