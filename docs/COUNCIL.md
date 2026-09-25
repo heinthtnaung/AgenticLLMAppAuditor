@@ -132,7 +132,9 @@ A score written as prose is not caught. That gap is measured rather than
 assumed, and the measurement is the reason it stays open. Across **1,187
 distinct advisories** — seven offline scans covering PyPI, npm, Go, Rust, Debian
 11 and Alpine, plus vulnscout's 18, none of which carries one — exactly one
-does. Redacted, tornado's `GHSA-pw6j-qg29-8w7f` reads:
+does. That is on the database built 2026-09-22; on its successor the scans give
+1,189, and still exactly one (`measurements/README.md`). Redacted, tornado's
+`GHSA-pw6j-qg29-8w7f` reads:
 
 ```
 Proposed CVSS 3.1: [published score withheld] (5.9, medium); attack complexity

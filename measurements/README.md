@@ -46,9 +46,11 @@ The `NO_PROXY` export is this machine's corporate proxy, which otherwise answers
 
 ## The numbers, and what they support
 
-**The corpus: 1,187 distinct advisories** across seven scans — 254 PyPI, 163
-npm, 74 Go, 29 Rust, 608 Debian 11, 109 Alpine 3.14, 18 vulnscout. 1,255
-findings, deduplicated by published id.
+**The corpus: 1,187 distinct advisories on the database built
+2026-09-22T02:00:05Z**, across seven scans — 254 PyPI, 163 npm, 74 Go, 29 Rust,
+608 Debian 11, 109 Alpine 3.14, 18 vulnscout. That is 1,255 across the scans,
+and 1,187 once an advisory two scans reach counts once. Every number in the
+table was measured on that database.
 
 | Number | What it decided |
 |---|---|
@@ -62,9 +64,24 @@ findings, deduplicated by published id.
 | **4,897** tokens for the worst advisory's prompt | against 8,192 pinned: a 1.7× margin, not the "several times" an 18-advisory corpus suggested |
 | **39** tokens of error on the guard's estimate | 0.8%, which is what makes four-characters-to-the-token acceptable in `refuse_overlong_prompt` |
 
-It supersedes an earlier 153-advisory measurement — 18 vulnscout advisories and
-135 from a PyPI manifest that was never committed. That manifest is why this
-folder exists.
+**On its successor, built 2026-09-23T20:20:57Z, the count is 1,189.** That
+database replaced the pinned one on this machine on 2026-09-24. Debian 11 rises
+from 608 to 610 and every other scan is unchanged. The only two advisories in
+the Debian scan published between the builds are `CVE-2026-86805` and
+`CVE-2026-95818`, both against `glibc` 2.31-13, published on 2026-09-22 at
+16:18 and 17:17 UTC, which accounts for the rise. The pinned database's list
+was not kept, so they are identified by date, not by comparing the lists, and
+5 of the 610 carry no publication date.
+
+`redaction_gaps.py` on the successor gives 880 advisories carrying an `x.y`
+number where the table says 878, and every other redaction count the same. The
+longest advisory is still `GHSA-pw6j-qg29-8w7f` at 17,893 characters.
+`prompt_tokens.py` has not been run on it, so its three token counts are the
+pinned database's alone.
+
+The corpus supersedes an earlier 153-advisory measurement — 18 vulnscout
+advisories and 135 from a PyPI manifest that was never committed. That manifest
+is why this folder exists.
 
 ## Two limits, stated
 
