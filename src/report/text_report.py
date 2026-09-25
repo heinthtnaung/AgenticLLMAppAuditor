@@ -16,12 +16,11 @@ How a finding itself is written is `report.text_findings`; this file is the page
 it goes on.
 """
 
-from report.disagreement import sources_disagree
 from organisation.approval import Approval
 from report.provenance import AdvisoryDatabase
 from report.absences import NOTHING_ABSENT
 from report.record import Report
-from report.summary_words import unread_pointer
+from report.summary_words import counts, unread_pointer
 from report.text_council import council_block
 from report.text_findings import (
     agreeing_block,
@@ -29,7 +28,7 @@ from report.text_findings import (
     unchecked_block,
     unscored_block,
 )
-from report.text_layout import INDENT, SOURCE_SEPARATOR, section
+from report.text_layout import INDENT, SOURCE_SEPARATOR, section, wrapped
 from report.text_risk import risk_block
 
 # Wide enough for a path, which is what an unidentifiable artifact is named by.
@@ -74,14 +73,9 @@ def database_line(run) -> str:
 
 
 def summary(report: Report) -> str:
-    """Say how much there is, and how many findings' readable sources disagree."""
-    # A vector the calculator refused is not counted as a dissent, whatever it says.
-    contested = len([one for one in report.findings if sources_disagree(one)])
-    counts = (
-        f"{len(report.findings)} findings across {report.component_count} components. "
-        f"{contested} carry sources that disagree."
-    )
-    return "\n".join(line for line in (counts, unread_pointer(report)) if line)
+    """Say how much there is, re-flowed to the page, with the pointer to what was left out."""
+    lines = [*wrapped(counts(report), 0), unread_pointer(report)]
+    return "\n".join(line for line in lines if line)
 
 
 def unmatched_block(report: Report) -> str:

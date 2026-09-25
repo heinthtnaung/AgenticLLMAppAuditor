@@ -30,6 +30,11 @@ def sources_disagree(finding: Finding) -> bool:
     return bool(finding.disputed_metrics())
 
 
+def carries_a_refused_source(finding: Finding) -> bool:
+    """Say whether any source's vector was refused, which leaves its reading unknown."""
+    return bool(finding.unreadable)
+
+
 def sources_agree(finding: Finding) -> bool:
     """Say whether every source was read and the readings match on every metric."""
     # A refused vector is an opinion nobody could read, so a finding carrying one

@@ -16,7 +16,12 @@ something.
 import json
 from typing import Any
 
-from report.disagreement import bands_crossed, score_spread, sources_disagree
+from report.disagreement import (
+    bands_crossed,
+    carries_a_refused_source,
+    score_spread,
+    sources_disagree,
+)
 from report.json_council import council_of
 from report.json_risk import approval_of, risk_of
 from report.provenance import AdvisoryDatabase
@@ -61,6 +66,11 @@ def run_of(report: Report) -> dict[str, Any]:
         # as a dissent, whatever it says.
         "findings_whose_sources_disagree": sum(
             1 for finding in report.findings if sources_disagree(finding)
+        ),
+        # Counted apart, at none as well: a refused vector cannot be compared, so
+        # it is no dissent, and it is not an agreement either.
+        "findings_with_a_refused_source": sum(
+            1 for finding in report.findings if carries_a_refused_source(finding)
         ),
     }
 

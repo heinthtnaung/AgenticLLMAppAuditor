@@ -128,12 +128,11 @@ def test_the_same_record_renders_the_same_bytes():
     assert as_json(report) == as_json(report)
 
 
-def test_a_dissent_only_a_refused_source_carries_is_not_counted_as_disagreement():
-    # Accepted on purpose until it is decided whether a refused vector counts as a
-    # dissent: the refused one disagrees and is not counted. Counting it turns
-    # this red.
-    record = as_dictionary(a_report((finding(DJANGO, vectors=REFUSED_DISSENT),)))
-    assert record["run"]["findings_whose_sources_disagree"] == 0
+def test_a_refused_source_is_counted_on_its_own_and_not_as_disagreement():
+    # Decided: a refused vector cannot be compared, so it is no dissent, but the
+    # finding carrying it is counted on its own rather than left unsaid.
+    run = as_dictionary(a_report((finding(DJANGO, vectors=REFUSED_DISSENT),)))["run"]
+    assert (run["findings_whose_sources_disagree"], run["findings_with_a_refused_source"]) == (0, 1)
 
 
 def test_the_artefact_is_json_and_ends_in_a_newline():

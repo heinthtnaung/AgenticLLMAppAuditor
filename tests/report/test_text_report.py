@@ -47,12 +47,16 @@ def lines_under(heading: str, text: str) -> list[str]:
     return [line for line in after.split("\n") if line.startswith("  ")]
 
 
-def test_a_dissent_only_a_refused_source_carries_is_not_counted_in_the_summary():
-    # Accepted on purpose until it is decided whether a refused vector counts as a
-    # dissent: the refused one disagrees and is not counted. Counting it turns
-    # this red.
+def test_a_refused_source_is_counted_in_the_summary_and_not_as_a_disagreement():
+    # Decided: a refused vector cannot be compared, so it is no dissent, but the
+    # finding carrying it is counted on its own rather than left unsaid.
     text = rendered((finding(DJANGO, vectors=REFUSED_DISSENT),))
-    assert "0 carry sources that disagree." in text
+    # Re-flowed to the page, so it is read back with its lines re-joined.
+    summary = " ".join(text.split("\n\n")[1].split("\n"))
+    counted = (
+        "0 carry sources that disagree; 1 carries a source this calculator could not read."
+    )
+    assert counted in summary
 
 
 def test_the_two_kinds_of_nothing_are_counted_apart():
