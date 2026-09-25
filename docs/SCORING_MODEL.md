@@ -208,10 +208,11 @@ is not agreement on what to do about it.
 is weighed from the published sources alone. The council's vector is shown
 beside the range with its own CVSS base score, saying the risk score does not
 use it. Measured on the 18 vulnscout findings against a reference built from
-published vectors, the council's settled values matched it on Attack Vector 0
-times in 11, Privileges Required 0 in 9, User Interaction 0 in 13 and Scope 1 in
-13, where answering the commonest value scores 1.00 (`measurements/README.md`,
-which says what that cannot show).
+published vectors, the settled values of a council of `qwen2.5:7b-instruct`
+and `llama3.2:latest` matched it on Attack Vector 0 times in 11, Privileges
+Required 0 in 9, User Interaction 0 in 13 and Scope 1 in 13, where answering
+the commonest value scores 1.00 (`measurements/README.md`, which says what that
+cannot show). The score reads no council's vector, whatever the roster.
 
 It costs the one case where the council's vector was the only severity on
 offer. A finding no source scored still weighs technical severity at 0 and

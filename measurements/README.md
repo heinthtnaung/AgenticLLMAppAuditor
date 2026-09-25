@@ -649,6 +649,7 @@ cannot show bounds that, so it comes first.
 | Limit | Why |
 |---|---|
 | one repository | 18 advisories, every one npm, from `fetched/vulnscout` |
+| one roster | `qwen2.5:7b-instruct` and `llama3.2:latest`: every figure below is theirs, not the tool's, and a model you switch to needs its own evaluation ("Evaluating a model you want to use", below) before its readings are trusted |
 | the baseline is perfect by construction on four metrics | on AV, PR, UI and S, R1 gives a single value wherever it has one — `N`, `N`, `N` and `U`, on 16, 15, 16 and 16 findings — so the baseline scores 1.00 there and lift can at best reach 0 |
 | a wrong reading and another convention look alike | where the pair departs from R1, the pilot cannot tell a misreading from a different scoring convention for libraries; only labels made by hand from the advisory text can |
 | anchoring is untested | Llama's constant values are each the last the prompt lists, below; reading cannot be told from list-order anchoring without a control that reverses the order |
@@ -804,5 +805,49 @@ listed third; and Qwen's AV to declining, 12 times, reversed.
 **What it cannot show.** Each cell is one pass: the variants were not rerun, so
 their passes are taken to reproduce as the pilot's did, not shown to. The
 reversal moves every metric's order at once. And the design's limits stand: 18
-npm findings, one seed, one wording of the convention, and R1 constant on four
-metrics, so lift can at best reach 0 there in any cell.
+npm findings, one roster, one seed, one wording of the convention, and R1
+constant on four metrics, so lift can at best reach 0 there in any cell.
+
+### Evaluating a model you want to use
+
+**Every finding above is about `qwen2.5:7b-instruct` and `llama3.2:latest`, not
+about the tool.** A model you want as a member is a new instrument, and its
+readings are not to be trusted until it has been through the pilot's findings
+the same way. From the project root, with nothing else using Ollama:
+
+```bash
+source .venv/bin/activate
+export NO_PROXY=localhost,127.0.0.1 no_proxy=localhost,127.0.0.1
+M=qwen3:8b                        # the name exactly as `ollama list` prints it, tag included
+F=$(echo "$M" | tr ':/' '--')     # qwen3-8b, for file names
+# 1. It answers in the council's shape, quotes the advisory, and repeats itself from a cold start
+COUNCIL_LIVE_OLLAMA=1 COUNCIL_LIVE_MODEL="$M" python -m pytest -q tests/council/test_ollama_live.py
+# 2. The context guard's estimate holds for its tokenizer
+python measurements/prompt_tokens.py "$M"
+# 3. One pass over the pilot's 18 findings
+P=measurements/council_eval_runs/pilot-vulnscout; D=$P/vulnscout.dataset.json
+R=measurements/council_eval_runs/$F-vulnscout && mkdir "$R"
+START=$(date '+%F %T')
+python measurements/council_eval collect --dataset $D --model "$M" --out $R/$F.run1.replies.jsonl
+journalctl -u ollama -o short-iso --since "$START" --no-pager |
+    python measurements/council_eval server-log --journal /dev/stdin --out $R/ollama-journal.run1.tsv
+python measurements/council_eval turns --excerpt $R/ollama-journal.run1.tsv
+# 4. Score it alone, beside each model of the recorded pair, and as a council with them
+python measurements/council_eval score --dataset $D --replies $P/qwen2.5-7b-instruct.run1.replies.jsonl \
+    $P/llama3.2-latest.run2.replies.jsonl $R/$F.run1.replies.jsonl > $R/score.txt
+python measurements/council_eval values --dataset $D --replies $R/$F.run1.replies.jsonl > $R/values.txt
+python measurements/council_eval quoting --dataset $D --replies $R/$F.run1.replies.jsonl > $R/quoting.txt
+```
+
+| Step | What it should show |
+|---|---|
+| 1, the live test | `3 passed`, or a skip naming the model as not pulled |
+| 2, the context guard | `a prompt at the guard's limit: about N of the 8192 pinned`, with N below 8,192; on record, Qwen 6,095, Llama 5,964 and Gemma 7,081 |
+| 3, one pass | `turns: 18; not of 8 calls: none`. A model too slow for the 180 s timeout, or refused by the server, shows as failed calls in the `failed` column of `score.txt`'s member table |
+| 4, the scores | seven rosters: each model alone, each pair, and all three. Read the new model's rate beside the baseline, its lift, and the values it named; one value throughout is a constant, not a reading |
+
+`collect` refuses a name without its tag, `the server holds no llama3.2`. A
+second pass (`run2`) and then `compare --first … --second …` checks that the
+model repeats itself. None of it lifts the pilot's limits: on AV, PR, UI and S
+lift can at best reach 0, because R1 gives one value there, and 18 npm findings
+are one repository.

@@ -128,9 +128,9 @@ deliberate. Every finding is scored once per published source, because choosing
 a source is precedence `docs/SCORING_MODEL.md` refuses to set, and a vector a
 council settled is shown beside those scores with its own CVSS base score,
 saying the risk score does not use it. Measured against published vectors on
-this repository, the council's settled values scored below answering one value
-throughout on every metric (`measurements/README.md`), so nothing it settles
-reaches the score.
+this repository, the settled values of `qwen2.5:7b-instruct` and
+`llama3.2:latest` scored below answering one value throughout on every metric
+(`measurements/README.md`), so nothing a council settles reaches the score.
 
 One record, three renderings, all of them saved. Every run renders text for a
 terminal, JSON for the audit artefact, and one self-contained HTML page that
