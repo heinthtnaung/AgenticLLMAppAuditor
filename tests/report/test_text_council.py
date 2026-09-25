@@ -148,3 +148,21 @@ def test_only_the_assessed_findings_are_counted_in_the_heading():
     # it did, which is the claim the scoping has to not make.
     rendered = block(council_ran(**DISSENTING), CouncilNotAsked("CVE-2", SOURCES_AGREE))
     assert "COUNCIL (1)" in rendered
+
+
+def test_a_settled_vector_heads_its_entry_with_its_cvss_base_score_and_band():
+    # Without answers there is no risk block, and so no other place the settled
+    # vector's score is shown.
+    settled = council_ran()
+    raised = (finding(DJANGO, advisory_id=settled.advisory_id),)
+    report = build_report(PROVENANCE, catalogue(DJANGO), raised, {}, (settled,))
+    assert report.risk == {}
+    lines = council_block(report).split("\n")
+    heading = next(one for one in lines if settled.advisory_id in one).strip()
+    assert heading == f"{settled.advisory_id}  settled  ·  {TOTAL_LOSS}  ·  CVSS 9.8 Critical"
+
+
+def test_a_council_that_settled_no_vector_shows_no_cvss_figure():
+    outcome = council_ran(**DISSENTING)
+    heading = next(one for one in block(outcome).split("\n") if outcome.advisory_id in one)
+    assert "CVSS " not in heading

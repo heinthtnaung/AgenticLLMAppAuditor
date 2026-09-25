@@ -6,9 +6,12 @@ reader of the report sees is compared -- each heading and vector, each metric
 the council could not settle, and every member's kind, value, confidence,
 verification and quotation -- and nothing about the layout is.
 
-**Two changes since the recorded runs are allowed for, by name.** Quotations
+**Three changes since the recorded runs are allowed for, by name.** Quotations
 are compared with their whitespace removed, because the renderer has stopped
-breaking lines at hyphens. And the basis lines are reconciled rather than
+breaking lines at hyphens. A settled heading now ends its vector with the CVSS
+base score and band it computes to; a recording that shows no such figure was
+rendered before it, and matches with the replay's figure taken out -- one that
+shows a figure must match exactly. And the basis lines are reconciled rather than
 matched: before `4526250` a value one member quoted alone read "every member
 that offered a quotation supported this value", which is now `SOLE`. So in a
 recording that names no `SOLE`, the `AGREED` count must equal the replay's
@@ -24,15 +27,22 @@ from itertools import chain
 from typing import Iterable, Mapping
 
 from council.ruling import Basis
+from cvss.score import SEVERITY_BANDS
+from report.council_beside import CVSS_SCALE_NAME
 from report.council_record import CouncilOutcome
 from report.council_words import SETTLED
 from report.text_council import ADVISORY_DEPTH, QUOTATION_DEPTH, advisory_lines
-from report.text_layout import INDENT
+from report.text_layout import INDENT, SOURCE_SEPARATOR
 
 BLOCK_OPENING = "COUNCIL ("
 SETTLED_LINE = re.compile(rf"^(\d+) metrics? {SETTLED}$")
 BASIS_LINE = re.compile(r"^(\d+)  (.+)$")
 BASIS_WORDS = {basis.value for basis in Basis}
+# The settled vector's figure in a heading, as `report.council_beside.banded` writes it.
+BAND_NAMES = "|".join(name for _, name in SEVERITY_BANDS)
+HEADING_FIGURE = re.compile(
+    rf"{re.escape(SOURCE_SEPARATOR)}{CVSS_SCALE_NAME} \d+\.\d (?:{BAND_NAMES})"
+)
 
 
 @dataclass(frozen=True)
@@ -134,7 +144,7 @@ def differences(
 def finding_differences(key: str, old: FindingFacts, new: FindingFacts) -> list[str]:
     """Name every way one finding differs, the basis lines reconciled rather than matched."""
     found = []
-    if old.heading != new.heading:
+    if not headings_match(old.heading, new.heading):
         found.append(f"{key}: heading {old.heading!r} is now {new.heading!r}")
     if old.settled != new.settled:
         found.append(f"{key}: {old.settled} settled is now {new.settled}")
@@ -142,6 +152,12 @@ def finding_differences(key: str, old: FindingFacts, new: FindingFacts) -> list[
         found.append(f"{key}: bases {dict(old.bases)} do not reconcile with {dict(new.bases)}")
     found.extend(entry_differences(key, old.entries, new.entries))
     return found
+
+
+def headings_match(old: str, new: str) -> bool:
+    """Say whether headings match, a recording made before the settled figure allowed none."""
+    # A recording that shows a figure was rendered after the change, and must match exactly.
+    return old == new or HEADING_FIGURE.sub("", new, count=1) == old
 
 
 def entry_differences(key: str, old: tuple[str, ...], new: tuple[str, ...]) -> list[str]:

@@ -12,9 +12,11 @@ differ from the record it exists to show.
 
 from html import escape
 
+from report.council_beside import CouncilFigure
 from report.html_style import band_class
 
 SEPARATOR = '<span class="separator">·</span>'
+CVSS_SCALE = "cvss"
 
 
 def text(value: object) -> str:
@@ -64,3 +66,8 @@ def scored_chip(scale: str, value: str, band: str, css_class: str) -> str:
     labelled = tag("span", text(scale), "scale") + tag("span", value, "value")
     banded = labelled + tag("span", text(band), "band")
     return tag("span", banded, f"{css_class} {band_class(band)}")
+
+
+def figure_chip(figure: CouncilFigure) -> str:
+    """Show a council's figure on a CVSS chip, the shape every published score takes."""
+    return scored_chip(CVSS_SCALE, number(figure.base_score), figure.band, "cvss")

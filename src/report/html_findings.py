@@ -23,10 +23,11 @@ from report.disagreement import (
     sources_agree,
     sources_disagree,
 )
-from report.html_layout import listing, number, scored_chip, section, separated, tag, text
+from report.html_layout import (
+    CVSS_SCALE, listing, number, scored_chip, section, separated, tag, text,
+)
 from report.record import Report
 
-CVSS_SCALE = "cvss"
 NOTHING_PUBLISHED = "No source published a readable v3 vector."
 
 CONTESTED_LEDE = (

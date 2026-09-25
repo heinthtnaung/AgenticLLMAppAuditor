@@ -13,6 +13,7 @@ record says so.
 
 from typing import Any
 
+from report.council_beside import figure_of
 from report.council_record import CouncilAssessment, CouncilNotAsked, MemberSaid, MetricRuling
 
 
@@ -29,6 +30,7 @@ def council_of(report, advisory_id: str) -> dict[str, Any] | None:
     return {
         "ran": True,
         "vector": outcome.vector if settled else None,
+        "base_score": figure_of(outcome).base_score if settled else None,
         "single_assessor": outcome.single_assessor,
         # Of a vector only: two members reached is not two members checked.
         "nothing_cross_checked": outcome.nothing_cross_checked if settled else None,

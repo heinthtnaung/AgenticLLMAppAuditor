@@ -127,3 +127,8 @@ def test_a_vector_says_whether_anything_was_cross_checked_and_no_vector_says_not
     assert rendered(council_ran(**DECLINED_ON_AV))["nothing_cross_checked"] is False
     assert rendered(council_ran())["nothing_cross_checked"] is False
     assert rendered(fell_back())["nothing_cross_checked"] is None
+
+
+def test_a_vector_carries_the_base_score_it_computes_to_and_no_vector_carries_none():
+    assert rendered(council_ran())["base_score"] == 9.8
+    assert rendered(council_ran(**DISSENTING))["base_score"] is None
