@@ -1,11 +1,16 @@
 """Guards on the one place the council opens a socket: no proxy, and loud failures."""
 
+import io
 import json
+import threading
+import time
 import urllib.error
 import urllib.request
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import pytest
 
+import model_shapes as shapes
 from council import transport
 from council.transport import (
     JSON_CONTENT_TYPE,
@@ -17,6 +22,9 @@ from council.transport import (
 
 URL = "http://127.0.0.1:11434/api/generate"
 PAYLOAD = {"model": "qwen2.5:7b-instruct", "prompt": "hello"}
+# A server that takes a second, and a caller that waits a fifth of one.
+SLOW_SECONDS = 1.0
+PATIENCE_SECONDS = 0.2
 
 
 class Answered:
@@ -113,3 +121,49 @@ def test_a_proxy_answering_html_is_not_mistaken_for_a_model(monkeypatch):
 def test_a_body_that_is_not_json_is_refused_with_an_excerpt():
     with pytest.raises(ModelUnavailable, match="not json either"):
         read_json(URL, "not json either")
+
+
+@pytest.mark.parametrize("shape", sorted(shapes.REFUSED))
+def test_a_model_that_cannot_do_what_was_asked_fails_in_the_server_s_own_words(monkeypatch, shape):
+    # Recorded: what Ollama 0.34.3 answered a model that cannot generate, and a
+    # `think` the model does not support.
+    refused = shapes.REFUSED[shape]
+    body = io.BytesIO(refused["body"].encode("utf-8"))
+    fault = urllib.error.HTTPError(URL, refused["status"], "Bad Request", {}, body)
+    monkeypatch.setattr(transport.NO_PROXY_OPENER, "open", raising(fault))
+    words = json.loads(refused["body"])["error"].split('" ', 1)[1]
+    with pytest.raises(ModelUnavailable, match=f"answered 400: .*{words}"):
+        post_json(URL, PAYLOAD)
+
+
+class Slow(BaseHTTPRequestHandler):
+    """A server that takes longer to answer than the caller will wait."""
+
+    def do_POST(self) -> None:
+        """Answer late, as a model too big for the machine does."""
+        time.sleep(SLOW_SECONDS)
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"{}")
+
+    def log_message(self, *_) -> None:
+        """Keep the test's output quiet."""
+
+
+def test_a_server_slower_than_the_timeout_is_named_as_slow_and_not_as_absent():
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Slow)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    url = f"http://127.0.0.1:{server.server_port}/api/generate"
+    try:
+        with pytest.raises(ModelUnavailable, match="did not answer within 0.2 s"):
+            post_json(url, PAYLOAD, timeout=PATIENCE_SECONDS)
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
+def test_a_connection_that_timed_out_is_named_as_slow_too(monkeypatch):
+    fault = urllib.error.URLError(TimeoutError("timed out"))
+    monkeypatch.setattr(transport.NO_PROXY_OPENER, "open", raising(fault))
+    with pytest.raises(ModelUnavailable, match="did not answer within 180 s"):
+        post_json(URL, PAYLOAD)

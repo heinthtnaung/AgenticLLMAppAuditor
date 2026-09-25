@@ -35,11 +35,12 @@ NO_PROXY_OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 class ModelUnavailable(RuntimeError):
     """Nothing usable came back from a model server, for any of the reasons there are.
 
-    Raised here when the server could not be reached or did not return the JSON
-    it promised, and in `council.ollama` when a server that was reached refused
-    the request or answered with no text in it. One exception for all four
-    because they are one fact to a caller: that member has no answer to give,
-    and `council.runner` records the failure and asks the others.
+    Raised here when the server could not be reached, was too slow for the
+    timeout, or did not return the JSON it promised, and in `council.envelope`
+    when a server that was reached refused, cut the model off, or sent no text.
+    One exception for all of them because they are one fact to a caller: that
+    member has no answer to give, and `council.runner` records the failure and
+    asks the others.
     """
 
 
@@ -61,7 +62,7 @@ def post_json(
     except urllib.error.HTTPError as fault:
         raise ModelUnavailable(http_failure_message(url, fault)) from fault
     except (urllib.error.URLError, OSError) as fault:
-        raise ModelUnavailable(f"{url} could not be reached: {fault}") from fault
+        raise ModelUnavailable(unanswered_message(url, fault, timeout)) from fault
     return read_json(url, body)
 
 
@@ -71,6 +72,15 @@ def build_request(url: str, payload: dict[str, Any]) -> urllib.request.Request:
     return urllib.request.Request(
         url, data=encoded, headers={"Content-Type": JSON_CONTENT_TYPE}, method="POST"
     )
+
+
+def unanswered_message(url: str, fault: OSError, timeout: float) -> str:
+    """Say why nothing came back: a server too slow for the timeout, or none there at all."""
+    # A slow server was reached, and a model too big for this machine looks like
+    # one, so the two failures are not given the same words.
+    if isinstance(getattr(fault, "reason", fault), TimeoutError):
+        return f"{url} did not answer within {timeout:g} s: {fault}"
+    return f"{url} could not be reached: {fault}"
 
 
 def http_failure_message(url: str, fault: urllib.error.HTTPError) -> str:
