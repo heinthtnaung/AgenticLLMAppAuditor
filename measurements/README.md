@@ -25,10 +25,11 @@ reader can disagree with a number by producing a different one.
 | `run_directory.py` | where a recorded audit runs, so the project's `reports/` is never written, and the copying out of its three renderings |
 | `council_runs/` | audits of `fetched/vulnscout` with a two-member council: what each run printed or wrote, and when |
 | `thinking_and_load/` | a probe of the `think` field and of load state on three models: the script, its 22 envelopes, and what they do and do not show |
-| `council_eval/` | the evaluation harness, `python measurements/council_eval <step>`: the steps `dataset`, `collect`, `gate` and `score`, and the checks `compare`, `quoting`, `values`, `server-log` and `turns` |
+| `council_eval/` | the evaluation harness, `python measurements/council_eval <step>`: the steps `dataset`, `collect`, `gate`, `score` and `order-checked`, and the checks `compare`, `quoting`, `values`, `server-log` and `turns` |
 | `council_eval_runs/` | one folder per evaluation: what it ran, every call it saved, an excerpt of the server's journal for each run window, and what each step printed |
 | `council_eval_runs/library-vulnscout/`, `reversed-vulnscout/`, `library-reversed-vulnscout/` | the 2 × 2's three variant cells, one pass per model each; `council_eval_runs/README.md` holds the design, fixed before any variant pass, and the results |
 | `council_eval_runs/gemma4-vulnscout/`, `qwen2.5-coder-vulnscout/` | one pass each of `gemma4:latest` and `qwen2.5-coder:7b-instruct` over the pilot's findings, scored alone and beside the pilot's Qwen |
+| `council_eval_runs/order-checked-vulnscout/` | the order-checked evaluation: a reversed pass each of Gemma and the coder, and three order-checked score files; its README holds the readings, fixed before the results |
 
 The manifests and package databases are written by hand, not captured from a
 real system. They are chosen to reach different advisory feeds — GHSA, OSV,
@@ -585,6 +586,7 @@ says now, so a saved score re-derives the same under any setting.
 | `collect` | one pass: every item put to one model, the model unloaded before each item, every call saved an item at a time; `--variant` asks in a variant's words (`council_eval/variants.py`) | Ollama with the model pulled |
 | `gate` | replays the passes' models as one roster and compares it with a recorded text report; exits 1 on any difference but three it allows for by name: whitespace in quotations, the basis wording before `SOLE`, and a settled heading recorded before it showed the CVSS figure | the files |
 | `score` | every roster the passes can build, each model alone up to all together: each metric against R1 and the baseline, each vector beside R1 and the published scores | the files |
+| `order-checked` | every roster the product-order passes build, a member's value counting only where its reversed pass names the same one: a different value or a decline in either order counts as a decline. It prints what `score` prints, and each member's stable, order-sensitive, declined and failed counts | the files |
 | `compare` | two passes of one model, call by call: the same request, a byte-identical reply, a reload part way through an item | the files |
 | `quoting` | whose quotation each value settled on one quotation rests on, and which unverified quotations are the prompt's own | the files |
 | `values` | each model's replies on each metric: every value it named, its declines and failures, and how many named the option the prompt lists last | the files |
@@ -838,13 +840,13 @@ with the baseline's rate on the same items:
 | I | 13/15 | 0.53 | +0.33 |
 | A | 8/13 | 0.54 | +0.08 |
 
-**Its PR, UI and AC cannot be told from anchoring on the option listed first.**
+**Its PR, UI and AC are the options listed first, and readings all the same.**
 Gemma names N on PR and on UI on 18 of 18, and L on AC on 16 of 18. Those are
-R1's values there, and also the options the product's prompt lists first, so a
-constant matching a constant reference scores the baseline and no more. The
-reversed-order control was not run on Gemma, so the pattern is not separated
-from reading. Scope is its weak metric: C on 9 of 18, where R1 is U on every
-finding it scores.
+R1's values there, and also the options the product's prompt lists first. With
+the options reversed it gives the same values on the same findings
+("Order-checked", below), so they are not the list's order. A constant matching
+a constant reference still scores the baseline and no more. Scope is its weak
+metric: C on 9 of 18, where R1 is U on every finding it scores.
 
 It quotes cleanly: 1 unverified quotation in 144 replies, and none of them the
 prompt's own definitions. Beside Qwen, the pair settles 65, contests 69 and
@@ -861,6 +863,68 @@ silent".
 
 **Each is one pass**, one seed and never rerun, on 18 npm findings, so nothing
 here shows either model repeats itself as the pilot's did.
+
+### Order-checked: a value counts only if both orders give it
+
+**A harness rule, not a product change.** Every metric is asked in the
+product's order and reversed, and a member's value counts only when the two
+agree. A different value, or a decline in either order, counts as a decline, and
+a failure in either as a failure; the chairman then works as it does now.
+Qwen's and Llama's inputs are their saved pilot and reversed passes. Gemma and
+the coder each took one new reversed pass, both with clean journals.
+`council_eval_runs/order-checked-vulnscout/README.md` holds the readings, fixed
+and hashed before any merged roster or reversed pass, and the results.
+
+**Stability**, of 18 findings per model and metric: stable / order-sensitive /
+declined. Nothing failed. A metric is **mostly order**, in bold, when more than
+6 of 18 are order-sensitive:
+
+| Metric | Qwen | Llama | Gemma | Qwen coder |
+|---|---|---|---|---|
+| AV | 2 / 3 / 13 | **4 / 13 / 1** | 11 / 3 / 4 | 2 / 0 / 16 |
+| AC | 17 / 0 / 1 | **6 / 12 / 0** | 16 / 0 / 2 | 1 / 4 / 13 |
+| PR | **4 / 7 / 7** | 14 / 4 / 0 | 18 / 0 / 0 | 0 / 0 / 18 |
+| UI | **4 / 10 / 4** | **0 / 18 / 0** | 18 / 0 / 0 | 0 / 0 / 18 |
+| S | 12 / 4 / 2 | 17 / 1 / 0 | 12 / 4 / 2 | 0 / 0 / 18 |
+| C | 11 / 4 / 3 | 17 / 1 / 0 | 13 / 4 / 1 | 7 / 1 / 10 |
+| I | 13 / 3 / 2 | 13 / 4 / 1 | 16 / 2 / 0 | 9 / 0 / 9 |
+| A | 14 / 2 / 2 | 14 / 4 / 0 | 13 / 1 / 4 | 6 / 0 / 12 |
+
+Llama's AV, AC and UI and Qwen's PR and UI are mostly order. **Nothing is
+mostly order for Gemma**: its N on PR and UI holds on 18 of 18 in both orders,
+and its L on AC on 16 of 18, so its agreement with R1 there is not the option
+listed first. The coder is order-sensitive on at most 4 of 18, because it
+declines most of what it is asked.
+
+**Coverage falls, and no rate change is distinguishable.** Settled, unchecked
+then order-checked: Qwen 105 → 68, Llama 71 → 49, Qwen + Llama 105 → 83, Gemma
+129 → 112, the coder 21 → 14, Qwen + coder 103 → 68. On every metric of every
+roster the two 95% intervals overlap, the closest being Qwen + Gemma's AV, 3/8 →
+8/8, whose intervals [0.14, 0.69] and [0.68, 1.00] overlap by less than 0.02.
+Qwen + Gemma is the one roster that settles more, 86 against 65, with 37
+contests against 69: Qwen's positional answers become declines, so Gemma's
+stable ones settle, AV 8/8, PR 10/10 and UI 12/12. For Qwen and Llama what
+survives is still mostly off R1: Qwen's AC is H on 16 of 18 in both orders, and
+both models' S is C on 10 and 17. Gemma alone reaches 2 vectors order-checked,
+against 12 unchecked, and no other roster reaches any.
+
+**What is left of the bias.** Among each model's values, the share that are the
+option listed last (first, for Gemma), before and after the check: Qwen 0.42 →
+0.39, Llama 0.42 → 0.32, Gemma 0.67 → 0.74, the coder 0.29 → 0.04. Qwen's
+barely falls, because most of its last-listed answers, AC H and S C, hold in
+both orders. Two orders cannot check a lean to the middle: on PR, C, I and A, L
+stays in the middle when the order is reversed. With L among the surviving
+values on 10 of 18 for Qwen on A, and on 7 and 11 for Llama on I and A, where R1
+gives L on at most one finding, a middle-position bias is **suspected**, and
+this rule does not remove it.
+
+**No verdict on adopting it.** The rule turns positional answers into declines,
+fewer settled values rather than more right ones at this n, and leaves Gemma
+almost untouched; it would cost twice the calls. Whether the product should ask
+every metric in both orders is the user's decision. Two orders agreeing shows
+only that an answer is not positional, not that it is correct, and the usual
+limits hold: 18 npm findings, one seed, one pass per order with no rerun, and R1
+with one value on AV, PR, UI and S.
 
 ### Evaluating a model you want to use
 

@@ -96,7 +96,9 @@ User Interaction and Attack Complexity followed the list's order, not the
 advisory, and so did Qwen's User Interaction without the library paragraph;
 all of Llama's reversed User Interaction answers were guesses. The CVSS User
 Guide's paragraph on libraries, added to the prompt, moved neither model toward
-that convention (`measurements/README.md`).
+that convention (`measurements/README.md`). Counting a value only when both
+orders give it turns those answers into declines, at twice the calls, and at 18
+findings changes no rate distinguishably ("Order-checked", same file).
 
 ## The roster
 

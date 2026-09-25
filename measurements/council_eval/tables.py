@@ -7,12 +7,15 @@ count it came from, and a rate over nothing is printed as `NO_RATE`, not as 0.
 from itertools import chain
 from typing import Any, Iterable, Mapping, Sequence
 
+from report.council_record import CouncilAssessment, CouncilOutcome
+
 from council_eval.contests import ContestMeasure
 from council_eval.measures import (
     NOT_IN_ADVISORY,
     VERIFIED,
     MemberMeasure,
     MetricMeasure,
+    outcome_totals,
     wilson,
 )
 from council_eval.vectors import VectorMeasure, reference_band
@@ -143,3 +146,12 @@ def vector_row(measure: VectorMeasure) -> list[Any]:
 def vector_table(measures: Iterable[VectorMeasure]) -> list[str]:
     """Lay out every vector a roster reached."""
     return table(VECTOR_COLUMNS, [vector_row(one) for one in measures])
+
+
+def totals_lines(outcomes: tuple[CouncilOutcome, ...]) -> list[str]:
+    """Count every metric by outcome, and name every vector reached."""
+    totals = outcome_totals(outcomes)
+    reached = [one for one in outcomes if isinstance(one, CouncilAssessment)]
+    vectors = [f"  {one.advisory_id}  {one.vector}" for one in reached]
+    counted = ", ".join(f"{totals[kind]} {kind}" for kind in ("settled", "contested", "unresolved"))
+    return [f"{sum(totals.values())} metrics: {counted}; {len(vectors)} vectors", *vectors]

@@ -15,7 +15,6 @@ from typing import Any, Mapping
 
 from deps import syft_runner, trivy_runner
 from deps.trivy_database import database_built_at, metadata_of, trivy_cache_directory
-from report.council_record import CouncilAssessment, CouncilOutcome
 
 from council_eval.collect import ask_item, collect
 from council_eval.compose import pass_models, replay_roster, rosters
@@ -23,7 +22,8 @@ from council_eval.contests import contest_measures
 from council_eval.dataset import Item, read_dataset, vulnscout_items, write_dataset
 from council_eval.gate import differences, recorded_findings, replayed_findings
 from council_eval.inspections import add_inspections
-from council_eval.measures import member_measures, metric_measures, outcome_totals
+from council_eval.order_checked_step import add_order_checked
+from council_eval.measures import member_measures, metric_measures
 from council_eval.pass_provenance import pass_header
 from council_eval.replies import Replies, read_replies
 from council_eval.tables import (
@@ -31,6 +31,7 @@ from council_eval.tables import (
     header_lines,
     member_table,
     metric_table,
+    totals_lines,
     vector_table,
 )
 from council_eval.variants import BASELINE, VARIANTS
@@ -71,6 +72,7 @@ def parser() -> argparse.ArgumentParser:
     score.add_argument("--replies", type=Path, nargs="+", required=True)
     score.set_defaults(run=run_score)
     add_inspections(commands)
+    add_order_checked(commands)
     return top
 
 
@@ -145,12 +147,3 @@ def roster_lines(items: tuple[Item, ...], roster: tuple[str, ...], replies: Repl
         "", *member_table(member_measures(outcomes)),
         "", *vector_table(vector_measures(items, outcomes)),
     ]
-
-
-def totals_lines(outcomes: tuple[CouncilOutcome, ...]) -> list[str]:
-    """Count every metric by outcome, and name every vector reached."""
-    totals = outcome_totals(outcomes)
-    reached = [one for one in outcomes if isinstance(one, CouncilAssessment)]
-    vectors = [f"  {one.advisory_id}  {one.vector}" for one in reached]
-    counted = ", ".join(f"{totals[kind]} {kind}" for kind in ("settled", "contested", "unresolved"))
-    return [f"{sum(totals.values())} metrics: {counted}; {len(vectors)} vectors", *vectors]
