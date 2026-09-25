@@ -4,6 +4,7 @@ import eval_samples  # noqa: F401  (puts the evaluation package on the path)
 from council.definitions import definition_of
 from council.ruling import Basis
 from council_eval.quoting import prompt_quoted_by_member, sole_by_member, unverified_by_member
+from council_eval.variants import LIBRARY, LIBRARY_GUIDANCE
 from report.council_record import (
     CouncilWithoutVector,
     MemberIdentity,
@@ -53,3 +54,10 @@ def test_part_of_a_definition_folded_as_the_check_folds_it_is_the_prompt():
     part = "  " + PROMPT_TEXT.split(",")[0].replace(" ", "\n", 1)
     outcomes = record(MetricRuling("UI", Outcome.UNRESOLVED, (quoted(LLAMA, part, False),)))
     assert prompt_quoted_by_member(outcomes) == {("llama", "UI"): 1}
+
+
+def test_a_quotation_of_a_variant_s_guidance_is_the_prompt_only_where_the_variant_added_it():
+    part = LIBRARY_GUIDANCE.split(". ")[-1]
+    outcomes = record(MetricRuling("S", Outcome.UNRESOLVED, (quoted(QWEN, part, False),)))
+    assert prompt_quoted_by_member(outcomes, LIBRARY.added_texts) == {("qwen", "S"): 1}
+    assert prompt_quoted_by_member(outcomes) == {}

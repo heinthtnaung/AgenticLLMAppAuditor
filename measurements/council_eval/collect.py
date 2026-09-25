@@ -20,6 +20,7 @@ from council_eval.dataset import Item
 from council_eval.pass_provenance import now
 from council_eval.recording import CallRecord, Post, RecordingClient, unload_model
 from council_eval.replies import call_line
+from council_eval.variants import BASELINE, Variant
 
 END_KIND = "end"
 NANOSECONDS = 1e9
@@ -27,10 +28,12 @@ NANOSECONDS = 1e9
 AskItem = Callable[[Item, str], list[CallRecord]]
 
 
-def ask_item(item: Item, model: str, post: Post = post_json) -> list[CallRecord]:
-    """Put one item to one model from a fresh load, and give back every call it made."""
+def ask_item(
+    item: Item, model: str, post: Post = post_json, variant: Variant = BASELINE
+) -> list[CallRecord]:
+    """Put one item to one model from a fresh load, in a variant's words, and give every call."""
     unload_model(model, post)
-    client = RecordingClient(post=post)
+    client = RecordingClient(post=post, variant=variant)
     assess_one(item.finding, build_roster((model,)), {OLLAMA_PROVIDER: client})
     return client.calls
 

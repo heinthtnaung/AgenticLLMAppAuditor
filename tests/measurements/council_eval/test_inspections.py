@@ -16,7 +16,7 @@ from council_eval.server_log import Load, Request
 def one_pass(tmp_path, name: str) -> str:
     """Take one pass of the sample model over the sample item into a file."""
     path = tmp_path / f"{name}.jsonl"
-    header = {"kind": "header", "model": samples.MODEL}
+    header = samples.header()
     collect((samples.item(),), samples.MODEL, path, header, samples.Asking(), io.StringIO())
     return str(path)
 
@@ -46,6 +46,16 @@ def test_the_quoting_step_counts_each_member_s_unverified_quotations(tmp_path, c
     # Alone, the member settles AV, AC, PR, UI and A on its own quotation; its
     # scope quotation is not in the advisory, and is not the prompt's either.
     assert row.split() == [samples.MODEL, "5", "1", "0"]
+
+
+def test_the_values_step_counts_what_each_member_named_against_the_last_listed(tmp_path, capsys):
+    dataset = tmp_path / "dataset.json"
+    write_dataset((samples.item(),), {"repository": "example"}, dataset)
+    commands.main(["values", "--dataset", str(dataset), "--replies", one_pass(tmp_path, "pass")])
+    rows = [line.split() for line in capsys.readouterr().out.splitlines()[1:]]
+    # The sample member answers UI with N, which the product's order lists first.
+    assert [samples.MODEL, "UI", "R", "0/1", "N:1"] in rows
+    assert [samples.MODEL, "C", "N", "0/1", "declined:1"] in rows
 
 
 def test_a_server_log_is_kept_in_a_new_file_and_never_over_one(tmp_path):

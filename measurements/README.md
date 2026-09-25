@@ -24,8 +24,9 @@ reader can disagree with a number by producing a different one.
 | `run_directory.py` | where a recorded audit runs, so the project's `reports/` is never written, and the copying out of its three renderings |
 | `council_runs/` | audits of `fetched/vulnscout` with a two-member council: what each run printed or wrote, and when |
 | `thinking_and_load/` | a probe of the `think` field and of load state on three models: the script, its 22 envelopes, and what they do and do not show |
-| `council_eval/` | the evaluation harness, `python measurements/council_eval <step>`: the steps `dataset`, `collect`, `gate` and `score`, and the checks `compare`, `quoting`, `server-log` and `turns` |
+| `council_eval/` | the evaluation harness, `python measurements/council_eval <step>`: the steps `dataset`, `collect`, `gate` and `score`, and the checks `compare`, `quoting`, `values`, `server-log` and `turns` |
 | `council_eval_runs/` | one folder per evaluation: what it ran, every call it saved, an excerpt of the server's journal for each run window, and what each step printed |
+| `council_eval_runs/library-vulnscout/`, `reversed-vulnscout/`, `library-reversed-vulnscout/` | the 2 × 2's three variant cells, one pass per model each; `council_eval_runs/README.md` holds the design, fixed before any variant pass, and the results |
 
 The manifests and package databases are written by hand, not captured from a
 real system. They are chosen to reach different advisory feeds — GHSA, OSV,
@@ -566,11 +567,12 @@ against a question it was not asked (`council_eval/replies.py`).
 | Step | What it does | What it needs |
 |---|---|---|
 | `dataset` | freezes a repository's findings in the audit's own join and order, with the Syft and Trivy versions and when the database was built | Syft, Trivy, and the database in the cache `audit` finds (`README.md`) |
-| `collect` | one pass: every item put to one model, the model unloaded before each item, every call saved an item at a time | Ollama with the model pulled |
+| `collect` | one pass: every item put to one model, the model unloaded before each item, every call saved an item at a time; `--variant` asks in a variant's words (`council_eval/variants.py`) | Ollama with the model pulled |
 | `gate` | replays the passes' models as one roster and compares it with a recorded text report; exits 1 on any difference | the files |
 | `score` | every roster the passes can build, each model alone up to all together: each metric against R1 and the baseline, each vector beside R1 and the published scores | the files |
 | `compare` | two passes of one model, call by call: the same request, a byte-identical reply, a reload part way through an item | the files |
 | `quoting` | whose quotation each value settled on one quotation rests on, and which unverified quotations are the prompt's own | the files |
+| `values` | each model's replies on each metric: every value it named, its declines and failures, and how many named the option the prompt lists last | the files |
 | `server-log` | cuts a journal to its request and load lines | the output of `journalctl -u ollama -o short-iso` |
 | `turns` | counts an excerpt's requests and loads, and names every turn not of eight calls | an excerpt |
 
@@ -637,6 +639,9 @@ cannot show bounds that, so it comes first.
 | a wrong reading and another convention look alike | where the pair departs from R1, the pilot cannot tell a misreading from a different scoring convention for libraries; only labels made by hand from the advisory text can |
 | anchoring is untested | Llama's constant values are each the last the prompt lists, below; reading cannot be told from list-order anchoring without a control that reverses the order |
 
+The 2 × 2 below has since put the last two to a control, one wording of the
+convention and one pass per cell.
+
 **The harness reproduces a run the product recorded.** The pair rebuilt
 offline prints what `gpu-full` printed: 105 settled, 13 contested and 26
 unresolved of 144, the same four vectors, and every unsettled line
@@ -700,3 +705,90 @@ still runs, and its record is kept whole. That decision rests on this pilot,
 with the limits above. What it costs is a finding no source scored: it weighs
 technical severity at 0 and stays provisional, even where a council settled a
 vector for it.
+
+### The 2 × 2: library guidance and reversed options
+
+**Two controls on the pilot's open questions, crossed.** One adds to the prompt
+the first paragraph of the CVSS v3.1 User Guide's §3.7, on scoring libraries,
+less its last sentence; the other lists every metric's options in reverse.
+Each cell is one pass per model on the pilot's 18 findings, with the pilot's
+pinning. `council_eval_runs/README.md` holds the design, fixed before the first
+variant pass and held to its digest by a test, and the results. Each cell's
+folder holds its passes, journal and what each step printed.
+
+**Option order drives Llama's User Interaction and Attack Complexity, and
+Qwen's User Interaction without the paragraph.** With it, Qwen's reversed UI is
+mixed, N 10 and R 8. So the pilot's UI:R and Llama's AC:H were the list's
+order, not readings. Scope, and Qwen's AC, do not follow the order. Of 18
+replies, those naming each value:
+
+| Model | Metric | baseline | reversed | library | library + reversed | Reading |
+|---|---|---|---|---|---|---|
+| Llama | AC | H 18 | L 12, H 6 | H 18 | L 14, H 4 | order-driven in both pairs |
+| Llama | UI | R 18 | N 18 | R 13, N 5 | N 18 | order-driven in both pairs |
+| Llama | S | C 18 | C 17, U 1 | C 18 | C 12, U 6 | order-independent in both pairs |
+| Qwen | AC | H 16, L 1 | H 16, L 1 | H 17, L 1 | H 16, L 1 | order-independent in both pairs |
+| Qwen | UI | R 12, N 2 | N 16, R 2 | R 14, N 1 | N 10, R 8 | order-driven without the paragraph, mixed with it |
+| Qwen | S | C 12, U 4 | C 12, U 4 | C 16, U 1 | C 13, U 5 | order-independent in both pairs |
+
+All 18 of Llama's reversed UI answers are guesses with no quotation, in both
+reversed cells. Two readings sit exactly on the threshold of 12: Llama's AC
+reversed, and Llama's S in library + reversed.
+
+**The library paragraph moved neither model toward the convention.** Read as the
+design reads it, the worst case for a library is N on AV, PR and UI and L on
+AC. No count toward it rose by the 6 of 18 fixed as a shift, in either order.
+The nearest are Llama's UI at +5 in the product's order and Qwen's AV at +4
+reversed, and the one change of 6 is Qwen's UI reversed, away from it. Neither
+model quoted the paragraph.
+
+What it did change was declining. Qwen declined 12 times of 144 with it,
+against 21 without, and 9 against 24 reversed. Llama guessed 51 times against
+43, and 74 against 64. That the paragraph's "requires assumptions to be made"
+licenses answering where the text is silent is inferred, not tested.
+
+**Against R1, the large rises are in the reversed cells, on AV, PR and UI,**
+from 0 agreed to between 3 and 13. Those are three of the five metrics where the
+reversal lists R1's value last, so by the rule fixed beforehand the gain is not
+credited. Elsewhere the counts move by an item or two either way. Agreed of
+scored:
+
+| Metric | baseline | reversed | library | library + reversed |
+|---|---|---|---|---|
+| AV | 0/11 | 3/8 | 0/13 | 5/10 |
+| PR | 0/9 | 6/12 | 0/10 | 9/14 |
+| UI | 0/13 | 13/15 | 0/15 | 8/16 |
+
+Every lift in every cell is negative but one: the library cell's on Integrity,
++0.10, on 6 of 10. Of the nine vectors the cells reached, none scores inside
+its published range.
+
+**The rule fixed beforehand misfired twice on the other five metrics.** There
+it labelled three readings order-driven: Llama's C in both pairs, and Qwen's PR
+and I in the library pair, both of Qwen's at exactly 12. Llama's C and Qwen's I
+meet the order-independent condition as well, since the value each held, H, is
+the option the reversal lists last: the rule gives neither label precedence, so
+both apply, and neither means anything there.
+
+- **Qwen's PR did move**, from L 8 in the library cell to N 12, the option the
+  reversed order lists last, so that label is sound.
+- **Llama's C and Qwen's I did not move.** Llama named H 12 times in the pilot,
+  then 13 and 15; Qwen named H 15 times in the library cell, then 12. H is
+  listed first in one order and last in the other, and each model named it
+  about as often either way. Those two labels are the misfires, and neither is
+  evidence of anchoring.
+- **Why:** on AC, UI and S the pilot's value was the one listed last, so naming
+  the new last option means the value flipped. On the other five that does not
+  follow.
+- **One reading there is order-independent and nothing else,** Llama's A in
+  the baseline pair, at exactly 12: L 14, then L 12. The rest are mixed.
+
+The other moves on those five: Qwen's PR from L 8 to N 11 in the baseline
+pair, below the threshold; Llama's AV from L 15 to A 10 and 8, the option
+listed third; and Qwen's AV to declining, 12 times, reversed.
+
+**What it cannot show.** Each cell is one pass: the variants were not rerun, so
+their passes are taken to reproduce as the pilot's did, not shown to. The
+reversal moves every metric's order at once. And the design's limits stand: 18
+npm findings, one seed, one wording of the convention, and R1 constant on four
+metrics, so lift can at best reach 0 there in any cell.

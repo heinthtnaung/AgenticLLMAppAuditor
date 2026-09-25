@@ -9,8 +9,9 @@ import eval_samples as samples
 from cvss.metrics import METRIC_ORDER
 from council_eval.collect import ask_item, collect, first_load_seconds, progress_line
 from council_eval.recording import CallRecord
+from council_eval.variants import LIBRARY_GUIDANCE, LIBRARY_REVERSED
 
-HEADER = {"kind": "header", "model": samples.MODEL}
+HEADER = samples.header()
 
 
 def test_an_item_is_asked_from_a_fresh_load():
@@ -49,3 +50,10 @@ def test_the_progress_line_says_how_long_the_model_took_to_load():
 
 def test_an_item_whose_first_call_got_nothing_back_shows_no_load():
     assert first_load_seconds([CallRecord("AV", "x", None, 1.0)]) == 0.0
+
+
+def test_an_item_asked_in_a_variant_s_words_is_sent_them_on_every_metric():
+    server = samples.FakeServer()
+    ask_item(samples.item(), samples.MODEL, server, LIBRARY_REVERSED)
+    assert all(LIBRARY_GUIDANCE in payload["system"] for payload in server.posted[1:])
+    assert len(server.posted[1:]) == len(METRIC_ORDER)

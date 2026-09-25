@@ -13,6 +13,7 @@ from council_eval.recording import (
     request_digest,
     unload_model,
 )
+from council_eval.variants import REVERSED, variant_prompt
 
 MEMBER = Member(samples.MODEL, "ollama", samples.MODEL, "small", runs_local=True)
 PROMPT = build_prompt("AV", samples.ADVISORY_TEXT)
@@ -35,6 +36,15 @@ def test_the_request_recorded_is_the_one_the_product_builds():
     client = RecordingClient(post=server, clock=ticking())
     client(MEMBER, PROMPT)
     expected = build_request(PROMPT, LocalModel(model=samples.MODEL))
+    assert server.posted == [expected]
+    assert client.calls[0].request_sha256 == request_digest(expected)
+
+
+def test_a_variant_s_request_is_the_product_s_built_from_the_variant_s_words():
+    server = samples.FakeServer()
+    client = RecordingClient(post=server, clock=ticking(), variant=REVERSED)
+    client(MEMBER, PROMPT)
+    expected = build_request(variant_prompt(PROMPT, REVERSED), LocalModel(model=samples.MODEL))
     assert server.posted == [expected]
     assert client.calls[0].request_sha256 == request_digest(expected)
 

@@ -21,6 +21,7 @@ from findings.finding import Finding, build_finding  # noqa: E402
 from council_eval.collect import ask_item  # noqa: E402
 from council_eval.recording import CallRecord  # noqa: E402
 from council_eval.dataset import Item  # noqa: E402
+from council_eval.variants import BASELINE, Variant  # noqa: E402
 
 KEY = "CVE-2026-0001"
 MODEL = "small:1b"
@@ -55,6 +56,11 @@ def item(key: str = KEY, vectors: Mapping[str, str] = VECTORS) -> Item:
     return Item(split="V", published=PUBLISHED, finding=finding(key, vectors))
 
 
+def header(model: str = MODEL, variant: Variant = BASELINE) -> dict[str, str]:
+    """Give the least of a pass's header a replay reads: its kind, model and prompt version."""
+    return {"kind": "header", "model": model, "prompt_version": variant.prompt_version}
+
+
 def reply(value: str, evidence: str = REMOTE, confidence: str = "high") -> str:
     """Write a member's reply as the prompt asks for it."""
     return json.dumps({"value": value, "evidence": evidence, "confidence": confidence})
@@ -83,13 +89,14 @@ def metric_of(payload: Mapping[str, Any]) -> str:
 class Asking:
     """Stand in for `collect.ask_item`: each item put to a fresh fake server."""
 
-    def __init__(self, answers: Mapping[str, str] = ANSWERS) -> None:
-        """Hold the answers every fake server will give."""
+    def __init__(self, answers: Mapping[str, str] = ANSWERS, variant: Variant = BASELINE) -> None:
+        """Hold the answers every fake server will give, and the variant each item is asked in."""
         self.answers = answers
+        self.variant = variant
 
     def __call__(self, item: Item, model: str) -> list[CallRecord]:
         """Ask one item as a pass does, from a fresh load."""
-        return ask_item(item, model, FakeServer(self.answers))
+        return ask_item(item, model, FakeServer(self.answers), self.variant)
 
 
 class FakeServer:

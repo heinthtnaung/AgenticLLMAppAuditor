@@ -20,7 +20,8 @@ from council.roster import Roster
 from report.council_record import CouncilOutcome
 
 from council_eval.dataset import Item
-from council_eval.replies import ReplayClient, Replies
+from council_eval.replies import PROMPT_VERSION_FIELD, ReplayClient, Replies
+from council_eval.variants import Variant, variant_asked
 
 
 def replay_roster(
@@ -28,13 +29,23 @@ def replay_roster(
 ) -> tuple[CouncilOutcome, ...]:
     """Rebuild what one roster decides on every item, from the calls its members' passes saved."""
     roster = build_roster(models)
-    return tuple(replay_item(item, roster, replies) for item in items)
+    variant = pass_variant(replies)
+    return tuple(replay_item(item, roster, replies, variant) for item in items)
 
 
-def replay_item(item: Item, roster: Roster, replies: Replies) -> CouncilOutcome:
+def replay_item(item: Item, roster: Roster, replies: Replies, variant: Variant) -> CouncilOutcome:
     """Rebuild one item's council record, every member answering from its recorded calls."""
-    client = ReplayClient(item.key, replies.calls)
+    client = ReplayClient(item.key, replies.calls, variant)
     return assess_one(item.finding, roster, {OLLAMA_PROVIDER: client})
+
+
+def pass_variant(replies: Replies) -> Variant:
+    """Give the one variant the passes were asked under, refusing passes asked differently."""
+    # A chairman weighing answers to two different questions is not a council.
+    versions = {header.get(PROMPT_VERSION_FIELD, "") for header in replies.headers}
+    if len(versions) != 1:
+        raise ValueError(f"passes asked under {sorted(versions)} cannot form one roster")
+    return variant_asked(versions.pop())
 
 
 def rosters(models: tuple[str, ...]) -> tuple[tuple[str, ...], ...]:

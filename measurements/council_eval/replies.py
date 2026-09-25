@@ -25,9 +25,11 @@ from council.roster import Member
 from council.transport import ModelUnavailable
 
 from council_eval.recording import CallRecord, request_digest
+from council_eval.variants import Variant, variant_prompt
 
 HEADER_KIND = "header"
 CALL_KIND = "call"
+PROMPT_VERSION_FIELD = "prompt_version"
 
 CallKey = tuple[str, str, str]
 
@@ -84,16 +86,21 @@ def record_of(line: Mapping[str, Any]) -> CallRecord:
 
 @dataclass(frozen=True)
 class ReplayClient:
-    """A provider client that answers one item's prompts from the calls recorded for it."""
+    """A provider client that answers one item's prompts from the calls recorded for it.
+
+    `variant` is the one the passes were asked under: the request is rebuilt in
+    its words, so a pass replayed as any other variant is refused.
+    """
 
     key: str
     calls: Mapping[CallKey, CallRecord]
+    variant: Variant
 
     def __call__(self, member: Member, prompt: MemberPrompt) -> str:
         """Answer as the recorded call did, or refuse a request that was never recorded."""
         pinning = LocalModel(model=member.model)
         # Built first, as `ask` builds it: a prompt the live call refused is refused here.
-        request = build_request(prompt, pinning)
+        request = build_request(variant_prompt(prompt, self.variant), pinning)
         recorded = self.recorded(member.model, prompt.metric)
         if recorded.request_sha256 != request_digest(request):
             raise ReplayMismatch(f"{self.key} {prompt.metric}: {member.model} was asked otherwise")

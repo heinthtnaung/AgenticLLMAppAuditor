@@ -4,7 +4,9 @@ The client here is the product's own `council.ollama.ask` with one thing
 swapped: the transport, which posts through the product's `post_json` and keeps
 what it sent and what came home. So the request -- the prompt, the pinning, the
 thinking setting -- is built by the code under measurement, never by this file,
-and the saved envelope is what the product then read.
+and the saved envelope is what the product then read. The one exception is a
+variant's wording, and only a pass that names a variant: `council_eval.variants`
+rewords the product's prompt before it is built, and the baseline leaves it be.
 
 **A member's turn starts from a freshly loaded model.** Measured on Ollama
 0.34.3 on the GPU, `qwen2.5:7b-instruct` answers one prompt differently cold
@@ -25,6 +27,8 @@ from council.ollama import LocalModel, ask, generate_url
 from council.prompt import MemberPrompt
 from council.roster import Member
 from council.transport import post_json
+
+from council_eval.variants import BASELINE, Variant, variant_prompt
 
 # The token ids of the prompt and reply. Long, and nothing downstream reads them.
 DROPPED_FIELDS = ("context",)
@@ -85,14 +89,16 @@ class RecordingClient:
 
     post: Post = post_json
     clock: Callable[[], float] = time.monotonic
+    variant: Variant = BASELINE
     calls: list[CallRecord] = field(default_factory=list)
 
     def __call__(self, member: Member, prompt: MemberPrompt) -> str:
-        """Ask one member one prompt, recording the call whether or not it succeeds."""
+        """Ask one member a prompt as the variant words it, recording the call either way."""
+        asked = variant_prompt(prompt, self.variant)
         transport = RecordingTransport(self.post)
         started = self.clock()
         try:
-            return ask(prompt, LocalModel(model=member.model), transport).text
+            return ask(asked, LocalModel(model=member.model), transport).text
         finally:
             elapsed = self.clock() - started
             sent = transport.request_sha256
