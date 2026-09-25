@@ -303,12 +303,17 @@ hold no placement, so the evidence lives outside this folder:
 | `ollama ps`, read during the full run | both models at `100% CPU`; seen, not saved |
 
 The machine's RTX 3070 has 8 GB and sat idle through these runs, about 2.7 GB of
-it held by the display server. `gemma4:latest` is 9.6 GB, more than the whole
-card, and the two members together are 14.3 GB by `ollama list`.
+it held by the display server. `ollama list` gives `gemma4:latest` as 9.6 GB and
+the two members as 14.3 GB together, but those are sizes on disk. Loaded under
+Ollama 0.34.3 on 2026-09-24, `gemma4:latest` read 3.2 GB at `100% GPU` in
+`ollama ps`, seen and not saved, and the journal put all 43 of its layers on
+the card, 2,829.67 MiB in `CUDA0`, while mapping 525.00 and 5,376.00 MiB of its
+weights in host memory; what those are was not checked. What kept these runs
+off the GPU was the server's `library=cpu`, not Gemma's size.
 
-That explains the timings. It also limits what the runs can be compared with,
-because **where a model runs is itself a way its output can move at
-temperature 0**.
+The CPU placement explains the timings. It also limits what the runs can be
+compared with, because **where a model runs is itself a way its output can move
+at temperature 0**.
 
 **Ollama was switched to the GPU after these runs.** Its first start reporting
 `library=CUDA` on the `NVIDIA GeForce RTX 3070` is 19:30:04 on 2026-09-23,
