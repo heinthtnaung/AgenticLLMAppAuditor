@@ -75,3 +75,6 @@ python measurements/council_eval turns --excerpt $R/ollama-journal.run1.tsv
 - **Limits:** one pass, one seed, no rerun of this model, and 18 npm findings.
   The reversed-order control was not run on Gemma, so the first-listed pattern
   above is not separated from reading.
+- **Since measured:** `../order-checked-vulnscout/` asked Gemma the same findings
+  with the options reversed. It names N on PR and UI in all 18 in both orders,
+  and L on AC in 16, so those values are not the list's order.

@@ -1,0 +1,219 @@
+pass qwen2.5:7b-instruct
+  model: qwen2.5:7b-instruct
+  digest: 845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e
+  ollama: 0.34.3
+  prompt_version: member-base-metric-3
+  temperature: 0
+  seed: 11
+  num_ctx: 8192
+  think: False
+  turn_start: cold: the model is unloaded before each item
+  dataset_sha256: 2575a98327867c3bbc98860cb6d57bdb972a10f26eeaf7ba0b2e74e91bbe0d66
+  commit: a4e536525fe53e7c60fb4f02cde58d2b596af9f6
+  started: 2026-09-24T18:50:28+08:00
+  uncommitted at launch: 21 paths
+pass gemma4:latest
+  model: gemma4:latest
+  digest: c6eb396dbd5992bbe3f5cdb947e8bbc0ee413d7c17e2beaae69f5d569cf982eb
+  ollama: 0.34.3
+  prompt_version: member-base-metric-3
+  temperature: 0
+  seed: 11
+  num_ctx: 8192
+  think: False
+  turn_start: cold: the model is unloaded before each item
+  dataset_sha256: 2575a98327867c3bbc98860cb6d57bdb972a10f26eeaf7ba0b2e74e91bbe0d66
+  commit: 76a4b2c86741c7acf0214b4892862e4f136d346c
+  started: 2026-09-25T15:57:04+08:00
+  uncommitted at launch: 18 paths
+pass qwen2.5:7b-instruct
+  model: qwen2.5:7b-instruct
+  digest: 845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e
+  ollama: 0.34.3
+  prompt_version: member-base-metric-3+reversed-1
+  temperature: 0
+  seed: 11
+  num_ctx: 8192
+  think: False
+  turn_start: cold: the model is unloaded before each item
+  dataset_sha256: 2575a98327867c3bbc98860cb6d57bdb972a10f26eeaf7ba0b2e74e91bbe0d66
+  commit: a4e536525fe53e7c60fb4f02cde58d2b596af9f6
+  started: 2026-09-25T10:27:48+08:00
+  uncommitted at launch: 37 paths
+pass gemma4:latest
+  model: gemma4:latest
+  digest: c6eb396dbd5992bbe3f5cdb947e8bbc0ee413d7c17e2beaae69f5d569cf982eb
+  ollama: 0.34.3
+  prompt_version: member-base-metric-3+reversed-1
+  temperature: 0
+  seed: 11
+  num_ctx: 8192
+  think: False
+  turn_start: cold: the model is unloaded before each item
+  dataset_sha256: 2575a98327867c3bbc98860cb6d57bdb972a10f26eeaf7ba0b2e74e91bbe0d66
+  commit: 76a4b2c86741c7acf0214b4892862e4f136d346c
+  started: 2026-09-25T16:18:14+08:00
+  uncommitted at launch: 27 paths
+
+ROSTER qwen2.5:7b-instruct, order-checked  (18 items)
+144 metrics: 68 settled, 0 contested, 76 unresolved; 0 vectors
+
+metric  settled  contested  unresolved  R1 items  scored  agreed  rate [95% CI]      commonest  its rate  lift   settled, no R1  values settled
+AV      2        0          16          16        1       0       0.00 [0.00, 0.79]  N          1.00      -1.00  1               L,N
+AC      13       0          5           16        13      2       0.15 [0.04, 0.42]  L          0.92      -0.77  0               H,L
+PR      4        0          14          15        3       0       0.00 [0.00, 0.56]  N          1.00      -1.00  1               H,L
+UI      3        0          15          16        3       1       0.33 [0.06, 0.79]  N          1.00      -0.67  0               N,R
+S       12       0          6           16        11      2       0.18 [0.05, 0.48]  U          1.00      -0.82  1               C,U
+C       10       0          8           16        10      1       0.10 [0.02, 0.40]  N          0.90      -0.80  0               H,L
+I       12       0          6           15        10      5       0.50 [0.24, 0.76]  H          0.70      -0.20  2               H,L
+A       12       0          6           13        10      1       0.10 [0.02, 0.40]  N          0.60      -0.50  2               H,L
+
+member               metric  verified  not in advisory  guessed  declined  failed  values named
+qwen2.5:7b-instruct  AV      2         0                0        16        0       L,N
+qwen2.5:7b-instruct  AC      13        4                0        1         0       H,L
+qwen2.5:7b-instruct  PR      4         0                0        14        0       H,L
+qwen2.5:7b-instruct  UI      3         0                1        14        0       N,R
+qwen2.5:7b-instruct  S       12        0                0        6         0       C,U
+qwen2.5:7b-instruct  C       10        1                0        7         0       H,L
+qwen2.5:7b-instruct  I       12        1                0        5         0       H,L
+qwen2.5:7b-instruct  A       12        2                0        4         0       H,L
+
+member               metric  stable  order-sensitive  declined  failed
+qwen2.5:7b-instruct  AV      2       3                13        0
+qwen2.5:7b-instruct  AC      17      0                1         0
+qwen2.5:7b-instruct  PR      4       7                7         0
+qwen2.5:7b-instruct  UI      4       10               4         0
+qwen2.5:7b-instruct  S       12      4                2         0
+qwen2.5:7b-instruct  C       11      4                3         0
+qwen2.5:7b-instruct  I       13      3                2         0
+qwen2.5:7b-instruct  A       14      2                2         0
+
+member               metric  listed last  named it  values named
+qwen2.5:7b-instruct  AV      P            0/18      declined:16 L:1 N:1
+qwen2.5:7b-instruct  AC      H            16/18     H:16 L:1 declined:1
+qwen2.5:7b-instruct  PR      H            2/18      declined:14 H:2 L:2
+qwen2.5:7b-instruct  UI      R            2/18      declined:14 N:2 R:2
+qwen2.5:7b-instruct  S       C            10/18     C:10 declined:6 U:2
+qwen2.5:7b-instruct  C       N            0/18      declined:7 L:6 H:5
+qwen2.5:7b-instruct  I       N            0/18      H:9 declined:5 L:4
+qwen2.5:7b-instruct  A       N            0/18      L:10 H:4 declined:4
+
+finding  council vector  score  band  R1 band  R1 metrics  departs on  published  inside range
+
+ROSTER gemma4:latest, order-checked  (18 items)
+144 metrics: 112 settled, 0 contested, 32 unresolved; 2 vectors
+  CVE-2026-75975  CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:N/I:H/A:N
+  CVE-2026-53550  CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H
+
+metric  settled  contested  unresolved  R1 items  scored  agreed  rate [95% CI]      commonest  its rate  lift   settled, no R1  values settled
+AV      11       0          7           16        9       9       1.00 [0.70, 1.00]  N          1.00      +0.00  2               N
+AC      16       0          2           16        15      14      0.93 [0.70, 0.99]  L          0.93      +0.00  1               L
+PR      16       0          2           15        13      13      1.00 [0.77, 1.00]  N          1.00      +0.00  3               N
+UI      16       0          2           16        14      14      1.00 [0.78, 1.00]  N          1.00      +0.00  2               N
+S       12       0          6           16        11      6       0.55 [0.28, 0.79]  U          1.00      -0.45  1               C,U
+C       13       0          5           16        12      9       0.75 [0.47, 0.91]  N          0.92      -0.17  1               H,N
+I       16       0          2           15        13      12      0.92 [0.67, 0.99]  N          0.46      +0.46  3               H,N
+A       12       0          6           13        10      5       0.50 [0.24, 0.76]  H          0.50      +0.00  2               H,L,N
+
+member         metric  verified  not in advisory  guessed  declined  failed  values named
+gemma4:latest  AV      11        0                0        7         0       N
+gemma4:latest  AC      16        0                0        2         0       L
+gemma4:latest  PR      16        0                2        0         0       N
+gemma4:latest  UI      16        0                2        0         0       N
+gemma4:latest  S       12        0                0        6         0       C,U
+gemma4:latest  C       13        0                0        5         0       H,N
+gemma4:latest  I       16        0                0        2         0       H,N
+gemma4:latest  A       12        1                0        5         0       H,L,N
+
+member         metric  stable  order-sensitive  declined  failed
+gemma4:latest  AV      11      3                4         0
+gemma4:latest  AC      16      0                2         0
+gemma4:latest  PR      18      0                0         0
+gemma4:latest  UI      18      0                0         0
+gemma4:latest  S       12      4                2         0
+gemma4:latest  C       13      4                1         0
+gemma4:latest  I       16      2                0         0
+gemma4:latest  A       13      1                4         0
+
+member         metric  listed last  named it  values named
+gemma4:latest  AV      P            0/18      N:11 declined:7
+gemma4:latest  AC      H            0/18      L:16 declined:2
+gemma4:latest  PR      H            0/18      N:18
+gemma4:latest  UI      R            0/18      N:18
+gemma4:latest  S       C            5/18      U:7 declined:6 C:5
+gemma4:latest  C       N            9/18      N:9 declined:5 H:4
+gemma4:latest  I       N            7/18      H:9 N:7 declined:2
+gemma4:latest  A       N            7/18      N:7 declined:5 H:4 L:2
+
+finding         council vector                                score  band  R1 band  R1 metrics  departs on  published            inside range
+CVE-2026-75975  CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:N/I:H/A:N  8.6    High  High     8           S           ghsa 7.5 redhat 7.5  no
+CVE-2026-53550  CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H  7.5    High  Medium   8           A           ghsa 5.3 redhat 5.3  no
+
+ROSTER qwen2.5:7b-instruct + gemma4:latest, order-checked  (18 items)
+144 metrics: 86 settled, 37 contested, 21 unresolved; 0 vectors
+
+metric  settled  contested  unresolved  R1 items  scored  agreed  rate [95% CI]      commonest  its rate  lift   settled, no R1  values settled
+AV      10       1          7           16        8       8       1.00 [0.68, 1.00]  N          1.00      +0.00  2               N
+AC      6        11         1           16        5       4       0.80 [0.38, 0.96]  L          1.00      -0.20  1               H,L
+PR      12       4          2           15        10      10      1.00 [0.72, 1.00]  N          1.00      +0.00  2               N
+UI      14       2          2           16        12      12      1.00 [0.76, 1.00]  N          1.00      +0.00  2               N
+S       12       4          2           16        12      4       0.33 [0.14, 0.61]  U          1.00      -0.67  0               C,U
+C       10       5          3           16        9       5       0.56 [0.27, 0.81]  N          0.89      -0.33  1               H,L,N
+I       12       5          1           15        9       8       0.89 [0.56, 0.98]  H          0.56      +0.33  3               H,L,N
+A       10       5          3           13        8       1       0.12 [0.02, 0.47]  H          0.62      -0.50  2               H,L,N
+
+member               metric  verified  not in advisory  guessed  declined  failed  values named
+qwen2.5:7b-instruct  AV      2         0                0        16        0       L,N
+qwen2.5:7b-instruct  AC      13        4                0        1         0       H,L
+qwen2.5:7b-instruct  PR      4         0                0        14        0       H,L
+qwen2.5:7b-instruct  UI      3         0                1        14        0       N,R
+qwen2.5:7b-instruct  S       12        0                0        6         0       C,U
+qwen2.5:7b-instruct  C       10        1                0        7         0       H,L
+qwen2.5:7b-instruct  I       12        1                0        5         0       H,L
+qwen2.5:7b-instruct  A       12        2                0        4         0       H,L
+gemma4:latest        AV      11        0                0        7         0       N
+gemma4:latest        AC      16        0                0        2         0       L
+gemma4:latest        PR      16        0                2        0         0       N
+gemma4:latest        UI      16        0                2        0         0       N
+gemma4:latest        S       12        0                0        6         0       C,U
+gemma4:latest        C       13        0                0        5         0       H,N
+gemma4:latest        I       16        0                0        2         0       H,N
+gemma4:latest        A       12        1                0        5         0       H,L,N
+
+member               metric  stable  order-sensitive  declined  failed
+qwen2.5:7b-instruct  AV      2       3                13        0
+qwen2.5:7b-instruct  AC      17      0                1         0
+qwen2.5:7b-instruct  PR      4       7                7         0
+qwen2.5:7b-instruct  UI      4       10               4         0
+qwen2.5:7b-instruct  S       12      4                2         0
+qwen2.5:7b-instruct  C       11      4                3         0
+qwen2.5:7b-instruct  I       13      3                2         0
+qwen2.5:7b-instruct  A       14      2                2         0
+gemma4:latest        AV      11      3                4         0
+gemma4:latest        AC      16      0                2         0
+gemma4:latest        PR      18      0                0         0
+gemma4:latest        UI      18      0                0         0
+gemma4:latest        S       12      4                2         0
+gemma4:latest        C       13      4                1         0
+gemma4:latest        I       16      2                0         0
+gemma4:latest        A       13      1                4         0
+
+member               metric  listed last  named it  values named
+qwen2.5:7b-instruct  AV      P            0/18      declined:16 L:1 N:1
+qwen2.5:7b-instruct  AC      H            16/18     H:16 L:1 declined:1
+qwen2.5:7b-instruct  PR      H            2/18      declined:14 H:2 L:2
+qwen2.5:7b-instruct  UI      R            2/18      declined:14 N:2 R:2
+qwen2.5:7b-instruct  S       C            10/18     C:10 declined:6 U:2
+qwen2.5:7b-instruct  C       N            0/18      declined:7 L:6 H:5
+qwen2.5:7b-instruct  I       N            0/18      H:9 declined:5 L:4
+qwen2.5:7b-instruct  A       N            0/18      L:10 H:4 declined:4
+gemma4:latest        AV      P            0/18      N:11 declined:7
+gemma4:latest        AC      H            0/18      L:16 declined:2
+gemma4:latest        PR      H            0/18      N:18
+gemma4:latest        UI      R            0/18      N:18
+gemma4:latest        S       C            5/18      U:7 declined:6 C:5
+gemma4:latest        C       N            9/18      N:9 declined:5 H:4
+gemma4:latest        I       N            7/18      H:9 N:7 declined:2
+gemma4:latest        A       N            7/18      N:7 declined:5 H:4 L:2
+
+finding  council vector  score  band  R1 band  R1 metrics  departs on  published  inside range
