@@ -22,6 +22,7 @@ reader can disagree with a number by producing a different one.
 | `run_provenance.py` | what a recorded run was launched from and how it ended: git and `ollama ps` at launch, the clock and `ollama ps` at the end |
 | `run_directory.py` | where a recorded audit runs, so the project's `reports/` is never written, and the copying out of its three renderings |
 | `council_runs/` | audits of `fetched/vulnscout` with a two-member council: what each run printed or wrote, and when |
+| `thinking_and_load/` | a probe of the `think` field and of load state on three models: the script, its 22 envelopes, and what they do and do not show |
 
 The manifests and package databases are written by hand, not captured from a
 real system. They are chosen to reach different advisory feeds — GHSA, OSV,
@@ -307,6 +308,17 @@ temperature 0**.
 after the full run ended at 18:58:15. The server had already moved from 0.34.2
 to 0.34.3, at 19:16:17.
 
+**The CPU runs asked Gemma with no `think` field.** On Ollama 0.34.3
+`gemma4:latest` answers the one prompt probed, sent with no `think` field,
+exactly as with `think: true`: 554 prompt tokens against 552 with
+`think: false`, a byte-identical reply, and no `thinking` field in the envelope
+(`thinking_and_load/`). That the two tokens are a thinking-mode marker is
+inferred, since the built-in renderer Ollama uses for Gemma was not read. That
+0.34.2 did the same is inferred too and cannot be checked: that server is gone,
+and the CPU reports keep no envelopes or token counts. The code now sends
+`think: false`, so a Gemma run today is a different instrument, not a repeat of
+`scoped` or `full`.
+
 ### Neither CPU time is a benchmark
 
 **Each for a named reason.** Ollama's log counts the requests each run shared
@@ -389,9 +401,10 @@ says the earlier scoped run settled.
 
 ### What that makes likely, and what it cannot show
 
-Both members are pinned — `src/council/ollama.py` sends temperature 0 and a
-fixed seed. The outlier is the one run made while another council run shared
-the Ollama server, on exactly the metrics that moved. Brief concurrency, two
+Both members were pinned as the code then did it: temperature 0 and a fixed
+seed, and no `think` field, which `src/council/ollama.py` has since added. The
+outlier is the one run made while another council run shared the Ollama
+server, on exactly the metrics that moved. Brief concurrency, two
 probe calls, changed nothing detectable; a concurrent 80-call run changed one
 finding of five.
 
@@ -486,6 +499,8 @@ did write. An audit that exits 2 is recorded with whichever it wrote, which is
 none unless a report failed to write after the scan.
 
 Repeating the GPU baseline needs `061361f` and Ollama 0.34.3 with both models
-on the GPU. Repeating the CPU baseline needs `gemma4:latest`, the runner at
-`4111b95`, and Ollama 0.34.2 on the CPU; this machine's Ollama has started on
-CUDA since 19:30 on 2026-09-23.
+on the GPU. `061361f` sends no `think` field, which for Qwen and Llama made no
+difference on the one prompt measured. Repeating the CPU baseline needs
+`gemma4:latest`, the runner and client at `4111b95`, which send no `think`
+field, and Ollama 0.34.2 on the CPU; this machine's Ollama has started on CUDA
+since 19:30 on 2026-09-23.

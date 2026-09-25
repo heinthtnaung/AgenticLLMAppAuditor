@@ -63,6 +63,17 @@ def test_a_member_does_not_sample():
     assert build_request(PROMPT, LocalModel())["options"]["temperature"] == 0
 
 
+def test_a_member_is_asked_not_to_think():
+    # The literal False is the test, as with temperature. Left out, each model's
+    # default decides, and `gemma4:latest`'s is to think: its reply moves.
+    assert build_request(PROMPT, LocalModel())["think"] is False
+
+
+def test_the_thinking_setting_is_sent_where_the_server_reads_it():
+    # Ollama's API takes `think` at the top of the request, not among the options.
+    assert "think" not in build_request(PROMPT, LocalModel())["options"]
+
+
 def test_the_context_length_is_set_so_a_long_advisory_is_not_silently_cut():
     assert build_request(PROMPT, LocalModel())["options"]["num_ctx"] == LocalModel().context_tokens
 

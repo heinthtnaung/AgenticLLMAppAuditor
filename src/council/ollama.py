@@ -1,11 +1,18 @@
 """The local member: one pinned Ollama model, asked one question over loopback.
 
 **Pinning is the whole point of a local member.** `docs/COUNCIL.md` says a
-hosted member cannot be reproduced run to run and a local one can, so the three
+hosted member cannot be reproduced run to run and a local one can, so the four
 things that make that true are set here and are not left to a default: a fixed
-model, temperature 0, and a seed. Temperature is a module constant rather than a
-field because it is not an option -- a member sampling at 0.8 is a different
+model, temperature 0, a seed, and no thinking. Temperature and thinking are
+constants rather than fields -- a member sampling at 0.8 is a different
 instrument, and the record would still call it reproducible.
+
+**Thinking is off for every member, because the default differs by model.**
+On Ollama 0.34.3, `gemma4:latest` answers the one prompt probed without `think`
+exactly as with `think: true` -- 554 prompt tokens, the same reply byte for
+byte, no `thinking` field -- where `think: false` gives 552 and another reply;
+that the two tokens mark thinking mode is inferred. Qwen and Llama replied the
+same either way in one load state; see `measurements/thinking_and_load/`.
 
 The context length is set explicitly for the same reason, and `build_request`
 refuses a prompt too long for it. An advisory that overflows the window is cut
@@ -35,6 +42,9 @@ DEFAULT_SEED = 11
 
 # Not a field. See the module docstring: a member that samples is not pinned.
 PINNED_TEMPERATURE = 0
+
+# Not a field either, and sent to every model, so no model's own default decides.
+PINNED_THINKING = False
 
 # Measured, and pinned rather than generous. The pinned model counts the whole
 # prompt -- one metric's definitions, the instructions and the reply schema --
@@ -136,6 +146,8 @@ def build_request(prompt: MemberPrompt, pinning: LocalModel) -> dict[str, Any]:
         "prompt": prompt.user,
         "stream": False,
         "format": JSON_REPLY_FORMAT,
+        # Beside the options, not among them: Ollama reads `think` at the top level.
+        "think": PINNED_THINKING,
         "options": {
             "temperature": PINNED_TEMPERATURE,
             "seed": pinning.seed,

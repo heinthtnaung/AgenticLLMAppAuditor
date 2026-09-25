@@ -430,7 +430,12 @@ reported as skipped for want of a client, whether or not `egress` is set. What
 follows is what a hosted member will cost when one can.
 
 **Reproducibility, first and sharpest.** A local member can be pinned: a fixed
-model digest, temperature 0, a seed. A hosted model takes no seed, and the
+model digest, temperature 0, a seed, and no thinking. Thinking is pinned off
+because the default differs by model: on Ollama 0.34.3 `gemma4:latest` answers
+the one prompt probed without the field exactly as with `think: true`, 554
+prompt tokens against 552 with `think: false` and a different reply, while
+Qwen's and Llama's replies to it are byte for byte the same either way
+(`measurements/thinking_and_load/`). A hosted model takes no seed, and the
 weights behind a name change without notice. **A council holding one hosted
 member is not reproducible run to run**, and every figure downstream inherits
 that — the vector can differ, so `organisation_risk_score` can differ, so the
