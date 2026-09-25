@@ -224,9 +224,13 @@ a margin of 1.4× (`measurements/prompt_tokens.2026-09-25.txt`).
 **That margin is guarded rather than merely large.** Ollama 0.34.3 cuts a
 prompt too long for its window to half the window and answers with a 200:
 9,378 tokens against the 8,192 pinned were cut to 4,098. A member would then
-assess half an advisory and answer as if it had read the whole. So a prompt
-whose estimate, at four characters to the token, passes 75% of the window is
-refused before it is sent. On the worst prompt the tokenizers measured count
+assess half an advisory and answer as if it had read the whole. Sent to a
+256-token window, a 532-token prompt was cut to 130, and Qwen answered Attack
+Vector `P` at medium confidence where the whole advisory gets `N`. Its quotation
+came from the part that survived, so the quotation check would pass it
+(`tests/council/recorded_shapes.json`). So a prompt whose estimate, at four
+characters to the token, passes 75% of the window is refused before it is
+sent. On the worst prompt the tokenizers measured count
 from 2.9% under that estimate (Llama) to 15.3% over it (Gemma). Across the 576
 saved calls of each of the pair, Qwen counts from 17% under to 15% over, and
 Llama from 16% under to 10% over
