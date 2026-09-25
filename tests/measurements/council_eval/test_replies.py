@@ -16,14 +16,15 @@ from council_eval.replies import (
     call_line,
     read_replies,
 )
+from council_eval.variants import BASELINE, VARIANTS, Variant
 
 MEMBER = Member(samples.MODEL, "ollama", samples.MODEL, "small", runs_local=True)
 PROMPT = build_prompt("AV", samples.ADVISORY_TEXT)
 
 
-def recorded_calls() -> dict:
+def recorded_calls(variant: Variant = BASELINE) -> dict:
     """Record one member's eight calls on the sample item, the way a pass records them."""
-    client = RecordingClient(post=samples.FakeServer(), clock=lambda: 0.0)
+    client = RecordingClient(post=samples.FakeServer(), clock=lambda: 0.0, variant=variant)
     assess_one(samples.finding(), build_roster((samples.MODEL,)), {OLLAMA_PROVIDER: client})
     return {(samples.KEY, samples.MODEL, one.metric): one for one in client.calls}
 
@@ -36,7 +37,7 @@ def written(path, lines) -> None:
 def test_a_replies_file_reads_back_every_call_it_holds(tmp_path):
     calls = recorded_calls()
     path = tmp_path / "pass.jsonl"
-    header = {"kind": "header", "model": samples.MODEL}
+    header = samples.header()
     written(path, [header, *[call_line(key, model, one) for (key, model, _), one in calls.items()]])
     replies = read_replies((path,))
     assert replies.headers == (header,)
@@ -60,19 +61,20 @@ def test_two_passes_that_recorded_the_same_call_are_refused(tmp_path):
 
 
 def test_the_replay_answers_what_the_member_said():
-    assert ReplayClient(samples.KEY, recorded_calls())(MEMBER, PROMPT) == samples.ANSWERS["AV"]
+    client = ReplayClient(samples.KEY, recorded_calls(), BASELINE)
+    assert client(MEMBER, PROMPT) == samples.ANSWERS["AV"]
 
 
 def test_a_reply_recorded_for_another_request_is_refused():
     calls = recorded_calls()
     calls[(samples.KEY, samples.MODEL, "AV")] = CallRecord("AV", "another", {}, 0.0)
     with pytest.raises(ReplayMismatch, match="was asked otherwise"):
-        ReplayClient(samples.KEY, calls)(MEMBER, PROMPT)
+        ReplayClient(samples.KEY, calls, BASELINE)(MEMBER, PROMPT)
 
 
 def test_a_call_nobody_recorded_is_refused():
     with pytest.raises(ReplayMismatch, match="was recorded"):
-        ReplayClient(samples.KEY, {})(MEMBER, PROMPT)
+        ReplayClient(samples.KEY, {}, BASELINE)(MEMBER, PROMPT)
 
 
 def test_a_call_that_got_nothing_back_fails_again_as_the_member_s():
@@ -80,7 +82,7 @@ def test_a_call_that_got_nothing_back_fails_again_as_the_member_s():
     sent = calls[(samples.KEY, samples.MODEL, "AV")].request_sha256
     calls[(samples.KEY, samples.MODEL, "AV")] = CallRecord("AV", sent, None, 0.0)
     with pytest.raises(ModelUnavailable, match="sent nothing back"):
-        ReplayClient(samples.KEY, calls)(MEMBER, PROMPT)
+        ReplayClient(samples.KEY, calls, BASELINE)(MEMBER, PROMPT)
 
 
 def test_a_replay_fault_stops_the_product_s_runner_rather_than_passing_as_a_failed_member():
@@ -89,5 +91,14 @@ def test_a_replay_fault_stops_the_product_s_runner_rather_than_passing_as_a_fail
     with pytest.raises(ReplayMismatch):
         assess_one(
             samples.finding(), build_roster((samples.MODEL,)),
-            {OLLAMA_PROVIDER: ReplayClient(samples.KEY, {})},
+            {OLLAMA_PROVIDER: ReplayClient(samples.KEY, {}, BASELINE)},
         )
+
+
+@pytest.mark.parametrize("variant", VARIANTS.values(), ids=VARIANTS)
+def test_a_pass_replays_only_as_the_variant_it_was_asked_in(variant):
+    calls = recorded_calls(variant)
+    assert ReplayClient(samples.KEY, calls, variant)(MEMBER, PROMPT) == samples.ANSWERS["AV"]
+    for other in (one for one in VARIANTS.values() if one != variant):
+        with pytest.raises(ReplayMismatch, match="was asked otherwise"):
+            ReplayClient(samples.KEY, calls, other)(MEMBER, PROMPT)

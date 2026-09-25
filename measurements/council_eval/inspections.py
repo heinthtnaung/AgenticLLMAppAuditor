@@ -1,8 +1,9 @@
-"""The evaluation's checks on its own evidence: reruns, quotations, and the server's own log.
+"""The evaluation's checks on its own evidence: reruns, quotations, values, and the server's log.
 
 None of these asks a model. `compare` sets two saved passes of one model side
-by side, `quoting` reads what the members of the passes quoted, and
-`server-log` and `turns` read Ollama's journal for requests no pass made.
+by side, `quoting` reads what the members of the passes quoted, `values` counts
+what they named against the option listed last, and `server-log` and `turns`
+read Ollama's journal for requests no pass made.
 """
 
 import argparse
@@ -12,8 +13,9 @@ from typing import Any
 
 from report.council_record import CouncilOutcome
 
-from council_eval.compose import pass_models, replay_roster
+from council_eval.compose import pass_models, pass_variant, replay_roster
 from council_eval.dataset import read_dataset
+from council_eval.named_values import NamedValues, counted, named_values
 from council_eval.quoting import prompt_quoted_by_member, sole_by_member, unverified_by_member
 from council_eval.replies import CallKey, read_replies
 from council_eval.reruns import RerunComparison, compare_passes
@@ -33,10 +35,11 @@ QUOTING_COLUMNS = (
     "member", "settled on its quotation alone", "unverified", "of which the prompt's",
 )
 PROMPT_COLUMNS = ("member", "metric", "prompt quoted")
+VALUE_COLUMNS = ("member", "metric", "listed last", "named it", "values named")
 
 
 def add_inspections(commands: Any) -> None:
-    """Add the four subcommands that check the evaluation's evidence."""
+    """Add the five subcommands that check the evaluation's evidence."""
     compare = commands.add_parser("compare", help="compare two passes of one model byte for byte")
     compare.add_argument("--first", type=Path, required=True)
     compare.add_argument("--second", type=Path, required=True)
@@ -45,6 +48,10 @@ def add_inspections(commands: Any) -> None:
     quoting.add_argument("--dataset", type=Path, required=True)
     quoting.add_argument("--replies", type=Path, nargs="+", required=True)
     quoting.set_defaults(run=run_quoting)
+    values = commands.add_parser("values", help="count each value named, and the last listed")
+    values.add_argument("--dataset", type=Path, required=True)
+    values.add_argument("--replies", type=Path, nargs="+", required=True)
+    values.set_defaults(run=run_values)
     log = commands.add_parser("server-log", help="keep a journal's requests and loads")
     log.add_argument("--journal", type=Path, required=True)
     log.add_argument("--out", type=Path, required=True)
@@ -81,14 +88,15 @@ def named(keys: tuple[CallKey, ...]) -> str:
 def run_quoting(options: argparse.Namespace) -> int:
     """Replay the passes' models as one roster, and say what its members quoted."""
     items, replies = read_dataset(options.dataset), read_replies(tuple(options.replies))
-    print("\n".join(quoting_lines(replay_roster(items, pass_models(replies), replies))))
+    outcomes = replay_roster(items, pass_models(replies), replies)
+    print("\n".join(quoting_lines(outcomes, pass_variant(replies).added_texts)))
     return 0
 
 
-def quoting_lines(outcomes: tuple[CouncilOutcome, ...]) -> list[str]:
+def quoting_lines(outcomes: tuple[CouncilOutcome, ...], added: tuple[str, ...]) -> list[str]:
     """Lay out each member's lone settlements and quoted prompt, then quoted prompt by metric."""
     sole, unverified = sole_by_member(outcomes), unverified_by_member(outcomes)
-    prompt = prompt_quoted_by_member(outcomes)
+    prompt = prompt_quoted_by_member(outcomes, added)
     members = sorted({*sole, *unverified, *(member for member, _ in prompt)})
     rows = [[who, sole[who], unverified[who], prompt_total(prompt, who)] for who in members]
     by_metric = [[who, metric, count] for (who, metric), count in sorted(prompt.items())]
@@ -98,6 +106,24 @@ def quoting_lines(outcomes: tuple[CouncilOutcome, ...]) -> list[str]:
 def prompt_total(prompt: Counter, member: str) -> int:
     """Count one member's unverified quotations that are the prompt, over every metric."""
     return sum(count for (who, _), count in prompt.items() if who == member)
+
+
+def run_values(options: argparse.Namespace) -> int:
+    """Replay the passes' models as one roster, and count what each member named."""
+    items, replies = read_dataset(options.dataset), read_replies(tuple(options.replies))
+    outcomes = replay_roster(items, pass_models(replies), replies)
+    print("\n".join(named_value_lines(named_values(outcomes, pass_variant(replies)))))
+    return 0
+
+
+def named_value_lines(found: tuple[NamedValues, ...]) -> list[str]:
+    """Lay out each member's values on each metric, beside how often it named the last listed."""
+    rows = [
+        [one.member, one.metric, one.listed_last, f"{one.named_last}/{one.items}",
+         counted(one.counts)]
+        for one in found
+    ]
+    return table(VALUE_COLUMNS, rows)
 
 
 def run_server_log(options: argparse.Namespace) -> int:

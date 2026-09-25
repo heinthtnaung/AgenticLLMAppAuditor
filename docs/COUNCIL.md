@@ -88,6 +88,14 @@ scored below answering the commonest value on every metric
 (`measurements/README.md`). A reader can weigh a reading that loses to a
 constant; the score should not.
 
+**The order a prompt lists a metric's values in is part of the instrument.** A
+2 × 2 on the same findings listed them in reverse. Llama's User Interaction and
+Attack Complexity followed the list's order, not the advisory, and so did
+Qwen's User Interaction without the library paragraph; all of Llama's reversed
+User Interaction answers were guesses. The CVSS User Guide's paragraph on
+libraries, added to the prompt, moved neither model toward that convention
+(`measurements/README.md`).
+
 ## The roster
 
 The council is **n members, added and removed by the operator**. A member is

@@ -10,7 +10,7 @@ names -- a member offering the definition it was given as the advisory's words.
 The quotation check refuses it, so it is counted among the quotations that did
 not verify; this says how many of those were the prompt. "Of the prompt" means
 the quotation, folded as the check folds it, is contained in the metric's
-description or in one of its value meanings.
+description, in one of its value meanings, or in text a variant added.
 """
 
 from collections import Counter
@@ -49,10 +49,12 @@ def unverified_by_member(outcomes: Iterable[CouncilOutcome]) -> Counter:
     return Counter(said.member.name for _, said in unverified(outcomes))
 
 
-def prompt_quoted_by_member(outcomes: Iterable[CouncilOutcome]) -> Counter:
-    """Count each member's unverified quotations that are the prompt's definitions, by metric."""
+def prompt_quoted_by_member(
+    outcomes: Iterable[CouncilOutcome], added: tuple[str, ...] = ()
+) -> Counter:
+    """Count each member's unverified quotations that are the prompt's reference text, by metric."""
     offered = unverified(outcomes)
-    found = [(metric, said) for metric, said in offered if quotes_definition(metric, said)]
+    found = [(metric, said) for metric, said in offered if quotes_prompt(metric, said, added)]
     return Counter((said.member.name, metric) for metric, said in found)
 
 
@@ -66,9 +68,9 @@ def unverified_in(ruling: MetricRuling) -> list[tuple[str, MemberSaid]]:
     return [(ruling.metric, said) for said in quoted(ruling) if not said.verified]
 
 
-def quotes_definition(metric: str, said: MemberSaid) -> bool:
-    """Say whether a quotation is text the prompt gave as the metric's definition."""
+def quotes_prompt(metric: str, said: MemberSaid, added: tuple[str, ...]) -> bool:
+    """Say whether a quotation is the metric's definition, or reference text a variant added."""
     folded = normalise(said.evidence)
     definition = definition_of(metric)
-    texts = [definition.measures, *definition.value_meanings.values()]
+    texts = [definition.measures, *definition.value_meanings.values(), *added]
     return bool(folded) and any(folded in normalise(text) for text in texts)

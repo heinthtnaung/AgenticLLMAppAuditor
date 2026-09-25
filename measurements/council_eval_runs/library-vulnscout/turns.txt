@@ -1,0 +1,3 @@
+requests: 1 GET /api/ps, 2 GET /api/tags, 2 GET /api/version, 324 POST /api/generate
+loads: 18 Qwen2.5 7B Instruct, 18 Llama 3.2 3B Instruct
+turns: 36; not of 8 calls: none

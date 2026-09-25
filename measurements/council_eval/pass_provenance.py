@@ -4,7 +4,8 @@ Every figure scored from a pass carries this beside it: which weights answered
 (the digest the server reports, not the tag), which server, the pinning the
 product actually sends, the prompt version, the dataset's fingerprint, and the
 code -- the commit and whatever in `src/` and `measurements/` was not committed.
-A figure nobody can re-derive is not a measurement.
+A figure nobody can re-derive is not a measurement. The prompt version is the
+variant's, which begins with the product's version it was made from.
 
 The pinning is read from the product's own constants and `LocalModel`, never
 restated here, so a pass cannot claim a seed or a temperature the request did
@@ -23,10 +24,10 @@ from council.ollama import (
     PINNED_THINKING,
     LocalModel,
 )
-from council.prompt import PROMPT_VERSION
 from council.transport import NO_PROXY_OPENER, read_json
 
-from council_eval.replies import HEADER_KIND
+from council_eval.replies import HEADER_KIND, PROMPT_VERSION_FIELD
+from council_eval.variants import Variant
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 TAGS_PATH = "/api/tags"
@@ -54,7 +55,9 @@ def git_output(command: tuple[str, ...]) -> str:
     return done.stdout
 
 
-def pass_header(model: str, dataset: Path, get: Get = get_json, run: Run = git_output) -> dict:
+def pass_header(
+    model: str, dataset: Path, variant: Variant, get: Get = get_json, run: Run = git_output
+) -> dict:
     """Describe a pass before it starts: the weights, the server, the pinning, code and data."""
     pinning = LocalModel(model=model)
     return {
@@ -62,7 +65,7 @@ def pass_header(model: str, dataset: Path, get: Get = get_json, run: Run = git_o
         "model": model,
         "digest": model_digest(model, get(f"{DEFAULT_HOST}{TAGS_PATH}")),
         "ollama": get(f"{DEFAULT_HOST}{VERSION_PATH}")["version"],
-        "prompt_version": PROMPT_VERSION,
+        PROMPT_VERSION_FIELD: variant.prompt_version,
         "temperature": PINNED_TEMPERATURE,
         "seed": pinning.seed,
         "num_ctx": pinning.context_tokens,

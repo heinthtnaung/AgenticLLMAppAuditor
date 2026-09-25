@@ -23,7 +23,7 @@ def two_passes(tmp_path):
     paths = []
     for model, answers in SERVERS.items():
         path = tmp_path / f"{model.replace(':', '-')}.jsonl"
-        header = {"kind": "header", "model": model}
+        header = samples.header(model)
         collect((samples.item(),), model, path, header, samples.Asking(answers), io.StringIO())
         paths.append(path)
     return dataset, paths
@@ -88,6 +88,17 @@ def test_the_totals_count_every_metric_and_name_every_vector(tmp_path):
 )
 def test_each_step_is_a_subcommand(argv, step):
     assert commands.parser().parse_args(argv).run is step
+
+
+def test_a_pass_is_asked_in_the_product_s_words_unless_it_names_a_variant():
+    base = ["collect", "--dataset", "d", "--model", "m", "--out", "o"]
+    assert commands.parser().parse_args(base).variant == "baseline"
+    assert commands.parser().parse_args([*base, "--variant", "reversed"]).variant == "reversed"
+
+
+def test_a_variant_nobody_defined_is_refused():
+    with pytest.raises(SystemExit):
+        commands.main(["collect", "--dataset", "d", "--model", "m", "--out", "o", "--variant", "x"])
 
 
 def test_an_unknown_step_is_refused():

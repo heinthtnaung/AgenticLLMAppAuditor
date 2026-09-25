@@ -9,6 +9,7 @@ evidence itself -- reruns, quotations, the server's log -- are
 
 import argparse
 import os
+from functools import partial
 from pathlib import Path
 from typing import Any
 
@@ -16,7 +17,7 @@ from deps import syft_runner, trivy_runner
 from deps.trivy_database import database_built_at, metadata_of, trivy_cache_directory
 from report.council_record import CouncilAssessment, CouncilOutcome
 
-from council_eval.collect import collect
+from council_eval.collect import ask_item, collect
 from council_eval.compose import pass_models, replay_roster, rosters
 from council_eval.contests import contest_measures
 from council_eval.dataset import Item, read_dataset, vulnscout_items, write_dataset
@@ -32,6 +33,7 @@ from council_eval.tables import (
     metric_table,
     vector_table,
 )
+from council_eval.variants import BASELINE, VARIANTS
 from council_eval.vectors import vector_measures
 
 GATE_FAILED = 1
@@ -55,6 +57,7 @@ def parser() -> argparse.ArgumentParser:
     one_pass.add_argument("--dataset", type=Path, required=True)
     one_pass.add_argument("--model", required=True)
     one_pass.add_argument("--out", type=Path, required=True)
+    one_pass.add_argument("--variant", choices=sorted(VARIANTS), default=BASELINE.name)
     one_pass.set_defaults(run=run_collect)
     gate = commands.add_parser("gate", help="replay a roster against a recorded audit report")
     gate.add_argument("--dataset", type=Path, required=True)
@@ -90,10 +93,12 @@ def run_dataset(options: Any) -> int:
 
 
 def run_collect(options: Any) -> int:
-    """Collect one model's pass over a frozen dataset."""
+    """Collect one model's pass over a frozen dataset, asked in one variant's words."""
     items = read_dataset(options.dataset)
-    header = pass_header(options.model, options.dataset)
-    calls = collect(items, options.model, options.out, header)
+    variant = VARIANTS[options.variant]
+    header = pass_header(options.model, options.dataset, variant)
+    asking = partial(ask_item, variant=variant)
+    calls = collect(items, options.model, options.out, header, asking)
     print(f"{calls} calls of {options.model} saved to {options.out}")
     return 0
 

@@ -1,0 +1,17 @@
+member               metric  listed last  named it  values named
+qwen2.5:7b-instruct  AV      N            5/18      declined:12 N:5 L:1
+qwen2.5:7b-instruct  AC      L            1/18      H:16 L:1 declined:1
+qwen2.5:7b-instruct  PR      N            11/18     N:11 H:3 L:2 declined:2
+qwen2.5:7b-instruct  UI      N            16/18     N:16 R:2
+qwen2.5:7b-instruct  S       U            4/18      C:12 U:4 declined:2
+qwen2.5:7b-instruct  C       H            8/18      H:8 L:7 declined:3
+qwen2.5:7b-instruct  I       H            9/18      H:9 L:7 declined:2
+qwen2.5:7b-instruct  A       H            5/18      L:11 H:5 declined:2
+llama3.2:latest      AV      N            3/18      A:10 L:4 N:3 declined:1
+llama3.2:latest      AC      L            12/18     L:12 H:6
+llama3.2:latest      PR      N            11/18     N:11 H:5 L:2
+llama3.2:latest      UI      N            18/18     N:18
+llama3.2:latest      S       U            1/18      C:17 U:1
+llama3.2:latest      C       H            13/18     H:13 L:5
+llama3.2:latest      I       H            10/18     H:10 L:7 declined:1
+llama3.2:latest      A       H            6/18      L:12 H:6

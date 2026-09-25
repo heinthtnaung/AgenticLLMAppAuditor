@@ -81,8 +81,9 @@ all three runs, the interfered calls included.
 | `compare.txt` | 2 KB | each model's three runs, pairwise, byte for byte |
 | `quoting.txt` | 1 KB | whose quotation each lone settlement rests on, and unverified quotations of the prompt |
 | `turns.txt` | 1 KB | the three journal excerpts, counted |
+| `values.txt` | 1 KB | every value each model of the scored pair named, beside the option listed last; added on 2026-09-25 as the baseline cell of `../README.md` |
 
-803 KB in all.
+804 KB in all.
 
 ## Re-deriving every figure
 
@@ -100,6 +101,8 @@ python measurements/council_eval compare --first $Q.run1.replies.jsonl --second 
 python measurements/council_eval quoting --dataset $D/vulnscout.dataset.json \
     --replies $Q.run1.replies.jsonl $L.run2.replies.jsonl
 python measurements/council_eval turns --excerpt $D/ollama-journal.run1.tsv
+python measurements/council_eval values --dataset $D/vulnscout.dataset.json \
+    --replies $Q.run1.replies.jsonl $L.run2.replies.jsonl
 ```
 
 Each prints what its `.txt` here holds. `score` on the scored pair reproduces
