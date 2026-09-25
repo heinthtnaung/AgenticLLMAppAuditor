@@ -270,6 +270,13 @@ server. Each member's turn on a finding began on a freshly loaded model, so no
 cached prompt prefix carried over from an earlier finding. That fits the CPU
 baseline's precondition without testing it.
 
+It is likely also what their agreement rests on. A probe since found Qwen
+answering one prompt `confidence: medium` on a freshly loaded model and `high`
+straight after it, each state repeating byte for byte (`docs/COUNCIL.md`). So
+on a card that holds both members at once, where Qwen's turns start warm, these
+two runs would not be reproduced — inferred, not measured. The probe and its
+envelopes are in `thinking_and_load/`.
+
 ### Both models ran on the GPU
 
 | Evidence | What it shows |
@@ -450,7 +457,7 @@ run, against the failure the prompt names.
 | the same on `CVE-2025-13465` Privileges Required | — | `scoped.report.txt` lines 80–86: `L` and `N`; Confidentiality and Integrity on the same sentence follow at 87–100 |
 | that shape is common, not one case | `docs/COUNCIL.md` | 8 of `scoped`'s 17 contested metrics, and 20 of `full`'s 61, have both members quoting identical text; in the GPU baseline, 2 of 4 and 4 of 13 |
 | 61 of 144 metrics came out contested with two members | `src/council/runner.py`, `docs/COUNCIL.md` | `full.report.txt`, Qwen and Gemma; the GPU baseline contests 13 |
-| reproducible when no other client shares the Ollama server | `docs/COUNCIL.md` | the CPU baseline's subsections above, and the GPU runs agreeing on the five findings they share |
+| reproducible when no other client shares the Ollama server, and each model meets each request in the same load state | `docs/COUNCIL.md` | the CPU baseline's subsections above, the GPU runs agreeing on the five findings they share, and Qwen cold and warm in `thinking_and_load/probe_state.jsonl` |
 | 288 calls over 18 findings, 80 after scoping | `README.md`, `docs/COUNCIL.md`, `docs/diagrams.md`, `src/cli/council_run.py`, `src/cli/progress.py`, comments in `tests/cli/test_council_run.py`, `tests/cli/test_progress.py` and `tests/council/test_runner_order.py` | the last `council` line of each progress file |
 | 13 of 18 findings undisputed, so 5 put to the council | `README.md`, `docs/COUNCIL.md`, `docs/diagrams.md`, `src/cli/council_run.py`, `tests/cli/test_council_run.py` | `scoped.report.txt` lines 218–222 |
 | 208 of the 288 calls went to those 13 | `src/cli/council_run.py`, `tests/cli/test_council_run.py` | the lines of `full.progress.txt` and of `gpu-full.progress.txt` naming them |
@@ -499,8 +506,9 @@ did write. An audit that exits 2 is recorded with whichever it wrote, which is
 none unless a report failed to write after the scan.
 
 Repeating the GPU baseline needs `061361f` and Ollama 0.34.3 with both models
-on the GPU. `061361f` sends no `think` field, which for Qwen and Llama made no
-difference on the one prompt measured. Repeating the CPU baseline needs
-`gemma4:latest`, the runner and client at `4111b95`, which send no `think`
-field, and Ollama 0.34.2 on the CPU; this machine's Ollama has started on CUDA
-since 19:30 on 2026-09-23.
+on the GPU, on a card that cannot hold them together, so that every member's
+turn starts cold as it did then. `061361f` sends no `think` field, which for
+Qwen and Llama made no difference on the one prompt measured. Repeating the CPU
+baseline needs `gemma4:latest`, the runner and client at `4111b95`, which send
+no `think` field, and Ollama 0.34.2 on the CPU; this machine's Ollama has
+started on CUDA since 19:30 on 2026-09-23.

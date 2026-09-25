@@ -454,16 +454,41 @@ five findings they shared. The fifth differed in the one run that shared the
 Ollama server with another council run. The server answers each model one
 request at a time, so the two runs' calls to one model queued rather than
 batched; one run's call to Qwen and the other's to Gemma could still compute at
-the same moment. So the claim carries a precondition: **reproducible when no
-other client is sending requests to the same Ollama server.** That is one
-divergence in one contended run, on one corpus and one CPU-only server, not a law.
+the same moment. So the claim carries two preconditions: **reproducible when no
+other client is sending requests to the same Ollama server, and when each model
+meets each request in the same load state as in the run being reproduced.** The
+first rests on one divergence in one contended run, on one corpus and one
+CPU-only server, not a law.
+
+The second was measured on the GPU, under Ollama 0.34.3 at temperature 0 and
+seed 11, with one prompt: Attack Vector on the test advisory. On a freshly
+loaded model, after `ollama stop` and with 0 of 532 prompt tokens cached,
+`qwen2.5:7b-instruct` answered `confidence: medium`; straight after the same
+request, with 531 cached, it answered `high`, with the same value and the same
+quotation. Each state repeated byte for byte, twice cold and three times warm,
+and the thinking probe's one cold and one warm call gave the same two replies.
+`llama3.2:latest` and `gemma4:latest` each gave the same reply cold as warm.
+The envelopes are in `measurements/thinking_and_load/`.
+
+In the recorded GPU runs Qwen and Llama were loaded once per member per
+finding, 36 loads in `gpu-full`'s journal. The scheduler says why in the same
+journal, `resetting model to expire immediately to make room`, 36 times in
+`gpu-full`'s window and 9 times in `gpu-scoped`'s. That journal is Ollama's own
+on this machine and is not kept in the repository. So the two did not stay on
+this card together, and each member's turn on a finding began on a freshly
+loaded model in both runs, which fits their agreeing. **On a card that holds
+both, Qwen's turns would start warm and those runs would not reproduce** —
+inferred from the probe, not measured.
 
 **The mechanism is untested.** Ollama's own log rules out three: requests
 batched together, a model reloaded between runs, and a model placed on a GPU.
 The candidate left is the server's reuse of a cached prompt prefix, where the
 request that came before decides what is reused, and another client's requests
-change that. `measurements/README.md` has the runs in `council_runs/` and the
-log evidence beside them.
+change that. The GPU probe above shows the state a request meets can move
+Qwen's reply, which is what that candidate needs; it cannot tell a fresh load
+from an empty cache, since a fresh load has both, and it does not test that
+either caused the CPU divergence. `measurements/README.md` has the runs in
+`council_runs/` and the log evidence beside them.
 
 **What leaves the machine.** A hosted member is sent the prompt and the
 advisory text — public text, by the panel rule, carrying no CVE id and no
