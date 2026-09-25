@@ -15,6 +15,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "measurements"))
 
 import record_council_run as recorder  # noqa: E402
+import run_provenance as provenance  # noqa: E402
 from record_council_run import COULD_NOT_RECORD, RecordingFailed, main  # noqa: E402
 
 COMMIT = "4111b958bae74b1f4b64dca48efc5a6ecca58f77"
@@ -36,12 +37,12 @@ FOUND_SOMETHING = (sys.executable, "-c", FOUND_SOMETHING_PROGRAM)
 def answer_tools(monkeypatch, ollama: str) -> None:
     """Answer git and `ollama ps` from fixed text, and the clock with one time."""
     replies = {
-        recorder.GIT_COMMIT: f"{COMMIT}\n",
-        recorder.GIT_SOURCE_STATUS: SOURCE_STATUS,
-        recorder.OLLAMA_PS: ollama,
+        provenance.GIT_COMMIT: f"{COMMIT}\n",
+        provenance.GIT_SOURCE_STATUS: SOURCE_STATUS,
+        provenance.OLLAMA_PS: ollama,
     }
-    monkeypatch.setattr(recorder, "captured", lambda command: replies[command])
-    monkeypatch.setattr(recorder, "now", lambda: AT)
+    monkeypatch.setattr(provenance, "captured", lambda command: replies[command])
+    monkeypatch.setattr(provenance, "now", lambda: AT)
 
 
 @pytest.fixture
@@ -97,9 +98,9 @@ def test_the_provenance_says_what_the_run_came_from_and_how_it_ended(monkeypatch
     assert lines[0].startswith("command: ") and "import sys" in lines[0]
     assert lines[1:3] == [f"commit:  {COMMIT}", "src/ changes at launch:"]
     assert lines[3] == "   M src/cli/council_run.py"
-    assert lines[4:7] == ["ollama ps at launch:", *recorder.indented(ollama)]
+    assert lines[4:7] == ["ollama ps at launch:", *provenance.indented(ollama)]
     assert lines[7:10] == [f"started: {AT}", f"ended:   {AT}", "exit:    1"]
-    assert lines[10:] == ["ollama ps at end:", *recorder.indented(ollama)]
+    assert lines[10:] == ["ollama ps at end:", *provenance.indented(ollama)]
 
 
 def test_placement_is_read_at_launch_and_at_the_end_and_nowhere_between(tools, tmp_path):
@@ -138,17 +139,7 @@ def test_a_git_that_cannot_answer_stops_the_run_before_it_starts(monkeypatch, tm
         """Fail the way git does outside a repository."""
         raise RecordingFailed("git rev-parse HEAD exited 128: not a git repository")
 
-    monkeypatch.setattr(recorder, "captured", failing)
+    monkeypatch.setattr(provenance, "captured", failing)
     code, _ = recorded(tmp_path)
     assert code == COULD_NOT_RECORD
     assert list(tmp_path.iterdir()) == []
-
-
-def test_ollama_unreadable_once_the_run_is_over_is_recorded_rather_than_raised(monkeypatch):
-    # The exit code is already in hand by then, and raising would lose it.
-    def failing(command):
-        """Fail the way `ollama ps` does with the server down."""
-        raise RecordingFailed("ollama ps exited 1: could not connect")
-
-    monkeypatch.setattr(recorder, "captured", failing)
-    assert recorder.ollama_at_end() == "unavailable: ollama ps exited 1: could not connect"
