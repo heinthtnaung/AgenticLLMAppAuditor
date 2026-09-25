@@ -13,12 +13,12 @@ from cli.report_files import WRITTEN_TO
 from cli_samples import REPORTS_FOLDER, TRIVY_VERSION, run_command_line, written_answers
 from deps.scanner import ScannerFailed, ScannerUnavailable
 from deps.trivy_database import CACHE_VARIABLE, XDG_CACHE_VARIABLE
-from report.record import (
-    NO_ANSWERS_GIVEN,
-    NO_COUNCIL_RUN,
+from report.absences import (
     NOTHING_ABSENT,
     NOTHING_TO_PUT,
     NOTHING_TO_WEIGH,
+    NO_ANSWERS_GIVEN,
+    NO_COUNCIL_RUN,
 )
 
 FOUND_NOTHING_AT_ALL = {"components": (), "advisories": {}}

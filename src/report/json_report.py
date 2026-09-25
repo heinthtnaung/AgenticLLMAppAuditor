@@ -20,7 +20,8 @@ from report.disagreement import bands_crossed, score_spread, sources_disagree
 from report.json_council import council_of
 from report.json_risk import approval_of, risk_of
 from report.provenance import AdvisoryDatabase
-from report.record import Absence, Report
+from report.absences import Absence
+from report.record import Report
 
 INDENT = 2
 

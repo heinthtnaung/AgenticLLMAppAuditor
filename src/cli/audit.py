@@ -17,8 +17,9 @@ from typing import TextIO
 from deps import manifests, syft_runner, trivy_runner
 from deps.trivy_database import DatedDatabase
 from findings.finding import build_findings
+from report.absences import Coverage
 from report.provenance import AdvisoryDatabase, RunProvenance
-from report.record import Coverage, Report, build_report
+from report.record import Report, build_report
 
 from cli.arguments import Options
 from cli.council_run import assessments, build_roster, watching

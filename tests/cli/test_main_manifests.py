@@ -9,7 +9,7 @@ import pytest
 
 from cli.main import COULD_NOT_RUN, FOUND_NOTHING
 from cli_samples import REPORTS_FOLDER, REPOSITORY_NAME, run_command_line
-from report.record import UNREAD_MANIFEST
+from report.absences import UNREAD_MANIFEST
 
 NOTHING_FOUND = {"components": (), "advisories": {}}
 UNLISTABLE = 0o000

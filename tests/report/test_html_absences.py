@@ -19,14 +19,14 @@ from report.html_absences import (
     not_assessed_section,
     unidentified_section,
 )
-from report.record import (
-    NO_COUNCIL_RUN,
+from report.absences import (
     NOTHING_ABSENT,
     NOTHING_WAS_PUT_TO_IT,
+    NO_COUNCIL_RUN,
     UNREAD_MANIFEST,
     Coverage,
-    build_report,
 )
+from report.record import build_report
 from report_samples import PROVENANCE, advisory, catalogue, component, finding, unidentified
 
 DJANGO = component()

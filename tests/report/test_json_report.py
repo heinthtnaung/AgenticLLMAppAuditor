@@ -13,7 +13,8 @@ from council_runs import (
     ALONE, OPEN_TWO_WAYS, council_ran, council_states, passed_over_entirely,
 )
 from full_runs import fully_assessed
-from report.record import NOTHING_WAS_PUT_TO_IT, build_report
+from report.absences import NOTHING_WAS_PUT_TO_IT
+from report.record import build_report
 from report_samples import (
     catalogue,
     CONFIDENTIALITY_ONLY,
