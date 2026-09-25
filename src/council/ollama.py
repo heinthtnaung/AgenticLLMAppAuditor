@@ -50,19 +50,19 @@ PINNED_THINKING = False
 
 # Four characters to the token. Rough, and every model counts its own way: the
 # worst advisory, estimated at 4,936, Qwen counts 0.8% under, Llama 2.9% under
-# and Gemma 15.3% over; over 576 saved prompts Qwen runs -17% to +15%.
-# `measurements/prompt_tokens.py` re-counts it against any model named.
+# and Gemma 15.3% over; over the saved passes Qwen runs -17% to +15%, Gemma to
+# +23%. `measurements/prompt_tokens.py` re-counts it against any model named.
 CHARACTERS_PER_TOKEN = 4
 
 # What the estimate is allowed to be wrong by, in the direction that matters. A
 # prompt refused that would just have fitted costs one metric; a prompt sent
 # that does not fit costs an assessment of half an advisory that reads like a
-# whole one. At 15% over the estimate, the most measured, a prompt at this
-# limit still leaves an eighth of the window for the reply.
+# whole one. At 23% over the estimate, the most measured, a prompt at this
+# limit still leaves 600 of 8,192 tokens for a reply; the longest recorded is 121.
 USABLE_CONTEXT_FRACTION = 0.75
 
 # Ollama cuts a prompt too long for the window to half the window, so the model
-# then counts it at under 58% of the estimate for any tokenizer measured; none
+# then counts it at under 62% of the estimate for any tokenizer measured; none
 # counted a whole prompt at under 83%. Between the two is where a cut shows.
 CUT_PROMPT_FRACTION = 0.7
 

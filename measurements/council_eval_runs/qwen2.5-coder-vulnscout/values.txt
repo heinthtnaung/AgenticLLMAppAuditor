@@ -1,0 +1,9 @@
+member                     metric  listed last  named it  values named
+qwen2.5-coder:7b-instruct  AV      P            0/18      declined:16 N:2
+qwen2.5-coder:7b-instruct  AC      H            7/18      declined:11 H:7
+qwen2.5-coder:7b-instruct  PR      H            0/18      declined:18
+qwen2.5-coder:7b-instruct  UI      R            0/18      declined:18
+qwen2.5-coder:7b-instruct  S       C            1/18      declined:17 C:1
+qwen2.5-coder:7b-instruct  C       N            1/18      declined:10 H:7 N:1
+qwen2.5-coder:7b-instruct  I       N            1/18      H:9 declined:7 L:1 N:1
+qwen2.5-coder:7b-instruct  A       N            1/18      declined:9 H:8 N:1

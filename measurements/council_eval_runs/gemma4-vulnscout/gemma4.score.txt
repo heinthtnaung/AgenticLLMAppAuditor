@@ -1,0 +1,169 @@
+pass qwen2.5:7b-instruct
+  model: qwen2.5:7b-instruct
+  digest: 845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e
+  ollama: 0.34.3
+  prompt_version: member-base-metric-3
+  temperature: 0
+  seed: 11
+  num_ctx: 8192
+  think: False
+  turn_start: cold: the model is unloaded before each item
+  dataset_sha256: 2575a98327867c3bbc98860cb6d57bdb972a10f26eeaf7ba0b2e74e91bbe0d66
+  commit: a4e536525fe53e7c60fb4f02cde58d2b596af9f6
+  started: 2026-09-24T18:50:28+08:00
+  uncommitted at launch: 21 paths
+pass gemma4:latest
+  model: gemma4:latest
+  digest: c6eb396dbd5992bbe3f5cdb947e8bbc0ee413d7c17e2beaae69f5d569cf982eb
+  ollama: 0.34.3
+  prompt_version: member-base-metric-3
+  temperature: 0
+  seed: 11
+  num_ctx: 8192
+  think: False
+  turn_start: cold: the model is unloaded before each item
+  dataset_sha256: 2575a98327867c3bbc98860cb6d57bdb972a10f26eeaf7ba0b2e74e91bbe0d66
+  commit: 76a4b2c86741c7acf0214b4892862e4f136d346c
+  started: 2026-09-25T15:57:04+08:00
+  uncommitted at launch: 18 paths
+
+ROSTER qwen2.5:7b-instruct  (18 items)
+144 metrics: 105 settled, 0 contested, 39 unresolved; 2 vectors
+  CVE-2026-6321  CVSS:3.1/AV:L/AC:H/PR:L/UI:R/S:C/C:L/I:L/A:L
+  CVE-2026-53550  CVSS:3.1/AV:L/AC:H/PR:H/UI:R/S:C/C:H/I:H/A:H
+
+metric  settled  contested  unresolved  R1 items  scored  agreed  rate [95% CI]      commonest  its rate  lift   settled, no R1  values settled
+AV      12       0          6           16        11      0       0.00 [0.00, 0.26]  N          1.00      -1.00  1               L,N
+AC      13       0          5           16        13      2       0.15 [0.04, 0.42]  L          0.92      -0.77  0               H,L
+PR      11       0          7           15        10      0       0.00 [0.00, 0.28]  N          1.00      -1.00  1               H,L
+UI      13       0          5           16        13      1       0.08 [0.01, 0.33]  N          1.00      -0.92  0               N,R
+S       16       0          2           16        15      4       0.27 [0.11, 0.52]  U          1.00      -0.73  1               C,U
+C       11       0          7           16        11      1       0.09 [0.02, 0.38]  N          0.91      -0.82  0               H,L
+I       15       0          3           15        13      6       0.46 [0.23, 0.71]  H          0.62      -0.15  2               H,L
+A       14       0          4           13        11      1       0.09 [0.02, 0.38]  N          0.64      -0.55  3               H,L
+
+metric  settled  settled by one quotation alone  contested  contested, R1 judges  R1 among the verified
+AV      12       12                              0          0                     0
+AC      13       13                              0          0                     0
+PR      11       11                              0          0                     0
+UI      13       13                              0          0                     0
+S       16       16                              0          0                     0
+C       11       11                              0          0                     0
+I       15       15                              0          0                     0
+A       14       14                              0          0                     0
+
+member               metric  verified  not in advisory  guessed  declined  failed  values named
+qwen2.5:7b-instruct  AV      12        0                0        6         0       L,N
+qwen2.5:7b-instruct  AC      13        4                0        1         0       H,L
+qwen2.5:7b-instruct  PR      11        0                0        7         0       H,L
+qwen2.5:7b-instruct  UI      13        0                1        4         0       N,R
+qwen2.5:7b-instruct  S       16        0                0        2         0       C,U
+qwen2.5:7b-instruct  C       11        2                5        0         0       H,L,N
+qwen2.5:7b-instruct  I       15        2                0        1         0       H,L,N
+qwen2.5:7b-instruct  A       14        2                2        0         0       H,L,N
+
+finding         council vector                                score  band    R1 band  R1 metrics  departs on           published            inside range
+CVE-2026-6321   CVSS:3.1/AV:L/AC:H/PR:L/UI:R/S:C/C:L/I:L/A:L  5.0    Medium  High     8           AV,AC,PR,UI,S,C,I,A  ghsa 7.5 redhat 7.5  no
+CVE-2026-53550  CVSS:3.1/AV:L/AC:H/PR:H/UI:R/S:C/C:H/I:H/A:H  7.2    High    Medium   8           AV,AC,PR,UI,S,C,I,A  ghsa 5.3 redhat 5.3  no
+
+ROSTER gemma4:latest  (18 items)
+144 metrics: 129 settled, 0 contested, 15 unresolved; 12 vectors
+  CVE-2026-13149  CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H
+  CVE-2026-14257  CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H
+  CVE-2026-13676  CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:N/I:N/A:N
+  CVE-2026-16221  CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:N
+  CVE-2026-18446  CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:N/I:H/A:N
+  CVE-2026-6321  CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:N
+  CVE-2026-6322  CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:N/I:H/A:N
+  CVE-2026-75975  CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:N/I:H/A:N
+  CVE-2026-76172  CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:N
+  CVE-2026-53550  CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H
+  CVE-2025-13465  CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:N
+  CVE-2026-4800  CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:N
+
+metric  settled  contested  unresolved  R1 items  scored  agreed  rate [95% CI]      commonest  its rate  lift   settled, no R1  values settled
+AV      14       0          4           16        12      9       0.75 [0.47, 0.91]  N          1.00      -0.25  2               L,N
+AC      16       0          2           16        15      14      0.93 [0.70, 0.99]  L          0.93      +0.00  1               L
+PR      16       0          2           15        13      13      1.00 [0.77, 1.00]  N          1.00      +0.00  3               N
+UI      16       0          2           16        14      14      1.00 [0.78, 1.00]  N          1.00      +0.00  2               N
+S       16       0          2           16        15      6       0.40 [0.20, 0.64]  U          1.00      -0.60  1               C,U
+C       17       0          1           16        16      11      0.69 [0.44, 0.86]  N          0.94      -0.25  1               H,N
+I       18       0          0           15        15      13      0.87 [0.62, 0.96]  H          0.53      +0.33  3               H,N
+A       16       0          2           13        13      8       0.62 [0.36, 0.82]  N          0.54      +0.08  3               H,L,N
+
+metric  settled  settled by one quotation alone  contested  contested, R1 judges  R1 among the verified
+AV      14       14                              0          0                     0
+AC      16       16                              0          0                     0
+PR      16       16                              0          0                     0
+UI      16       16                              0          0                     0
+S       16       16                              0          0                     0
+C       17       17                              0          0                     0
+I       18       18                              0          0                     0
+A       16       16                              0          0                     0
+
+member         metric  verified  not in advisory  guessed  declined  failed  values named
+gemma4:latest  AV      14        0                0        4         0       L,N
+gemma4:latest  AC      16        0                0        2         0       L
+gemma4:latest  PR      16        0                2        0         0       N
+gemma4:latest  UI      16        0                2        0         0       N
+gemma4:latest  S       16        0                0        2         0       C,U
+gemma4:latest  C       17        0                0        1         0       H,N
+gemma4:latest  I       18        0                0        0         0       H,N
+gemma4:latest  A       16        1                0        1         0       H,L,N
+
+finding         council vector                                score  band      R1 band  R1 metrics  departs on  published                    inside range
+CVE-2026-13149  CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H  6.2    Medium    -        7           AV          ghsa 5.3 redhat 7.5          yes
+CVE-2026-14257  CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H  6.2    Medium    High     8           AV          ghsa 7.5 redhat 7.5          no
+CVE-2026-13676  CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:N/I:N/A:N  0.0    None      High     8           S,I         ghsa 7.5 redhat 7.5          no
+CVE-2026-16221  CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:N  10.0   Critical  High     8           S,C         ghsa 7.5 redhat 7.5          no
+CVE-2026-18446  CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:N/I:H/A:N  8.6    High      High     8           S           ghsa 7.5 redhat 7.5          no
+CVE-2026-6321   CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:N  10.0   Critical  High     8           S,C         ghsa 7.5 redhat 7.5          no
+CVE-2026-6322   CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:N/I:H/A:N  8.6    High      High     8           S           ghsa 7.5 redhat 7.5          no
+CVE-2026-75975  CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:N/I:H/A:N  8.6    High      High     8           S           ghsa 7.5 redhat 7.5          no
+CVE-2026-76172  CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:N  10.0   Critical  High     8           S,C         ghsa 7.5 redhat 7.5          no
+CVE-2026-53550  CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H  7.5    High      Medium   8           A           ghsa 5.3 redhat 5.3          no
+CVE-2025-13465  CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:N  10.0   Critical  -        7           S,C,I       ghsa 6.5 nvd 5.3 redhat 8.2  no
+CVE-2026-4800   CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:N  9.0    Critical  High     8           AV,AC,S,A   ghsa 8.1 nvd 9.8 redhat 8.1  yes
+
+ROSTER qwen2.5:7b-instruct + gemma4:latest  (18 items)
+144 metrics: 65 settled, 69 contested, 10 unresolved; 0 vectors
+
+metric  settled  contested  unresolved  R1 items  scored  agreed  rate [95% CI]      commonest  its rate  lift   settled, no R1  values settled
+AV      10       6          2           16        8       3       0.38 [0.14, 0.69]  N          1.00      -0.62  2               L,N
+AC      6        11         1           16        5       4       0.80 [0.38, 0.96]  L          1.00      -0.20  1               H,L
+PR      5        11         2           15        3       3       1.00 [0.44, 1.00]  N          1.00      +0.00  2               N
+UI      6        11         1           16        4       3       0.75 [0.30, 0.95]  N          1.00      -0.25  2               N,R
+S       13       4          1           16        13      4       0.31 [0.13, 0.58]  U          1.00      -0.69  0               C,U
+C       9        8          1           16        8       6       0.75 [0.41, 0.93]  N          0.88      -0.12  1               H,N
+I       9        9          0           15        6       6       1.00 [0.61, 1.00]  H          0.67      +0.33  3               H,N
+A       7        9          2           13        6       1       0.17 [0.03, 0.56]  H          0.83      -0.67  1               H,L,N
+
+metric  settled  settled by one quotation alone  contested  contested, R1 judges  R1 among the verified
+AV      10       6                               6          6                     6
+AC      6        1                               11         11                    11
+PR      5        5                               11         10                    10
+UI      6        5                               11         11                    11
+S       13       2                               4          3                     3
+C       9        4                               8          8                     5
+I       9        1                               9          9                     9
+A       7        1                               9          7                     7
+
+member               metric  verified  not in advisory  guessed  declined  failed  values named
+qwen2.5:7b-instruct  AV      12        0                0        6         0       L,N
+qwen2.5:7b-instruct  AC      13        4                0        1         0       H,L
+qwen2.5:7b-instruct  PR      11        0                0        7         0       H,L
+qwen2.5:7b-instruct  UI      13        0                1        4         0       N,R
+qwen2.5:7b-instruct  S       16        0                0        2         0       C,U
+qwen2.5:7b-instruct  C       11        2                5        0         0       H,L,N
+qwen2.5:7b-instruct  I       15        2                0        1         0       H,L,N
+qwen2.5:7b-instruct  A       14        2                2        0         0       H,L,N
+gemma4:latest        AV      14        0                0        4         0       L,N
+gemma4:latest        AC      16        0                0        2         0       L
+gemma4:latest        PR      16        0                2        0         0       N
+gemma4:latest        UI      16        0                2        0         0       N
+gemma4:latest        S       16        0                0        2         0       C,U
+gemma4:latest        C       17        0                0        1         0       H,N
+gemma4:latest        I       18        0                0        0         0       H,N
+gemma4:latest        A       16        1                0        1         0       H,L,N
+
+finding  council vector  score  band  R1 band  R1 metrics  departs on  published  inside range

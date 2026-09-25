@@ -105,9 +105,10 @@ one model reached through one provider, and a roster mixes the two kinds
 freely.
 
 **Any model pulled into the local Ollama can be a local member**, by the name
-Ollama gives it. What this project has measured of members' readings is of one
-pair, `qwen2.5:7b-instruct` and `llama3.2:latest`, and says nothing of another
-model: a model you add needs its own evaluation before its readings are trusted
+Ollama gives it. What this project has measured of members' readings is of
+`qwen2.5:7b-instruct` and `llama3.2:latest` as a pair, and of `gemma4:latest`
+and `qwen2.5-coder:7b-instruct` one pass each. It says nothing of another model:
+a model you add needs its own evaluation before its readings are trusted
 (`measurements/README.md`).
 
 | Kind | Reached through | What it costs |
@@ -232,11 +233,13 @@ came from the part that survived, so the quotation check would pass it
 (`tests/council/recorded_shapes.json`). So a prompt whose estimate, at four
 characters to the token, passes 75% of the window is refused before it is
 sent. On the worst prompt the tokenizers measured count
-from 2.9% under that estimate (Llama) to 15.3% over it (Gemma). Across the 576
-saved calls of each of the pair, Qwen counts from 17% under to 15% over, and
+from 2.9% under that estimate (Llama) to 15.3% over it (Gemma). Across 1,440
+saved calls of four models, the most any counted past the estimate is 23%,
+Gemma on one of the pilot's prompts; Qwen runs from 17% under to 15% over, and
 Llama from 16% under to 10% over
-(`tests/measurements/test_prompt_tokens_records.py`). At 15% over, a prompt at
-the limit still leaves an eighth of the window for the reply.
+(`tests/measurements/test_prompt_tokens_records.py`). At 23% over, a prompt at
+the limit still leaves about 600 of 8,192 tokens for the reply, where the
+longest reply recorded is 121.
 After the call, an answer to a prompt the server counted at under 70% of the
 estimate is refused as well, because that is what a cut looks like, and the
 member is recorded as failed with both numbers.
