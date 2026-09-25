@@ -8,7 +8,8 @@ subcommand or a version string here, a field Trivy renamed there.
 A scan must never reach the network, so every flag that guarantees it lives in
 one tuple and no call site can assemble a command without them. The other half
 of an offline scan -- that the pinned database is there at all -- is
-`deps.trivy_database`, and it is asked before the scan, not after.
+`deps.trivy_database`, and it is asked before the scan, not after. The scan is
+handed the cache directory that was dated, so the two cannot be different ones.
 """
 
 import shutil
@@ -28,6 +29,7 @@ FILESYSTEM_SUBCOMMAND = "fs"
 JSON_FORMAT = ("--format", "json")
 VULNERABILITIES_ONLY = ("--scanners", "vuln")
 VERSION_FLAG = "--version"
+CACHE_FLAG = "--cache-dir"
 
 # Trivy prints its own version unindented and the database's schema version
 # indented under a heading, so the margin is what tells the two apart.
@@ -58,14 +60,14 @@ def installed_version() -> str:
     raise ScannerFailed(f"{TRIVY_EXECUTABLE} did not say which version it is: {said.strip()!r}")
 
 
-def scan_directory(directory: str | Path) -> dict[str, tuple[Advisory, ...]]:
-    """Run Trivy over a directory and give its advisories, indexed by versioned purl."""
+def scan_directory(directory: str | Path, cache: Path) -> dict[str, tuple[Advisory, ...]]:
+    """Run Trivy over a directory against one cache, and give its advisories by versioned purl."""
     scanned = as_directory(directory)
     refuse_missing_directory(scanned)
-    return read_advisories(run_json_scanner(build_command(scanned)))
+    return read_advisories(run_json_scanner(build_command(scanned, cache)))
 
 
-def build_command(directory: Path) -> list[str]:
+def build_command(directory: Path, cache: Path) -> list[str]:
     """Build the Trivy command line for one directory, offline by construction."""
     return [
         TRIVY_EXECUTABLE,
@@ -73,5 +75,7 @@ def build_command(directory: Path) -> list[str]:
         *JSON_FORMAT,
         *VULNERABILITIES_ONLY,
         *REQUIRED_OFFLINE_FLAGS,
+        CACHE_FLAG,
+        str(cache),
         str(directory),
     ]

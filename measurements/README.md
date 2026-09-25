@@ -40,9 +40,12 @@ python measurements/redaction_gaps.py
 python measurements/prompt_tokens.py
 ```
 
-`redaction_gaps.py` needs Trivy and the database snapshot in `~/.cache/trivy`,
-and touches no network and no model. `prompt_tokens.py` additionally needs
-`ollama serve` up with `qwen2.5:7b-instruct` pulled; it talks to loopback only.
+`redaction_gaps.py` needs Trivy and the database snapshot in the cache Trivy
+finds for itself, since these scripts pass it no `--cache-dir`: by Trivy 0.74's
+own order, `TRIVY_CACHE_DIR`, a `cache.dir` in a `trivy.yaml` where it runs,
+`$XDG_CACHE_HOME/trivy`, then `~/.cache/trivy`. It touches no network and no
+model. `prompt_tokens.py` additionally needs `ollama serve` up with
+`qwen2.5:7b-instruct` pulled; it talks to loopback only.
 The `NO_PROXY` export is this machine's corporate proxy, which otherwise answers
 502 for a loopback request.
 

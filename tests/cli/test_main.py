@@ -12,6 +12,7 @@ from cli.preflight import CannotRun
 from cli.report_files import WRITTEN_TO
 from cli_samples import REPORTS_FOLDER, TRIVY_VERSION, run_command_line, written_answers
 from deps.scanner import ScannerFailed, ScannerUnavailable
+from deps.trivy_database import CACHE_VARIABLE, XDG_CACHE_VARIABLE
 from report.record import (
     NO_ANSWERS_GIVEN,
     NO_COUNCIL_RUN,
@@ -44,7 +45,7 @@ def test_a_run_that_found_nothing_exits_zero(monkeypatch, tmp_path):
 def test_a_run_that_could_not_happen_exits_two_and_says_why(monkeypatch, tmp_path, fault):
     # Never 0: a broken scan sharing an exit code with a clean repository is how
     # a pipeline goes green on a scan that never ran.
-    def refuse(repository):
+    def refuse(repository, cache):
         """Refuse the run with the fault under test."""
         raise fault
 
@@ -65,6 +66,36 @@ def test_a_bad_command_line_also_leaves_by_the_could_not_run_door():
     with pytest.raises(SystemExit) as leaving:
         main(["--format", "yaml", "somewhere"])
     assert leaving.value.code == COULD_NOT_RUN
+
+
+def test_the_trivy_cache_the_environment_names_is_the_one_the_preflight_dates(
+    monkeypatch, tmp_path
+):
+    # Resolved once from the environment and handed on, so the database dated is
+    # the database scanned; `tests/cli/test_audit.py` holds the scan to it.
+    named = tmp_path / "trivy-cache"
+    monkeypatch.setenv(CACHE_VARIABLE, str(named))
+    handed = []
+
+    def recording(repository, cache):
+        """Record the cache the run was handed, then stop it before any scan."""
+        handed.append(cache)
+        raise CannotRun("stopped once the cache was seen")
+
+    monkeypatch.setattr(entry, "refuse_unrunnable", recording)
+    main([str(tmp_path)], out=io.StringIO(), error=io.StringIO(), reports=tmp_path / REPORTS_FOLDER)
+    assert handed == [named]
+
+
+def test_a_relative_xdg_cache_home_stops_the_run_and_says_why(monkeypatch, tmp_path):
+    # Trivy keeps its cache in a temporary directory then, so there is no one
+    # database to date and scan with.
+    monkeypatch.delenv(CACHE_VARIABLE, raising=False)
+    monkeypatch.setenv(XDG_CACHE_VARIABLE, "relative")
+    error = io.StringIO()
+    reports = tmp_path / REPORTS_FOLDER
+    assert main([str(tmp_path)], out=io.StringIO(), error=error, reports=reports) == COULD_NOT_RUN
+    assert "which is relative" in error.getvalue()
 
 
 def test_the_terminal_rendering_is_what_a_run_prints_by_default(monkeypatch, tmp_path):

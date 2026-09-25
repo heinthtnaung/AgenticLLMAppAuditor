@@ -13,18 +13,18 @@ from "found nothing". Conflating the two is how a broken scan passes.
 from pathlib import Path
 
 from deps import syft_runner, trivy_runner
-from deps.trivy_database import DATABASE_METADATA_PATH, database_built_at
+from deps.trivy_database import DatedDatabase, database_built_at, metadata_of
 
 
 class CannotRun(RuntimeError):
     """The audit could not start, which is not the same as finding nothing."""
 
 
-def refuse_unrunnable(repository: Path, metadata_path: Path = DATABASE_METADATA_PATH) -> str:
-    """Refuse a run that cannot produce a trustworthy report, and give the database's date."""
+def refuse_unrunnable(repository: Path, cache: Path) -> DatedDatabase:
+    """Refuse a run that cannot give a trustworthy report, and give the database it scans with."""
     refuse_missing_repository(repository)
     refuse_missing_scanners()
-    return database_date(metadata_path)
+    return DatedDatabase(cache=cache, built_at=database_date(metadata_of(cache)))
 
 
 def refuse_missing_repository(repository: Path) -> None:

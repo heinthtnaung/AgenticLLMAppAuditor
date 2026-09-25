@@ -36,7 +36,7 @@ an answer file and council members.
 ```mermaid
 flowchart TD
     subgraph OOB["Out of band, before any scan"]
-        fetch["Operator downloads the Trivy vulnerability DB"] --> adb[("Advisory database<br/>on local disk")]
+        fetch["Operator downloads the Trivy vulnerability DB"] --> adb[("Advisory database, in the Trivy cache<br/>TRIVY_CACHE_DIR, XDG_CACHE_HOME<br/>or ~/.cache/trivy")]
         get["Operator fetches the repository<br/>the tool never clones one"] --> repo["Repository under audit"]
     end
 
@@ -47,7 +47,7 @@ flowchart TD
         rdir --> walk["Manifest walk<br/>each package.json, composer.json or Gemfile<br/>with no lock file Syft reads beside it<br/>a directory it cannot list = could not run"]
         walk --> syft["Syft scans the directory<br/>lockfiles and manifests, one pass"]
         syft --> comp[("Components<br/>name, version, purl, where found")]
-        trivy["Trivy reads the database<br/>advisories per purl, and a published<br/>vector for each source that wrote one"]
+        trivy["Trivy reads the database<br/>--cache-dir: the cache the preflight dated<br/>advisories per purl, and a published<br/>vector for each source that wrote one"]
         comp --> join["Join on the versioned purl"]
         trivy --> join
         join --> asm["Score each source's vector<br/>src/cvss, published equations"]
@@ -82,10 +82,13 @@ doing both would flip that state mid-run. What is left is repeatable — the sam
 commit and the same database produce the same findings, as many times as anyone
 wants.
 
-That choice had a cost and the preflight is what pays it: **an empty or stale
-cache produces a clean report rather than an error.** Trivy finds no advisories,
+That choice had a cost and the preflight is what pays it: **an empty cache
+produces a clean report rather than an error.** Trivy finds no advisories,
 reports nothing, and exits 0. So the database is asked for its own build date
-before anything is scanned, and a run that cannot read one does not start. Every
+before anything is scanned, and a run that cannot read one does not start; a
+stale one is not refused, and its date is in every report. The cache that date
+is read from is found once, from the same variables Trivy reads, and handed to
+the scan as `--cache-dir`, so the database dated is the database scanned. Every
 refusal there is "could not run", which a pipeline must be able to tell from
 "found nothing" — conflating the two is how a broken scan goes green.
 
@@ -491,7 +494,7 @@ flowchart LR
         b0["src/deps/scanner<br/>run an external tool, read its JSON"]
         b1["src/deps/syft_runner, syft_report<br/>run Syft, and read what it wrote"]
         b2["src/deps/trivy_runner, trivy_report<br/>run Trivy, and read what it wrote"]
-        b3["src/deps/trivy_database<br/>the database's own build date"]
+        b3["src/deps/trivy_database<br/>which Trivy cache, and its<br/>database's own build date"]
         b11["src/deps/manifests<br/>the manifests no lock file<br/>Syft reads is beside"]
         b4["src/cvss<br/>vector parser, metric vocabulary,<br/>Base score equations"]
         b5["src/findings<br/>the join, every source's score apart"]

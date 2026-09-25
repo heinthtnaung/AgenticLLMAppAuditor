@@ -15,12 +15,14 @@ never happened. `2` is also what `argparse` exits on a bad command line, so
 every "could not run" leaves by the same door.
 """
 
+import os
 import sys
 from pathlib import Path
 from typing import TextIO
 
 from deps.manifests import ManifestsUnreadable
 from deps.scanner import ScannerFailed, ScannerUnavailable
+from deps.trivy_database import trivy_cache_directory
 from report.html_report import as_html
 from report.json_report import as_json
 from report.record import Report
@@ -65,11 +67,12 @@ def main(
     error = sys.stderr if error is None else error
     try:
         options = parse_arguments(argv)
-        built_at = refuse_unrunnable(options.repository)
+        # Resolved once and handed to both halves: the database dated is the one scanned.
+        database = refuse_unrunnable(options.repository, trivy_cache_directory(os.environ))
         paths = planned_reports(options.repository, reports)
         # Progress goes to the error stream, so the audit record on stdout stays
         # pipeable and byte-identical whether or not anyone is watching.
-        report = run_audit(options, built_at, error)
+        report = run_audit(options, database, error)
     except REFUSALS as fault:
         return refused(fault, error)
     by_format = renderings(report)

@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from deps.trivy_database import DATABASE_METADATA_PATH, database_built_at
+from deps.trivy_database import database_built_at, metadata_of, trivy_cache_directory
 from samples import NOT_PATHS
 
 # Written by Trivy 0.74.0 alongside a current database. `UpdatedAt` is when the
@@ -94,5 +94,56 @@ def test_a_metadata_path_that_is_no_kind_of_path_is_refused_by_its_type(value, n
         database_built_at(value)
 
 
-def test_the_database_is_looked_for_where_trivy_keeps_it():
-    assert DATABASE_METADATA_PATH.parts[-4:] == (".cache", "trivy", "db", "metadata.json")
+HOME = "/home/someone"
+# Trivy 0.74's order, measured with `trivy fs --debug`, which logs the cache dir.
+UNDER_HOME = Path(HOME) / ".cache" / "trivy"
+
+
+def test_with_nothing_set_the_cache_is_under_home():
+    assert trivy_cache_directory({"HOME": HOME}) == UNDER_HOME
+
+
+def test_xdg_cache_home_moves_the_cache(tmp_path):
+    moved = {"HOME": HOME, "XDG_CACHE_HOME": str(tmp_path)}
+    assert trivy_cache_directory(moved) == tmp_path / "trivy"
+
+
+def test_trivy_cache_dir_outranks_xdg_cache_home(tmp_path):
+    named = {"TRIVY_CACHE_DIR": str(tmp_path / "named"), "XDG_CACHE_HOME": str(tmp_path / "xdg")}
+    assert trivy_cache_directory({"HOME": HOME, **named}) == tmp_path / "named"
+
+
+@pytest.mark.parametrize("variable", ["TRIVY_CACHE_DIR", "XDG_CACHE_HOME"])
+def test_a_variable_set_to_nothing_is_passed_over_as_trivy_passes_it_over(variable):
+    assert trivy_cache_directory({"HOME": HOME, variable: ""}) == UNDER_HOME
+
+
+def test_a_relative_trivy_cache_dir_is_where_the_run_starts(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    assert trivy_cache_directory({"TRIVY_CACHE_DIR": "cache"}) == tmp_path / "cache"
+
+
+def test_a_relative_xdg_cache_home_is_refused_because_trivy_would_leave_for_a_temporary_one():
+    with pytest.raises(ValueError, match="'relative', which is relative"):
+        trivy_cache_directory({"HOME": HOME, "XDG_CACHE_HOME": "relative"})
+
+
+def test_with_no_variable_to_go_on_there_is_no_cache_and_the_run_is_refused():
+    with pytest.raises(ValueError, match="no TRIVY_CACHE_DIR, XDG_CACHE_HOME or HOME is set"):
+        trivy_cache_directory({})
+
+
+def test_the_build_date_is_read_from_the_database_in_the_cache(tmp_path):
+    cache = tmp_path / "cache"
+    (cache / "db").mkdir(parents=True)
+    (cache / "db" / "metadata.json").write_text(json.dumps(REAL_METADATA), encoding="utf-8")
+    assert database_built_at(metadata_of(cache)) == BUILT_AT
+
+
+def test_a_cache_dir_in_a_trivy_yaml_is_not_read(tmp_path, monkeypatch):
+    # Accepted: the scan is handed the resolved cache as `--cache-dir`, which
+    # outranks a trivy.yaml, so the file cannot move the database under it and is
+    # not read. Reading it turns this red.
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "trivy.yaml").write_text(f"cache:\n  dir: {tmp_path}/yaml\n", encoding="utf-8")
+    assert trivy_cache_directory({"HOME": HOME}) == UNDER_HOME
