@@ -473,7 +473,7 @@ keeps. **One edge loses a rendering:** an audit whose scan ran and whose report
 write then failed exits 2, and its stdout, which held the only full rendering,
 is not kept.
 
-The recorder exits with the audit's code. An audit that exits 0 or 1 without
+The recorder exits with the audit's code. An audit that exits 0, 1 or 3 without
 leaving all three renderings makes it exit 2 instead, after copying those it
 did write. An audit that exits 2 is recorded with whichever it wrote, which is
 none unless a report failed to write after the scan.

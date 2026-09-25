@@ -1,18 +1,25 @@
 """The entry point, and the exit code a pipeline reads.
 
-Three outcomes, because a pipeline has to tell them apart:
+Four outcomes, because a pipeline has to tell them apart:
 
 | Code | Meaning |
 |---|---|
-| 0 | the audit ran and found nothing |
+| 0 | the audit ran, found nothing, and read every manifest |
 | 1 | the audit ran and found something |
 | 2 | the audit could not run |
+| 3 | the audit ran and found nothing, but could not read a manifest |
 
-**Conflating the last two is how a broken scan passes a pipeline.** A missing
+**Conflating `0` and `2` is how a broken scan passes a pipeline.** A missing
 database, an absent scanner or a path that is not there would otherwise exit 0
 beside a genuinely clean repository, and the build would go green on a scan that
 never happened. `2` is also what `argparse` exits on a bad command line, so
 every "could not run" leaves by the same door.
+
+**Nothing found over a manifest nobody read is not a clean result either.** A
+`package.json` with no lock file yields no package at all, so its dependencies
+are never checked, and `0` there would put a green build on them. `3` keeps
+that apart from `0`. A run with findings exits `1` whatever it could not read,
+because the findings alone already stop the build.
 """
 
 import os
@@ -54,6 +61,7 @@ REFUSALS = (
 FOUND_NOTHING = 0
 FOUND_SOMETHING = 1
 COULD_NOT_RUN = 2
+FOUND_NOTHING_BUT_UNREAD = 3
 
 
 def main(
@@ -83,7 +91,14 @@ def main(
         # The record is already on stdout, so the run is not lost; the exit
         # code still says it did not do everything it was asked to.
         return refused(fault, error)
-    return FOUND_SOMETHING if report.findings else FOUND_NOTHING
+    return outcome(report)
+
+
+def outcome(report: Report) -> int:
+    """Give the code for a run that ran: findings, nothing, or nothing over an unread manifest."""
+    if report.findings:
+        return FOUND_SOMETHING
+    return FOUND_NOTHING_BUT_UNREAD if report.coverage.unread_manifests else FOUND_NOTHING
 
 
 def renderings(report: Report) -> dict[str, str]:

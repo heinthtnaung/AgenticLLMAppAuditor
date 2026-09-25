@@ -1,4 +1,4 @@
-"""Guards on a run over manifests it read no version from: named, pointed to, exited by findings."""
+"""Guards on a run over manifests it read no version from: named, pointed to, and exit 3."""
 
 import json
 import os
@@ -7,7 +7,7 @@ from typing import Iterator
 
 import pytest
 
-from cli.main import COULD_NOT_RUN, FOUND_NOTHING
+from cli.main import COULD_NOT_RUN, FOUND_NOTHING, FOUND_NOTHING_BUT_UNREAD, FOUND_SOMETHING
 from cli_samples import REPORTS_FOLDER, REPOSITORY_NAME, run_command_line
 from report.absences import UNREAD_MANIFEST
 
@@ -25,6 +25,12 @@ def with_unread_manifest(tmp_path: Path) -> Path:
     manifest.parent.mkdir(exist_ok=True)
     manifest.write_text("{}", encoding="utf-8")
     return manifest
+
+
+def with_locked_manifest(tmp_path: Path) -> None:
+    """Put a `package.json` beside the lock file Syft reads it from, so nothing is unread."""
+    with_unread_manifest(tmp_path)
+    (tmp_path / REPOSITORY_NAME / "package-lock.json").write_text("{}", encoding="utf-8")
 
 
 @pytest.fixture
@@ -49,14 +55,26 @@ def test_a_manifest_with_no_lock_file_is_named_and_the_summary_points_to_it(monk
     assert "Not in these counts: 1 manifest" in text.split("\n\n")[1]
 
 
-def test_a_run_that_found_nothing_but_read_no_manifest_exits_as_having_found_nothing(
+def test_a_run_that_found_nothing_but_could_not_read_a_manifest_exits_three(
     monkeypatch, tmp_path
 ):
-    # Accepted: the exit code says what was found, and an unread manifest is said
-    # in the report instead. Giving it a code of its own turns this red.
+    # Once the accepted gap: it exited 0, and a pipeline went green on
+    # dependencies nobody had checked.
     with_unread_manifest(tmp_path)
     code, _, _ = run_command_line([], monkeypatch, tmp_path, **NOTHING_FOUND)
+    assert code == FOUND_NOTHING_BUT_UNREAD
+
+
+def test_a_run_that_found_nothing_and_read_every_manifest_exits_zero(monkeypatch, tmp_path):
+    with_locked_manifest(tmp_path)
+    code, _, _ = run_command_line([], monkeypatch, tmp_path, **NOTHING_FOUND)
     assert code == FOUND_NOTHING
+
+
+def test_a_run_with_findings_exits_one_whatever_it_could_not_read(monkeypatch, tmp_path):
+    with_unread_manifest(tmp_path)
+    code, _, _ = run_command_line([], monkeypatch, tmp_path)
+    assert code == FOUND_SOMETHING
 
 
 @NEEDS_PERMISSIONS

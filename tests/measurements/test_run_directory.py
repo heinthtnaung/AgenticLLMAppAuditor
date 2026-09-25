@@ -8,7 +8,7 @@ import pytest
 # The recorder is a script beside the corpus it measures, not a package in `src/`.
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "measurements"))
 
-from run_directory import keep_reports, link_project  # noqa: E402
+from run_directory import AUDIT_RAN, keep_reports, link_project  # noqa: E402
 from run_provenance import RecordingFailed  # noqa: E402
 from recorder_samples import OPERATORS_OWN, PAGE, RECORD, TEXT, made_project  # noqa: E402
 
@@ -62,11 +62,14 @@ def test_all_three_renderings_are_copied_byte_for_byte(tmp_path, working):
     assert [path.read_bytes() for path in kept.values()] == [TEXT, RECORD, PAGE]
 
 
-def test_an_audit_that_ran_and_wrote_no_json_is_refused_by_name(tmp_path, working):
+@pytest.mark.parametrize("code", [0, 1, 3], ids=["found nothing", "found something", "unread"])
+def test_an_audit_that_ran_and_wrote_no_json_is_refused_by_name(tmp_path, working, code):
+    # Every code an audit that ran leaves with, 3 included: it wrote its reports.
+    assert code in AUDIT_RAN
     written(working, txt=TEXT, html=PAGE)
     kept = kept_in(tmp_path)
-    with pytest.raises(RecordingFailed, match="exited 1 but wrote no .json report"):
-        keep_reports(working, **kept, exit_code=RAN)
+    with pytest.raises(RecordingFailed, match=f"exited {code} but wrote no .json report"):
+        keep_reports(working, **kept, exit_code=code)
     assert (kept["text"].read_bytes(), kept["page"].read_bytes()) == (TEXT, PAGE)
 
 
