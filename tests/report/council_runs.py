@@ -99,6 +99,15 @@ DECLINED_AND_GUESSED = {
     "qwen2.5:7b": {"UI": {"value": "NO_EVIDENCE", "evidence": ""}},
     "gemma4:latest": {"UI": {"value": "R", "evidence": "", "confidence": "high"}},
 }
+# The second member finds nothing to quote on any metric, so every metric settles
+# on the first member's quotation alone: two members reached, nothing cross-checked.
+QUOTED_BY_ONE = {
+    "gemma4:latest": {metric: {"value": "NO_EVIDENCE", "evidence": ""} for metric in METRIC_ORDER},
+}
+# The second member finds nothing to quote on AV alone, so AV settles on the first
+# member's quotation and the other seven are agreed: one metric resting on one
+# member is not a vector nothing was cross-checked on.
+DECLINED_ON_AV = {"gemma4:latest": {"AV": {"value": "NO_EVIDENCE", "evidence": ""}}}
 # On AV one member declines and the other replies with a value AV does not have,
 # so its call is recorded as failed, with the reason its reply was refused.
 UNPARSEABLE = {

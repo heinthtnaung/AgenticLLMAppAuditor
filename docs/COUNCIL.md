@@ -105,6 +105,10 @@ the ruling. The edges are still real:
   model. **The count is of the members a run will ask, not of the roster**:
   three members of whom two are hosted without `egress` cross-check nothing,
   and that run is marked single-assessor exactly as a roster of one is.
+  Two members reached is not two members checked either: a vector every
+  metric of which settled on the `SOLE` basis is marked `every metric on one
+  member's quotation, nothing cross-checked`, worded apart because more than
+  one member was asked.
 - **Even n** needs no rule, because nothing is counted towards a ruling. Two
   members on `S:C` and two on `S:U` is not a tie; it is four pieces of
   evidence, and the chairman ranks them by whether the quotation verifies.
@@ -304,6 +308,15 @@ ordinary disagreements, because several members can usually quote an advisory.
 The basis is the one place a member is counted: one quotation with no other
 beside it reads `SOLE`, and that changes what the record admits, never the
 ruling.
+
+**A vector all eight of whose metrics read `SOLE` is marked as a whole.** Each
+metric rests on one member's quotation, not necessarily the same member's, so
+nothing in it was cross-checked although two or more members were reached. The
+text and the page say `every metric on one member's quotation, nothing
+cross-checked` beside the vector; a vector from a single assessor keeps its own
+mark instead. The JSON's `nothing_cross_checked` is true for either, false for
+a vector some metric of which was cross-checked, and `null` where no vector
+came out.
 
 **Agreement is not evidence.** n members agreeing with nothing verified settles
 nothing: that metric is unresolved and falls back to a published vector. It is

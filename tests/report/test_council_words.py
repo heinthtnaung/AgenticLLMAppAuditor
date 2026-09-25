@@ -18,17 +18,20 @@ from council_runs import (
     ALONE,
     AWKWARD_ADVISORY,
     AWKWARD_QUOTE,
+    DECLINED_ON_AV,
     DISSENTING,
     EVIDENCE,
     LONG_QUOTE,
     OPEN_TWO_WAYS,
+    QUOTED_BY_ONE,
     SOLE,
     answering,
     council_ran,
     fell_back,
 )
-from report.council_record import MemberIdentity, MemberSaid, SaidKind
+from report.council_record import CouncilAssessment, MemberIdentity, MemberSaid, SaidKind
 from report.council_words import (
+    ONE_QUOTATION_EACH,
     SINGLE_ASSESSOR,
     UNVERIFIED,
     VERIFIED,
@@ -37,6 +40,7 @@ from report.council_words import (
     could_not_settle,
     counted,
     unanswered,
+    uncross_checked,
     who,
 )
 from report.html_council import council_section
@@ -145,3 +149,30 @@ def test_both_renderings_word_one_record_the_same_way():
     terminal = " ".join(council_block(report).split())
     assert [one for one in said if one not in page] == []
     assert [one for one in said if one not in terminal] == []
+
+
+def test_a_vector_resting_on_one_members_quotations_is_marked_on_both_pages():
+    # Once the accepted gap: two members reached, so no single-assessor mark, and
+    # yet the second quoted nothing and every metric settled on the first alone.
+    lone = council_ran(**QUOTED_BY_ONE)
+    assert isinstance(lone, CouncilAssessment) and not lone.single_assessor
+    assert uncross_checked(lone) == [ONE_QUOTATION_EACH]
+    one = finding(DJANGO, advisory_id=lone.advisory_id)
+    report = build_report(PROVENANCE, catalogue(DJANGO), (one,), {}, (lone,))
+    assert ONE_QUOTATION_EACH in html.unescape(council_section(report))
+    assert ONE_QUOTATION_EACH in " ".join(council_block(report).split())
+
+
+def test_a_vector_two_members_agreed_on_carries_no_mark():
+    assert uncross_checked(council_ran()) == []
+
+
+def test_a_vector_resting_on_one_member_on_a_single_metric_carries_no_mark():
+    # Seven metrics were cross-checked, so the vector was, whatever AV rests on.
+    mixed = council_ran(**DECLINED_ON_AV)
+    assert [one.basis for one in mixed.rulings] == [SOLE] + [AGREED] * 7
+    assert uncross_checked(mixed) == []
+
+
+def test_a_run_that_reached_one_member_keeps_the_single_assessor_mark_and_no_other():
+    assert uncross_checked(council_ran(models=ALONE)) == [SINGLE_ASSESSOR]
