@@ -104,12 +104,14 @@ def test_a_quotation_of_nothing_but_whitespace_is_a_guess():
     assert read_reply(blank, "AV", MEMBER) == MemberGuessed(metric="AV", value="N", member=MEMBER)
 
 
-def test_the_second_object_in_a_reply_is_not_read_instead_of_the_first():
+def test_a_reply_holding_two_objects_is_refused_rather_than_read_as_either():
+    # Reading the first once took a draft for the answer; reading the last is the same guess.
     two = (
         '{"value": "N", "evidence": "unauthenticated remote attacker", "confidence": "high"} '
         '{"value": "P", "evidence": "nonsense", "confidence": "low"}'
     )
-    assert read_reply(two, "AV", MEMBER).value == "N"
+    with pytest.raises(MalformedReply, match="holds 2 JSON objects"):
+        read_reply(two, "AV", MEMBER)
 
 
 def test_a_declining_member_that_quotes_something_anyway_is_still_declining():

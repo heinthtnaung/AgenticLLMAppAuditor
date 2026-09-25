@@ -21,7 +21,6 @@ something real, or the count of guesses is polluted by broken replies, and that
 count is the only reason the type exists.
 """
 
-import json
 from typing import Any, Mapping
 
 from council.answer import (
@@ -42,16 +41,9 @@ from council.reply_format import (
     REQUIRED_FIELDS,
     VALUE_FIELD,
 )
+from council.reply_object import MalformedReply, excerpt, extract_object
 
-OBJECT_START = "{"
 PAIR_SEPARATOR = ":"
-
-# Enough of a reply to see what went wrong, without a page of prose in a message.
-REPLY_EXCERPT_CHARACTERS = 300
-
-
-class MalformedReply(ValueError):
-    """A member's reply was not the JSON object the prompt asked for."""
 
 
 def read_reply(text: str, metric: str, member: MemberIdentity) -> MemberReply:
@@ -109,29 +101,6 @@ def build_answer(
         raise MalformedReply(f"{fault} -- {excerpt(text)}") from fault
 
 
-def extract_object(text: str) -> Mapping[str, Any]:
-    """Find the one JSON object in a reply, ignoring any prose wrapped around it."""
-    if not isinstance(text, str) or not text.strip():
-        raise MalformedReply("A member answered with nothing at all")
-    decoder = json.JSONDecoder()
-    for start in range(len(text)):
-        if text[start] != OBJECT_START:
-            continue
-        found = decode_at(decoder, text, start)
-        if found is not None:
-            return found
-    raise MalformedReply(f"No complete JSON object in the reply -- {excerpt(text)}")
-
-
-def decode_at(decoder: json.JSONDecoder, text: str, start: int) -> Mapping[str, Any] | None:
-    """Decode a JSON object starting at one offset, or say it is not one."""
-    try:
-        found, _ = decoder.raw_decode(text, start)
-    except ValueError:
-        return None
-    return found if isinstance(found, Mapping) else None
-
-
 def refuse_missing_fields(fields: Mapping[str, Any], text: str, names: tuple[str, ...]) -> None:
     """Refuse a reply that left out a field the prompt asked for."""
     missing = [name for name in names if name not in fields]
@@ -182,9 +151,3 @@ def read_confidence(fields: Mapping[str, Any], text: str) -> Confidence:
             f"{said!r} is not a confidence; the prompt offers {allowed} -- {excerpt(text)}"
         )
     return level
-
-
-def excerpt(text: str) -> str:
-    """Quote the start of a reply, so a refusal says what was actually said."""
-    shown = " ".join(str(text).split())[:REPLY_EXCERPT_CHARACTERS]
-    return f"the reply began {shown!r}"
