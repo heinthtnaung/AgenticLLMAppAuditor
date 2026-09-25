@@ -480,6 +480,12 @@ loaded model in both runs, which fits their agreeing. **On a card that holds
 both, Qwen's turns would start warm and those runs would not reproduce** —
 inferred from the probe, not measured.
 
+The cold side has since been repeated. The evaluation pilot took three passes
+of each member over the 18 findings, every turn starting from a fresh load,
+and its clean passes, on 2026-09-24 and 2026-09-25, gave 288 of 288 replies
+byte for byte the same (`measurements/README.md`, "The pilot"). That holds the
+load state; it does not vary it.
+
 **The mechanism is untested.** Ollama's own log rules out three: requests
 batched together, a model reloaded between runs, and a model placed on a GPU.
 The candidate left is the server's reuse of a cached prompt prefix, where the
