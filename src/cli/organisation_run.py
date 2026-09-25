@@ -4,45 +4,30 @@
 Scoring an unanswered environment would put a number on a question nobody asked,
 and a 0 printed there reads as a finding assessed and found harmless.
 
-Where a council settled a vector there is one agreed technical severity, so that
-finding gets one score. Everywhere else it is scored once per source, because
-choosing one source is the precedence `docs/SCORING_MODEL.md` leaves open.
+Every finding is scored once per published source, because choosing one source
+is the precedence `docs/SCORING_MODEL.md` leaves open. **A council is not an
+input here**: a vector it settled is shown beside the scores and never weighed.
 """
 
 from pathlib import Path
-from typing import Iterable, Mapping
+from typing import Iterable
 
 from findings.finding import Finding
 from organisation.answers import OrganisationAnswers, approval_block, read_answers
 from organisation.approval import Approval, ApprovalOutcome, NotApproved, read_decision
-from organisation.risk import FindingRisk, assess, from_council, per_source
-from report.council_record import CouncilAssessment, CouncilOutcome
+from organisation.risk import FindingRisk, assess, per_source
 
 NO_ANSWER_FILE = "no answer file was given, so nobody was asked about this environment"
 
 
 def weigh_findings(
-    findings: Iterable[Finding],
-    answers: OrganisationAnswers,
-    council: Mapping[str, CouncilOutcome],
+    findings: Iterable[Finding], answers: OrganisationAnswers
 ) -> tuple[FindingRisk, ...]:
-    """Score every finding against the answers that apply to it."""
+    """Score every finding, once per published source, against the answers that apply to it."""
     return tuple(
-        assess(
-            finding,
-            answers.applying_to(finding.advisory.advisory_id),
-            technical_for(finding, council),
-        )
+        assess(finding, answers.applying_to(finding.advisory.advisory_id), per_source(finding))
         for finding in findings
     )
-
-
-def technical_for(finding: Finding, council: Mapping[str, CouncilOutcome]):
-    """Give the technical severities one finding offers: the council's, or every source's."""
-    settled = council.get(finding.advisory.advisory_id)
-    if isinstance(settled, CouncilAssessment):
-        return from_council(settled.vector)
-    return per_source(finding)
 
 
 def read_approval(path: Path) -> ApprovalOutcome:

@@ -1,7 +1,11 @@
 """Guards on the organisation score on the page: the contested bands first, flags visible."""
 
+from dataclasses import replace
+
+from council_runs import council_ran
 from full_runs import ADVISORY_ID, fully_assessed
-from organisation.risk import COUNCIL_SOURCE, FindingRisk, assess, per_source
+from organisation.risk import FindingRisk, assess, per_source
+from report.council_beside import COUNCIL_SOURCE, NOT_IN_THE_SCORE
 from report.record import build_report
 from report.text_risk import risk_block
 from report_samples import PROVENANCE, catalogue, component, finding
@@ -26,9 +30,9 @@ HIGH_HIGH = "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N"  # 7.5
 TOTAL_LOSS = "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"  # 9.8
 
 
-def block(*weighed, findings=()):
+def block(*weighed, findings=(), council=()):
     """Render the risk block of a report carrying these scores."""
-    return risk_block(build_report(PROVENANCE, catalogue(DJANGO), findings, {}, (), weighed))
+    return risk_block(build_report(PROVENANCE, catalogue(DJANGO), findings, {}, council, weighed))
 
 
 def weighed(one, answers):
@@ -120,19 +124,27 @@ def test_a_finding_nobody_scored_is_weighed_and_comes_out_provisional():
     assert "provisional" in rendered
 
 
-def test_a_score_weighed_from_the_councils_vector_is_named_as_the_councils():
-    # Found in acceptance testing: a council-settled score read as one source's,
-    # though its published sources had put it anywhere from 8.1 to 9.8.
-    settled = fully_assessed().risk[ADVISORY_ID]
-    line = next(one for one in block(settled).split("\n") if ADVISORY_ID in one)
-    assert f"{COUNCIL_SOURCE} {settled.scores[0].score:.1f}" in line
+def test_a_councils_settled_vector_is_shown_under_its_finding_and_said_to_be_unused():
+    # Its members settled 9.8 on a finding ghsa put at 7.5. The ruling: beside
+    # the published score, on the CVSS scale, and never weighed into it.
+    lines = risk_block(fully_assessed()).split("\n")
+    scored = next(at for at, one in enumerate(lines) if ADVISORY_ID in one)
+    assert lines[scored + 1].strip() == f"{COUNCIL_SOURCE} CVSS 9.8  ·  {NOT_IN_THE_SCORE}"
 
 
-def test_naming_the_council_keeps_the_bands_column_in_line_with_a_range():
+def test_the_score_lines_are_the_same_with_a_council_beside_them_as_without():
+    # Anything reading the council's vector into the score moves this line.
+    beside = risk_block(fully_assessed()).split("\n")
+    alone = risk_block(replace(fully_assessed(), council={}))
+    assert [one for one in beside if COUNCIL_SOURCE not in one] == alone.split("\n")
+    assert COUNCIL_SOURCE not in alone
+
+
+def test_the_councils_figure_keeps_the_bands_column_in_line_with_a_range():
     settled = fully_assessed().risk[ADVISORY_ID]
     ranged = finding(PYYAML, advisory_id="CVE-2", vectors={"a": HIGH_LOW, "b": TOTAL_LOSS})
     scored = (settled, weighed(ranged, SETTLED))
-    lines = block(*scored).split("\n")
+    lines = block(*scored, council=(council_ran(ADVISORY_ID),)).split("\n")
     columns = {bands_column(lines, one) for one in scored}
     assert len(columns) == 1
 

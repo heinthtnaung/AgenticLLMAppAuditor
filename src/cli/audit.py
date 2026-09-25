@@ -43,7 +43,7 @@ def run_audit(
         findings=findings,
         advisories_by_purl=advisories,
         council=council,
-        risk=weighed(findings, answers, options, council),
+        risk=weighed(findings, answers, options),
         approval=approval,
         overridden=tuple(answers.by_advisory),
         coverage=Coverage(
@@ -64,13 +64,11 @@ def provenance_of(repository: Path, database_built_at: str) -> RunProvenance:
     )
 
 
-def weighed(findings, answers, options: Options, council):
+def weighed(findings, answers, options: Options):
     """Score the findings against this environment, or none when nobody answered."""
     if options.answers is None:
         return ()
-    # A council that settled a vector gives one agreed technical severity, so
-    # that finding is scored once rather than once per published source.
-    return weigh_findings(findings, answers, {one.advisory_id: one for one in council})
+    return weigh_findings(findings, answers)
 
 
 def council_of(findings, options: Options, progress_to: TextIO):

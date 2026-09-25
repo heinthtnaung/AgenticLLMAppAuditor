@@ -79,6 +79,15 @@ into a number by the published formula, the same way every time. A model that
 emitted 7.4 directly would be unauditable, and `docs/SCORING_MODEL.md` forbids
 it. That holds for every member, local or hosted, at every n.
 
+**That number is shown beside the Organisation Risk Score, never weighed into
+it.** The risk score is weighed from the published sources alone, and a
+settled vector's own CVSS base score sits under the finding saying the risk
+score does not use it (`src/report/council_beside.py`). Measured against
+published vectors on the 18 vulnscout findings, the council's settled values
+scored below answering the commonest value on every metric
+(`measurements/README.md`). A reader can weigh a reading that loses to a
+constant; the score should not.
+
 ## The roster
 
 The council is **n members, added and removed by the operator**. A member is
@@ -297,8 +306,8 @@ The fallback rule above is unchanged; what has changed is that a caller must now
 name the published source to fall back to. The command line names none, because
 preferring `nvd` or `ghsa` to fill a gap would set exactly the precedence this
 design leaves open, arriving through the back door of an error path. So in
-practice today an unresolved metric produces no vector, and the finding keeps
-its per-source scores side by side with no winner.
+practice today an unresolved metric produces no vector, and the finding's
+published scores stand side by side with no council reading beside them.
 
 **Values are counted towards a ruling; members never are.** Two members
 agreeing and a third dissenting on evidence that does not verify is not a
@@ -438,8 +447,9 @@ Qwen's and Llama's replies to it are byte for byte the same either way
 (`measurements/thinking_and_load/`). A hosted model takes no seed, and the
 weights behind a name change without notice. **A council holding one hosted
 member is not reproducible run to run**, and every figure downstream inherits
-that — the vector can differ, so `organisation_risk_score` can differ, so the
-band can differ.
+that — the vector can differ, so the CVSS figure shown beside the risk score
+can differ. `organisation_risk_score` cannot, because it never reads the
+vector.
 
 What survives is narrower, and saying which is the point. The engine stays
 deterministic — the recorded vector re-derives the recorded number exactly. It
@@ -633,6 +643,7 @@ Five things described above are not built, each deferred rather than forgotten:
 **`src/cli/` orchestrates all of it**, and that is where to look for the wiring.
 `src/cli/council_run.py` chooses the findings and runs the council over them,
 `src/cli/council_detail.py` turns a run into the record the report holds, and
-`src/cli/organisation_run.py` takes a settled vector into a risk score. The
-package itself stays a component: `src/council/` imports `src/cvss` and nothing
-else of this project's, and only `src/cli/` imports `src/council/`.
+`src/cli/organisation_run.py` weighs the risk score from the published sources
+without reading the council. The package itself stays a component:
+`src/council/` imports `src/cvss` and nothing else of this project's, and only
+`src/cli/` imports `src/council/`.

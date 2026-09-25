@@ -61,7 +61,6 @@ flowchart TD
     fin --> cou["Council, only if members were named,<br/>and only for the findings their sources<br/>do not settle — diagram 4"]
     fin --> ctx["Organisation context<br/>scored once per source<br/>diagram 3"]
     ans["Answer file<br/>--answers: the approved questions<br/>answered by id, and who approved"] --> ctx
-    cou --> ctx
     fin --> rec["Report record<br/>and what was not assessed"]
     cou --> rec
     ctx --> rec
@@ -116,19 +115,22 @@ Two of the three inputs are optional, and the record says so when they are
 absent. Without `--answers` nobody has been asked about the environment, so
 there is no Organisation Risk Score and the report names the absence rather than
 printing a zero — a number there would read as a finding assessed and found
-harmless. Without `--council-member` no model has read anything, and the
-per-source scores stand side by side with no winner.
+harmless. Without `--council-member` no model has read anything, and no council
+reading stands beside the published scores.
 
 The record also keeps what was asked for, because an absent score or ruling has
 two causes. With `--answers` or `--council-member` and nothing found, there is
 still no score and no ruling, and the reason says there was no finding to weigh
 or to put, rather than that nobody asked.
 
-The council feeds the context as well as the record, and that edge is the whole
-argument of this project in one line: where a council settled a vector there is
-one technical severity and the finding takes one score, and everywhere else it
-is scored once per published source, because choosing a source is precedence
-`docs/SCORING_MODEL.md` refuses to set.
+**The council feeds the record and not the context**, and the missing edge is
+deliberate. Every finding is scored once per published source, because choosing
+a source is precedence `docs/SCORING_MODEL.md` refuses to set, and a vector a
+council settled is shown beside those scores with its own CVSS base score,
+saying the risk score does not use it. Measured against published vectors on
+this repository, the council's settled values scored below answering one value
+throughout on every metric (`measurements/README.md`), so nothing it settles
+reaches the score.
 
 One record, three renderings, all of them saved. Every run renders text for a
 terminal, JSON for the audit artefact, and one self-contained HTML page that
@@ -268,7 +270,7 @@ flowchart LR
     hraw --> hclp["Clamp to 0-100"]
 
     subgraph TECH["Technical severity: handed in, never asked"]
-        pick["Each published source in turn,<br/>or the council's vector where it settled one"] --> tsc["On the 0-100 scale<br/>base score x 10"]
+        pick["Each published source in turn<br/>never a council's vector"] --> tsc["On the 0-100 scale<br/>base score x 10"]
         nosrc["No source scored this finding<br/>kept as its own answer, with a reason"] --> tzero["Contributes 0"]
     end
 
@@ -373,13 +375,13 @@ flowchart TD
     st -->|"nothing verified"| unr["Unresolved<br/>the command line names no<br/>published source to fall back to"]
     settled --> all{"All eight<br/>metrics settled?"}
     all -->|"yes"| vec["One agreed vector<br/>plus rationale plus confidence"]
-    all -->|"no"| novec["No vector<br/>the finding keeps its per-source scores"]
+    all -->|"no"| novec["No vector<br/>no council figure beside the scores"]
     pol --> novec
     unr --> novec
 
     subgraph DETERM["Engine: the only place a number appears"]
         eng["Published CVSS equations<br/>deterministic, no model"]
-        eng --> num["The score"]
+        eng --> num["Its CVSS base score<br/>shown beside the Organisation<br/>Risk Score, never weighed into it"]
     end
 
     vec --> eng
@@ -410,8 +412,8 @@ all eight metrics. A contested metric has two verified values and no winner, and
 an unresolved one could only take a value from a published source — which the
 command line refuses to choose, since choosing is the precedence
 `docs/SCORING_MODEL.md` leaves open. So one unsettled metric means no vector,
-the run is still recorded with what it could not settle, and the finding keeps
-its per-source scores side by side. In the two Qwen–Gemma runs kept, no
+the run is still recorded with what it could not settle, and no council reading
+stands beside the finding's published scores. In the two Qwen–Gemma runs kept, no
 finding reached a vector: 0 of 5, and 0 of 18. With `llama3.2:latest` in
 Gemma's place, 1 of 5 and 4 of 18 did, and `measurements/README.md` says why
 that is not better reading.
@@ -520,7 +522,6 @@ flowchart LR
         b4 --> b7
         b4 --> b8
         b4 --> b9
-        b4 --> b10
         b5 --> b8
         b5 --> b9
         b5 --> b10
@@ -566,8 +567,10 @@ naming because they are deliberate: nothing runs from `src/council` to
 `src/report`, since the command line holds both and `src/cli/council_detail.py`
 turns one into the other, and nothing runs from `src/findings` to `src/scoring`,
 because `src/organisation` stands between them and is the only place that decides
-which technical severity a score is computed from — once per published source, or
-once from the council's vector where it settled one.
+which technical severity a score is computed from — once per published source,
+and never from a council's vector. So nothing runs from `src/cvss` to
+`src/organisation` either: it reads each source's base score off the finding and
+parses no vector of its own.
 
 The `src/scoring` to `src/report` arrow is three names in two modules.
 `src/report/html_answers.py` imports the `Answer` enum, to mark an Unknown, and

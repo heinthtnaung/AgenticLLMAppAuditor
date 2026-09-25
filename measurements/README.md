@@ -272,6 +272,16 @@ published sources already agreed. `gpu-scoped` did not ask about them, and in
 `CVE-2026-53550` from 15.9 to 21.6, `CVE-2026-18446` from 22.5 to 15.0,
 `CVE-2026-16221` from 22.5 to 21.6. All three stay Low.
 
+**That is how the code scored then, and it no longer does.** At `061361f` a
+settled vector was weighed in place of every published score, `CVE-2026-4800`'s
+included: `gpu-full` printed it as 21.6, Low, and counted one band change in its
+heading. The code now weighs the published sources alone and prints the
+vector's CVSS base score under the finding, saying the risk score does not use
+it. So the four score as a run with no council scores them. With the committed
+`answers.example.json`, that run gives 15.9, 22.5 and 22.5 for the three,
+`ghsa 24.3 to nvd 29.4`, Medium and Low, for `CVE-2026-4800`, and two band
+changes in the heading.
+
 **Within the baseline, the two runs agree.** `gpu-scoped` and `gpu-full` agree
 byte for byte on all five findings they share, with no other client on the
 server. Each member's turn on a finding began on a freshly loaded model, so no
@@ -681,3 +691,12 @@ assessor, which `gpu-full`'s report could not say.
 
 R1 has a value on all eight metrics of all four findings, so each has an R1
 band.
+
+**What the tool did with it: a council's vector no longer feeds the
+Organisation Risk Score.** Every finding is weighed from its published sources,
+and a settled vector is shown beside them with its own CVSS base score, saying
+the risk score does not use it (`src/report/council_beside.py`). The council
+still runs, and its record is kept whole. That decision rests on this pilot,
+with the limits above. What it costs is a finding no source scored: it weighs
+technical severity at 0 and stays provisional, even where a council settled a
+vector for it.

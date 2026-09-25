@@ -1,8 +1,8 @@
 """The technical severity category, supplied by the caller rather than chosen here.
 
 A finding carries several source-attributed scores that disagree, and
-`docs/SCORING_MODEL.md` leaves open which source wins: settling that is the
-assessor council's job and the council does not exist. So this engine never
+`docs/SCORING_MODEL.md` chooses no source as the winner; a council's reading is
+shown beside the published scores and never weighed in. So this engine never
 reaches into a finding and picks one. The caller supplies the number and says
 where it came from, and **the provenance is required, not optional** -- an
 unattributed technical score is the merge the design forbids arriving by the

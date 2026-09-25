@@ -11,8 +11,8 @@ identically, offline, as many times as anyone wants.
 **The council is off because the roster is empty.** No file format has been
 committed to, so members are named on the command line rather than read from a
 schema nobody has agreed. Naming none, which is the default, is a run with no
-council -- and that is the honest state, because the per-source scores then
-stand side by side with no winner.
+council: the published scores stand side by side, and a council, when one runs,
+adds its own reading beside them without choosing among them.
 
 **And when it is on it is scoped.** The council reconciles sources, so by default
 it is asked only about the findings whose sources do not settle them;

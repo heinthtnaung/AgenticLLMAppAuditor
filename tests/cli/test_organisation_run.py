@@ -4,13 +4,11 @@ import json
 
 import pytest
 
-from cli.council_run import assess_one, build_roster
 from cli.organisation_run import organisation_of, read_approval, weigh_findings
-from cli_samples import ADVISORY, LODASH, answering
+from cli_samples import ADVISORY, LODASH
 from findings.finding import build_finding
 from organisation.answers import OrganisationAnswers
 from organisation.approval import Approval, NotApproved
-from report.council_record import CouncilAssessment, CouncilWithoutVector
 from scoring.library import APPROVED_QUESTIONS
 from scoring.question import Answer
 
@@ -20,12 +18,6 @@ def all_answers(overrides=None) -> dict:
 
 
 FINDING = build_finding(LODASH, ADVISORY)
-
-
-def put_to_council(**replies) -> dict:
-    """Put the finding to a real one-member council, keyed as `weigh_findings` takes it."""
-    outcome = assess_one(FINDING, build_roster(("small",)), answering(**replies))
-    return {outcome.advisory_id: outcome}
 
 
 def written(directory, **document):
@@ -41,33 +33,19 @@ def written(directory, **document):
 
 def test_findings_are_weighed_against_the_answers_that_apply_to_them():
     answers = OrganisationAnswers(everywhere=all_answers({"EXP-1": Answer.YES}))
-    weighed = weigh_findings((FINDING,), answers, {})
+    weighed = weigh_findings((FINDING,), answers)
     assert len(weighed) == 1
     assert weighed[0].advisory_id == ADVISORY.advisory_id
     assert weighed[0].scores[0].exposure.score == 40
 
 
-def test_a_finding_is_weighed_once_per_source_when_no_council_settled_it():
+def test_a_finding_is_weighed_once_for_every_published_source_and_from_nothing_else():
+    # The published sources are the only technical severities there are here: a
+    # council's vector is shown beside the scores and never weighed into them.
     answers = OrganisationAnswers(everywhere=all_answers({"EXP-1": Answer.YES}))
-    assert len(weigh_findings((FINDING,), answers, {})[0].scores) == len(FINDING.scores)
-
-
-def test_a_council_that_settled_a_vector_collapses_the_range_to_one_score():
-    # One agreed technical severity, so there is nothing left to choose between.
-    settled = put_to_council()
-    assert isinstance(settled[ADVISORY.advisory_id], CouncilAssessment)
-    answers = OrganisationAnswers(everywhere=all_answers({"EXP-1": Answer.YES}))
-    weighed = weigh_findings((FINDING,), answers, settled)
-    assert len(weighed[0].scores) == 1
-    assert "council" in weighed[0].scores[0].technical.derived_from
-
-
-def test_a_council_that_settled_nothing_leaves_the_sources_side_by_side():
-    open_still = put_to_council(declining=("S",))
-    assert isinstance(open_still[ADVISORY.advisory_id], CouncilWithoutVector)
-    answers = OrganisationAnswers(everywhere=all_answers({"EXP-1": Answer.YES}))
-    weighed = weigh_findings((FINDING,), answers, open_still)
-    assert len(weighed[0].scores) == len(FINDING.scores)
+    weighed = weigh_findings((FINDING,), answers)[0]
+    published = [one.source for one in FINDING.scores]
+    assert [one.technical.source for one in weighed.scores] == published
 
 
 def test_no_answer_file_means_nobody_was_asked_and_nothing_was_approved():

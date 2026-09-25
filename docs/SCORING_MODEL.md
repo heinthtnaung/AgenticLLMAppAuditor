@@ -69,9 +69,10 @@ One field cannot hold four answers without choosing one, and choosing one is the
 merge this section forbids.
 
 **Which source wins is open.** Nothing here ranks them, and no precedence order
-is defined. Settling which reading an advisory supports is the assessor
-council's job (`docs/COUNCIL.md`); until it runs, the report shows every entry
-side by side and names no winner.
+is defined. The assessor council reads which value an advisory supports
+(`docs/COUNCIL.md`), but it does not pick a winner either: the report shows
+every entry side by side, and a vector the council settled beside them, never
+in the score.
 
 ## The four roles
 
@@ -203,9 +204,18 @@ It runs the other way too, and that is the sharper case. Two sources **agreeing*
 internet-facing with the component disabled. Agreement on the published number
 is not agreement on what to do about it.
 
-Where the council settled a vector there is one agreed technical severity, so
-that finding takes one score. The range is what disagreement looks like, not a
-permanent feature.
+**A vector the council settled does not narrow the range.** Technical severity
+is weighed from the published sources alone. The council's vector is shown
+beside the range with its own CVSS base score, saying the risk score does not
+use it. Measured on the 18 vulnscout findings against a reference built from
+published vectors, the council's settled values matched it on Attack Vector 0
+times in 11, Privileges Required 0 in 9, User Interaction 0 in 13 and Scope 1 in
+13, where answering the commonest value scores 1.00 (`measurements/README.md`,
+which says what that cannot show).
+
+It costs the one case where the council's vector was the only severity on
+offer. A finding no source scored still weighs technical severity at 0 and
+stays provisional, even where a council settled a vector for it.
 
 ## What the LLM may not do
 

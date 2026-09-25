@@ -9,9 +9,10 @@ puts them together.
 A finding holds every source's assessment, attributed, and **says nothing about
 which is right**. It does not average them, does not privilege NVD -- which
 carries a vector for far fewer advisories than GHSA does -- and computes no
-single severity of its own. Choosing between disagreeing sources is the
-council's job and the council is not built; a precedence order invented here to
-tidy the shape would be an unattributable answer wearing a tidy one's clothes.
+single severity of its own. No source is chosen as the winner, here or later: a
+council's reading is shown beside the published scores and never weighed in, and
+a precedence order invented here to tidy the shape would be an unattributable
+answer wearing a tidy one's clothes.
 """
 
 from dataclasses import dataclass

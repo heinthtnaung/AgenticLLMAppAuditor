@@ -89,7 +89,7 @@ NOT ASSESSED
   Approval record
     no answer file was given, so nobody was asked about this environment
   Council ruling
-    no council assessed this run, so no source has been chosen between
+    no council assessed this run, so no council reading stands beside the published scores
 ```
 
 Three of the five disagreements and eleven of the thirteen agreements are elided
@@ -283,9 +283,21 @@ answers and a single number cannot.
 
 A row with one figure and no source, like `CVE-2026-13676` at `68.8`, is a
 finding whose sources agree — there is nothing to attribute between, so nothing
-is named. A score from a council's vector is the exception: it replaced every
-published score, so a bare figure would read as one source's, and the row reads
-`the assessor council 21.6` instead. The HTML page and the JSON already name it.
+is named.
+
+**A council's vector is never one of these scores.** Every score is weighed
+from the published sources. Where a council settled a vector, its own CVSS base
+score goes on the line under the finding, beside the range and not in it. For
+`CVE-2026-18446` that line reads
+`the assessor council CVSS 5.0  ·  the risk score does not use it`. The HTML
+page shows it on a CVSS chip, beside the vector and the same words. In the
+JSON, each finding's `organisation_risk` carries a `council_figure` beside
+`scores`, with `used_in_score: false`, or `null` where no vector was settled.
+
+Measured against published vectors on this repository, the council's settled
+values scored below answering one value throughout on every metric, so a
+reader weighs its vector and the score does not. `measurements/README.md` has
+the figures, and what they cannot show.
 
 **The environment drives those numbers, not the CVE.** The same file with
 `EXP-1` set to `No` and `EXP-4` to `Yes` — the asset segmented rather than
@@ -366,8 +378,9 @@ loopback, and without it those requests go to the corporate proxy, which answers
 502. A scan with no council needs nothing exported.
 
 Each `--council-member` names one local Ollama model. With none named there is
-no council, which is the honest default: the per-source scores stand side by
-side with no winner.
+no council, which is the default: the published scores stand side by side, and
+a council, when one runs, adds its own reading beside them without choosing
+among them.
 
 ### It is asked only about the findings the sources do not settle
 
