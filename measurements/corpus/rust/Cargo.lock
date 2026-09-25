@@ -3,39 +3,49 @@ version = 3
 [[package]]
 name = "smallvec"
 version = "0.6.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "openssl"
 version = "0.10.29"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "time"
 version = "0.1.43"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "tokio"
 version = "0.2.20"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "hyper"
 version = "0.13.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "regex"
 version = "1.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "rustls"
 version = "0.19.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "lock_api"
 version = "0.3.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "crossbeam-deque"
 version = "0.7.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "chrono"
 version = "0.4.19"
+source = "registry+https://github.com/rust-lang/crates.io-index"
