@@ -41,7 +41,6 @@ project audits.
 ## Running it
 
 ```bash
-export NO_PROXY=localhost,127.0.0.1 no_proxy=localhost,127.0.0.1
 python measurements/redaction_gaps.py
 python measurements/prompt_tokens.py
 ```
@@ -53,9 +52,11 @@ own order, `TRIVY_CACHE_DIR`, a `cache.dir` in a `trivy.yaml` where it runs,
 model. `prompt_tokens.py [MODEL ...]` additionally needs `ollama serve` up with
 each model it names pulled, or the one `AUDITOR_MODEL` names when it names none,
 `qwen2.5:7b-instruct` by default; it talks to loopback only, at
-`AUDITOR_SERVER_URL`.
-The `NO_PROXY` export is this machine's corporate proxy, which otherwise answers
-502 for a loopback request.
+`AUDITOR_SERVER_URL`. No `NO_PROXY` export is needed for it or for any script
+here: every call to the model server goes through `src/council/transport.py`,
+which never uses a proxy. The recorder sets `NO_PROXY` itself for what it runs,
+and a plain `ollama ps` answered with the proxy set and `NO_PROXY` unset
+(`README.md`).
 
 ## The numbers, and what they support
 
@@ -515,7 +516,6 @@ and every count above can move with it. The recorder runs the command after
 five already exists:
 
 ```bash
-export NO_PROXY=localhost,127.0.0.1 no_proxy=localhost,127.0.0.1
 python measurements/record_council_run.py gpu-scoped-again -- \
     audit fetched/vulnscout --answers answers.example.json \
     --council-member qwen2.5:7b-instruct --council-member llama3.2:latest
@@ -610,7 +610,6 @@ each run window and count its turns. `collect` asks a model; nothing else here
 does.
 
 ```bash
-export NO_PROXY=localhost,127.0.0.1 no_proxy=localhost,127.0.0.1
 R=measurements/council_eval_runs/next-run && mkdir $R
 python measurements/council_eval dataset --repository fetched/vulnscout \
     --out $R/vulnscout.dataset.json
@@ -821,7 +820,6 @@ the same way. From the project root, with nothing else using Ollama:
 
 ```bash
 source .venv/bin/activate
-export NO_PROXY=localhost,127.0.0.1 no_proxy=localhost,127.0.0.1
 M=qwen3:8b                        # the name exactly as `ollama list` prints it, tag included
 F=$(echo "$M" | tr ':/' '--')     # qwen3-8b, for file names
 # 1. It answers in the council's shape, quotes the advisory, and repeats itself from a cold start

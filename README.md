@@ -369,14 +369,15 @@ named by its path, with the lock-file reason as its `because`.
 ### The council is off unless you ask for it
 
 ```bash
-export NO_PROXY=localhost,127.0.0.1 no_proxy=localhost,127.0.0.1
 audit fetched/vulnscout \
     --council-member qwen2.5:7b-instruct --council-member llama3.2:latest
 ```
 
-The `NO_PROXY` line is needed here and not above: a member talks to Ollama on
-loopback, and without it those requests go to the corporate proxy, which answers
-502. A scan with no council needs nothing exported.
+No `NO_PROXY` export is needed for a council run. Every call a member makes to
+Ollama goes through `src/council/transport.py`, which never uses a proxy, so a
+corporate proxy set on the machine cannot answer for the model server. Run on
+2026-09-25 with the proxy set and `NO_PROXY` unset, the command above with
+`qwen2.5:7b-instruct` alone made all 40 of its calls, and no member failed.
 
 **Any model pulled into the local Ollama can be a member.** The two named here,
 `qwen2.5:7b-instruct` and `llama3.2:latest`, are examples: the pair this project
@@ -548,7 +549,7 @@ sum of the Tests column below, and each skip's reason names its flag:
 All three at once, as one line:
 
 ```bash
-NO_PROXY=localhost,127.0.0.1 no_proxy=localhost,127.0.0.1 COUNCIL_LIVE_OLLAMA=1 README_LIVE_SCAN=1 SYFT_LIVE_SCAN=1 python -m pytest -q
+COUNCIL_LIVE_OLLAMA=1 README_LIVE_SCAN=1 SYFT_LIVE_SCAN=1 python -m pytest -q
 ```
 
 The prefix sets the variables for that command alone, so nothing stays
@@ -684,6 +685,14 @@ export NO_PROXY=localhost,127.0.0.1 no_proxy=localhost,127.0.0.1
 Without it, `urllib` sends loopback requests to the proxy, which answers 502.
 The failure reads as the local service being down, which sends you looking in
 the wrong place. `CLAUDE.md` carries the same note.
+
+**This project and Ollama's own command line need none of it.** `audit`, the
+live test and the measurement scripts reach Ollama through
+`src/council/transport.py`, which opens every request with no proxy. With the
+proxy set and `NO_PROXY` unset, a council run made all 40 of its calls and
+`ollama ps` answered normally, so the `ollama` command does not send 127.0.0.1
+to the proxy either. Other tools pointed at a local service, such as `curl` or
+Python's `urllib` outside this project's transport, may still need the export.
 
 ## Working on it
 
