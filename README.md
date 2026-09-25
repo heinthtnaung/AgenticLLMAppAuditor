@@ -421,6 +421,13 @@ and a run with no members named are three different facts and read as three. A
 run that named members and found nothing is a fourth, and reads `council members
 were named, but there was no finding to put to them`.
 
+**A finding the council settled shows what its vector scores, answers or no.**
+Its heading line reads `settled`, the vector, and that vector's own CVSS base
+score and band, as `settled  ·  CVSS:3.1/…  ·  CVSS 9.8 Critical`. The page puts
+a CVSS chip on the same line, and the JSON's `council` entry carries the figure
+as `base_score` beside `vector`, `null` where no vector was settled. It is on
+the CVSS scale and never the risk score.
+
 ### A council run says where it has got to
 
 Local members share one Ollama server, and the council waits for each answer

@@ -82,11 +82,13 @@ it. That holds for every member, local or hosted, at every n.
 **That number is shown beside the Organisation Risk Score, never weighed into
 it.** The risk score is weighed from the published sources alone, and a
 settled vector's own CVSS base score sits under the finding saying the risk
-score does not use it (`src/report/council_beside.py`). Measured against
-published vectors on the 18 vulnscout findings, the settled values of a council
-of `qwen2.5:7b-instruct` and `llama3.2:latest` scored below answering the
-commonest value on every metric (`measurements/README.md`). A reader can weigh
-a reading that loses to a constant; the score should not.
+score does not use it. The same figure, with its CVSS band, heads the council's
+own entry for the finding, so a run with no answers, and so no risk score, still
+shows what a settled vector scores (`src/report/council_beside.py`). Measured
+against published vectors on the 18 vulnscout findings, the settled values of a
+council of `qwen2.5:7b-instruct` and `llama3.2:latest` scored below answering
+the commonest value on every metric (`measurements/README.md`). A reader can
+weigh a reading that loses to a constant; the score should not.
 
 **The order a prompt lists a metric's values in is part of the instrument.** A
 2 × 2 with the same pair on the same findings listed them in reverse. Llama's
@@ -409,7 +411,7 @@ reason:
 
 ```
 COUNCIL (1)
-  CVE-2021-4279  settled  ·  CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H
+  CVE-2021-4279  settled  ·  CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H  ·  CVSS 9.8 Critical
   3 findings not asked
     no published source disagrees, so there is nothing to reconcile
       CVE-2026-14257, CVE-2026-53550

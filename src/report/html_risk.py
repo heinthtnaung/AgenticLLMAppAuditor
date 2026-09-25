@@ -18,12 +18,10 @@ A vector a council settled is shown under the scores on its own CVSS chip,
 saying the risk score does not use it: beside the scores, never one of them.
 """
 
-from cvss.score import severity_band
 from organisation.risk import FindingRisk
 from report.council_beside import COUNCIL_SOURCE, NOT_IN_THE_SCORE, CouncilFigure, council_figure
 from report.html_answers import derivation
-from report.html_findings import CVSS_SCALE
-from report.html_layout import listing, number, scored_chip, section, tag, text
+from report.html_layout import figure_chip, listing, number, scored_chip, section, tag, text
 from report.record import Report
 from report.risk_order import bands_contested_first
 
@@ -67,10 +65,9 @@ def council_row(figure: CouncilFigure | None) -> str:
     """Show a council's settled vector on the CVSS scale, saying the risk score does not use it."""
     if figure is None:
         return ""
-    band = severity_band(figure.base_score)
     said = (
         tag("span", text(COUNCIL_SOURCE), "source-name")
-        + scored_chip(CVSS_SCALE, number(figure.base_score), band, "cvss")
+        + figure_chip(figure)
         + tag("code", text(figure.vector), "vector")
         + tag("span", text(NOT_IN_THE_SCORE), "not-scored")
     )

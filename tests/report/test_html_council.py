@@ -13,6 +13,8 @@ impossible record is worse than no test, because it reports coverage of a path
 that never runs.
 """
 
+import re
+
 from cli.council_run import NO_TEXT_TO_READ, SOURCES_AGREE
 from council_runs import (
     AGREED, ALONE, DISSENTING, EVIDENCE, INVENTED, answering, council_ran, declining,
@@ -24,6 +26,8 @@ from report.record import build_report
 from report_samples import PROVENANCE, catalogue, component, finding
 
 DJANGO = component()
+# The line naming one advisory and what the council made of it.
+COUNCIL_NAME = re.compile(r'<p class="council-name">.*?</p>')
 
 
 def rendered(*outcomes) -> str:
@@ -169,3 +173,15 @@ def test_the_reasons_a_finding_was_passed_over_are_kept_apart():
 def test_only_the_assessed_findings_are_counted_in_the_heading():
     page = rendered(council_ran(**DISSENTING), CouncilNotAsked("CVE-2", SOURCES_AGREE))
     assert "Council (1)" in page
+
+
+def test_a_settled_vector_is_shown_on_a_cvss_chip_with_its_base_score_and_band():
+    # Without answers there is no risk section, and so no other place the
+    # settled vector's score is shown.
+    heading = COUNCIL_NAME.search(rendered(council_ran())).group(0)
+    assert '<span class="cvss band-critical"><span class="scale">cvss</span>' in heading
+    assert '<span class="value">9.8</span><span class="band">Critical</span>' in heading
+
+
+def test_a_council_that_settled_no_vector_shows_no_cvss_chip():
+    assert 'class="cvss' not in contested_page()

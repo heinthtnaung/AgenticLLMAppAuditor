@@ -381,7 +381,7 @@ flowchart TD
 
     subgraph DETERM["Engine: the only place a number appears"]
         eng["Published CVSS equations<br/>deterministic, no model"]
-        eng --> num["Its CVSS base score<br/>shown beside the Organisation<br/>Risk Score, never weighed into it"]
+        eng --> num["Its CVSS base score and band<br/>on the council's own heading line,<br/>and beside the Organisation<br/>Risk Score, never weighed into it"]
     end
 
     vec --> eng

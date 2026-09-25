@@ -27,6 +27,7 @@ thing.
 
 from collections import Counter
 
+from report.council_beside import figure_of
 from report.council_record import (
     CouncilAssessment,
     CouncilNotAsked,
@@ -40,7 +41,7 @@ from report.council_record import (
 from report.council_words import (
     NOT_ASKED, NO_VECTOR, SETTLED, could_not_settle, counted, metrics_settled, uncross_checked,
 )
-from report.html_layout import listing, section, separated, tag, text
+from report.html_layout import figure_chip, listing, section, separated, tag, text
 from report.html_metric import metric_details
 from report.record import Report
 
@@ -97,7 +98,8 @@ def outcome_line(outcome: CouncilAssessment | CouncilWithoutVector) -> str:
 def headline(outcome: CouncilAssessment | CouncilWithoutVector) -> str:
     """Say whether the council handed over a vector, or what stopped it."""
     if isinstance(outcome, CouncilAssessment):
-        return separated([text(SETTLED), tag("code", text(outcome.vector))])
+        vector = tag("code", text(outcome.vector))
+        return separated([text(SETTLED), vector, figure_chip(figure_of(outcome))])
     return separated([text(NO_VECTOR), text(could_not_settle(outcome))])
 
 

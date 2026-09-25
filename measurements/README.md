@@ -576,7 +576,7 @@ against a question it was not asked (`council_eval/replies.py`).
 |---|---|---|
 | `dataset` | freezes a repository's findings in the audit's own join and order, with the Syft and Trivy versions and when the database was built | Syft, Trivy, and the database in the cache `audit` finds (`README.md`) |
 | `collect` | one pass: every item put to one model, the model unloaded before each item, every call saved an item at a time; `--variant` asks in a variant's words (`council_eval/variants.py`) | Ollama with the model pulled |
-| `gate` | replays the passes' models as one roster and compares it with a recorded text report; exits 1 on any difference | the files |
+| `gate` | replays the passes' models as one roster and compares it with a recorded text report; exits 1 on any difference but three it allows for by name: whitespace in quotations, the basis wording before `SOLE`, and a settled heading recorded before it showed the CVSS figure | the files |
 | `score` | every roster the passes can build, each model alone up to all together: each metric against R1 and the baseline, each vector beside R1 and the published scores | the files |
 | `compare` | two passes of one model, call by call: the same request, a byte-identical reply, a reload part way through an item | the files |
 | `quoting` | whose quotation each value settled on one quotation rests on, and which unverified quotations are the prompt's own | the files |
@@ -657,13 +657,14 @@ cannot show bounds that, so it comes first.
 The 2 × 2 below has since put the last two to a control, one wording of the
 convention and one pass per cell.
 
-**The harness reproduces a run the product recorded.** The pair rebuilt
-offline prints what `gpu-full` printed: 105 settled, 13 contested and 26
-unresolved of 144, the same four vectors, and every unsettled line
-(`gate.txt`). The dataset is not on `gpu-full`'s database, and the gate is the
-check that this did not matter. It sees a settled metric only through its
-finding's basis counts and the four vectors, since `gpu-full` names no member
-there.
+**The harness reproduces a run the product recorded.** The pair rebuilt offline
+prints what `gpu-full` printed: 105 settled, 13 contested and 26 unresolved of
+144, the same four vectors, and every unsettled line (`gate.txt`); today's
+replay also prints each settled heading's CVSS figure, which `gpu-full` predates
+and the gate allows for by name. The dataset is not on `gpu-full`'s database,
+and the gate is the check that this did not matter. It sees a settled metric
+only through its finding's basis counts and the four vectors, since `gpu-full`
+names no member there.
 
 **With every turn starting cold, the replies repeat.** The clean passes —
 Qwen's first and third, Llama's second and third, on 2026-09-24 and 2026-09-25

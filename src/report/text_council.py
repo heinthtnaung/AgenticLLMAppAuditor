@@ -34,6 +34,7 @@ The sentences this shares with the web page are `report.council_words`.
 from collections import Counter
 from itertools import chain
 
+from report.council_beside import banded, figure_of
 from report.council_record import (
     CouncilAssessment,
     CouncilNotAsked,
@@ -116,7 +117,7 @@ def advisory_lines(outcome: CouncilAssessment | CouncilWithoutVector) -> list[st
 def headline(outcome: CouncilAssessment | CouncilWithoutVector) -> str:
     """Say whether the council handed over a vector, or what stopped it."""
     if isinstance(outcome, CouncilAssessment):
-        return SOURCE_SEPARATOR.join([SETTLED, outcome.vector])
+        return SOURCE_SEPARATOR.join([SETTLED, outcome.vector, banded(figure_of(outcome))])
     return SOURCE_SEPARATOR.join([NO_VECTOR, could_not_settle(outcome)])
 
 

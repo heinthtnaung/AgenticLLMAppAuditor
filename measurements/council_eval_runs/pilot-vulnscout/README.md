@@ -113,7 +113,8 @@ from `journalctl -u ollama -o short-iso` for the window in the table.
 
 - **The gate passes.** The pair rebuilt offline prints what `gpu-full` printed:
   105 settled, 13 contested, 26 unresolved, the same four vectors, and every
-  unsettled line.
+  unsettled line; today's replay also prints each settled heading's CVSS
+  figure, which `gpu-full` predates and the gate allows for by name.
 - **Against R1, every metric's lift is negative, for the pair and for each
   model alone.**
   - The pair agrees on 0 of 11 for AV, 0 of 9 for PR, 0 of 13 for UI, and 1 of
