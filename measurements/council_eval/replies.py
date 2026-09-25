@@ -30,6 +30,7 @@ from council_eval.variants import Variant, variant_prompt
 HEADER_KIND = "header"
 CALL_KIND = "call"
 PROMPT_VERSION_FIELD = "prompt_version"
+WINDOW_FIELD = "num_ctx"
 
 CallKey = tuple[str, str, str]
 
@@ -88,17 +89,19 @@ def record_of(line: Mapping[str, Any]) -> CallRecord:
 class ReplayClient:
     """A provider client that answers one item's prompts from the calls recorded for it.
 
-    `variant` is the one the passes were asked under: the request is rebuilt in
-    its words, so a pass replayed as any other variant is refused.
+    `variant` and `window` are what the passes were asked under: the request is
+    rebuilt in that variant's words at that window, so a pass replayed as any
+    other variant, or at the window this machine's settings name now, is refused.
     """
 
     key: str
     calls: Mapping[CallKey, CallRecord]
     variant: Variant
+    window: int
 
     def __call__(self, member: Member, prompt: MemberPrompt) -> str:
         """Answer as the recorded call did, or refuse a request that was never recorded."""
-        pinning = LocalModel(model=member.model)
+        pinning = LocalModel(model=member.model, context_tokens=self.window)
         # Built first, as `ask` builds it: a prompt the live call refused is refused here.
         asked = variant_prompt(prompt, self.variant)
         request = build_request(asked, pinning)

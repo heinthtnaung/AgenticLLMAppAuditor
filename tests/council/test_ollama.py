@@ -4,8 +4,6 @@ import pytest
 
 import recorded_replies as recorded
 from council.ollama import (
-    DEFAULT_CONTEXT_TOKENS,
-    DEFAULT_MODEL,
     GENERATE_PATH,
     LocalModel,
     ask,
@@ -19,6 +17,8 @@ from council_samples import ADVISORY, identity
 
 PROMPT = build_prompt("AV", ADVISORY)
 MEMBER = identity()
+DEFAULT_MODEL = "qwen2.5:7b-instruct"  # the defaults in `council.settings`, which tests run on
+DEFAULT_CONTEXT_TOKENS = 8192
 
 # The longest advisory of the 1,187 read off this machine's database snapshot,
 # in characters. The pinned model counted its prompt at 4,897 tokens.

@@ -60,6 +60,8 @@ def run_of(report: Report) -> dict[str, Any]:
         "syft_version": provenance.syft_version,
         "trivy_version": provenance.trivy_version,
         "advisory_database": database_of(provenance.database),
+        # The window and the timeout can change a result, so they sit beside the pinning.
+        "local_models": vars(provenance.local_models) if provenance.local_models else None,
         "component_count": report.component_count,
         "finding_count": len(report.findings),
         # Readable sources only: a vector the calculator refused is not counted

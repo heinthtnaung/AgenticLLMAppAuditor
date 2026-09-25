@@ -6,7 +6,7 @@ default because a suite that needs a 4.7GB model running is a suite nobody runs:
 
     COUNCIL_LIVE_OLLAMA=1 python -m pytest tests/council/test_ollama_live.py
 
-It asks the pinned model unless `COUNCIL_LIVE_MODEL` names another, so a newer
+It asks the default model unless `COUNCIL_LIVE_MODEL` names another, so a newer
 model is checked the same way before it joins a council:
 
     COUNCIL_LIVE_OLLAMA=1 COUNCIL_LIVE_MODEL=gemma4:latest python -m pytest ...
@@ -24,16 +24,18 @@ import pytest
 
 from council.answer import MemberAnswer, MemberFoundNoEvidence, MemberIdentity
 from council.evidence import is_quotation_from
-from council.ollama import DEFAULT_HOST, DEFAULT_MODEL, LocalModel, ask, generate_url
+from council.ollama import LocalModel, ask, generate_url
 from council.prompt import PROMPT_VERSION, build_prompt
 from council.reply import read_reply
+from council.settings import current_settings
 from council.transport import NO_PROXY_OPENER, post_json
 from council_samples import ADVISORY
 
 LIVE = "COUNCIL_LIVE_OLLAMA"
 # Not a flag: which model to ask, for an operator trying one the pair is not.
 MODEL_VARIABLE = "COUNCIL_LIVE_MODEL"
-MODEL = os.environ.get(MODEL_VARIABLE) or DEFAULT_MODEL
+# Otherwise the default in `council.settings`: no test reads the operator's `.env`.
+MODEL = os.environ.get(MODEL_VARIABLE) or current_settings().model
 FAMILY_SEPARATOR = ":"
 # The tag Ollama assumes when a name carries none, as `llama3.2` for `llama3.2:latest`.
 DEFAULT_TAG = ":latest"
@@ -58,7 +60,7 @@ MEMBER = MemberIdentity(
 
 def held_models() -> set[str]:
     """Name the models this machine's Ollama holds, failing loudly if it is not there."""
-    url = f"{DEFAULT_HOST}{TAGS_PATH}"
+    url = f"{current_settings().server}{TAGS_PATH}"
     try:
         with NO_PROXY_OPENER.open(url, timeout=TAGS_TIMEOUT_SECONDS) as response:
             tags = json.loads(response.read().decode("utf-8"))

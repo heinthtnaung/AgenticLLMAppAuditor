@@ -7,7 +7,9 @@ blank field would read as the former.
 
 Every field is asked of the tool rather than configured. A provenance somebody
 types is a claim nobody checked, and the one purpose of these fields is that a
-run is checkable.
+run is checkable. The one exception is how local members were asked: the window
+and timeout are the operator's settings, and can change a result, so the record
+states the ones the run used beside the three pinned in code.
 """
 
 from dataclasses import dataclass
@@ -40,13 +42,30 @@ Database = AdvisoryDatabase | UnknownAdvisoryDatabase
 
 
 @dataclass(frozen=True)
+class LocalModels:
+    """How every local member of the run was asked: server, window, timeout and pinning."""
+
+    server: str
+    context_tokens: int
+    timeout_seconds: float
+    temperature: float
+    seed: int
+    think: bool
+
+
+@dataclass(frozen=True)
 class RunProvenance:
-    """What produced this report, so a reader can judge whether to believe it."""
+    """What produced this report, so a reader can judge whether to believe it.
+
+    `local_models` is None only for a run that named no council member, which
+    asked no local model anything.
+    """
 
     repository: str
     syft_version: str
     trivy_version: str
     database: Database
+    local_models: LocalModels | None = None
 
     def __post_init__(self) -> None:
         """Refuse provenance a reader could not reproduce the run from."""

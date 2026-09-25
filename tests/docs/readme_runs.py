@@ -15,6 +15,7 @@ know would put the check's own typo in front of a reader as a README defect.
 
 import re
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Mapping
 
 from readme_markers import (
@@ -58,6 +59,13 @@ def printed_runs(page: str) -> tuple[PrintedRun, ...]:
     )
     refuse_wrong_count(len(runs), page)
     return runs
+
+
+def arguments_of(run: PrintedRun, answer_file: Path) -> list[str]:
+    """Give the arguments the CLI is run with for one block, the answer file only if asked for."""
+    if not run.wants_answers:
+        return [REPOSITORY]
+    return [REPOSITORY, ANSWERS_FLAG, str(answer_file)]
 
 
 def read_run(directive: str, body: str, line_number: int) -> PrintedRun:

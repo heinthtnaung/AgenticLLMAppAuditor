@@ -27,6 +27,8 @@ KEY = "CVE-2026-0001"
 MODEL = "small:1b"
 OTHER_MODEL = "other:2b"
 PUBLISHED = "2026-01-02T00:00:00Z"
+# The default window, which every test runs on and every sample pass is recorded at.
+WINDOW = 8192
 
 ADVISORY_TEXT = (
     "A remote attacker can send a crafted request to the parser and crash the\n"
@@ -56,9 +58,12 @@ def item(key: str = KEY, vectors: Mapping[str, str] = VECTORS) -> Item:
     return Item(split="V", published=PUBLISHED, finding=finding(key, vectors))
 
 
-def header(model: str = MODEL, variant: Variant = BASELINE) -> dict[str, str]:
-    """Give the least of a pass's header a replay reads: its kind, model and prompt version."""
-    return {"kind": "header", "model": model, "prompt_version": variant.prompt_version}
+def header(model: str = MODEL, variant: Variant = BASELINE) -> dict[str, Any]:
+    """Give the least of a pass's header a replay reads: kind, model, prompt version, window."""
+    return {
+        "kind": "header", "model": model, "prompt_version": variant.prompt_version,
+        "num_ctx": WINDOW,
+    }
 
 
 def reply(value: str, evidence: str = REMOTE, confidence: str = "high") -> str:

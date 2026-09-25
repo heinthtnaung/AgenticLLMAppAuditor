@@ -50,9 +50,10 @@ python measurements/prompt_tokens.py
 finds for itself, since these scripts pass it no `--cache-dir`: by Trivy 0.74's
 own order, `TRIVY_CACHE_DIR`, a `cache.dir` in a `trivy.yaml` where it runs,
 `$XDG_CACHE_HOME/trivy`, then `~/.cache/trivy`. It touches no network and no
-model. `prompt_tokens.py` additionally needs `ollama serve` up with each model
-it names pulled, `qwen2.5:7b-instruct` when it names none
-(`python measurements/prompt_tokens.py [MODEL ...]`); it talks to loopback only.
+model. `prompt_tokens.py [MODEL ...]` additionally needs `ollama serve` up with
+each model it names pulled, or the one `AUDITOR_MODEL` names when it names none,
+`qwen2.5:7b-instruct` by default; it talks to loopback only, at
+`AUDITOR_SERVER_URL`.
 The `NO_PROXY` export is this machine's corporate proxy, which otherwise answers
 502 for a loopback request.
 
@@ -570,7 +571,9 @@ holds both members, is not what it measures, and every item costs a model load.
 The replay answers only the request that was recorded. It rebuilds each request
 with the product's code and refuses one whose fingerprint differs — a prompt
 reworded, a redaction widened, a pinning moved — so a pass is never scored
-against a question it was not asked (`council_eval/replies.py`).
+against a question it was not asked (`council_eval/replies.py`). It rebuilds
+each at the window the pass header records, whatever `AUDITOR_CONTEXT_TOKENS`
+says now, so a saved score re-derives the same under any setting.
 
 | Step | What it does | What it needs |
 |---|---|---|
@@ -844,7 +847,7 @@ python measurements/council_eval quoting --dataset $D --replies $R/$F.run1.repli
 |---|---|
 | 1, the live test | `3 passed`, or a skip naming the model as not pulled |
 | 2, the context guard | `a prompt at the guard's limit: about N of the 8192 pinned`, with N below 8,192; on record, Qwen 6,095, Llama 5,964 and Gemma 7,081 |
-| 3, one pass | `turns: 18; not of 8 calls: none`. A model too slow for the 180 s timeout, or refused by the server, shows as failed calls in the `failed` column of `score.txt`'s member table |
+| 3, one pass | `turns: 18; not of 8 calls: none`. A model too slow for the timeout, `AUDITOR_TIMEOUT_SECONDS`, 180 s by default, or refused by the server, shows as failed calls in the `failed` column of `score.txt`'s member table |
 | 4, the scores | seven rosters: each model alone, each pair, and all three. Read the new model's rate beside the baseline, its lift, and the values it named; one value throughout is a constant, not a reading |
 
 `collect` refuses a name without its tag, `the server holds no llama3.2`. A

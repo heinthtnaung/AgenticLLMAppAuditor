@@ -18,15 +18,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable
 
-from council.ollama import (
-    DEFAULT_HOST,
-    PINNED_TEMPERATURE,
-    PINNED_THINKING,
-    LocalModel,
-)
+from council.ollama import PINNED_TEMPERATURE, PINNED_THINKING, LocalModel
+from council.settings import current_settings
 from council.transport import NO_PROXY_OPENER, read_json
 
-from council_eval.replies import HEADER_KIND, PROMPT_VERSION_FIELD
+from council_eval.replies import HEADER_KIND, PROMPT_VERSION_FIELD, WINDOW_FIELD
 from council_eval.variants import Variant
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
@@ -63,12 +59,14 @@ def pass_header(
     return {
         "kind": HEADER_KIND,
         "model": model,
-        "digest": model_digest(model, get(f"{DEFAULT_HOST}{TAGS_PATH}")),
-        "ollama": get(f"{DEFAULT_HOST}{VERSION_PATH}")["version"],
+        "digest": model_digest(model, get(f"{pinning.host}{TAGS_PATH}")),
+        "ollama": get(f"{pinning.host}{VERSION_PATH}")["version"],
         PROMPT_VERSION_FIELD: variant.prompt_version,
         "temperature": PINNED_TEMPERATURE,
         "seed": pinning.seed,
-        "num_ctx": pinning.context_tokens,
+        WINDOW_FIELD: pinning.context_tokens,
+        # Not in the request, so no replay can check it; a slow model's failures hang on it.
+        "timeout_seconds": current_settings().timeout_seconds,
         "think": PINNED_THINKING,
         "turn_start": TURN_START,
         "dataset_sha256": file_digest(dataset),
