@@ -40,12 +40,24 @@ DISAGREE` and the rest, which are inline literals in `src/report` -- and a copy
 goes stale in the direction that hides, because after a rename the marked blocks
 fail loudly while the detector quietly stops detecting.
 
-So the mitigation is the writer's and the disclosure is this file's. Every fence
-showing this tool's output carries a marker, there are three today, and a fourth
-arrives with its marker and a raised `EXPECTED_RUN_BLOCKS` in the same change.
-What this file adds is the unmarked fences printed beside **any** failure it
-reports -- which puts an uncovered block in front of somebody already reading a
-failure, and in front of nobody at all while the rest of the page is right.
+**The gap is narrower than that, and still open.** `readme_tool_output` pairs
+each printed fence with the nearest `bash` fence above it, and
+`test_readme_markers.py` asserts that exactly one fence following a command
+that starts this tool carries no marker: the council progress under "A council
+run says where it has got to". It is a council run's stderr and needs Ollama,
+so no `run` marker can rerun it. An unmarked block pasted after an `audit`
+command is caught by that count. One pasted where no `audit` command is the
+nearest above it -- at the end of the page, or under a Trivy command -- is not,
+and `test_a_block_pasted_with_no_marker_is_not_noticed_which_is_the_known_gap`
+asserts that case.
+
+So the mitigation is still partly the writer's, and the disclosure is this
+file's. Every fence showing this tool's output carries a marker except the
+council progress; three `run` blocks carry one today, and a fourth arrives with
+its marker and a raised `EXPECTED_RUN_BLOCKS` in the same change. What this
+file adds is the unmarked fences printed beside **any** failure it reports --
+which puts an uncovered block in front of somebody already reading a failure,
+and in front of nobody at all while the rest of the page is right.
 """
 
 import re
