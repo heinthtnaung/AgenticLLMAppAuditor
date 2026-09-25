@@ -12,9 +12,13 @@ silent `No`, and a flag a reader can miss is the same as no flag.
 The weighting that combined the categories heads the block, because it is the
 one term of the arithmetic a reader would otherwise have to fetch from
 `docs/SCORING_MODEL.md`. It comes off the record, never off the engine.
+
+A vector a council settled goes on the line under its finding, on the CVSS scale
+and saying the risk score does not use it: beside the range, never in it.
 """
 
-from organisation.risk import COUNCIL_SOURCE, FindingRisk
+from organisation.risk import FindingRisk
+from report.council_beside import NOT_IN_THE_SCORE, CouncilFigure, council_figure, figure_label
 from report.record import Report
 from report.risk_order import bands_contested_first
 from report.text_layout import INDENT, SOURCE_SEPARATOR, section
@@ -22,6 +26,7 @@ from scoring.risk_score import RiskScore
 
 PROVISIONAL = "provisional"
 WEIGHTING_LABEL = "weighted"
+COLUMN_GAP = "  "
 
 
 def risk_block(report: Report) -> str:
@@ -29,7 +34,8 @@ def risk_block(report: Report) -> str:
     if not report.risk:
         return ""
     weighed = bands_contested_first(report.risk.values())
-    entries = [risk_entry(one, id_width(report)) for one in weighed]
+    width = id_width(report)
+    entries = [risk_entry(one, width, council_figure(report, one.advisory_id)) for one in weighed]
     titled = f"ORGANISATION RISK ({len(weighed)}){headline(report)}"
     return section(titled, [weighting(weighed[0]), *entries])
 
@@ -50,11 +56,22 @@ def headline(report: Report) -> str:
     return f"{SOURCE_SEPARATOR}the source changes the band on {len(contested)}"
 
 
-def risk_entry(weighed: FindingRisk, width: int) -> str:
-    """Give one finding's score or range, its bands, and whether it is settled."""
+def risk_entry(weighed: FindingRisk, width: int, figure: CouncilFigure | None) -> str:
+    """Give one finding's score or range, its bands, its flag, and any council figure beside it."""
     flag = f"{SOURCE_SEPARATOR}{PROVISIONAL}" if weighed.is_provisional else ""
     bands = " and ".join(weighed.bands)
-    return f"{INDENT}{weighed.advisory_id.ljust(width)}  {spread(weighed):<28}{bands}{flag}"
+    scored = f"{INDENT}{weighed.advisory_id.ljust(width)}{COLUMN_GAP}{spread(weighed):<28}{bands}"
+    return f"{scored}{flag}{beside(figure, width)}"
+
+
+def beside(figure: CouncilFigure | None, width: int) -> str:
+    """Put a council's figure under the score it sits beside, saying the score does not use it."""
+    if figure is None:
+        return ""
+    # On a line of its own, under the score column: on the same line it would
+    # push the bands out of line with every other finding's, and read as a term.
+    margin = " " * (len(INDENT) + width + len(COLUMN_GAP))
+    return f"\n{margin}{figure_label(figure)}{SOURCE_SEPARATOR}{NOT_IN_THE_SCORE}"
 
 
 def spread(weighed: FindingRisk) -> str:
@@ -62,21 +79,11 @@ def spread(weighed: FindingRisk) -> str:
     # Named on a range and not on a single score: where the band moves, which
     # source sits at which end is the reader's immediate next question, and a
     # range with no attribution invites them to guess. On a single score there
-    # is nothing to attribute between, so the name would only be noise -- unless
-    # the score is the council's, which `single` names.
+    # is nothing to attribute between, so the name would only be noise.
     ends = sorted(weighed.scores, key=lambda one: one.score)
     if ends[0].score == ends[-1].score:
-        return single(ends[0])
+        return f"{ends[0].score:.1f}"
     return f"{labelled(ends[0])} to {labelled(ends[-1])}"
-
-
-def single(scored: RiskScore) -> str:
-    """Give the one score, naming its source only where that source is the council."""
-    # A council's score replaced every published one, so a bare number would
-    # read as one source's. Named as the page names it, from the same constant.
-    if getattr(scored.technical, "source", "") == COUNCIL_SOURCE:
-        return labelled(scored)
-    return f"{scored.score:.1f}"
 
 
 def labelled(scored: RiskScore) -> str:

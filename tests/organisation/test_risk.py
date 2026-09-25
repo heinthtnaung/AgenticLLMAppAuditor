@@ -2,7 +2,7 @@
 
 import pytest
 
-from organisation.risk import assess, from_council, per_source
+from organisation.risk import assess, per_source
 from organisation_samples import (
     CVSS_8_0,
     HIGH_HIGH,
@@ -64,14 +64,6 @@ def test_a_cvss_agreement_can_start_mattering_once_the_environment_is_weighed():
     assert risk.band_depends_on_the_source
     assert [one.score for one in risk.scores] == [23.5, 25.0]
     assert risk.bands == ("Medium", "Low")
-
-
-def test_a_council_that_settled_a_vector_gives_one_score_and_not_a_range():
-    one = finding(ghsa=TOTAL_LOSS, nvd=LOW_CONFIDENTIALITY)
-    risk = assess(one, WORKED_EXAMPLE_ANSWERS, from_council(CVSS_8_0))
-    assert len(risk.scores) == 1
-    assert risk.scores[0].score == 44.0
-    assert "council" in risk.scores[0].technical.derived_from
 
 
 def test_a_finding_nobody_scored_is_still_weighed_and_comes_out_provisional():

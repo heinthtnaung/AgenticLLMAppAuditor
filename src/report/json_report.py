@@ -3,9 +3,9 @@
 Every score travels beside the vector it came from, so a reader with the
 published equations reproduces it. Sources are a list and not a set of fields:
 `docs/SCORING_MODEL.md` forbids a field anchored to NVD, which is absent from 14
-of the 18 findings on the repository under test, and forbids naming a winner
-before the council settles one. The list is in source-name order, which is not a
-ranking.
+of the 18 findings on the repository under test, and forbids naming a winner.
+The list is in source-name order, which is not a ranking, and a council's
+reading is written beside it, never into it.
 
 Deterministic bytes: keys are written in a fixed order, every collection is
 sorted by something stable, and nothing here reads a clock. Two runs over one

@@ -11,11 +11,15 @@ clamp is the step the design is most particular about.
 The categories are written once per finding rather than once per source: the
 environment does not change with who published a vector, only the technical term
 does, and that is exactly why a finding is scored per source at all.
+
+A vector a council settled is a field of its own beside `scores`, never an entry
+in it, and says it was not used: `scores` is weighed from the published sources.
 """
 
 from typing import Any
 
 from organisation.approval import Approval
+from report.council_beside import COUNCIL_SOURCE, council_figure
 from report.record import Report
 from scoring.question import Category
 
@@ -33,6 +37,20 @@ def risk_of(report: Report, advisory_id: str) -> dict[str, Any] | None:
         "band_depends_on_the_source": weighed.band_depends_on_the_source,
         "provisional": weighed.is_provisional,
         "categories": categories_of(weighed.scores[0]),
+        "council_figure": council_figure_of(report, advisory_id),
+    }
+
+
+def council_figure_of(report: Report, advisory_id: str) -> dict[str, Any] | None:
+    """Give the vector a council settled, beside the scores and not in them, or null for none."""
+    figure = council_figure(report, advisory_id)
+    if figure is None:
+        return None
+    return {
+        "source": COUNCIL_SOURCE,
+        "vector": figure.vector,
+        "base_score": figure.base_score,
+        "used_in_score": False,
     }
 
 

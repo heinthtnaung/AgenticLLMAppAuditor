@@ -14,15 +14,14 @@ comes out Low and Low in an unexposed environment) or start mattering (7.3
 against 8.2, both High, comes out Medium against High in an ordinary one).
 Neither is visible from the published scores alone.
 
-When a council has settled a vector there is one agreed technical severity and
-one score. When nobody scored a finding at all there is still one score, with
-technical contributing nothing and the whole thing flagged provisional.
+**Only the published sources are weighed.** A vector a council settled is shown
+beside these scores and never weighed into them, so nothing here reads one.
+When nobody scored a finding at all there is still one score, with technical
+contributing nothing and the whole thing flagged provisional.
 """
 
 from dataclasses import dataclass
 
-from cvss.score import base_score
-from cvss.vector import parse
 from findings.finding import Finding
 from scoring.bands import RISK_BANDS
 from scoring.category import CategoryScore, score_category
@@ -33,7 +32,6 @@ from scoring.technical import TechnicalInput, UnknownTechnicalSeverity, from_cvs
 
 BAND_ORDER: tuple[str, ...] = tuple(name for _, name in RISK_BANDS)
 
-COUNCIL_SOURCE = "the assessor council"
 NOTHING_PUBLISHED = "no source published a readable v3 vector"
 
 
@@ -100,8 +98,3 @@ def per_source(finding: Finding) -> tuple[TechnicalInput, ...]:
     if not finding.scores:
         return (UnknownTechnicalSeverity(reason=NOTHING_PUBLISHED),)
     return tuple(from_cvss_base_score(one.base_score, one.source) for one in finding.scores)
-
-
-def from_council(vector: str) -> tuple[TechnicalInput, ...]:
-    """Give the one technical severity a council settled, which needs no choosing between."""
-    return (from_cvss_base_score(base_score(parse(vector)), COUNCIL_SOURCE),)

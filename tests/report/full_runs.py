@@ -3,10 +3,10 @@
 `not_assessed` empties only when the organisation's answers weighed a finding,
 somebody approved the audit, and a council read at least one advisory. Each is
 made here the way a run makes it -- the council is the real chairman in
-`council_runs`, the finding is weighed by `cli.organisation_run` against the
-vector that council settled, and the approval is the type an answer file is
-read into -- rather than by handing a renderer an empty tuple, which is a record
-no run can produce.
+`council_runs`, the finding is weighed by `cli.organisation_run` from its
+published sources with that council's settled vector beside it, and the approval
+is the type an answer file is read into -- rather than by handing a renderer an
+empty tuple, which is a record no run can produce.
 
 Named `full_runs` and not `samples`: pytest puts each test directory on the path
 and imports by basename.
@@ -40,7 +40,7 @@ def fully_assessed(coverage: Coverage = Coverage()) -> Report:
         (one,),
         {},
         council=(settled,),
-        risk=weigh_findings((one,), EVERYWHERE_NO, {ADVISORY_ID: settled}),
+        risk=weigh_findings((one,), EVERYWHERE_NO),
         approval=APPROVED,
         coverage=coverage,
     )

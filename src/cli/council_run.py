@@ -33,10 +33,11 @@ exactly the precedence the design refuses to set, arriving through the back door
 of an error path.
 
 The consequence is deliberate and worth stating. A council that leaves any metric
-unresolved produces no vector, so the finding keeps its per-source scores side by
-side with no winner. The vector is discarded; **the fact that a council ran is
-not**, and neither is what it could not settle -- that is the escalation
-policy's input, and a record without it would say no council had run at all.
+unresolved produces no vector, so the finding's published scores stand side by
+side with no council reading beside them. The vector is discarded; **the fact
+that a council ran is not**, and neither is what it could not settle -- that is
+the escalation policy's input, and a record without it would say no council had
+run at all.
 """
 
 from cvss.metrics import METRIC_ORDER

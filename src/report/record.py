@@ -7,8 +7,9 @@ formatting.
 **A score nobody can re-derive is not a score.** `docs/SCORING_MODEL.md` makes
 that the rule the record is shaped by: every source's vector travels beside its
 number, so a reader with the published equations reproduces every figure here
-without this tool. No source is preferred and no winner is named -- which source
-wins is open until the council settles it.
+without this tool. The published scores stand side by side and no source is
+chosen as the winner; a council's reading is carried beside them and never
+weighed in.
 
 **The absences are part of the record.** What was not assessed is a field, not
 an omission; `report.absences` names each one and says why.

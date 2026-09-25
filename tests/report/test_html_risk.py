@@ -9,10 +9,15 @@ A finding is scored once per published source, and which source sits at which
 end is the reader's next question, so every score names its own.
 """
 
+import re
+from dataclasses import replace
+
+from full_runs import fully_assessed
 from organisation.risk import assess, per_source
+from report.council_beside import COUNCIL_SOURCE, NOT_IN_THE_SCORE
 from report.html_risk import risk_section
 from report.record import build_report
-from report_samples import PROVENANCE, catalogue, component, finding
+from report_samples import PROVENANCE, TOTAL_LOSS, catalogue, component, finding
 from scoring.library import APPROVED_QUESTIONS
 from scoring.question import Answer
 
@@ -29,6 +34,8 @@ def all_answers(overrides=None) -> dict:
 
 EXPOSED = all_answers({"EXP-1": Answer.YES, "BUS-1": Answer.YES, "BUS-2": Answer.YES})
 UNSURE = all_answers({"EXP-1": Answer.UNKNOWN})
+# The one list of sources in the risk section, which is the council's row.
+COUNCIL_ROW = re.compile(r'<ul class="sources">.*?</ul>')
 
 
 def page_of(one, answers) -> str:
@@ -85,3 +92,21 @@ def test_the_derivation_travels_with_the_score_it_explains():
     page = page_of(finding(DJANGO), EXPOSED)
     assert "How this number was reached" in page
     assert page.index("class=\"risk-scores\"") < page.index("How this number was reached")
+
+
+def test_a_councils_settled_vector_is_shown_beside_the_scores_on_a_cvss_chip():
+    # Its members settled 9.8 on a finding ghsa put at 7.5. The ruling: beside
+    # the published score, on the CVSS scale, and never weighed into it.
+    row = COUNCIL_ROW.search(risk_section(fully_assessed())).group(0)
+    assert f'<span class="source-name">{COUNCIL_SOURCE}</span>' in row
+    assert '<span class="scale">cvss</span><span class="value">9.8</span>' in row
+    assert TOTAL_LOSS in row
+    assert NOT_IN_THE_SCORE in row
+
+
+def test_the_organisation_scores_are_the_same_with_a_council_beside_them_as_without():
+    # Anything reading the council's vector into a score moves the section.
+    beside = risk_section(fully_assessed())
+    alone = risk_section(replace(fully_assessed(), council={}))
+    assert COUNCIL_ROW.sub("", beside) == alone
+    assert COUNCIL_SOURCE not in alone

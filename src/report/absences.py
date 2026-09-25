@@ -22,11 +22,15 @@ NO_APPROVAL_GIVEN = "nobody has approved or overridden this audit"
 # Said only when no council ran at all. A council that ran and settled nothing
 # is a different fact and has its own record; conflating the two put a false
 # statement in an audit record, reachable from the command line.
-NO_COUNCIL_RUN = "no council assessed this run, so no source has been chosen between"
+NO_COUNCIL_RUN = (
+    "no council assessed this run, so no council reading stands beside the published scores"
+)
 # And a third: members were named and every finding was passed over, so the
 # council assessed none. Naming no absence there leaves a reader with neither a
 # ruling nor a reason there is none.
-NOTHING_WAS_PUT_TO_IT = "the council was put to no finding, so no source has been chosen between"
+NOTHING_WAS_PUT_TO_IT = (
+    "the council was put to no finding, so no council reading stands beside the published scores"
+)
 # A run that found nothing has no score and no ruling even when the operator
 # asked for both, and saying nobody asked would be the wrong cause.
 NOTHING_TO_WEIGH = "answers were supplied, but there was no finding to weigh them against"

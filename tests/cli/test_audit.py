@@ -1,18 +1,35 @@
 """Guards on the pipeline: the packages wired in the right order, and asked for the truth."""
 
+import json
+
+import pytest
+
 from cli import audit as audit_module
 from cli.arguments import Options, TEXT_FORMAT
 from cli.audit import run_audit
+from cli.council_run import assess_one
+from report.council_record import CouncilAssessment
 from scoring.library import APPROVED_QUESTIONS
 from cli_samples import (
     ADVISORY,
     BUILT_AT,
     DATED,
     LODASH,
+    QUOTATION,
     SYFT_VERSION,
     TRIVY_VERSION,
+    advisory_like,
     scanners_answering,
+    written_answers,
 )
+
+# A reading far below both published ones, 9.8 and 5.3, so a council vector
+# weighed into the score in any way at all would move a number.
+FAR_FROM_PUBLISHED = {
+    "AV": "P", "AC": "H", "PR": "H", "UI": "R", "S": "U", "C": "L", "I": "N", "A": "N",
+}
+# An advisory no source published a vector for, which the council can still read.
+UNSCORED = advisory_like("CVE-UNSCORED", vectors={})
 
 
 def options_for(path, models=(), answers=None) -> Options:
@@ -98,8 +115,6 @@ def test_the_same_scan_builds_the_same_record(tmp_path, monkeypatch):
 def test_the_advisories_an_answer_file_overrides_reach_the_record(tmp_path, monkeypatch):
     # A mistyped advisory id applies to nothing; the run keeps going and the
     # report says which override matched no finding.
-    import json
-
     scanners_answering(monkeypatch)
     answers = tmp_path / "answers.json"
     answers.write_text(json.dumps({
@@ -109,3 +124,35 @@ def test_the_advisories_an_answer_file_overrides_reach_the_record(tmp_path, monk
     report = run_audit(options_for(tmp_path, answers=answers), DATED)
     assert report.overrides_without_findings == ("CVE-NOT-FOUND",)
     assert len(report.findings) == 1
+
+
+def settling_far_from_published(findings, roster, clients=None, progress=None, every_finding=False):
+    """Stand in for a council run with the real one, its members reading every metric low."""
+    def said(member, prompt):
+        """Answer one metric from the table, quoting the advisory so the quotation verifies."""
+        value = FAR_FROM_PUBLISHED[prompt.metric]
+        return json.dumps({"value": value, "evidence": QUOTATION, "confidence": "high"})
+
+    return tuple(assess_one(one, roster, {"ollama": said}) for one in findings)
+
+
+@pytest.mark.parametrize(
+    ("advisory", "provisional"), [(ADVISORY, False), (UNSCORED, True)],
+    ids=["published sources scored it", "no source scored it"],
+)
+def test_a_councils_settled_vector_never_moves_the_organisation_risk_score(
+    tmp_path, monkeypatch, advisory, provisional
+):
+    # The pilot on vulnscout found the council's settled values off the reference,
+    # and the ruling was that its vector sits beside the published scores and is
+    # never weighed. Anything reading it into a score makes these two differ.
+    # The accepted cost: a finding no source scored keeps technical severity at 0
+    # and stays provisional, though a council settled a vector for it.
+    scanners_answering(monkeypatch, advisories={advisory.purl: (advisory,)})
+    monkeypatch.setattr(audit_module, "assessments", settling_far_from_published)
+    answers = written_answers(tmp_path)
+    beside = run_audit(options_for(tmp_path, ("small",), answers), DATED)
+    alone = run_audit(options_for(tmp_path, answers=answers), DATED)
+    assert isinstance(beside.council[advisory.advisory_id], CouncilAssessment)
+    assert beside.risk == alone.risk
+    assert beside.risk[advisory.advisory_id].is_provisional is provisional

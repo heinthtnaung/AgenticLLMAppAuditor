@@ -1,12 +1,15 @@
 """Guards on the organisation's half of the audit record: re-derivable, and honest when absent."""
 
 import math
+from dataclasses import replace
 
+from full_runs import ADVISORY_ID, fully_assessed
 from organisation.approval import Approval, Decision, NotApproved
 from organisation.risk import assess, per_source
+from report.council_beside import COUNCIL_SOURCE
 from report.json_risk import approval_of, risk_of
 from report.record import build_report
-from report_samples import PROVENANCE, catalogue, component, finding
+from report_samples import PROVENANCE, TOTAL_LOSS, catalogue, component, finding
 from scoring.library import question
 from scoring.library import APPROVED_QUESTIONS
 from scoring.question import Answer
@@ -97,6 +100,27 @@ def test_an_unknown_answer_is_flagged_and_the_question_named():
     rendered = risk_of(a_report((one,), (weighed(one),)), one.advisory.advisory_id)
     assert rendered["provisional"] is True
     assert rendered["scores"][0]["unknown_questions"] == ["THR-1"]
+
+
+def test_a_councils_settled_vector_sits_beside_the_scores_and_says_it_was_not_used():
+    # Its members settled 9.8 on a finding ghsa put at 7.5, and the ruling was
+    # that the vector is shown beside the published scores and never weighed.
+    rendered = risk_of(fully_assessed(), ADVISORY_ID)
+    assert rendered["council_figure"] == {
+        "source": COUNCIL_SOURCE,
+        "vector": TOTAL_LOSS,
+        "base_score": 9.8,
+        "used_in_score": False,
+    }
+
+
+def test_the_scores_are_the_same_with_a_council_beside_them_as_without():
+    # Anything reading the council's vector into a score moves one of these.
+    beside = risk_of(fully_assessed(), ADVISORY_ID)
+    alone = risk_of(replace(fully_assessed(), council={}), ADVISORY_ID)
+    assert alone.pop("council_figure") is None
+    beside.pop("council_figure")
+    assert beside == alone
 
 
 def test_a_finding_nobody_weighed_carries_null_rather_than_a_zero():
