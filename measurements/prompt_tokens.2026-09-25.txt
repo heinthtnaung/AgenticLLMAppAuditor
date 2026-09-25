@@ -1,0 +1,22 @@
+prompt member-base-metric-3, Ollama 0.34.3
+the longest advisory, GHSA-pw6j-qg29-8w7f: 17893 characters
+qwen2.5:7b-instruct 845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e
+  a prompt with almost no advisory in it: 421 tokens
+  the longest advisory's prompt: 4897 tokens, of which the advisory is 4476
+  estimated by the guard: 4936 tokens, off by -39 (-0.8%)
+  a prompt at the guard's limit: about 6095 of the 8192 pinned
+llama3.2:latest a80c4f17acd55265feec403c7aef86be0c25983ab279d83f3bcd3abbcb5b8b72
+  a prompt with almost no advisory in it: 433 tokens
+  the longest advisory's prompt: 4791 tokens, of which the advisory is 4358
+  estimated by the guard: 4936 tokens, off by -145 (-2.9%)
+  a prompt at the guard's limit: about 5964 of the 8192 pinned
+gemma4:latest c6eb396dbd5992bbe3f5cdb947e8bbc0ee413d7c17e2beaae69f5d569cf982eb
+  a prompt with almost no advisory in it: 438 tokens
+  the longest advisory's prompt: 5689 tokens, of which the advisory is 5251
+  estimated by the guard: 4936 tokens, off by +753 (+15.3%)
+  a prompt at the guard's limit: about 7081 of the 8192 pinned
+qwen2.5-coder:7b-instruct dae161e27b0e90dd1856c8bb3209201fd6736d8eb66298e75ed87571486f4364
+  a prompt with almost no advisory in it: 421 tokens
+  the longest advisory's prompt: 4897 tokens, of which the advisory is 4476
+  estimated by the guard: 4936 tokens, off by -39 (-0.8%)
+  a prompt at the guard's limit: about 6095 of the 8192 pinned

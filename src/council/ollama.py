@@ -18,9 +18,11 @@ The context length is set explicitly for the same reason, and `build_request`
 refuses a prompt too long for it. An advisory that overflows the window is cut
 by the server without saying so, and a member then assesses half an advisory and
 answers with confidence -- the record shows an assessment and nothing shows that
-most of the text was missing. Refusing costs that one metric, which the chairman
-records as unresolved and falls back on. The two are not worth the same, so the
-refusal is a guard and not a warning.
+most of the text was missing. Measured on Ollama 0.34.3: 9,378 tokens against the
+8,192 pinned were cut to 4,098 and answered with a 200. Refusing costs that one
+metric, which the chairman records as unresolved and falls back on. The two are
+not worth the same, so the refusal is a guard and not a warning -- and because
+the guard's estimate is rough, `ask` holds it to the server's own count as well.
 
 Nothing here parses the model's words: `ask` gives back the reply text and the
 model the server named beside it, read by `council.envelope`, and `council.reply`
@@ -31,9 +33,9 @@ from dataclasses import dataclass
 from typing import Any
 from urllib.parse import urlsplit
 
-from council.envelope import MODEL_FIELD, ModelReply, read_envelope
+from council.envelope import MODEL_FIELD, PROMPT_COUNT_FIELD, ModelReply, read_envelope
 from council.prompt import MemberPrompt
-from council.transport import Transport, post_json
+from council.transport import ModelUnavailable, Transport, post_json
 
 DEFAULT_HOST = "http://127.0.0.1:11434"
 GENERATE_PATH = "/api/generate"
@@ -50,8 +52,9 @@ PINNED_THINKING = False
 # Measured, and pinned rather than generous. The pinned model counts the whole
 # prompt -- one metric's definitions, the instructions and the reply schema --
 # at 421 tokens with the advisory taken out, and the worst advisory of 1,187
-# read off this machine's database snapshot takes it to 4,897. So the margin is
-# 1.7x, not the several times an 18-advisory corpus suggested.
+# read off this machine's database snapshot takes it to 4,897; Gemma counts that
+# one at 5,689. So the margin is 1.4x to 1.7x, not the several times an
+# 18-advisory corpus suggested.
 #
 # It stays at 8,192 anyway. The window is one of the things a local member pins,
 # and `docs/COUNCIL.md` rests the reproducibility claim on the pinning, so
@@ -61,16 +64,23 @@ PINNED_THINKING = False
 # yet, and the day something does is the day to raise it knowingly.
 DEFAULT_CONTEXT_TOKENS = 8192
 
-# Four characters to the token. Rough, and calibrated: on the worst advisory in
-# the corpus this estimate said 4,936 where the model counted 4,897, an error of
-# 0.8%. `measurements/prompt_tokens.py` re-counts it against the pinned model.
+# Four characters to the token. Rough, and every model counts its own way: the
+# worst advisory, estimated at 4,936, Qwen counts 0.8% under, Llama 2.9% under
+# and Gemma 15.3% over; over 576 saved prompts Qwen runs -17% to +15%.
+# `measurements/prompt_tokens.py` re-counts it against any model named.
 CHARACTERS_PER_TOKEN = 4
 
 # What the estimate is allowed to be wrong by, in the direction that matters. A
 # prompt refused that would just have fitted costs one metric; a prompt sent
 # that does not fit costs an assessment of half an advisory that reads like a
-# whole one.
-USABLE_CONTEXT_FRACTION = 0.9
+# whole one. At 15% over the estimate, the most measured, a prompt at this
+# limit still leaves an eighth of the window for the reply.
+USABLE_CONTEXT_FRACTION = 0.75
+
+# Ollama cuts a prompt too long for the window to half the window, so the model
+# then counts it at under 58% of the estimate for any tokenizer measured; none
+# counted a whole prompt at under 83%. Between the two is where a cut shows.
+CUT_PROMPT_FRACTION = 0.7
 
 JSON_REPLY_FORMAT = "json"
 
@@ -108,7 +118,14 @@ def ask(
     """Put one member's prompt to a local model and give back what it said."""
     pinned = pinning or LocalModel()
     envelope = transport(generate_url(pinned), build_request(prompt, pinned))
-    return read_envelope(envelope, pinned)
+    return read_answer(envelope, prompt, pinned)
+
+
+def read_answer(envelope: Any, prompt: MemberPrompt, pinning: LocalModel) -> ModelReply:
+    """Read the reply to one prompt, refusing it if the server did not read the prompt whole."""
+    reply = read_envelope(envelope, pinning)
+    refuse_cut_prompt(envelope.get(PROMPT_COUNT_FIELD), prompt, pinning)
+    return reply
 
 
 def generate_url(pinning: LocalModel) -> str:
@@ -152,6 +169,22 @@ def refuse_overlong_prompt(prompt: MemberPrompt, pinning: LocalModel) -> None:
         f"{pinning.model} is pinned to. Ollama would cut it without saying so and the member "
         f"would assess part of the advisory as though it were all of it. Shorten the "
         f"advisory, or raise the pinned context knowing it changes what the run compares to."
+    )
+
+
+def refuse_cut_prompt(counted: Any, prompt: MemberPrompt, pinning: LocalModel) -> None:
+    """Refuse an answer to a prompt the server read only part of, having cut it without an error."""
+    # Ollama counts the cached part of a prompt too -- a warm Qwen call read 532
+    # with 531 cached -- and a server reporting no count cannot be held to one.
+    if not isinstance(counted, int):
+        return
+    estimated = estimated_tokens(prompt)
+    if counted >= estimated * CUT_PROMPT_FRACTION:
+        return
+    raise ModelUnavailable(
+        f"{pinning.model} read this {prompt.metric} prompt as {counted} tokens, where about "
+        f"{estimated} were sent: Ollama cut it to fit the {pinning.context_tokens} pinned, and "
+        f"an answer to part of an advisory is not an answer to the advisory"
     )
 
 

@@ -85,6 +85,15 @@ def test_a_call_that_got_nothing_back_fails_again_as_the_member_s():
         ReplayClient(samples.KEY, calls, BASELINE)(MEMBER, PROMPT)
 
 
+def test_a_recorded_answer_to_a_prompt_the_server_cut_fails_again_as_it_did_live():
+    calls = recorded_calls()
+    key = (samples.KEY, samples.MODEL, "AV")
+    cut = calls[key].envelope | {"prompt_eval_count": 10}
+    calls[key] = CallRecord("AV", calls[key].request_sha256, cut, 0.0)
+    with pytest.raises(ModelUnavailable, match="read this AV prompt as 10 tokens"):
+        ReplayClient(samples.KEY, calls, BASELINE)(MEMBER, PROMPT)
+
+
 def test_a_replay_fault_stops_the_product_s_runner_rather_than_passing_as_a_failed_member():
     # The runner records ModelUnavailable and ValueError as a member that failed.
     # A replay that has no answer must not be scored as a model that gave none.

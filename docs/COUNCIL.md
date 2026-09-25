@@ -198,7 +198,8 @@ member's family, so a reader can judge what a roster's agreement was worth.
 **A member's whole input fits in its context, so there is nothing to retrieve.**
 A prompt carries one metric's definitions and one advisory — never all eight
 metrics — and a local member pins its window at 8,192 tokens rather than taking
-whatever maximum the model offers. Measured against the prompt that runs:
+whatever maximum the model offers. Measured against the prompt that runs, with
+the tokens counted by `qwen2.5:7b-instruct`:
 
 | Input | Size |
 |---|---|
@@ -208,10 +209,32 @@ whatever maximum the model offers. Measured against the prompt that runs:
 | advisory, longest of the same 1,187 | 17,893 characters, taking the prompt to 4,897 tokens |
 
 The worst case measured is **4,897 against 8,192, a margin of 1.7×** — not the
-several times over that an 18-advisory corpus suggested. That margin is guarded
-rather than merely large: a prompt the window cannot hold is refused, because
-Ollama cuts an overlong one without saying so, and a member would then assess
-half an advisory and answer about it with confidence.
+several times over that an 18-advisory corpus suggested. Another model counts
+the same prompt its own way: `llama3.2:latest` 4,791 and `gemma4:latest` 5,689,
+a margin of 1.4× (`measurements/prompt_tokens.2026-09-25.txt`).
+
+**That margin is guarded rather than merely large.** Ollama 0.34.3 cuts a
+prompt too long for its window to half the window and answers with a 200:
+9,378 tokens against the 8,192 pinned were cut to 4,098. A member would then
+assess half an advisory and answer as if it had read the whole. So a prompt
+whose estimate, at four characters to the token, passes 75% of the window is
+refused before it is sent. On the worst prompt the tokenizers measured count
+from 2.9% under that estimate (Llama) to 15.3% over it (Gemma). Across the 576
+saved calls of each of the pair, Qwen counts from 17% under to 15% over, and
+Llama from 16% under to 10% over
+(`tests/measurements/test_prompt_tokens_records.py`). At 15% over, a prompt at
+the limit still leaves an eighth of the window for the reply.
+After the call, an answer to a prompt the server counted at under 70% of the
+estimate is refused as well, because that is what a cut looks like, and the
+member is recorded as failed with both numbers.
+
+That check rests on two things Ollama 0.34.3 does, each pinned by a test in
+`tests/council/test_ollama_context.py`. Its count takes in the cached part of a
+prompt: a warm Qwen call read 532 tokens, 531 of them from the cache. And it
+cuts to half the window, as it did all three times recorded: 4,098 and 4,099 of
+8,192, and 130 of 256. **A server that cut to fill the window instead would
+count about the window, and would not be caught**; a test there asserts that
+gap.
 
 The definitions are identical for every query, which makes them a constant
 rather than something to look up. **They go in the prompt.** A vector store
