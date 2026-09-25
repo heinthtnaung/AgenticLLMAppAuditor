@@ -92,8 +92,9 @@ def test_a_model_that_cannot_do_what_was_asked_is_failed_in_the_server_s_words(m
     [
         (shapes.REASONED_OUT, "cut off before it finished"),
         (shapes.CUT_OFF, "cut off before it finished"),
+        ({"response": shapes.INLINE_DRAFT, "done_reason": "stop"}, "holds 2 JSON objects"),
     ],
-    ids=["reasoned until cut off", "answer cut off"],
+    ids=["reasoned until cut off", "answer cut off", "draft left inline"],
 )
 def test_a_reply_that_is_no_answer_is_failed_saying_what_it_was(envelope, said):
     assert said in failure_reason(attack_vector_round(answering(envelope)))

@@ -41,3 +41,6 @@ REASONED_OUT = {
 
 # Made up: an answer stopped part way, as a window too small for a long reply leaves it.
 CUT_OFF = {"model": "cut-off:1b", "response": '{"value": "N", "evid', "done_reason": "length"}
+
+# Made up: a server that ignores `format` and inlines the reasoning, draft and all.
+INLINE_DRAFT = f"<think>A first draft: {DRAFT}. No.</think>\n{ANSWER}"
