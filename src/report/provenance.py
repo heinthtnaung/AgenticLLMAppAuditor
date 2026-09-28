@@ -10,9 +10,17 @@ types is a claim nobody checked, and the one purpose of these fields is that a
 run is checkable. The one exception is how local members were asked: the window
 and timeout are the operator's settings, and can change a result, so the record
 states the ones the run used beside the three pinned in code.
+
+The scoring rules' version is not asked of a tool either: it is this code's own,
+from `scoring.version`, and it is the default because no run scores by any other.
 """
 
 from dataclasses import dataclass
+
+from scoring.version import SCORING_RULES_VERSION
+
+# How both pages name the version, so the two cannot drift.
+SCORING_RULES_LABEL = "scoring rules"
 
 @dataclass(frozen=True)
 class AdvisoryDatabase:
@@ -71,12 +79,13 @@ class RunProvenance:
     trivy_version: str
     database: Database
     local_models: LocalModels | None = None
+    scoring_rules_version: str = SCORING_RULES_VERSION
 
     def __post_init__(self) -> None:
         """Refuse provenance a reader could not reproduce the run from."""
         missing = [
             name
-            for name in ("repository", "syft_version", "trivy_version")
+            for name in ("repository", "syft_version", "trivy_version", "scoring_rules_version")
             if not getattr(self, name)
         ]
         if missing:

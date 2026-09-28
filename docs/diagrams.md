@@ -545,7 +545,7 @@ flowchart LR
         b7["src/council<br/>roster and the egress gate, redaction,<br/>prompt, provider registry, chairman,<br/>the local server's settings,<br/>the members --council runs<br/>and the order check"]
         b8["src/report<br/>the record, and three renderings of it:<br/>text, JSON, one self-contained HTML page"]
         b9["src/cli<br/>arguments, preflight, the audit order,<br/>the council's scope and its record, the<br/>stderr progress stream, the report files<br/>in reports/, and the exit code a<br/>pipeline reads"]
-        b6["src/scoring<br/>the approved question library, categories<br/>clamped then weighted, the band<br/>and the severity floors on it"]
+        b6["src/scoring<br/>the approved question library, categories<br/>clamped then weighted, the band,<br/>the severity floors on it<br/>and the version naming those rules"]
         b10["src/organisation<br/>the answer file, the approval record,<br/>the rule for what needs approval,<br/>one score per source"]
         b0 --> b1
         b0 --> b2
@@ -613,13 +613,15 @@ and never from a council's vector. So nothing runs from `src/cvss` to
 `src/organisation` either: it reads each source's base score off the finding and
 parses no vector of its own.
 
-The `src/scoring` to `src/report` arrow is three names in two modules.
+The `src/scoring` to `src/report` arrow is four names in four modules.
 `src/report/html_answers.py` imports the `Answer` enum, to mark an Unknown, and
-`RiskScore`, the type whose weights it prints; `src/report/json_risk.py`
-imports `Category`, to find one category's weight by name. All three are the
-vocabulary the record is written in, not a figure the engine works out. Every
-number the report shows comes off the record, so there is no second place a
-score could be derived and differ.
+`RiskScore`, the type whose weights it prints, and `src/report/text_risk.py`
+imports `RiskScore` too; `src/report/json_risk.py` imports `Category`, to find
+one category's weight by name; and `src/report/provenance.py` imports
+`SCORING_RULES_VERSION`, the name of the rules every report says it was scored
+by. None is a figure the engine works out. Every number the report shows comes
+off the record, so there is no second place a score could be derived and
+differ.
 
 What remains in the middle column is smaller than it looks and none of it blocks
 a run. Two are refinements of things that work: a selector would ask fewer

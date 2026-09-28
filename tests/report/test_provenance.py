@@ -1,9 +1,16 @@
 """Guards on what produced a run: a database there or named missing, and every field asked."""
 
+import json
+
 import pytest
 
+from report.html_report import as_html
+from report.json_report import as_json
 from report.provenance import AdvisoryDatabase, RunProvenance, UnknownAdvisoryDatabase
-from report_samples import DATABASE
+from report.record import build_report
+from report.text_report import as_text
+from report_samples import DATABASE, PROVENANCE, catalogue, component
+from scoring.version import SCORING_RULES_VERSION
 
 
 @pytest.mark.parametrize("built", ["", "   "], ids=["empty", "blank"])
@@ -23,7 +30,9 @@ def test_an_unreadable_database_is_not_the_same_as_a_fresh_one():
     assert not hasattr(unknown, "built_at")
 
 
-@pytest.mark.parametrize("field", ["repository", "syft_version", "trivy_version"])
+@pytest.mark.parametrize(
+    "field", ["repository", "syft_version", "trivy_version", "scoring_rules_version"]
+)
 def test_provenance_a_reader_could_not_reproduce_the_run_from_is_refused(field):
     fields = {"repository": "r", "syft_version": "s", "trivy_version": "t", "database": DATABASE}
     with pytest.raises(ValueError, match=f"needs {field}"):
@@ -34,3 +43,16 @@ def test_provenance_a_reader_could_not_reproduce_the_run_from_is_refused(field):
 def test_provenance_without_a_real_database_is_refused(given):
     with pytest.raises(TypeError, match="needs a database"):
         RunProvenance("r", "s", "t", given)
+
+
+def test_a_run_records_the_scoring_rules_this_code_scores_by():
+    fields = {"repository": "r", "syft_version": "s", "trivy_version": "t", "database": DATABASE}
+    assert RunProvenance(**fields).scoring_rules_version == SCORING_RULES_VERSION
+
+
+def test_every_rendering_names_the_scoring_rules_in_its_provenance():
+    report = build_report(PROVENANCE, catalogue(component()), (), {})
+    said = f"scoring rules {SCORING_RULES_VERSION}"
+    assert as_text(report).split("\n")[2] == f"  {said}"
+    assert json.loads(as_json(report))["run"]["scoring_rules_version"] == SCORING_RULES_VERSION
+    assert f'<span class="separator">·</span>{said}</p>' in as_html(report)

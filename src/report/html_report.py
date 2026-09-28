@@ -32,7 +32,7 @@ from report.html_findings import (
 from report.html_layout import separated, tag, text
 from report.html_risk import risk_section
 from report.html_style import STYLESHEET
-from report.provenance import AdvisoryDatabase
+from report.provenance import SCORING_RULES_LABEL, AdvisoryDatabase
 from report.record import Report
 from report.summary_words import approval_count, counts, inventory_pointer, unread_pointer
 
@@ -87,7 +87,11 @@ def title_of(report: Report) -> str:
 def run_header(report: Report) -> str:
     """Name the repository, what scanned it, and how much there is to read."""
     run = report.provenance
-    tools = separated([text(f"syft {run.syft_version}"), text(f"trivy {run.trivy_version}")])
+    tools = separated([
+        text(f"syft {run.syft_version}"),
+        text(f"trivy {run.trivy_version}"),
+        text(f"{SCORING_RULES_LABEL} {run.scoring_rules_version}"),
+    ])
     named = tag("h1", title_of(report)) + tag("p", tools, "tools")
     return tag("header", named + database_line(run) + summary_line(report), "run")
 

@@ -61,6 +61,8 @@ def run_of(report: Report) -> dict[str, Any]:
         "syft_version": provenance.syft_version,
         "trivy_version": provenance.trivy_version,
         "advisory_database": database_of(provenance.database),
+        # Which rules weighed and banded the Organisation Risk Score; `scoring.version`.
+        "scoring_rules_version": provenance.scoring_rules_version,
         # The window and the timeout can change a result, so they sit beside the pinning.
         "local_models": vars(provenance.local_models) if provenance.local_models else None,
         "component_count": report.component_count,

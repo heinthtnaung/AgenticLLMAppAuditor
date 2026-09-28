@@ -26,7 +26,7 @@ catalogued nothing.
 | `src/deps/` | built | Syft and Trivy: the components a directory declares, the advisories published against them, and the database's own build date; and which manifests have no lock file Syft reads |
 | `src/cvss/` | built | a CVSS v3 vector parsed and validated, Temporal metrics included, and its Base score by the published equations |
 | `src/findings/` | built | the join — a CVE affecting an installed component, with every source's score kept apart and attributed |
-| `src/scoring/` | built | the approved question library, per-question weights, categories clamped then weighted, the band, and the two severity floors that can raise it |
+| `src/scoring/` | built | the approved question library, per-question weights, categories clamped then weighted, the band, the two severity floors that can raise it, and the version naming those rules |
 | `src/council/` | built | the roster and its `egress` gate, redaction, the prompt, a provider registry holding one local Ollama client, the quotation check, the order check, the chairman and the runner |
 | `src/organisation/` | built | the answer file, the approval record, the rule for which findings need approval, and one risk score per published source |
 | `src/report/` | built | the record every run produces, and its three renderings: a terminal report, the JSON audit artefact, and one self-contained HTML page |
@@ -65,6 +65,7 @@ same code and prints the same report.
 ```
 Audit of fetched/vulnscout
   syft 1.52.0  ·  trivy 0.74.0  ·  advisory database built 2026-09-23T20:20:57.734988316Z
+  scoring rules ors-1
 
 18 findings across 60 components. 5 carry sources that disagree.
 Approval is needed for 5 of 18: sources that disagree. With no organisation answers, none was
@@ -292,6 +293,18 @@ The second line is the weighting those totals were reached with. It is read off
 the record rather than off `docs/SCORING_MODEL.md`, so a reader re-deriving a
 score by hand works from the run that produced it and not from a table that
 could have moved since.
+
+**Every report names the rules that scored it.** The text heading's third line
+reads `scoring rules ors-1`, the page's tools line ends with the same words, and
+the JSON carries `run.scoring_rules_version`, after `advisory_database`. The
+version covers everything that can move a score or a band, or mark it
+provisional: the questions, their text and what a Yes is worth, the category
+weights, the 0–100 clamp and the CVSS scale onto it, the band thresholds, the
+severity floors, and what marks a score provisional. Two reports with different
+versions are not comparable score for score.
+`tests/scoring/test_version.py` fingerprints those rules, so a change made
+without bumping `SCORING_RULES_VERSION` in `src/scoring/version.py` fails the
+suite.
 
 `CVE-2021-4279` is at the top because it is the one finding the `by_advisory`
 block says is being exploited in the wild with public exploit code. Take those

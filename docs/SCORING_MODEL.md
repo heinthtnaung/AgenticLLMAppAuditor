@@ -265,10 +265,23 @@ contradictory answers, and write the rationale. Its output is structured and
 ## What is kept for audit
 
 Per assessment: the CVE data, the LLM output, the organisation's answers, the
-evidence, the score calculation, the **prompt and model version**, and the
-approval record.
+evidence, the score calculation, the **prompt and model version**, the
+**scoring-rule version**, and the approval record.
 
 A score nobody can re-derive is not a score.
+
+**The scoring-rule version names the rules the score was weighed by.** It is
+`SCORING_RULES_VERSION` in `src/scoring/version.py`, `ors-1` today, and every
+report carries it: the text heading, the page's tools line and
+`run.scoring_rules_version` in JSON. It covers the rules that can move a score
+or a band, or mark it provisional: the approved questions, their text and Yes
+weights, the category weights, the 0–100 clamp and the CVSS scale onto it, the
+band thresholds, the severity floors, and what marks a score provisional. **Bump
+it whenever any of those changes.**
+Two reports under different versions are not comparable score for score, and
+`tests/scoring/test_version.py` fails on a rule change the version did not
+follow, because it fingerprints the rules and what the engine makes of a fixed
+set of answers.
 
 **The approval record exists and nothing stamps it.** Who approved, which
 decision it was, when, and why all travel in the answer file, validated as a

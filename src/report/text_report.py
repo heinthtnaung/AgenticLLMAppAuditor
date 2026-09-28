@@ -17,7 +17,7 @@ it goes on.
 """
 
 from organisation.approval import Approval
-from report.provenance import AdvisoryDatabase
+from report.provenance import SCORING_RULES_LABEL, AdvisoryDatabase
 from report.absences import NOTHING_ABSENT
 from report.record import Report
 from report.summary_words import approval_count, counts, inventory_pointer, unread_pointer
@@ -59,10 +59,15 @@ def as_text(report: Report) -> str:
 
 
 def heading(report: Report) -> str:
-    """Name the repository and what scanned it."""
+    """Name the repository, what scanned it, and the rules that scored it."""
     run = report.provenance
     tools = f"syft {run.syft_version}{SOURCE_SEPARATOR}trivy {run.trivy_version}"
-    return f"Audit of {run.repository}\n{INDENT}{tools}{SOURCE_SEPARATOR}{database_line(run)}"
+    # On a line of its own: beside the database's build date it runs past the page.
+    return "\n".join([
+        f"Audit of {run.repository}",
+        f"{INDENT}{tools}{SOURCE_SEPARATOR}{database_line(run)}",
+        f"{INDENT}{SCORING_RULES_LABEL} {run.scoring_rules_version}",
+    ])
 
 
 def database_line(run) -> str:
