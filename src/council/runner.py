@@ -69,6 +69,7 @@ from typing import Callable, Mapping
 from cvss.metrics import METRIC_ORDER
 from council.answer import MemberReply
 from council.chairman import rule_on_metric
+from council.order_check import reconciled
 from council.prompt import MemberPrompt, build_prompt
 from council.providers import (
     PROVIDER_CLIENTS,
@@ -86,7 +87,7 @@ from council.transport import ModelUnavailable
 CallOutcome = MemberReply | MemberFailure
 
 
-def nobody_asking(metric: str, member: str) -> None:
+def nobody_asking(metric: str, member: str, reversed_options: bool = False) -> None:
     """Report nothing, which is what a run nobody is watching needs."""
 
 
@@ -95,13 +96,21 @@ def assess(
     roster: Roster,
     fallbacks: Mapping[str, Fallback],
     clients: Mapping[str, AskMember] = PROVIDER_CLIENTS,
-    asking: Callable[[str, str], None] = nobody_asking,
+    asking: Callable[[str, str, bool], None] = nobody_asking,
+    order_check: bool = False,
 ) -> CouncilRun:
-    """Put one advisory to the roster, one member at a time, and rule on every metric."""
+    """Put one advisory to the roster, one member at a time, and rule on every metric.
+
+    With `order_check`, a value counts only where both orders give it (`council.order_check`).
+    """
     refuse_incomplete_fallbacks(fallbacks)
     reachable = reachable_members(members_to_ask(roster), clients)
-    prompts = tuple(build_prompt(metric, advisory_text) for metric in METRIC_ORDER)
-    answered = [ask_every_metric(member, prompts, clients, asking) for member in reachable]
+    prompts = prompts_of(advisory_text)
+    reversed_prompts = prompts_of(advisory_text, reversed_options=True) if order_check else ()
+    answered = [
+        ask_every_metric(member, prompts, clients, asking, reversed_prompts)
+        for member in reachable
+    ]
     rounds = [rule_on_round(prompt, answered, fallbacks[prompt.metric]) for prompt in prompts]
     return CouncilRun(
         rounds=tuple(rounds),
@@ -113,14 +122,28 @@ def assess(
     )
 
 
+def prompts_of(advisory_text: str, reversed_options: bool = False) -> tuple[MemberPrompt, ...]:
+    """Build every metric's prompt for one advisory, with its options in order or reversed."""
+    return tuple(build_prompt(metric, advisory_text, reversed_options) for metric in METRIC_ORDER)
+
+
 def ask_every_metric(
     member: Member,
     prompts: tuple[MemberPrompt, ...],
     clients: Mapping[str, AskMember],
-    asking: Callable[[str, str], None] = nobody_asking,
+    asking: Callable[[str, str, bool], None] = nobody_asking,
+    reversed_prompts: tuple[MemberPrompt, ...] = (),
 ) -> dict[str, CallOutcome]:
-    """Put every metric's prompt to one member, and give what came back by metric."""
-    return {prompt.metric: ask_one_member(member, prompt, clients, asking) for prompt in prompts}
+    """Put every metric's prompt to one member, in both orders if asked, and give its replies."""
+    if not reversed_prompts:
+        return {one.metric: ask_one_member(member, one, clients, asking) for one in prompts}
+    return {
+        prompt.metric: reconciled(
+            ask_one_member(member, prompt, clients, asking),
+            ask_one_member(member, reversed_prompt, clients, asking, reversed_options=True),
+        )
+        for prompt, reversed_prompt in zip(prompts, reversed_prompts, strict=True)
+    }
 
 
 def rule_on_round(
@@ -143,12 +166,13 @@ def ask_one_member(
     member: Member,
     prompt: MemberPrompt,
     clients: Mapping[str, AskMember],
-    asking: Callable[[str, str], None] = nobody_asking,
+    asking: Callable[[str, str, bool], None] = nobody_asking,
+    reversed_options: bool = False,
 ) -> CallOutcome:
     """Put one prompt to one member, recording a failure rather than ending the run."""
     # Said before the call, so a member that takes half a minute is a line that
     # sits there rather than a number nobody has yet.
-    asking(prompt.metric, member.name)
+    asking(prompt.metric, member.name, reversed_options)
     who = member.identify(prompt.version)
     try:
         said = clients[member.provider](member, prompt)

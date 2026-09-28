@@ -1,5 +1,6 @@
 """Guards on rebuilding a roster offline: the record the product would write asking it live."""
 
+import re
 from itertools import chain
 
 import pytest
@@ -7,12 +8,19 @@ import pytest
 import council.ollama
 import eval_samples as samples
 from cli.council_run import OLLAMA_PROVIDER, assess_one, build_roster
-from council.prompt import PROMPT_VERSION
+from council.prompt import PROMPT_VERSION, REVERSED_PROMPT_VERSION
 from council_eval.collect import ask_item
 from council_eval.compose import pass_models, replay_roster, rosters
 from council_eval.recording import RecordingClient
-from council_eval.replies import Replies
-from council_eval.variants import BASELINE, LIBRARY, REVERSED, Variant
+from council_eval.replies import ReplayClient, Replies
+from council_eval.variants import (
+    BASELINE,
+    LIBRARY,
+    PASS_ORDER_CHECK,
+    REVERSED,
+    Variant,
+    VariantMismatch,
+)
 from council.settings import Settings
 
 # The second member disagrees on AV with a verified quotation, and declines UI.
@@ -49,9 +57,10 @@ def pass_of(model: str, variant: Variant) -> dict:
 
 
 def asked_live(models: tuple[str, ...], variant: Variant = BASELINE):
-    """Put the sample finding to a roster the product's own way, every member asked live."""
+    """Put the sample finding to a roster the product's own way, asked live in one order."""
     client = RecordingClient(post=TwoModels(), clock=lambda: 0.0, variant=variant)
-    return assess_one(samples.finding(), build_roster(models), {OLLAMA_PROVIDER: client})
+    roster, clients = build_roster(models), {OLLAMA_PROVIDER: client}
+    return assess_one(samples.finding(), roster, clients, order_check=PASS_ORDER_CHECK)
 
 
 def test_a_pair_rebuilt_from_two_passes_is_the_record_the_product_writes_asking_both():
@@ -102,6 +111,20 @@ def test_a_variant_s_record_names_the_product_s_prompt_version_on_its_members():
     everyone = chain.from_iterable(ruling.said for ruling in outcome.rulings)
     named = {said.member.prompt_version for said in everyone}
     assert named == {PROMPT_VERSION}
+
+
+def test_a_pass_is_replayed_with_the_audit_s_order_check_off():
+    # A known gap, asserted so that closing it turns this red. Every audit asks
+    # both orders; a pass holds one, so a replay rebuilds the audit without its
+    # order check, and `order_checked` pairs two passes instead.
+    assert PASS_ORDER_CHECK is False
+
+
+def test_a_single_order_pass_replayed_with_the_check_on_stops_rather_than_scoring():
+    client = ReplayClient(samples.KEY, passes().calls, BASELINE, samples.WINDOW)
+    roster, clients = build_roster((samples.MODEL,)), {OLLAMA_PROVIDER: client}
+    with pytest.raises(VariantMismatch, match=re.escape(REVERSED_PROMPT_VERSION)):
+        assess_one(samples.finding(), roster, clients)
 
 
 def test_a_pass_replays_at_the_window_it_was_recorded_at_whatever_the_settings_say(monkeypatch):

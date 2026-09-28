@@ -44,6 +44,7 @@ from report.council_words import (
     who,
 )
 from report.html_council import council_section
+from report.html_metric import member_row
 from report.record import build_report
 from report.text_council import council_block
 from report_samples import PROVENANCE, catalogue, component, finding
@@ -80,6 +81,13 @@ def test_a_guess_names_the_value_it_could_not_quote():
 
 def test_a_member_that_declined_says_only_that():
     assert unanswered(MemberSaid(QWEN, SaidKind.DECLINED)) == "declined"
+
+
+def test_an_order_sensitive_member_names_both_values_in_both_renderings():
+    torn = MemberSaid(QWEN, SaidKind.ORDER_SENSITIVE, order_values=("H", "L"))
+    said = "order-sensitive: H with the options in order, L reversed"
+    assert unanswered(torn) == said
+    assert said in member_row(torn)
 
 
 def test_a_failed_call_carries_the_reason_it_failed():

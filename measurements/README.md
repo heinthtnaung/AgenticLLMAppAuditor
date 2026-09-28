@@ -502,7 +502,8 @@ run, against the failure the prompt names.
 | 61 of 144 metrics came out contested with two members | `src/council/runner.py`, `docs/COUNCIL.md` | `full.report.txt`, Qwen and Gemma; the GPU baseline contests 13 |
 | reproducible when no other client shares the Ollama server, and each model meets each request in the same load state | `docs/COUNCIL.md` | the CPU baseline's subsections above, the GPU runs agreeing on the five findings they share, and Qwen cold and warm in `thinking_and_load/probe_state.jsonl` |
 | with every turn starting from a fresh load, a member's replies repeat byte for byte | `docs/COUNCIL.md` | `council_eval_runs/pilot-vulnscout/compare.txt`: 288 of 288 across the clean passes, 144 per model |
-| 288 calls over 18 findings, 80 after scoping | `README.md`, `docs/COUNCIL.md`, `docs/diagrams.md`, `src/cli/council_run.py`, `src/cli/progress.py`, comments in `tests/cli/test_council_run.py`, `tests/cli/test_progress.py` and `tests/council/test_runner_order.py` | the last `council` line of each progress file |
+| 288 calls over 18 findings, 80 after scoping, each metric asked once | `README.md`'s recorded progress, for the 80; `src/cli/council_run.py`, comments in `tests/cli/test_council_run.py`, `tests/cli/test_progress.py` and `tests/council/test_runner_order.py` | the last `council` line of each progress file: `288/288` in `full` and `gpu-full`, `80/80` in `scoped` and `gpu-scoped` |
+| 576 and 160, every metric asked in both orders | `README.md`, `docs/COUNCIL.md`, `docs/diagrams.md`, `src/cli/progress.py` | no run: no order-checked audit is recorded here. It is twice the row above, and `tests/cli/test_progress.py` asserts 576 for 18 findings and two members |
 | 13 of 18 findings undisputed, so 5 put to the council | `README.md`, `docs/COUNCIL.md`, `docs/diagrams.md`, `src/cli/council_run.py`, `tests/cli/test_council_run.py` | `scoped.report.txt` lines 218–222 |
 | 208 of the 288 calls went to those 13 | `src/cli/council_run.py`, `tests/cli/test_council_run.py` | the lines of `full.progress.txt` and of `gpu-full.progress.txt` naming them |
 | one member answers every metric of a finding before the next member is asked | `src/council/runner.py`, `README.md`, `docs/COUNCIL.md` | `gpu-*.progress.txt`: 10 and 36 runs of 8 calls to one member; `scoped` and `full` change member on every call |
@@ -558,11 +559,13 @@ started on CUDA since 19:30 on 2026-09-23.
 
 ## Evaluating the council
 
-**`council_eval/` scores a roster's readings without asking a model twice.**
-`collect` puts every item of a frozen dataset to one model and saves every
-call. `gate`, `score` and the checks rebuild any roster from those passes,
-through the audit's own runner and chairman, with no model and no scan. One
-pass per model buys every roster the models can form.
+**`council_eval/` scores a roster's readings without asking a model again.**
+`collect` puts every item of a frozen dataset to one model and saves every call.
+`gate`, `score` and the checks rebuild any roster from those passes, through the
+audit's own runner and chairman, with no model and no scan. A pass holds one
+order of the options, so `collect` and every replay run with the product's order
+check off (`council_eval/variants.py`); `order-checked` pairs two passes
+instead. One pass per model buys every roster the models can form.
 
 That rests on two things. The first is the panel rule: a member sees nothing
 of another's answer, so what a roster decides is fixed by what each member said
@@ -866,14 +869,21 @@ here shows either model repeats itself as the pilot's did.
 
 ### Order-checked: a value counts only if both orders give it
 
-**A harness rule, not a product change.** Every metric is asked in the
-product's order and reversed, and a member's value counts only when the two
-agree. A different value, or a decline in either order, counts as a decline, and
-a failure in either as a failure; the chairman then works as it does now.
-Qwen's and Llama's inputs are their saved pilot and reversed passes. Gemma and
-the coder each took one new reversed pass, both with clean journals.
-`council_eval_runs/order-checked-vulnscout/README.md` holds the readings, fixed
-and hashed before any merged roster or reversed pass, and the results.
+**Measured as a harness rule, then adopted by the product.** Every metric is
+asked in the product's order and reversed, and a member's value counts only when
+the two agree. A different value, or a decline in either order, counts as a
+decline, and a failure in either as a failure; the chairman then works as it
+does on any roster. Qwen's and Llama's inputs are their saved pilot and reversed
+passes. Gemma and the coder each took one new reversed pass, both with clean
+journals. `council_eval_runs/order-checked-vulnscout/README.md` holds the
+readings, fixed and hashed before any merged roster or reversed pass, and the
+results.
+
+Every audit now asks both orders (`src/council/order_check.py`). It records a
+different value as order-sensitive rather than as a decline, and the two weigh
+the same nothing. On Qwen's and Llama's passes it rules as this rule did on
+every metric of every finding
+(`tests/measurements/council_eval/test_order_checked_product.py`).
 
 **Stability**, of 18 findings per model and metric: stable / order-sensitive /
 declined. Nothing failed. A metric is **mostly order**, in bold, when more than
@@ -896,11 +906,12 @@ and its L on AC on 16 of 18, so its agreement with R1 there is not the option
 listed first. The coder is order-sensitive on at most 4 of 18, because it
 declines most of what it is asked.
 
-**Coverage falls, and no rate change is distinguishable.** Settled, unchecked
-then order-checked: Qwen 105 → 68, Llama 71 → 49, Qwen + Llama 105 → 83, Gemma
-129 → 112, the coder 21 → 14, Qwen + coder 103 → 68. On every metric of every
-roster the two 95% intervals overlap, the closest being Qwen + Gemma's AV, 3/8 →
-8/8, whose intervals [0.14, 0.69] and [0.68, 1.00] overlap by less than 0.02.
+**Coverage falls for every roster but Qwen + Gemma, and no rate change is
+distinguishable.** Settled, unchecked then order-checked: Qwen 105 → 68, Llama
+71 → 49, Qwen + Llama 105 → 83, Gemma 129 → 112, the coder 21 → 14, Qwen +
+coder 103 → 68. On every metric of every roster the two 95% intervals overlap,
+the closest being Qwen + Gemma's AV, 3/8 → 8/8, whose intervals [0.14, 0.69]
+and [0.68, 1.00] overlap by less than 0.02.
 Qwen + Gemma is the one roster that settles more, 86 against 65, with 37
 contests against 69: Qwen's positional answers become declines, so Gemma's
 stable ones settle, AV 8/8, PR 10/10 and UI 12/12. For Qwen and Llama what
@@ -918,13 +929,12 @@ values on 10 of 18 for Qwen on A, and on 7 and 11 for Llama on I and A, where R1
 gives L on at most one finding, a middle-position bias is **suspected**, and
 this rule does not remove it.
 
-**No verdict on adopting it.** The rule turns positional answers into declines,
-fewer settled values rather than more right ones at this n, and leaves Gemma
-almost untouched; it would cost twice the calls. Whether the product should ask
-every metric in both orders is the user's decision. Two orders agreeing shows
-only that an answer is not positional, not that it is correct, and the usual
-limits hold: 18 npm findings, one seed, one pass per order with no rerun, and R1
-with one value on AV, PR, UI and S.
+**The measurement gave no verdict on adopting it.** The rule turns positional
+answers into declines: fewer settled values for every roster but Qwen + Gemma,
+no more right ones at this n, and Gemma almost untouched, at twice the calls.
+Two orders agreeing shows only that an answer is not positional, not that it is
+correct, and the usual limits hold: 18 npm findings, one seed, one pass per
+order with no rerun, and R1 with one value on AV, PR, UI and S.
 
 ### Evaluating a model you want to use
 
@@ -968,3 +978,8 @@ second pass (`run2`) and then `compare --first … --second …` checks that the
 model repeats itself. None of it lifts the pilot's limits: on AV, PR, UI and S
 lift can at best reach 0, because R1 gives one value there, and 18 npm findings
 are one repository.
+
+**Steps 3 and 4 measure one order, and an audit asks both.** A second pass with
+`collect --variant reversed`, scored by `order-checked` instead of `score`,
+measures the rule an audit applies; the commands are in
+`council_eval_runs/order-checked-vulnscout/README.md`.

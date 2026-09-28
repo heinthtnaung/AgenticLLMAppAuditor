@@ -1,9 +1,10 @@
 """One pass: every item put to one model through the product's own path, every call saved raw.
 
 Each item is put through `cli.council_run.assess_one` -- the audit's own step
-from a finding to a council record -- with a roster of that one model and the
-recording client in place of the product's. The record it returns is not kept:
-the calls are, and every roster is rebuilt from them later by `compose`.
+from a finding to a council record -- with a roster of that one model, the
+recording client in place of the product's, and the options in one order
+(`variants.PASS_ORDER_CHECK`). The record it returns is not kept: the calls
+are, and every roster is rebuilt from them later by `compose`.
 
 The file is opened exclusively, so a pass never overwrites one already taken.
 """
@@ -20,7 +21,7 @@ from council_eval.dataset import Item
 from council_eval.pass_provenance import now
 from council_eval.recording import CallRecord, Post, RecordingClient, unload_model
 from council_eval.replies import call_line
-from council_eval.variants import BASELINE, Variant
+from council_eval.variants import BASELINE, PASS_ORDER_CHECK, Variant
 
 END_KIND = "end"
 NANOSECONDS = 1e9
@@ -34,7 +35,8 @@ def ask_item(
     """Put one item to one model from a fresh load, in a variant's words, and give every call."""
     unload_model(model, post)
     client = RecordingClient(post=post, variant=variant)
-    assess_one(item.finding, build_roster((model,)), {OLLAMA_PROVIDER: client})
+    roster = build_roster((model,))
+    assess_one(item.finding, roster, {OLLAMA_PROVIDER: client}, order_check=PASS_ORDER_CHECK)
     return client.calls
 
 

@@ -110,14 +110,14 @@ def test_the_total_counts_only_the_members_this_run_will_ask():
     # a progress line that never reaches its end.
     hosted = Member("remote", "openrouter", "x/y", "x", runs_local=False)
     roster = Roster((*build_roster(("small",)).members, hosted))
-    assert watching((FINDING,), roster, io.StringIO()).calls == 8
+    assert watching((FINDING,), roster, io.StringIO()).calls == 16
 
 
 def test_the_total_counts_only_the_findings_the_council_can_read():
     # An advisory with no text is never put to anybody.
     silent = build_finding(LODASH, advisory_like("CVE-2", details="  ", vectors={}))
     counted = watching((FINDING, silent), build_roster(("small",)), io.StringIO())
-    assert (counted.findings, counted.calls) == (1, 8)
+    assert (counted.findings, counted.calls) == (1, 16)
 
 
 def test_a_finding_whose_sources_agree_is_not_put_to_the_council():
@@ -166,13 +166,13 @@ def test_the_assessed_findings_come_before_the_ones_passed_over():
 
 def test_the_total_counts_only_the_findings_this_run_will_be_asked_about():
     counted = watching((FINDING, UNDISPUTED), build_roster(("small",)), io.StringIO())
-    assert (counted.findings, counted.calls) == (1, 8)
+    assert (counted.findings, counted.calls) == (1, 16)
 
 
 def test_the_total_counts_every_finding_when_every_finding_is_asked_about():
     roster = build_roster(("small",))
     counted = watching((FINDING, UNDISPUTED), roster, io.StringIO(), every_finding=True)
-    assert (counted.findings, counted.calls) == (2, 16)
+    assert (counted.findings, counted.calls) == (2, 32)
 
 
 def test_each_finding_is_asked_member_by_member_starting_again_from_the_first():
@@ -182,5 +182,5 @@ def test_each_finding_is_asked_member_by_member_starting_again_from_the_first():
     asked = (FINDING, UNSCORED)
     assessments(asked, roster, answering(), watching(asked, roster, out))
     lines = out.getvalue().splitlines()
-    assert [line.split()[-1] for line in lines] == (["one"] * 8 + ["two"] * 8) * 2
-    assert lines[-1].startswith("council 32/32")
+    assert [line.split()[-1] for line in lines] == (["one"] * 16 + ["two"] * 16) * 2
+    assert lines[-1].startswith("council 64/64")

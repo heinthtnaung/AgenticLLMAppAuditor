@@ -29,6 +29,8 @@ class SaidKind(Enum):
     DECLINED = "declined"
     GUESSED = "guessed"
     FAILED = "failed"
+    # One value with the options in order and another reversed: the list decided.
+    ORDER_SENSITIVE = "order-sensitive"
 
 
 class Outcome(Enum):
@@ -49,6 +51,8 @@ class MemberIdentity:
     family: str
     ran_local: bool
     prompt_version: str
+    # Empty unless the member was also asked the options reversed.
+    reversed_prompt_version: str = ""
 
 
 @dataclass(frozen=True)
@@ -58,6 +62,8 @@ class MemberSaid:
     `value`, `evidence` and `confidence` are empty for the kinds that have none:
     a member that declined named no value, one that guessed quoted nothing, and
     one that failed said nothing at all. `kind` says which, on every row.
+    `order_values` is set for an order-sensitive member alone: the value it gave
+    with the options in order, then the one it gave with them reversed.
     """
 
     member: MemberIdentity
@@ -67,6 +73,7 @@ class MemberSaid:
     confidence: str = ""
     verified: bool = False
     reason: str = ""
+    order_values: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)

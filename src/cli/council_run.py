@@ -46,19 +46,24 @@ from council.roster import Member, Roster, members_to_ask
 from council.prompt import build_prompt
 from council.runner import PROVIDER_CLIENTS, assess
 from council.ruling import ContestedMetric, NoFallbackPublished, UnresolvedMetric
+from council.run import CouncilRun
 from findings.finding import Finding
 from cli.council_detail import nothing_cross_checked, rulings_of
-from cli.progress import NO_PROGRESS, CouncilProgress
+from cli.progress import NO_PROGRESS, CouncilProgress, orders_asked
 from report.council_record import (
     CouncilAssessment,
     CouncilNotAsked,
     CouncilOutcome,
     CouncilWithoutVector,
+    MetricRuling,
 )
 
 OLLAMA_PROVIDER = "ollama"
 FAMILY_SEPARATOR = ":"
 VECTOR_VERSION = "3.1"
+# Every audit asks each metric in both orders (`council.order_check`); only the
+# evaluation harness, which records and replays passes in one order, turns it off.
+ORDER_CHECK = True
 
 SOURCES_AGREE = "no published source disagrees, so there is nothing to reconcile"
 NO_TEXT_TO_READ = "the advisory carries no text for a member to read"
@@ -89,15 +94,14 @@ def local_member(model: str) -> Member:
 
 
 def assessments(
-    findings: tuple[Finding, ...],
-    roster: Roster,
-    clients=PROVIDER_CLIENTS,
-    progress=NO_PROGRESS,
-    every_finding: bool = False,
+    findings: tuple[Finding, ...], roster: Roster,
+    clients=PROVIDER_CLIENTS, progress=NO_PROGRESS,
+    every_finding: bool = False, order_check: bool = ORDER_CHECK,
 ) -> tuple[CouncilOutcome, ...]:
     """Put the council to the findings that need one, and record why the rest were passed over."""
     assessed = [
-        assess_one(one, roster, clients, progress) for one in to_assess(findings, every_finding)
+        assess_one(one, roster, clients, progress, order_check)
+        for one in to_assess(findings, every_finding)
     ]
     return (*assessed, *passed_over(findings, every_finding))
 
@@ -130,14 +134,24 @@ def skipped_because(finding: Finding, every_finding: bool) -> str:
     return SOURCES_AGREE
 
 
-def assess_one(finding: Finding, roster: Roster, clients, progress=NO_PROGRESS) -> CouncilOutcome:
+def assess_one(
+    finding: Finding, roster: Roster, clients,
+    progress=NO_PROGRESS, order_check: bool = ORDER_CHECK,
+) -> CouncilOutcome:
     """Put one advisory to the council, handing on a vector only where it reached one."""
     progress.starting(finding.advisory.advisory_id)
     text = advisory_text(finding)
-    run = assess(text, roster, FALLBACKS, clients, progress.asking)
+    run = assess(text, roster, FALLBACKS, clients, progress.asking, order_check)
     # The text the members actually read, which is what their quotations were
     # checked against and so what the record has to re-check them against.
     rulings = rulings_of(run, build_prompt(METRIC_ORDER[0], text).advisory_shown)
+    return outcome_of(finding, run, rulings)
+
+
+def outcome_of(
+    finding: Finding, run: CouncilRun, rulings: tuple[MetricRuling, ...]
+) -> CouncilOutcome:
+    """Record what one council run reached: a vector, or the metrics it could not settle."""
     unresolved = metrics_of(run, UnresolvedMetric)
     contested = metrics_of(run, ContestedMetric)
     if unresolved or contested:
@@ -168,13 +182,15 @@ def metrics_of(run, kind) -> tuple[str, ...]:
 
 
 def watching(
-    findings: tuple[Finding, ...], roster: Roster, out, every_finding: bool = False
+    findings: tuple[Finding, ...], roster: Roster, out,
+    every_finding: bool = False, order_check: bool = ORDER_CHECK,
 ) -> CouncilProgress:
     """Count the calls this roster will make over the findings it will be asked about."""
     # Only the findings this run will ask about and only the members it will ask:
     # a total that counts calls nobody makes is a progress bar that never fills.
     asking = to_assess(findings, every_finding)
-    return CouncilProgress(len(asking), len(members_to_ask(roster)), out)
+    orders = orders_asked(order_check)
+    return CouncilProgress(len(asking), len(members_to_ask(roster)), out, orders)
 
 
 def advisory_text(finding: Finding) -> str:

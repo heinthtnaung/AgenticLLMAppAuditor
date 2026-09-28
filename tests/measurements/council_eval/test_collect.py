@@ -2,14 +2,17 @@
 
 import io
 import json
+import re
 
 import pytest
 
 import eval_samples as samples
+from cli.council_run import OLLAMA_PROVIDER, assess_one, build_roster
+from council.prompt import REVERSED_PROMPT_VERSION
 from cvss.metrics import METRIC_ORDER
 from council_eval.collect import ask_item, collect, first_load_seconds, progress_line
-from council_eval.recording import CallRecord
-from council_eval.variants import LIBRARY_GUIDANCE, LIBRARY_REVERSED
+from council_eval.recording import CallRecord, RecordingClient
+from council_eval.variants import LIBRARY_GUIDANCE, LIBRARY_REVERSED, VariantMismatch
 
 HEADER = samples.header()
 
@@ -25,6 +28,15 @@ def test_an_item_is_asked_every_metric_in_the_product_s_order():
     records = ask_item(samples.item(), samples.MODEL, server)
     assert [one.metric for one in records] == list(METRIC_ORDER)
     assert [samples.metric_of(one) for one in server.posted[1:]] == list(METRIC_ORDER)
+
+
+def test_a_pass_asked_with_the_audit_s_order_check_on_stops_rather_than_record_it():
+    # The recording client words only the product's in-order prompt, so the
+    # pass is asked with the check off (`variants.PASS_ORDER_CHECK`).
+    client = RecordingClient(post=samples.FakeServer(), clock=lambda: 0.0)
+    roster, clients = build_roster((samples.MODEL,)), {OLLAMA_PROVIDER: client}
+    with pytest.raises(VariantMismatch, match=re.escape(REVERSED_PROMPT_VERSION)):
+        assess_one(samples.finding(), roster, clients)
 
 
 def test_a_pass_writes_its_header_then_a_line_per_call_then_its_end(tmp_path):

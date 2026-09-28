@@ -42,7 +42,12 @@ CONFIDENCE_ORDER: tuple[Confidence, ...] = (Confidence.LOW, Confidence.MEDIUM, C
 
 @dataclass(frozen=True)
 class MemberIdentity:
-    """Which member answered, what it was, and whether the text left this machine."""
+    """Which member answered, what it was, and whether the text left this machine.
+
+    `reversed_prompt_version` names the reversed prompt where the member was
+    asked the options both ways round (`council.order_check`), and is empty
+    where it was asked them once.
+    """
 
     name: str
     provider: str
@@ -50,6 +55,7 @@ class MemberIdentity:
     family: str
     ran_local: bool
     prompt_version: str
+    reversed_prompt_version: str = ""
 
     def __post_init__(self) -> None:
         """Refuse an identity a reader could not reconstruct the run from."""
@@ -124,7 +130,31 @@ class MemberGuessed:
         refuse_unnamed_member(self.metric, self.member)
 
 
-MemberReply = MemberAnswer | MemberFoundNoEvidence | MemberGuessed
+@dataclass(frozen=True)
+class MemberOrderSensitive:
+    """One member naming one value with a metric's options in order and another reversed.
+
+    What it records is that the list's order decided the member's answer, so it
+    is no answer: like a decline, it can neither support a value nor contest one.
+    Both values are kept, the in-order one first, because which way it leaned
+    each time is the evidence that its answer was positional.
+    """
+
+    metric: str
+    in_order_value: str
+    reversed_value: str
+    member: MemberIdentity
+
+    def __post_init__(self) -> None:
+        """Refuse two readings that are not both legal, or not different at all."""
+        refuse_illegal_pair(self.metric, self.in_order_value)
+        refuse_illegal_pair(self.metric, self.reversed_value)
+        if self.in_order_value == self.reversed_value:
+            raise ValueError(f"{self.metric} read {self.in_order_value} both ways is stable")
+        refuse_unnamed_member(self.metric, self.member)
+
+
+MemberReply = MemberAnswer | MemberFoundNoEvidence | MemberGuessed | MemberOrderSensitive
 
 
 def refuse_unnamed_member(metric: str, member: object) -> None:

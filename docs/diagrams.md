@@ -129,8 +129,9 @@ a source is precedence `docs/SCORING_MODEL.md` refuses to set, and a vector a
 council settled is shown beside those scores with its own CVSS base score,
 saying the risk score does not use it. Measured against published vectors on
 this repository, the settled values of `qwen2.5:7b-instruct` and
-`llama3.2:latest` scored below answering one value throughout on every metric
-(`measurements/README.md`), so nothing a council settles reaches the score.
+`llama3.2:latest` scored below answering one value throughout on every metric,
+asked in either order (`measurements/README.md`), so nothing a council settles
+reaches the score.
 
 One record, three renderings, all of them saved. Every run renders text for a
 terminal, JSON for the audit artefact, and one self-contained HTML page that
@@ -329,8 +330,9 @@ and why 30/25/25/20 is the one to use.
 
 **Built, except the hosted client.** `src/council/` is the roster and its gate,
 the redaction, the prompt, the local Ollama client, the quotation check, the
-chairman and the runner; `src/cvss` is the engine below. Nothing reaches a
-hosted member, and no escalation policy re-asks a contested metric.
+order check, the chairman and the runner; `src/cvss` is the engine below.
+Nothing reaches a hosted member, and no escalation policy re-asks a contested
+metric.
 
 ```mermaid
 flowchart TD
@@ -358,16 +360,20 @@ flowchart TD
     shown --> mdot
     h1 --> skip["Skipped, with the reason:<br/>egress not opted in,<br/>or no client exists to reach it"]
 
-    m1 --> rep{"What came back?"}
-    m2 --> rep
-    mdot --> rep
+    m1 --> twice["Each metric asked twice:<br/>options in order, then reversed"]
+    m2 --> twice
+    mdot --> twice
+    twice --> both{"The same value<br/>both ways?"}
+    both -->|"yes: the in-order reply stands"| rep{"What came back?"}
+    both -->|"two different values"| ords["Order-sensitive:<br/>both values recorded"]
+    both -->|"a decline either way"| abs["An absence:<br/>a fact about the advisory"]
     rep -->|"a value and a quotation"| qc["Quotation check in application code<br/>against the text the member saw<br/>the same check for every member"]
-    rep -->|"no evidence found"| abs["An absence:<br/>a fact about the advisory"]
     rep -->|"a value it cannot quote"| gue["A guess:<br/>a fact about the member"]
 
     qc --> chr["Chairman reconciles<br/>the verified answers alone<br/>values are counted towards a ruling,<br/>members never; the basis is the<br/>one place a member is counted"]
     abs -. "no weight" .-> chr
     gue -. "no weight" .-> chr
+    ords -. "no weight" .-> chr
 
     chr --> st{"What do the verified answers<br/>support, metric by metric?"}
     st -->|"one value"| settled["Settled"]
@@ -387,7 +393,7 @@ flowchart TD
     vec --> eng
     num --> hmn["Human approves or overrides"]
 
-    rec["Record: every member and its provider,<br/>every member skipped and why, every finding<br/>not asked and why, every guess, what the<br/>chairman decided from, and the vector or<br/>the metrics that stopped one"]
+    rec["Record: every member and its provider,<br/>every member skipped and why, every finding<br/>not asked and why, every guess and<br/>order-sensitive pair, what the<br/>chairman decided from, and the vector or<br/>the metrics that stopped one"]
     chr -.-> rec
     skip -.-> rec
     pass -.-> rec
@@ -396,8 +402,9 @@ flowchart TD
 
 **The council is scoped before it is a council.** It reconciles sources, so a
 finding whose sources already agree is not its work. On the audited repository
-13 of 18 findings are undisputed, so a two-member run makes 80 calls where
-`--council-all-findings` makes 288; runs of both kinds are kept in
+13 of 18 findings are undisputed, so a two-member run makes 160 calls where
+`--council-all-findings` makes 576, every metric asked in both orders; runs of
+both kinds, from before the order check, are kept in
 `measurements/council_runs/`. A finding **no** source scored takes the other
 branch, and so does one carrying a source the calculator could not read: in
 neither case has anyone checked that the sources agree, and for the first a
@@ -451,12 +458,15 @@ three words later publishes the disputed metric's value in words as well. No
 pattern takes that out without taking the advisory's reasoning with it, so it is
 a known gap rather than a closed one — `docs/COUNCIL.md` carries the example.
 
-Three replies, three shapes, and only one of them can decide anything. A value
-with a quotation goes to the check; an absence and a guess are recorded and
-weigh nothing. They are kept apart because an absence is a fact about the
-advisory and a guess is a fact about the member — and a model asked about a
-metric its text is silent on tends to guess rather than decline, so the two get
-mixed by any design that folds them together.
+Four replies, four shapes, and only one of them can decide anything. A value
+with a quotation goes to the check; an absence, a guess and an order-sensitive
+pair are recorded and weigh nothing. The last exists because every metric is
+asked twice, with the options in order and then reversed, and a member whose two
+values differ was answering the list, not the advisory. They are kept apart
+because an absence is a fact about the advisory and a guess is a fact about the
+member — and a model asked about a metric its text is silent on tends to guess
+rather than decline, so the two get mixed by any design that folds them
+together.
 
 Members are a panel and not a chain. Each sees the advisory text alone, so the
 answers are independent and can be measured. Nothing counts them towards a
@@ -485,9 +495,9 @@ vector still re-derives the recorded number.
 
 What this does not show: the shape of the roster file, which is a sketch in
 `docs/COUNCIL.md` rather than a committed format; and the arithmetic of cost,
-which is n × the findings the scope leaves × metrics and is settled before a
-scan. What puts an advisory to the council is now the left-hand branch above,
-where nothing did before.
+which is n × the findings the scope leaves × metrics × 2 orders and is settled
+before a scan. What puts an advisory to the council is now the left-hand branch
+above, where nothing did before.
 
 ## 5. Build status
 
@@ -501,7 +511,7 @@ flowchart LR
         b11["src/deps/manifests<br/>the manifests no lock file<br/>Syft reads is beside"]
         b4["src/cvss<br/>vector parser, metric vocabulary,<br/>Base score equations"]
         b5["src/findings<br/>the join, every source's score apart"]
-        b7["src/council<br/>roster and the egress gate, redaction,<br/>prompt, provider registry, chairman,<br/>the local server's settings and<br/>the members --council runs"]
+        b7["src/council<br/>roster and the egress gate, redaction,<br/>prompt, provider registry, chairman,<br/>the local server's settings,<br/>the members --council runs<br/>and the order check"]
         b8["src/report<br/>the record, and three renderings of it:<br/>text, JSON, one self-contained HTML page"]
         b9["src/cli<br/>arguments, preflight, the audit order,<br/>the council's scope and its record, the<br/>stderr progress stream, the report files<br/>in reports/, and the exit code a<br/>pipeline reads"]
         b6["src/scoring<br/>the approved question library, categories<br/>clamped then weighted, and the band"]

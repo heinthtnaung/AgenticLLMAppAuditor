@@ -26,7 +26,7 @@ def calls_made() -> list[tuple[str, str, str]]:
 
     roster = Roster(tuple(member(name) for name in PAIR))
     assess(RAW_ADVISORY, roster, FALLBACKS, clients_of(announcing),
-           lambda metric, name: said.append(("told", metric, name)))
+           lambda metric, name, reversed_options: said.append(("told", metric, name)))
     return said
 
 

@@ -6,7 +6,7 @@ import pytest
 
 from cli.council_detail import rulings_of
 from cli.council_run import FALLBACKS, build_roster
-from council.prompt import build_prompt
+from council.prompt import REVERSED_PROMPT_VERSION, build_prompt
 from council.runner import assess
 from report.council_record import Outcome, SaidKind
 from cli_samples import ADVISORY, LEGAL, QUOTATION
@@ -31,10 +31,10 @@ def replying(**by_member):
     return {"ollama": said}
 
 
-def ruled(clients, members=("qwen2.5:7b", "gemma4:latest")):
+def ruled(clients, members=("qwen2.5:7b", "gemma4:latest"), order_check=False):
     """Run a council and convert what it did into the record's own terms."""
     roster = build_roster(members)
-    run = assess(TEXT, roster, FALLBACKS, clients)
+    run = assess(TEXT, roster, FALLBACKS, clients, order_check=order_check)
     return {one.metric: one for one in rulings_of(run, build_prompt("AV", TEXT).advisory_shown)}
 
 
@@ -118,3 +118,18 @@ def test_the_chairmans_reasoning_is_recorded_beside_what_it_ruled_on():
 )
 def test_a_metric_the_chairman_could_not_settle_says_which_way_it_failed(clients, outcome):
     assert ruled(clients)["AC"].outcome is outcome
+
+
+def flipping(member, prompt):
+    """Answer AV with L when its options are reversed, and as `replying` does otherwise."""
+    if prompt.metric == "AV" and prompt.version == REVERSED_PROMPT_VERSION:
+        return json.dumps({"value": "L", "evidence": QUOTATION, "confidence": "high"})
+    return replying()["ollama"](member, prompt)
+
+
+def test_a_member_whose_two_orders_disagreed_is_recorded_with_both_values():
+    av = ruled({"ollama": flipping}, order_check=True)["AV"]
+    said = by_name(av)["qwen2.5:7b"]
+    assert said.kind is SaidKind.ORDER_SENSITIVE
+    assert (said.order_values, said.value) == (("N", "L"), "")
+    assert av.outcome is Outcome.UNRESOLVED

@@ -62,10 +62,20 @@ def said_of(said: MemberSaid) -> dict[str, Any]:
         "family": said.member.family,
         "ran_local": said.member.ran_local,
         "prompt_version": said.member.prompt_version,
+        "reversed_prompt_version": said.member.reversed_prompt_version or None,
         "said": said.kind.value,
         "value": said.value or None,
         "evidence": said.evidence or None,
         "confidence": said.confidence or None,
         "evidence_verified": said.verified,
         "reason": said.reason or None,
+        "orders": orders_of(said),
     }
+
+
+def orders_of(said: MemberSaid) -> dict[str, str] | None:
+    """Give an order-sensitive member's two values, or null for any other kind of reply."""
+    if not said.order_values:
+        return None
+    in_order, reversed_order = said.order_values
+    return {"in_order": in_order, "reversed": reversed_order}

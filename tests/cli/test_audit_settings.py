@@ -59,7 +59,7 @@ def test_a_council_run_states_the_window_and_timeout_it_used_beside_the_pinning(
     report = run_audit(options_for(tmp_path, ("small:1b",)), DATED)
     assert report.provenance.local_models == LocalModels(
         server="http://127.0.0.1:11434", context_tokens=16_384, timeout_seconds=600.0,
-        temperature=0, seed=11, think=False,
+        temperature=0, seed=11, think=False, order_check=True,
     )
 
 
@@ -87,7 +87,7 @@ def test_the_json_record_states_the_local_models_and_null_when_none_was_asked(
     _, alone, _ = run_command_line(["--format", "json"], monkeypatch, tmp_path)
     assert json.loads(asked)["run"]["local_models"] == {
         "server": "http://127.0.0.1:11434", "context_tokens": 8192, "timeout_seconds": 180.0,
-        "temperature": 0, "seed": 11, "think": False,
+        "temperature": 0, "seed": 11, "think": False, "order_check": True,
     }
     assert json.loads(alone)["run"]["local_models"] is None
 

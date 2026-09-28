@@ -11,7 +11,12 @@ It sits in `src/cli/` because it is the only place that may see both sides:
 conversion.
 """
 
-from council.answer import MemberAnswer, MemberFoundNoEvidence, MemberGuessed
+from council.answer import (
+    MemberAnswer,
+    MemberFoundNoEvidence,
+    MemberGuessed,
+    MemberOrderSensitive,
+)
 from council.evidence import is_quotation_from
 from council.ruling import Basis, ContestedMetric, SettledMetric, UnresolvedMetric
 from council.run import MemberFailure
@@ -46,12 +51,15 @@ def ruling_of(round_, advisory_shown: str) -> MetricRuling:
 
 
 def said_by(reply, advisory_shown: str) -> MemberSaid:
-    """Record what one member said, naming which of the four things it did."""
+    """Record what one member said, naming which of the five things it did."""
     who = identity_of(reply.member)
     if isinstance(reply, MemberFailure):
         return MemberSaid(member=who, kind=SaidKind.FAILED, reason=reply.reason)
     if isinstance(reply, MemberFoundNoEvidence):
         return MemberSaid(member=who, kind=SaidKind.DECLINED)
+    if isinstance(reply, MemberOrderSensitive):
+        values = (reply.in_order_value, reply.reversed_value)
+        return MemberSaid(member=who, kind=SaidKind.ORDER_SENSITIVE, order_values=values)
     if isinstance(reply, MemberGuessed):
         return MemberSaid(member=who, kind=SaidKind.GUESSED, value=reply.value)
     return answered_by(reply, who, advisory_shown)
@@ -80,6 +88,7 @@ def identity_of(member) -> MemberIdentity:
         family=member.family,
         ran_local=member.ran_local,
         prompt_version=member.prompt_version,
+        reversed_prompt_version=member.reversed_prompt_version,
     )
 
 

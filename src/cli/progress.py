@@ -1,9 +1,10 @@
 """Saying a council run is alive, on the error stream and never on stdout.
 
-A two-member roster over eighteen findings is 288 model calls, and the runner
-makes them one after another: every call waits for the one before it. The CPU
-full run took 71 min 39 s (`measurements/README.md`), and that much silence is
-indistinguishable from a hung run.
+A two-member roster over eighteen findings is 576 model calls, every metric
+asked in both orders, and the runner makes them one after another: every call
+waits for the one before it. The CPU full run took 71 min 39 s at half that
+(`measurements/README.md`), and that much silence is indistinguishable from a
+hung run.
 
 **Never stdout.** `--format json` writes the audit record there and it has to
 stay pipeable and byte-identical; progress and the record share a process and
@@ -23,6 +24,11 @@ from dataclasses import dataclass, field
 from typing import TextIO
 
 METRICS_PER_FINDING = 8
+# How many times each member is asked each metric: in the options' order, and reversed.
+BOTH_ORDERS = 2
+ONE_ORDER = 1
+# Said after the metric on a reversed call, so its line is not the in-order call's twice.
+REVERSED_LABEL = " (options reversed)"
 
 
 @dataclass
@@ -36,6 +42,8 @@ class CouncilProgress:
     findings: int
     members: int
     out: TextIO
+    # Each metric asked in the options' order and reversed, where the run checks both.
+    orders: int = ONE_ORDER
     asked: int = field(default=0, init=False)
     reached: int = field(default=0, init=False)
     advisory_id: str = field(default="", init=False)
@@ -43,20 +51,21 @@ class CouncilProgress:
     @property
     def calls(self) -> int:
         """Give how many model calls the whole run will make."""
-        return self.findings * METRICS_PER_FINDING * self.members
+        return self.findings * METRICS_PER_FINDING * self.members * self.orders
 
     def starting(self, advisory_id: str) -> None:
         """Note that the council has moved on to another advisory."""
         self.reached += 1
         self.advisory_id = advisory_id
 
-    def asking(self, metric: str, member: str) -> None:
-        """Say which member is about to be asked which metric, before it is asked."""
+    def asking(self, metric: str, member: str, reversed_options: bool = False) -> None:
+        """Say which member is about to be asked which metric, and in which order, before it is."""
         self.asked += 1
+        order = REVERSED_LABEL if reversed_options else ""
         self.out.write(
             f"council {self.asked}/{self.calls}  "
             f"finding {self.reached}/{self.findings} {self.advisory_id}  "
-            f"{metric}  {member}\n"
+            f"{metric}{order}  {member}\n"
         )
         self.out.flush()
 
@@ -68,8 +77,13 @@ class NoProgress:
     def starting(self, advisory_id: str) -> None:
         """Note nothing."""
 
-    def asking(self, metric: str, member: str) -> None:
+    def asking(self, metric: str, member: str, reversed_options: bool = False) -> None:
         """Say nothing."""
 
 
 NO_PROGRESS = NoProgress()
+
+
+def orders_asked(order_check: bool) -> int:
+    """Give how many times each member is asked each metric, once or in both orders."""
+    return BOTH_ORDERS if order_check else ONE_ORDER

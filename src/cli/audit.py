@@ -26,7 +26,7 @@ from report.provenance import AdvisoryDatabase, LocalModels, RunProvenance
 from report.record import Report, build_report
 
 from cli.arguments import Options
-from cli.council_run import assessments, build_roster, watching
+from cli.council_run import ORDER_CHECK, assessments, build_roster, watching
 from cli.organisation_run import organisation_of, weigh_findings
 
 
@@ -95,6 +95,7 @@ def local_models_of(options: Options) -> LocalModels | None:
         temperature=PINNED_TEMPERATURE,
         seed=PINNED_SEED,
         think=PINNED_THINKING,
+        order_check=ORDER_CHECK,
     )
 
 

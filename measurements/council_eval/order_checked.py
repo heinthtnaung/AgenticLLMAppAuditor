@@ -12,8 +12,10 @@ of four verdicts:
 - **declined** -- either declines, and the member declines;
 - **failed** -- either fails or cannot be read, and the member fails.
 
-The chairman then works exactly as it does on any roster. It is a measurement:
-nothing in the product asks twice.
+The chairman then works exactly as it does on any roster. The product's own
+check, `council.order_check`, asks both orders in one run and records an
+order-sensitive member as such rather than as a decline; it rules as this does
+on every metric of the pilot's findings (`test_order_checked_product`).
 """
 
 import json
@@ -37,6 +39,7 @@ from report.council_record import CouncilOutcome
 from council_eval.compose import pass_variant, pass_window
 from council_eval.dataset import Item
 from council_eval.replies import ReplayClient, Replies
+from council_eval.variants import PASS_ORDER_CHECK
 
 STABLE = "stable"
 ORDER_SENSITIVE = "order-sensitive"
@@ -105,7 +108,7 @@ def order_checked_roster(
         for item in items
     ]
     outcomes = tuple(
-        assess_one(item.finding, roster, {OLLAMA_PROVIDER: client})
+        assess_one(item.finding, roster, {OLLAMA_PROVIDER: client}, order_check=PASS_ORDER_CHECK)
         for item, client in zip(items, clients)
     )
     return outcomes, list(chain.from_iterable(client.verdicts for client in clients))

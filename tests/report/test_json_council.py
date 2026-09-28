@@ -7,13 +7,14 @@ passed over is built as `cli.council_run.passed_over` builds one.
 """
 
 from cli.council_run import SOURCES_AGREE
-from council.prompt import PROMPT_VERSION
+from council.prompt import PROMPT_VERSION, REVERSED_PROMPT_VERSION
 from council_runs import (
     AGREED, DECLINED_AND_GUESSED, DECLINED_ON_AV, DISSENTING, LONG_QUOTE, QUOTED_BY_ONE,
     UNPARSEABLE, council_ran, fell_back,
 )
 from report.council_record import CouncilNotAsked
-from report.json_council import council_of
+from report.council_record import MemberIdentity, MemberSaid, SaidKind
+from report.json_council import council_of, said_of
 from report.record import build_report
 from report_samples import PROVENANCE, catalogue, component, finding
 
@@ -96,6 +97,7 @@ def test_a_member_whose_call_failed_is_named_as_fully_as_one_that_answered():
         "family": "gemma4", "ran_local": True,
     }
     assert failed["prompt_version"] == PROMPT_VERSION
+    assert failed["reversed_prompt_version"] == REVERSED_PROMPT_VERSION
 
 
 def test_a_council_that_did_not_run_on_an_advisory_is_null():
@@ -132,3 +134,17 @@ def test_a_vector_says_whether_anything_was_cross_checked_and_no_vector_says_not
 def test_a_vector_carries_the_base_score_it_computes_to_and_no_vector_carries_none():
     assert rendered(council_ran())["base_score"] == 9.8
     assert rendered(council_ran(**DISSENTING))["base_score"] is None
+
+
+def test_an_order_sensitive_member_records_both_values_and_every_other_member_null():
+    who = MemberIdentity("small-local", "ollama", "small:1b", "small", True, PROMPT_VERSION)
+    torn = MemberSaid(who, SaidKind.ORDER_SENSITIVE, order_values=("H", "L"))
+    plain = MemberSaid(who, SaidKind.DECLINED)
+    assert said_of(torn)["orders"] == {"in_order": "H", "reversed": "L"}
+    assert (said_of(torn)["said"], said_of(torn)["value"]) == ("order-sensitive", None)
+    assert said_of(plain)["orders"] is None
+
+
+def test_a_member_asked_the_options_once_names_no_reversed_prompt():
+    who = MemberIdentity("small-local", "ollama", "small:1b", "small", True, PROMPT_VERSION)
+    assert said_of(MemberSaid(who, SaidKind.DECLINED))["reversed_prompt_version"] is None

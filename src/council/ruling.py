@@ -20,8 +20,9 @@ class Basis(Enum):
 
     All three range over the members that **offered a quotation**, whether or
     not it turned out to be in the advisory. A member that quoted nothing -- one
-    that declined, one that guessed, one whose call failed -- took no part in the
-    disagreement and cannot create one, so a dissenting guess does not make the
+    that declined, one that guessed, one whose call failed, one whose two orders
+    of the options disagreed -- took no part in the disagreement and cannot
+    create one, so a dissenting guess does not make the
     basis EVIDENCE. Nor does it make it AGREED: beside one quotation and nothing
     else, the basis is SOLE, because agreement needs a second member to agree.
     These strings go into a record a human reads, so they name the set rather

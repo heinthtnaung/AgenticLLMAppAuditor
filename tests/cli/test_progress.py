@@ -5,7 +5,7 @@ import pathlib
 import re
 from itertools import chain, product
 
-from cli.progress import NO_PROGRESS, CouncilProgress
+from cli.progress import NO_PROGRESS, CouncilProgress, orders_asked
 
 CLOCK = re.compile(r"\b(datetime\.now|time\.time|utcnow|date\.today|perf_counter|monotonic)\b")
 
@@ -30,6 +30,12 @@ def test_the_total_is_every_call_the_run_will_make():
     assert CouncilProgress(findings=18, members=2, out=io.StringIO()).calls == 288
 
 
+def test_a_run_checking_both_orders_counts_each_metric_twice():
+    checked = CouncilProgress(findings=18, members=2, out=io.StringIO(), orders=orders_asked(True))
+    assert checked.calls == 576
+    assert orders_asked(False) == 1
+
+
 def test_one_line_is_said_for_every_member_asked():
     watching, written = reporting(findings=2, members=2)
     for advisory in ("CVE-1", "CVE-2"):
@@ -45,6 +51,16 @@ def test_a_line_locates_the_run_by_finding_metric_and_member():
     assert "CVE-2021-23337" in said
     assert "AV" in said
     assert "gemma4:latest" in said
+
+
+def test_a_reversed_call_says_so_and_still_ends_with_the_member():
+    watching, written = reporting()
+    watching.starting("CVE-1")
+    watching.asking("AV", "qwen")
+    watching.asking("AV", "qwen", reversed_options=True)
+    in_order, reversed_order = written.getvalue().splitlines()
+    assert reversed_order.endswith("AV (options reversed)  qwen")
+    assert in_order.endswith("AV  qwen")
 
 
 def test_the_call_count_climbs_towards_the_total():

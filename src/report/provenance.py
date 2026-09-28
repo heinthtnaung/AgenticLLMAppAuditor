@@ -43,7 +43,11 @@ Database = AdvisoryDatabase | UnknownAdvisoryDatabase
 
 @dataclass(frozen=True)
 class LocalModels:
-    """How every local member of the run was asked: server, window, timeout and pinning."""
+    """How every local member of the run was asked: server, window, timeout, pinning and orders.
+
+    `order_check` says each metric was asked with the options in order and
+    reversed, a value counting only where both gave it.
+    """
 
     server: str
     context_tokens: int
@@ -51,6 +55,7 @@ class LocalModels:
     temperature: float
     seed: int
     think: bool
+    order_check: bool
 
 
 @dataclass(frozen=True)

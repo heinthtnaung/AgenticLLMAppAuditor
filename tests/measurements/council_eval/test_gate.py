@@ -10,6 +10,7 @@ from council.ruling import Basis
 from council_eval.commands import main
 from council_eval.gate import differences, recorded_findings, replayed_findings
 from council_eval.recording import RecordingClient
+from council_eval.variants import PASS_ORDER_CHECK
 from report.text_council import advisory_lines
 
 OTHER_ANSWERS = samples.ANSWERS | {"AV": samples.reply("L"), "UI": samples.DECLINED}
@@ -39,7 +40,9 @@ def outcome(first=samples.ANSWERS, second=OTHER_ANSWERS):
     }
     client = RecordingClient(post=lambda url, payload: servers[payload["model"]](url, payload))
     roster = build_roster((samples.MODEL, samples.OTHER_MODEL))
-    return assess_one(samples.finding(), roster, {OLLAMA_PROVIDER: client})
+    return assess_one(
+        samples.finding(), roster, {OLLAMA_PROVIDER: client}, order_check=PASS_ORDER_CHECK
+    )
 
 
 def settled_outcome():

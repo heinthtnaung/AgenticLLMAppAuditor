@@ -26,7 +26,7 @@ manifest the scan could read no version from.
 | `src/cvss/` | built | a CVSS v3 vector parsed and validated, Temporal metrics included, and its Base score by the published equations |
 | `src/findings/` | built | the join — a CVE affecting an installed component, with every source's score kept apart and attributed |
 | `src/scoring/` | built | the approved question library, per-question weights, categories clamped then weighted, and the band |
-| `src/council/` | built | the roster and its `egress` gate, redaction, the prompt, a provider registry holding one local Ollama client, the quotation check, the chairman and the runner |
+| `src/council/` | built | the roster and its `egress` gate, redaction, the prompt, a provider registry holding one local Ollama client, the quotation check, the order check, the chairman and the runner |
 | `src/organisation/` | built | the answer file, the approval record, and one risk score per published source |
 | `src/report/` | built | the record every run produces, and its three renderings: a terminal report, the JSON audit artefact, and one self-contained HTML page |
 | `src/cli/` | built | the arguments, the preflight refusals, the order the packages run in, which findings the council is put to, the progress it prints to stderr, the three report files in `reports/`, and the exit code |
@@ -296,8 +296,8 @@ JSON, each finding's `organisation_risk` carries a `council_figure` beside
 
 Measured against published vectors on this repository, the settled values of
 `qwen2.5:7b-instruct` and `llama3.2:latest` scored below answering one value
-throughout on every metric. So a reader weighs a council's vector and the score
-does not, whatever the roster. `measurements/README.md` has the figures, and
+throughout on every metric, asked in either order. So a reader weighs a
+council's vector and the score does not, whatever the roster. `measurements/README.md` has the figures, and
 what they cannot show.
 
 **The environment drives those numbers, not the CVE.** The same file with
@@ -376,8 +376,9 @@ audit fetched/vulnscout \
 No `NO_PROXY` export is needed for a council run. Every call a member makes to
 Ollama goes through `src/council/transport.py`, which never uses a proxy, so a
 corporate proxy set on the machine cannot answer for the model server. Run on
-2026-09-25 with the proxy set and `NO_PROXY` unset, the command above with
-`qwen2.5:7b-instruct` alone made all 40 of its calls, and no member failed.
+2026-09-25, before the order check, with the proxy set and `NO_PROXY` unset,
+the command above with `qwen2.5:7b-instruct` alone made all 40 of its calls, and
+no member failed.
 
 **Any model pulled into the local Ollama can be a member.** The two named here,
 `qwen2.5:7b-instruct` and `llama3.2:latest`, are examples: the pair this project
@@ -436,8 +437,9 @@ Temperature 0, seed 11 and `think: false` are not settings. They are what makes
 a local member reproducible, and a run whose sampling a file can change is not
 comparable with the last one (`docs/COUNCIL.md`). The window and the timeout
 can change a result too, so the JSON record's `run.local_models` states the
-server, window and timeout a council run used, beside those three, and is
-`null` for a run with no member.
+server, window and timeout a council run used, beside those three and
+`"order_check": true`, every metric asked in both orders. It is `null` for a
+run with no member.
 
 **Only `AUDITOR_*` lines of `.env` are read**, so the file can hold other keys:
 every other line is passed over unparsed and never quoted. A misspelt
@@ -448,12 +450,64 @@ so a run with neither is untouched by `.env`, whatever it names. No test reads
 them either: `tests/conftest.py` runs every
 test on the defaults.
 
+### Every metric is asked twice, with the options in both orders
+
+**A member's value counts only when it gives the same one both ways.** Each
+council member is asked each metric with its values listed in the
+specification's order, then reversed. The same value both ways stands as the
+in-order reply, its quotation included. Two different values are recorded as
+order-sensitive, both named, and like a decline it neither supports a value nor
+contests one. A failure in either order is a failure, a reversed one's reason
+starting `with the options reversed:`; otherwise a decline in either is a
+decline. The chairman rules on those replies as before. **It costs twice the
+calls.**
+
+It is on because local models answer by where an option sits in the list.
+Measured on this repository's 18 findings, Llama's Attack Vector, Attack
+Complexity and User Interaction and Qwen's Privileges Required and User
+Interaction changed with the order on 7 to 18 of them (`measurements/README.md`).
+The check takes those answers out of the ruling. **Whether a council then
+settles more depends on the roster.** Replayed from the same saved replies, of
+144 metrics:
+
+| Roster | Asked | Settled | Contested | Unresolved | Vectors |
+|---|---|---|---|---|---|
+| Qwen + Llama | one order | 105 | 13 | 26 | 4 |
+| Qwen + Llama | both orders | 83 | 4 | 57 | 0 |
+| Qwen + Gemma | one order | 65 | 69 | 10 | 0 |
+| Qwen + Gemma | both orders | 86 | 37 | 21 | 0 |
+
+Qwen + Llama settles fewer and reaches no vector. Qwen + Gemma settles more,
+because Qwen's positional answers stop contesting Gemma's stable ones. Neither
+roster's agreement with the measurement's reference, the metrics where Red
+Hat's and NVD's or GHSA's vectors agree, changed distinguishably at 18
+findings; the closest was Qwen + Gemma's Attack Vector.
+
+The models are `qwen2.5:7b-instruct`, `llama3.2:latest` and `gemma4:latest`,
+and a roster of others needs its own measurement. The rows are
+`pilot-vulnscout/pilot.score.txt`,
+`order-checked-vulnscout/qwen-llama.order-checked.txt`,
+`gemma4-vulnscout/gemma4.score.txt` and
+`order-checked-vulnscout/qwen-gemma4.order-checked.txt`, all under
+`measurements/council_eval_runs/`.
+
+In the text and the page an order-sensitive member reads
+`order-sensitive: N with the options in order, L reversed`. Its JSON row has
+`"said": "order-sensitive"`, `"value": null` and
+`"orders": {"in_order": "N", "reversed": "L"}`, and `orders` is `null` on every
+other row. Every member row names both prompts it was asked,
+`"prompt_version": "member-base-metric-3"` and
+`"reversed_prompt_version": "member-base-metric-3+reversed-1"`. An audit always
+fills both; the second is `null` only for a member asked in one order, as the
+measurement harness replays them.
+
 ### It is asked only about the findings the sources do not settle
 
 The council reconciles sources, so a finding whose sources already agree is not
 its work. Of the 18 findings on this repository, 5 carry sources that disagree,
-and a two-member run is asked about those 5 — **80 model calls rather than 288**,
-eight metrics for each of 5 findings, twice. A finding **no** source scored is
+and a two-member run is asked about those 5 — **160 model calls rather than
+576**, eight metrics for each of 5 findings and each of two members, in both
+orders. A finding **no** source scored is
 asked about too: there is no agreement to lean on, and a council vector is the
 only severity it will ever carry. So is a finding carrying a source the
 calculator could not read, because an unread vector is not agreement; this
@@ -465,7 +519,7 @@ audit fetched/vulnscout \
     --council-all-findings
 ```
 
-`--council-all-findings` asks about all 18, at the full 288 calls, and
+`--council-all-findings` asks about all 18, at the full 576 calls, and
 `audit fetched/vulnscout --council --council-all-findings` does the same with
 the members `.env` names. **What scoping costs is the one thing only a council
 can find:** whether two sources that agree are both wrong. Nothing here treats
@@ -495,7 +549,8 @@ before it makes the next call, so every member named adds its calls to the wall
 clock rather than running beside the others. A run that says nothing is
 indistinguishable from a hung one. `measurements/README.md` times a full run
 at 71 min 39 s on one baseline and 7 min 3 s on the next, which changed
-placement, second member, call order and Ollama version at once.
+placement, second member, call order and Ollama version at once; both asked
+each metric once, and a run today asks it twice.
 So a run prints one line per call. The recorded `gpu-scoped` run in
 `measurements/council_runs/` was the scoped two-member command, given the answer
 skeleton as well:
@@ -517,6 +572,12 @@ council 9/80  finding 1/5 CVE-2026-13149  AV  llama3.2:latest
 council 16/80  finding 1/5 CVE-2026-13149  A  llama3.2:latest
 council 17/80  finding 2/5 CVE-2021-4279  AV  qwen2.5:7b-instruct
 ```
+
+That run predates the order check, so it asked each metric once. The same
+command now makes 160 calls. Each in-order line keeps the shape above, and the
+reversed call's line follows it, marked after the metric; for one member over
+one finding, the second line is
+`council 2/16  finding 1/1 CVE-2021-23337  AV (options reversed)  small:1b`.
 
 The denominators are what this run will actually do: 5 findings after scoping,
 not 18, and only the members it can reach. A total counting calls nobody makes

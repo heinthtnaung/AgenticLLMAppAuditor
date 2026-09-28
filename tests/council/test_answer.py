@@ -7,6 +7,7 @@ from council.answer import (
     MemberAnswer,
     MemberFoundNoEvidence,
     MemberGuessed,
+    MemberOrderSensitive,
     weakest_confidence,
 )
 from council_samples import NETWORK_QUOTATION, answer, found_nothing, guessed, identity
@@ -150,3 +151,10 @@ def test_a_guess_at_a_value_the_metric_forbids_is_refused():
 def test_a_guess_must_name_the_member_that_made_it():
     with pytest.raises(TypeError, match="must name the member"):
         MemberGuessed(metric="AV", value="N", member="small-local")
+
+
+def test_an_order_sensitive_reply_holds_two_legal_and_different_values():
+    with pytest.raises(ValueError, match="both ways is stable"):
+        MemberOrderSensitive(metric="AV", in_order_value="N", reversed_value="N", member=identity())
+    with pytest.raises(ValueError, match="is not a value of"):
+        MemberOrderSensitive(metric="AV", in_order_value="N", reversed_value="Q", member=identity())

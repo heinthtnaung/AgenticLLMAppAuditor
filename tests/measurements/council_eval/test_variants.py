@@ -151,3 +151,10 @@ def test_a_prompt_that_does_not_read_as_expected_stops_the_pass_rather_than_fail
     with pytest.raises(VariantMismatch, match="2 times, not once") as raised:
         variant_prompt(echoing, REVERSED)
     assert not isinstance(raised.value, ValueError)
+
+
+@pytest.mark.parametrize("metric", METRIC_ORDER)
+def test_the_product_s_reversed_prompt_is_this_variant_word_for_word(metric):
+    # So a pass taken in either the product or the evaluation answers the other.
+    product = build_prompt(metric, samples.ADVISORY_TEXT, reversed_options=True)
+    assert product == asked(metric, REVERSED)

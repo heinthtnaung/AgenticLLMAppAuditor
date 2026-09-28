@@ -61,6 +61,9 @@ def unanswered(said: MemberSaid) -> str:
     """Say what a member that did not answer left behind, if it left anything."""
     if said.kind is SaidKind.GUESSED:
         return f"guessed {said.value} with nothing quoted"
+    if said.kind is SaidKind.ORDER_SENSITIVE:
+        in_order, reversed_order = said.order_values
+        return f"order-sensitive: {in_order} with the options in order, {reversed_order} reversed"
     if said.reason:
         return f"{said.kind.value}: {said.reason}"
     return said.kind.value

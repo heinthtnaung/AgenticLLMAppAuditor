@@ -8,16 +8,21 @@ not, so a member that declined, guessed or failed neither agrees nor dissents.
 import pytest
 
 from cli.council_detail import nothing_cross_checked
+from council.answer import MemberOrderSensitive
 from council.chairman import rule_on_metric
 from council.roster import Roster
 from council.ruling import Basis, PublishedFallback
 from council.runner import assess
 from council_samples import (
     ADVISORY, FALLBACKS, NOT_IN_THE_ADVISORY, RAW_ADVISORY, answer, clients_of, found_nothing,
-    guessed, guessing, member, replying,
+    guessed, guessing, identity, member, replying,
 )
 
 FALLBACK = PublishedFallback(value="L", source="nvd")
+# A member whose two orders of the options named two values: no quotation, so no part in agreement.
+ORDER_SENSITIVE = MemberOrderSensitive(
+    metric="AV", in_order_value="N", reversed_value="L", member=identity("two")
+)
 
 
 def rule(replies):
@@ -27,8 +32,8 @@ def rule(replies):
 
 @pytest.mark.parametrize(
     "beside",
-    [[], [found_nothing(name="two")], [guessed(value="L", name="two")]],
-    ids=["nothing, as a failed call leaves it", "a decline", "a guess"],
+    [[], [found_nothing(name="two")], [guessed(value="L", name="two")], [ORDER_SENSITIVE]],
+    ids=["nothing, as a failed call leaves it", "a decline", "a guess", "order-sensitive"],
 )
 def test_one_quotation_and_no_other_rests_on_that_quotation_alone(beside):
     # A guess carries no weight at all, and that includes no weight towards

@@ -16,7 +16,7 @@ from council_eval.replies import (
     call_line,
     read_replies,
 )
-from council_eval.variants import BASELINE, VARIANTS, Variant
+from council_eval.variants import BASELINE, PASS_ORDER_CHECK, VARIANTS, Variant
 
 MEMBER = Member(samples.MODEL, "ollama", samples.MODEL, "small", runs_local=True)
 PROMPT = build_prompt("AV", samples.ADVISORY_TEXT)
@@ -25,7 +25,8 @@ PROMPT = build_prompt("AV", samples.ADVISORY_TEXT)
 def recorded_calls(variant: Variant = BASELINE) -> dict:
     """Record one member's eight calls on the sample item, the way a pass records them."""
     client = RecordingClient(post=samples.FakeServer(), clock=lambda: 0.0, variant=variant)
-    assess_one(samples.finding(), build_roster((samples.MODEL,)), {OLLAMA_PROVIDER: client})
+    roster, clients = build_roster((samples.MODEL,)), {OLLAMA_PROVIDER: client}
+    assess_one(samples.finding(), roster, clients, order_check=PASS_ORDER_CHECK)
     return {(samples.KEY, samples.MODEL, one.metric): one for one in client.calls}
 
 

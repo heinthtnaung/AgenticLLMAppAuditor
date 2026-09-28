@@ -87,7 +87,8 @@ own entry for the finding, so a run with no answers, and so no risk score, still
 shows what a settled vector scores (`src/report/council_beside.py`). Measured
 against published vectors on the 18 vulnscout findings, the settled values of a
 council of `qwen2.5:7b-instruct` and `llama3.2:latest` scored below answering
-the commonest value on every metric (`measurements/README.md`). A reader can
+the commonest value on every metric, asked in either order
+(`measurements/README.md`). A reader can
 weigh a reading that loses to a constant; the score should not.
 
 **The order a prompt lists a metric's values in is part of the instrument.** A
@@ -96,9 +97,12 @@ User Interaction and Attack Complexity followed the list's order, not the
 advisory, and so did Qwen's User Interaction without the library paragraph;
 all of Llama's reversed User Interaction answers were guesses. The CVSS User
 Guide's paragraph on libraries, added to the prompt, moved neither model toward
-that convention (`measurements/README.md`). Counting a value only when both
-orders give it turns those answers into declines, at twice the calls, and at 18
-findings changes no rate distinguishably ("Order-checked", same file).
+that convention (`measurements/README.md`). So every council run now counts a
+value only when both orders give it, at twice the calls. Measured, that took
+those answers out of the ruling, and at 18 findings it changed no rate
+distinguishably. Whether a council settled more depended on the roster: of 144
+metrics, the pair settled 83 checked against 105 unchecked, and Qwen with
+`gemma4:latest` 86 against 65 ("Order-checked", same file).
 
 ## The roster
 
@@ -301,6 +305,16 @@ about the member.** One can be counted per member across a corpus, and neither
 can once they are mixed. A guess weighs exactly what an absence weighs, which is
 nothing — it can neither settle a metric nor make one contested.
 
+**And a fourth, from asking twice.** Every metric is put to a member with its
+values in the specification's order and then reversed, and the two replies
+become one (`src/council/order_check.py`). The same value both ways stands as
+the in-order reply, quotation, confidence and kind included. Two different
+values make the member **order-sensitive**, recorded with both, which like a
+decline weighs nothing. A failure in either order is a failure, a reversed one
+saying so; otherwise a decline in either is a decline. A lean to the middle
+option survives it, because the middle stays in the middle when the list is
+reversed.
+
 **Expect guesses, and expect the fallback.** Asked about a metric its text is
 silent on, a model tends to answer regardless: `qwen2.5:7b-instruct` returned
 `{"value": "N", "evidence": "", "confidence": "low"}` on two metrics of one
@@ -337,13 +351,13 @@ carries the basis's own words, from `src/council/ruling.py`:
 | `AGREED` | two or more offered quotations, all for this value | "every member that offered a quotation supported this value" |
 | `EVIDENCE` | one of them offered a quotation for another value | "members offering quotations disagreed, and the verified one settled it" |
 
-A guess, a decline and a failed call offer no quotation, so none of them
-counts toward a basis. Beside one quotation and nothing else, the record says
-the value stood alone, not that members agreed. A second member's quotation
-that is not in the advisory still counts: for the same value it makes the
-basis `AGREED`, although only one quotation verified. The basis changes what
-the record says and not the ruling — the value is the one the verified
-evidence supports whichever basis it carries.
+A guess, a decline, an order-sensitive reply and a failed call offer no
+quotation, so none of them counts toward a basis. Beside one quotation and
+nothing else, the record says the value stood alone, not that members agreed. A
+second member's quotation that is not in the advisory still counts: for the same
+value it makes the basis `AGREED`, although only one quotation verified. The
+basis changes what the record says and not the ruling — the value is the one the
+verified evidence supports whichever basis it carries.
 
 **A council that settles only some of the eight still leaves a record.** A
 vector needs all eight metrics, so one unresolved metric with no fallback means
@@ -392,10 +406,11 @@ several. Evidence decides.
 **By default, only the ones the published sources do not settle.** The council
 reconciles sources, so a finding whose sources already agree is not its work. Of
 the 18 findings on the repository this project audits, 5 carry sources that
-disagree — a default two-member run makes 80 calls where asking about all 18
-makes 288. `--council-all-findings` asks about all 18. That 5 in 18 is one
-repository and lower than the two in five measured on the 119-finding corpus
-above; how much scoping saves moves with what is being scanned.
+disagree — a default two-member run makes 160 calls where asking about all 18
+makes 576, every metric asked in both orders. `--council-all-findings` asks
+about all 18. That 5 in 18 is one repository and lower than the two in five
+measured on the 119-finding corpus above; how much scoping saves moves with what
+is being scanned.
 
 **A finding no source scored is asked about, not skipped.** Its sources do not
 agree either — there are none — and `disputed_metrics()` is empty for it, so
@@ -571,7 +586,8 @@ So hosted members are **opt-in per member**, off by default, and the record
 names every member that ran, its provider, and whether it was local or hosted.
 A record that does not say where the text went is not an audit record.
 
-**Money and time.** Calls scale with n × the findings the scope leaves × metrics.
+**Money and time.** Calls scale with n × the findings the scope leaves × metrics
+× 2, every metric asked in both orders.
 The runner asks every member in turn, local or hosted, and waits for each
 answer before it makes the next call. Local members are free and share one
 Ollama server, so for them n buys latency instead of money. A hosted member
@@ -632,10 +648,10 @@ one back inside the path a vector takes to a number.
 ## What is kept
 
 Per assessment: each member's answer and evidence, the model, provider, family
-and prompt version behind it, whether that member ran local or hosted, the
-roster as configured, the chairman's reasoning, the final vector, and the
-computed score. A score nobody can re-derive is not a score, and a roster
-nobody can reconstruct is not a council.
+and both prompt versions behind it, in order and reversed, whether that member
+ran local or hosted, the roster as configured, the chairman's reasoning, the
+final vector, and the computed score. A score nobody can re-derive is not a
+score, and a roster nobody can reconstruct is not a council.
 
 ## What is built, and what is not
 
@@ -644,7 +660,8 @@ and its `egress` gate, the redaction, the prompt and the wire contract, the
 provider registry and the local Ollama client in it, the HTTP seam under that,
 the reply parser, the quotation check, the chairman, and the runner that puts
 one advisory to every reachable member, one member at a time: a member answers
-all eight metrics before the next is asked. `src/cvss` is the engine it hands a
+all eight metrics, each in both orders, before the next is asked, and the order
+check reconciles its two replies. `src/cvss` is the engine it hands a
 vector to.
 
 **The scope is built too, and it is not in that package.** `src/cli/council_run.py`

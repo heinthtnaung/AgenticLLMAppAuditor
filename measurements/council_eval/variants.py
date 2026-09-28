@@ -47,6 +47,12 @@ LIBRARY_BLOCK = f"\n\n{LIBRARY_LEAD}\n\n{LIBRARY_GUIDANCE}"
 LIBRARY_SUFFIX = "+library-1"
 REVERSED_SUFFIX = "+reversed-1"
 
+# A pass asks every metric in its variant's one order, so it is asked and
+# replayed with the product's order check off: that check would put the
+# product's reversed prompt, which no variant changes. `order_checked` pairs two
+# passes instead.
+PASS_ORDER_CHECK = False
+
 
 class VariantMismatch(RuntimeError):
     """The product's prompt does not read as a variant expects, so it cannot be changed safely.

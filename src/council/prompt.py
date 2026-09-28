@@ -42,6 +42,11 @@ changes**: two answers are only comparable if the same question produced them.
 A test fingerprints the rendered prompt against the version, so wording that
 moves without the version moving fails the suite rather than quietly spoiling a
 comparison.
+
+**The same question with the options reversed** is its own version,
+`REVERSED_PROMPT_VERSION`, and the order check (`council.order_check`) asks it
+beside the first. Its words are the council evaluation's `reversed` variant
+exactly, so a pass taken either way answers the other.
 """
 
 import json
@@ -59,6 +64,7 @@ from council.reply_format import (
 from cvss.metrics import metric_name
 
 PROMPT_VERSION = "member-base-metric-3"
+REVERSED_PROMPT_VERSION = "member-base-metric-3+reversed-1"
 
 SCHEMA_INDENT = 2
 
@@ -121,29 +127,29 @@ class MemberPrompt:
     version: str
 
 
-def build_prompt(metric: str, advisory_text: str) -> MemberPrompt:
-    """Build the prompt asking one member for one metric of one advisory."""
+def build_prompt(metric: str, advisory_text: str, reversed_options: bool = False) -> MemberPrompt:
+    """Build the prompt asking one member for one metric of one advisory, in either order."""
     advisory = redact(advisory_text)
     return MemberPrompt(
         metric=metric,
-        system=system_prompt(metric),
-        user=user_prompt(metric, advisory.text),
+        system=system_prompt(metric, reversed_options),
+        user=user_prompt(metric, advisory.text, reversed_options),
         advisory_shown=advisory.text,
         withheld=advisory.removed,
-        version=PROMPT_VERSION,
+        version=REVERSED_PROMPT_VERSION if reversed_options else PROMPT_VERSION,
     )
 
 
-def system_prompt(metric: str) -> str:
+def system_prompt(metric: str, reversed_options: bool = False) -> str:
     """Render the standing instruction: the rules, the metric, and what its values mean."""
-    return SYSTEM_TEMPLATE.format(
-        description=describe(metric), values="\n".join(value_lines(metric))
-    )
+    lines = value_lines(metric, reversed_options)
+    return SYSTEM_TEMPLATE.format(description=describe(metric), values="\n".join(lines))
 
 
-def user_prompt(metric: str, advisory_text: str) -> str:
+def user_prompt(metric: str, advisory_text: str, reversed_options: bool = False) -> str:
     """Render the turn the member answers: the advisory, and the shape of a reply."""
-    return USER_TEMPLATE.format(advisory=advisory_text.strip(), schema=reply_schema(metric))
+    schema = reply_schema(metric, reversed_options)
+    return USER_TEMPLATE.format(advisory=advisory_text.strip(), schema=schema)
 
 
 def describe(metric: str) -> str:
@@ -151,15 +157,21 @@ def describe(metric: str) -> str:
     return f"{metric_name(metric)} ({metric}) measures {definition_of(metric).measures}"
 
 
-def value_lines(metric: str) -> tuple[str, ...]:
-    """List a metric's values as 'X = what it means' lines, in specification order."""
+def value_lines(metric: str, reversed_options: bool = False) -> tuple[str, ...]:
+    """List a metric's values as 'X = what it means' lines, in specification order or reversed."""
     meanings = definition_of(metric).value_meanings
-    return tuple(f"{value} = {meaning}" for value, meaning in meanings.items())
+    lines = tuple(f"{value} = {meaning}" for value, meaning in meanings.items())
+    return listed(lines, reversed_options)
 
 
-def reply_schema(metric: str) -> str:
+def listed(options: tuple[str, ...], reversed_options: bool) -> tuple[str, ...]:
+    """Give a metric's options in specification order, or the other way round."""
+    return options[::-1] if reversed_options else options
+
+
+def reply_schema(metric: str, reversed_options: bool = False) -> str:
     """Show the three fields a reply must carry and what each may hold, for this metric."""
-    allowed = ", ".join(definition_of(metric).value_meanings)
+    allowed = ", ".join(listed(tuple(definition_of(metric).value_meanings), reversed_options))
     return json.dumps(
         {
             VALUE_FIELD: (
