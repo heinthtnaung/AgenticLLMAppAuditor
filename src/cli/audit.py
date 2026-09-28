@@ -11,9 +11,11 @@ running 0.74.0 while nothing was wrong with the report.
 """
 
 import sys
+from dataclasses import replace
 from pathlib import Path
 from typing import TextIO
 
+from council.member_setting import council_members
 from council.ollama import PINNED_SEED, PINNED_TEMPERATURE, PINNED_THINKING
 from council.settings import current_settings
 from deps import manifests, syft_runner, trivy_runner
@@ -33,6 +35,7 @@ def run_audit(
 ) -> Report:
     """Scan one repository against the pinned database and gather everything into a record."""
     # Read first, like the walk below: a bad setting stops the run before the scan.
+    options = members_asked_for(options)
     local = local_models_of(options)
     # Walked first: a directory nobody can list stops the run before the scan.
     unread = manifests.unread_manifests(options.repository)
@@ -71,9 +74,17 @@ def provenance_of(
     )
 
 
+def members_asked_for(options: Options) -> Options:
+    """Give `--council` the members the settings name; any other run keeps the ones it was given."""
+    # Read here and only here, so a `.env` naming members starts no model call on its own.
+    if not options.council_from_settings:
+        return options
+    return replace(options, council_models=council_members())
+
+
 def local_models_of(options: Options) -> LocalModels | None:
     """Say how every local member will be asked, or nothing, for a run that names none."""
-    # The members come from `--council-member` alone: the settings never start a council.
+    # Read only once a flag has named members: a setting alone never starts a council.
     if not options.council_models:
         return None
     chosen = current_settings()

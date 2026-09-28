@@ -386,24 +386,51 @@ readings is about that pair, not the tool, so a model you switch to needs its
 own evaluation on the same findings before its readings are trusted, and
 `measurements/README.md` says how.
 
-Each `--council-member` names one local Ollama model. With none named there is
-no council, which is the default: the published scores stand side by side, and
-a council, when one runs, adds its own reading beside them without choosing
-among them.
+Each `--council-member` names one local Ollama model. With none named, and no
+`--council`, there is no council, which is the default: the published scores
+stand side by side, and a council, when one runs, adds its own reading beside
+them without choosing among them.
 
-### The server, window and timeout are settings; the sampling is not
+**Or name the members once, in `.env`, and ask for them with `--council`.** With
+`AUDITOR_COUNCIL_MEMBERS=gemma4:latest,qwen2.5:7b-instruct` in `.env`, this runs
+those two, in that order:
 
-Four `AUDITOR_*` keys set how local members are asked. Each is read from the
-environment first, then from `.env` at the project root, then its default.
-`.env.example` holds all four at their defaults: copy it to `.env`, which git
-ignores, and change what you need.
+```bash
+audit fetched/vulnscout --council
+```
+
+Switching models is then one line of `.env`. The setting starts nothing on its
+own, and its value is checked only on a `--council` run: unset or empty, or with
+an empty entry or a name given twice, `--council` is refused, naming the setting
+and where it looked, and `audit` exits `2`; there is no default member. A
+`--council-member` run does not use the value, though a line with no `=`, or the
+key written twice, is refused on any council run, since every `AUDITOR_*` line
+is read. The names are not checked against Ollama: a model it does not hold
+fails when it is asked, each call recorded as that member's failure with the
+server's reason, as a `--council-member` name does. `--council` beside a
+`--council-member` is refused too, rather than one of them winning.
+`--council-all-findings` works with either.
+
+### The members, server, window and timeout are settings; the sampling is not
+
+Five `AUDITOR_*` keys: one names the members `--council` runs, and four set how
+local models are asked. Each is read from the environment first, then from
+`.env` at the project root, then its default. `.env.example` holds all five,
+the members left empty: copy it to `.env`, which git ignores, and change what
+you need.
 
 | Key | Default | What it sets |
 |---|---|---|
+| `AUDITOR_COUNCIL_MEMBERS` | unset: no members | the models `audit --council` runs, comma-separated, in the order they are asked. Nothing else uses it, and `--council` with it unset or empty is refused |
 | `AUDITOR_SERVER_URL` | `http://127.0.0.1:11434` | the Ollama server. It must be this machine, `127.0.0.1`, `localhost` or `::1`, or it is refused; an address ending `/api/generate`, the older form, is read without it |
 | `AUDITOR_TIMEOUT_SECONDS` | `180` | how long one call may wait; a call that waits longer fails as `did not answer within N s` |
 | `AUDITOR_CONTEXT_TOKENS` | `8192` | the window every member is pinned to, which the context guard scales with |
-| `AUDITOR_MODEL` | `qwen2.5:7b-instruct` | the model a measurement asks when it names none. It never starts a council: members come from `--council-member` alone |
+| `AUDITOR_MODEL` | `qwen2.5:7b-instruct` | the model a measurement, such as `prompt_tokens.py`, asks when it names none. It is not the audit's model and never starts a council |
+
+**`AUDITOR_MODEL` does not choose the audit's council.** An audit asks the
+models `--council-member` names, or the ones `AUDITOR_COUNCIL_MEMBERS` names
+when it is given `--council`, and no other. `AUDITOR_MODEL` answers only for a
+measurement that names no model.
 
 Temperature 0, seed 11 and `think: false` are not settings. They are what makes
 a local member reproducible, and a run whose sampling a file can change is not
@@ -416,8 +443,9 @@ server, window and timeout a council run used, beside those three, and is
 every other line is passed over unparsed and never quoted. A misspelt
 `AUDITOR_*` key, a key written twice and a bad value are each refused, the value
 named with where it came from, and `audit` exits `2` before it scans. It reads
-the settings only when a `--council-member` is named, so a run with none is
-untouched by `.env`. No test reads them either: `tests/conftest.py` runs every
+the settings only when `--council` or a `--council-member` asks for a council,
+so a run with neither is untouched by `.env`, whatever it names. No test reads
+them either: `tests/conftest.py` runs every
 test on the defaults.
 
 ### It is asked only about the findings the sources do not settle
@@ -437,10 +465,12 @@ audit fetched/vulnscout \
     --council-all-findings
 ```
 
-`--council-all-findings` asks about all 18, at the full 288 calls. **What scoping
-costs is the one thing only a council can find:** whether two sources that agree
-are both wrong. Nothing here treats any source as the reference, so that is a
-real loss and the flag is how you refuse it.
+`--council-all-findings` asks about all 18, at the full 288 calls, and
+`audit fetched/vulnscout --council --council-all-findings` does the same with
+the members `.env` names. **What scoping costs is the one thing only a council
+can find:** whether two sources that agree are both wrong. Nothing here treats
+any source as the reference, so that is a real loss and the flag is how you
+refuse it.
 
 Every finding the council was not put to is named in the report with the reason
 — `no published source disagrees, so there is nothing to reconcile`, or `the

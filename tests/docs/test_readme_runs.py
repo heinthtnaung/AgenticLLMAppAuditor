@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-from cli.arguments import parse_arguments
+from cli.arguments import Options, parse_arguments
 
 from docs_samples import marker_changed, run_changing_an_answer
 from readme_markers import read_readme
@@ -38,15 +38,20 @@ def test_a_change_token_that_cannot_be_read_is_refused():
         printed_runs(damaged)
 
 
-def test_no_documented_run_names_a_council_member_so_none_reads_the_operator_s_settings():
+def asks_for_a_council(options: Options) -> bool:
+    """Say whether a run asks for a council, by naming members or by `--council`."""
+    return bool(options.council_models) or options.council_from_settings
+
+
+def test_no_documented_run_asks_for_a_council_so_none_reads_the_operator_s_settings():
     """The live check runs each block in a child process, which reads `.env` for a council run."""
     # `tests/conftest.py` keeps the operator's settings out of this process only,
-    # and `cli.audit` reads them for a run naming `--council-member`. The
+    # and `cli.audit` reads them for a run asking for a council either way. The
     # arguments are the ones the live check runs, read by the CLI's own parser.
     runs = printed_runs(read_readme())
     council = [
         run.directive
         for run in runs
-        if parse_arguments(arguments_of(run, ANSWER_FILE)).council_models
+        if asks_for_a_council(parse_arguments(arguments_of(run, ANSWER_FILE)))
     ]
     assert council == []

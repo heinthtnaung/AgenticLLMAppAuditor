@@ -125,8 +125,14 @@ def test_a_member_named_no_further_takes_its_model_window_and_server_from_the_se
         build_request(build_prompt("AV", "word " * 2600), pinning)
 
 
-def test_the_committed_example_holds_the_four_settings_at_their_defaults_and_nothing_else():
+def test_the_committed_example_holds_every_setting_at_its_default_and_nothing_else():
     example = Path(settings.__file__).resolve().parents[2] / ".env.example"
     lines = [line for line in example.read_text("utf-8").splitlines() if line and line[0] != "#"]
-    assert [line.split("=")[0] for line in lines] == list(settings.DEFAULTS)
+    assert [line.split("=")[0] for line in lines] == list(settings.NAMES)
     assert load_settings({}, example) == DEFAULTS
+
+
+def test_the_members_setting_is_known_here_and_changes_no_setting_of_the_server(tmp_path):
+    # Read by `council.member_setting` only; here it is a name, and not a misspelling.
+    written = env_file(tmp_path, "AUDITOR_COUNCIL_MEMBERS=a:1b,a:1b")
+    assert load_settings({"AUDITOR_COUNCIL_MEMBERS": ""}, written) == DEFAULTS

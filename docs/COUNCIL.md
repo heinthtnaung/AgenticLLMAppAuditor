@@ -107,11 +107,12 @@ one model reached through one provider, and a roster mixes the two kinds
 freely.
 
 **Any model pulled into the local Ollama can be a local member**, by the name
-Ollama gives it. What this project has measured of members' readings is of
-`qwen2.5:7b-instruct` and `llama3.2:latest` as a pair, and of `gemma4:latest`
-and `qwen2.5-coder:7b-instruct` one pass each. It says nothing of another model:
-a model you add needs its own evaluation before its readings are trusted
-(`measurements/README.md`).
+Ollama gives it, named with `--council-member` or in `AUDITOR_COUNCIL_MEMBERS`
+for `audit --council` (`README.md`). What this project has measured of
+members' readings is of `qwen2.5:7b-instruct` and `llama3.2:latest` as a pair,
+and of `gemma4:latest` and `qwen2.5-coder:7b-instruct` one pass each. It says
+nothing of another model: a model you add needs its own evaluation before its
+readings are trusted (`measurements/README.md`).
 
 | Kind | Reached through | What it costs |
 |---|---|---|
@@ -581,9 +582,12 @@ budget decision as much as a design one.
 
 ## A roster as configuration
 
-**A sketch.** The project has committed to no file format, and this shows what
-a reader would be editing rather than a schema to write against. The model
-names are examples; check the provider's catalogue for current ids.
+**A sketch.** The one roster setting built is `AUDITOR_COUNCIL_MEMBERS`, the
+local models `audit --council` runs, comma-separated (`README.md`). The roster
+below, with families, hosted members, `egress` and a policy, has no committed
+format: it shows what a reader would be editing rather than a schema to write
+against. The model names are examples; check the provider's catalogue for
+current ids.
 
 ```yaml
 council:

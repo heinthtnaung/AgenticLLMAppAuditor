@@ -2,7 +2,7 @@
 
 import pytest
 
-from cli.arguments import JSON_FORMAT, TEXT_FORMAT, parse_arguments
+from cli.arguments import BOTH_COUNCILS, JSON_FORMAT, TEXT_FORMAT, parse_arguments
 from cli.main import COULD_NOT_RUN
 
 
@@ -67,4 +67,26 @@ def test_asking_about_every_finding_with_nobody_to_ask_is_refused(capsys):
     with pytest.raises(SystemExit) as leaving:
         parse_arguments(["repo", "--council-all-findings"])
     assert leaving.value.code == COULD_NOT_RUN
-    assert "needs a --council-member" in capsys.readouterr().err
+    assert "needs --council or a --council-member" in capsys.readouterr().err
+
+
+def test_the_council_flag_asks_for_the_settings_members_and_names_none_itself():
+    options = parse_arguments(["repo", "--council"])
+    assert options.council_from_settings is True
+    assert options.council_models == ()
+
+
+def test_a_run_without_the_council_flag_asks_nothing_of_the_settings():
+    assert parse_arguments(["repo"]).council_from_settings is False
+    assert parse_arguments(["repo", "--council-member", "small"]).council_from_settings is False
+
+
+def test_the_council_flag_can_ask_about_every_finding():
+    assert parse_arguments(["repo", "--council", "--council-all-findings"]).council_all_findings
+
+
+def test_the_council_flag_beside_a_named_member_is_refused_rather_than_one_winning(capsys):
+    with pytest.raises(SystemExit) as leaving:
+        parse_arguments(["repo", "--council", "--council-member", "small"])
+    assert leaving.value.code == COULD_NOT_RUN
+    assert BOTH_COUNCILS in capsys.readouterr().err

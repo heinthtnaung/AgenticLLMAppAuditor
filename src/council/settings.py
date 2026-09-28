@@ -1,6 +1,6 @@
 """The local model server's settings: an environment variable wins, then `.env`, then the default.
 
-Four settings, each named `AUDITOR_*`:
+Five settings, each named `AUDITOR_*`:
 
 - `AUDITOR_MODEL`, the model asked where none is named -- by a measurement
   such as `prompt_tokens.py` or a bare `LocalModel()`, never by an audit, and
@@ -8,10 +8,12 @@ Four settings, each named `AUDITOR_*`:
 - `AUDITOR_SERVER_URL`, the Ollama server, which must be this machine;
 - `AUDITOR_TIMEOUT_SECONDS`, how long one call may take;
 - `AUDITOR_CONTEXT_TOKENS`, the window a member is pinned to, which the
-  context guard in `council.ollama` scales with.
+  context guard in `council.ollama` scales with;
+- `AUDITOR_COUNCIL_MEMBERS`, the models `--council` runs, read by
+  `council.member_setting` and by nothing else.
 
-**A council is never switched on here.** Its members come from
-`--council-member` alone.
+**A council is never switched on here.** A setting names members; only
+`--council` or `--council-member` runs one.
 
 **Only `AUDITOR_*` lines of `.env` are read.** The file is the operator's and
 holds other things -- on this machine, a key for a hosted service this project
@@ -43,6 +45,7 @@ MODEL = "AUDITOR_MODEL"
 SERVER = "AUDITOR_SERVER_URL"
 TIMEOUT = "AUDITOR_TIMEOUT_SECONDS"
 CONTEXT = "AUDITOR_CONTEXT_TOKENS"
+COUNCIL_MEMBERS = "AUDITOR_COUNCIL_MEMBERS"
 
 # The window's default is measured, and pinned rather than generous: the worst
 # advisory of 1,187 takes the prompt to 4,897 tokens by Qwen's count and 5,689 by
@@ -54,6 +57,8 @@ DEFAULTS = {
     TIMEOUT: "180",
     CONTEXT: "8192",
 }
+# Every name a setting may have. The members have no default, so no default names them.
+NAMES = (*DEFAULTS, COUNCIL_MEMBERS)
 
 LOOPBACK_HOSTS = ("127.0.0.1", "localhost", "::1")
 SERVER_SCHEMES = ("http", "https")
@@ -136,11 +141,11 @@ def auditor_setting(line: str, where: str) -> tuple[str, str]:
 
 def refuse_unknown_names(names: Mapping[str, str], where: str) -> None:
     """Refuse an `AUDITOR_*` name that is not a setting, quoting the name and never its value."""
-    unknown = sorted(name for name in names if name.startswith(PREFIX) and name not in DEFAULTS)
+    unknown = sorted(name for name in names if name.startswith(PREFIX) and name not in NAMES)
     if unknown:
         raise SettingsError(
             f"{where} sets {', '.join(unknown)}, which is not a setting; "
-            f"the settings are {', '.join(DEFAULTS)}"
+            f"the settings are {', '.join(NAMES)}"
         )
 
 

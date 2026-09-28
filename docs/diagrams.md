@@ -58,7 +58,7 @@ flowchart TD
     adb --> trivy
     walk -->|"the manifests read from nothing,<br/>named first under not assessed"| rec
 
-    fin --> cou["Council, only if members were named,<br/>and only for the findings their sources<br/>do not settle — diagram 4"]
+    fin --> cou["Council, only if members were named,<br/>by --council-member, or by AUDITOR_COUNCIL_MEMBERS<br/>under --council, and only for the findings<br/>their sources do not settle — diagram 4"]
     fin --> ctx["Organisation context<br/>scored once per source<br/>diagram 3"]
     ans["Answer file<br/>--answers: the approved questions<br/>answered by id, and who approved"] --> ctx
     fin --> rec["Report record<br/>and what was not assessed"]
@@ -115,11 +115,11 @@ Two of the three inputs are optional, and the record says so when they are
 absent. Without `--answers` nobody has been asked about the environment, so
 there is no Organisation Risk Score and the report names the absence rather than
 printing a zero — a number there would read as a finding assessed and found
-harmless. Without `--council-member` no model has read anything, and no council
-reading stands beside the published scores.
+harmless. Without `--council` or `--council-member` no model has read anything,
+and no council reading stands beside the published scores.
 
 The record also keeps what was asked for, because an absent score or ruling has
-two causes. With `--answers` or `--council-member` and nothing found, there is
+two causes. With `--answers` or a council asked for and nothing found, there is
 still no score and no ruling, and the reason says there was no finding to weigh
 or to put, rather than that nobody asked.
 
@@ -342,7 +342,7 @@ flowchart TD
     raw["Advisory text, as the database carries it"] --> red["Redaction<br/>CVE and GHSA ids and vector strings<br/>replaced by markers, not deleted"]
     red --> shown["The text a member sees<br/>no id, no published vector,<br/>no other member's answer"]
 
-    subgraph ROSTER["The roster: n members, added and removed by the operator"]
+    subgraph ROSTER["The roster: n members, added and removed by the operator<br/>named by --council-member, or by AUDITOR_COUNCIL_MEMBERS<br/>for --council; that setting alone starts nothing"]
         subgraph LOCALM["Local: Ollama on this machine<br/>server, window and timeout from AUDITOR_* settings<br/>temperature, seed and think pinned in code"]
             m1["Member 1, local"]
             m2["Member 2, local"]
@@ -501,7 +501,7 @@ flowchart LR
         b11["src/deps/manifests<br/>the manifests no lock file<br/>Syft reads is beside"]
         b4["src/cvss<br/>vector parser, metric vocabulary,<br/>Base score equations"]
         b5["src/findings<br/>the join, every source's score apart"]
-        b7["src/council<br/>roster and the egress gate, redaction,<br/>prompt, provider registry, chairman,<br/>the local server's settings"]
+        b7["src/council<br/>roster and the egress gate, redaction,<br/>prompt, provider registry, chairman,<br/>the local server's settings and<br/>the members --council runs"]
         b8["src/report<br/>the record, and three renderings of it:<br/>text, JSON, one self-contained HTML page"]
         b9["src/cli<br/>arguments, preflight, the audit order,<br/>the council's scope and its record, the<br/>stderr progress stream, the report files<br/>in reports/, and the exit code a<br/>pipeline reads"]
         b6["src/scoring<br/>the approved question library, categories<br/>clamped then weighted, and the band"]
