@@ -10,19 +10,19 @@ from report_samples import LOW_CONFIDENTIALITY, PROVENANCE, TOTAL_LOSS, catalogu
 ADVISORY_ID = "CVE-2019-14234"
 
 
-def figure_of(*council) -> CouncilFigure | None:
-    """Give the council's figure for one advisory in a record carrying these council entries."""
+def figure_in_a_report_of(*council) -> CouncilFigure | None:
+    """Give the council's figure for one advisory in a report carrying these council entries."""
     report = build_report(PROVENANCE, catalogue(component()), (), {}, council)
     return council_figure(report, ADVISORY_ID)
 
 
 def test_a_council_that_settled_a_vector_gives_that_vector_and_its_cvss_base_score():
     # The members answer every metric with its legal value, which is TOTAL_LOSS.
-    assert figure_of(council_ran(ADVISORY_ID)) == CouncilFigure(TOTAL_LOSS, 9.8)
+    assert figure_in_a_report_of(council_ran(ADVISORY_ID)) == CouncilFigure(TOTAL_LOSS, 9.8)
 
 
 def test_a_council_that_settled_no_vector_gives_no_figure():
-    assert figure_of(council_ran(ADVISORY_ID, **DISSENTING)) is None
+    assert figure_in_a_report_of(council_ran(ADVISORY_ID, **DISSENTING)) is None
 
 
 def test_a_finding_the_council_passed_over_gives_no_figure():
@@ -31,7 +31,7 @@ def test_a_finding_the_council_passed_over_gives_no_figure():
 
 
 def test_a_run_with_no_council_gives_no_figure():
-    assert figure_of() is None
+    assert figure_in_a_report_of() is None
 
 
 def test_the_figure_is_named_as_the_councils_and_on_the_cvss_scale():
