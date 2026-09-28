@@ -110,3 +110,23 @@ def test_the_organisation_scores_are_the_same_with_a_council_beside_them_as_with
     alone = risk_section(replace(fully_assessed(), council={}))
     assert COUNCIL_ROW.sub("", beside) == alone
     assert COUNCIL_SOURCE not in alone
+
+
+def test_a_floor_is_named_beside_the_chip_it_raised_with_the_band_before():
+    # 9.8 weighs to 59.4, High by the number; exploited, exposed and critical, Critical.
+    one = finding(DJANGO, vectors={"ghsa": TOTAL_LOSS})
+    answers = all_answers({"THR-1": Answer.YES, "EXP-1": Answer.YES, "BUS-1": Answer.YES})
+    page = risk_section(build_report(PROVENANCE, catalogue(DJANGO), (one,), {}, (), (
+        assess(one, answers, per_source(one)),
+    )))
+    chip = '<span class="value">59.4</span><span class="band">Critical</span></span>'
+    note = "floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: High to Critical"
+    assert f'{chip}<span class="refusal">{note}</span>' in page
+
+
+def test_a_score_no_floor_raised_names_no_floor():
+    one = finding(DJANGO, vectors={"ghsa": TOTAL_LOSS})
+    page = risk_section(build_report(PROVENANCE, catalogue(DJANGO), (one,), {}, (), (
+        assess(one, EXPOSED, per_source(one)),
+    )))
+    assert "floored by" not in page

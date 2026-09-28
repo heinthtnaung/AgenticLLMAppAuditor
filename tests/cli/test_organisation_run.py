@@ -5,7 +5,7 @@ import json
 import pytest
 
 from cli.organisation_run import organisation_of, read_approval, weigh_findings
-from cli_samples import ADVISORY, LODASH
+from cli_samples import ADVISORY, LODASH, advisory_like
 from findings.finding import build_finding
 from organisation.answers import OrganisationAnswers
 from organisation.approval import Approval, NotApproved
@@ -87,3 +87,17 @@ def test_an_approval_with_no_real_time_is_refused(tmp_path):
     })
     with pytest.raises(ValueError, match="is not an ISO 8601 instant"):
         read_approval(path)
+
+
+def test_a_floor_reads_the_answers_one_advisory_overrode_and_only_for_that_advisory():
+    # Exploited in the wild for this advisory alone: ghsa 39.4 and nvd 25.9 stay
+    # the numbers, both Medium, and the floor raises both bands to High.
+    other = build_finding(LODASH, advisory_like("CVE-2000-0001"))
+    answers = OrganisationAnswers(
+        everywhere=all_answers(),
+        by_advisory={ADVISORY.advisory_id: {"THR-1": Answer.YES}},
+    )
+    overridden, untouched = weigh_findings((FINDING, other), answers)
+    assert [(one.score, one.band) for one in overridden.scores] == [(39.4, "High"), (25.9, "High")]
+    assert not overridden.band_depends_on_the_source
+    assert all(one.floors == () for one in untouched.scores)

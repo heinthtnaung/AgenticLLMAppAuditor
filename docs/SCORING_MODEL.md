@@ -127,6 +127,32 @@ bands**, which run 0.0-10.0 and carry their own response times:
 A CVE can be CVSS Critical and organisation Low. That is the point of the
 exercise, not an error to reconcile.
 
+**Two severity floors raise a band the weights leave too low.** A weighted
+total averages, and a vulnerability exploited in the wild on an asset nobody
+exposes still comes out Medium or Low by the weights alone. The rules are chosen,
+not measured (`src/scoring/floors.py`):
+
+| Rule | An explicit Yes to | Band at least | Why |
+|---|---|---|---|
+| `FLOOR-EXPLOITED-HIGH` | THR-1, exploited in the wild | High | it is being used against somebody now, and no weighting of this environment should put it below High |
+| `FLOOR-EXPLOITED-EXPOSED-CRITICAL` | THR-1, EXP-1 internet-facing, and BUS-1 business-critical | Critical | exploited, exposed and critical is the case this score exists to catch |
+
+**Only the band moves.** The number is what the weights give, and the record
+keeps both bands: `score_band`, the one the number gives, and `band`, the one
+the floors leave. Each floor that raised a band is recorded with its rule, the
+answers that met it, and the band before and after; one that raised nothing is
+not recorded. They are applied to each source's score after it is banded.
+
+**Only an explicit Yes triggers one.** Unknown already marks a score
+provisional, and letting it raise a band too would read a guess as a fact; No
+and N/A never do. A floor never lowers a band. The approval rule reads the band
+after the floors, so a floored High needs approval as any High does.
+
+What that costs: the band no longer follows from the number alone. Given the
+all-No skeleton with THR-1 and THR-2 Yes for `CVE-2021-4279`, its GHSA score is
+37.9, Medium on the table above, and its band is High. A reader has to read the
+floor to see why, which is why every floor is on the record.
+
 **The source document calls 0.0 "Info"; the specification calls it "None".** The
 row above is corrected to the published v3.1 qualitative scale, which is what
 `src/cvss/score.py` returns.

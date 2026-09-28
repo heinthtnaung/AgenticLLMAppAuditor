@@ -303,13 +303,18 @@ flowchart LR
     hw --> total
 
     total --> bnd["Band by threshold<br/>Low, Medium, High, Critical"]
+    bnd --> flr{"An explicit Yes to THR-1,<br/>or to THR-1, EXP-1 and BUS-1,<br/>and the band below its floor?"}
+    ans --> flr
+    flr -->|"yes"| raised["Band raised to High or Critical<br/>the number unchanged,<br/>the floor recorded with both bands"]
+    flr -->|"no"| kept["Band as the number gives it"]
 
     ans --> unk{"Any answer Unknown,<br/>or no source scored it?"}
     nosrc --> unk
     unk -->|"yes"| prov["Provisional and flagged,<br/>naming the questions"]
     unk -->|"no"| firm["Settled"]
 
-    bnd --> res["Result"]
+    raised --> res["Result"]
+    kept --> res
     prov --> res
     firm --> res
 ```
@@ -337,8 +342,18 @@ sum, which is arithmetic and not a judgement that the flaw is harmless, and it
 flags the whole score the same way an Unknown answer does. Neither is ever read
 as No, and neither refuses the calculation.
 
+**The floors act on the band, never on the number.** Two rules in
+`src/scoring/floors.py` read the answers once the band is set: an explicit Yes
+to THR-1 puts it at High at least, and a Yes to THR-1, EXP-1 and BUS-1 at
+Critical. Unknown never triggers one, so a guess that marks a score provisional
+cannot raise its band as well. The record keeps the band the number gives beside
+the one the floors left, and each floor that moved it, so both re-derive. Each
+source's score is floored on its own, and the approval rule reads the band after
+the floors.
+
 What this does not show: the weight each individual question carries, and the
-band boundaries. Those are tables in `docs/SCORING_MODEL.md`; that file also
+band boundaries. Those are tables in `docs/SCORING_MODEL.md`, beside the floors
+and their reasons; that file also
 records where the source document contradicts itself on the category weights
 and why 30/25/25/20 is the one to use.
 
@@ -530,7 +545,7 @@ flowchart LR
         b7["src/council<br/>roster and the egress gate, redaction,<br/>prompt, provider registry, chairman,<br/>the local server's settings,<br/>the members --council runs<br/>and the order check"]
         b8["src/report<br/>the record, and three renderings of it:<br/>text, JSON, one self-contained HTML page"]
         b9["src/cli<br/>arguments, preflight, the audit order,<br/>the council's scope and its record, the<br/>stderr progress stream, the report files<br/>in reports/, and the exit code a<br/>pipeline reads"]
-        b6["src/scoring<br/>the approved question library, categories<br/>clamped then weighted, and the band"]
+        b6["src/scoring<br/>the approved question library, categories<br/>clamped then weighted, the band<br/>and the severity floors on it"]
         b10["src/organisation<br/>the answer file, the approval record,<br/>the rule for what needs approval,<br/>one score per source"]
         b0 --> b1
         b0 --> b2

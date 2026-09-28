@@ -146,3 +146,22 @@ def test_an_audit_nobody_approved_says_so_rather_than_looking_signed():
 
 def test_an_audit_with_no_approval_given_at_all_still_says_so():
     assert approval_of(a_report())["approved"] is False
+
+
+def test_a_floor_is_written_beside_the_band_it_raised_and_the_band_the_number_gives():
+    # ghsa's 9.8 weighs to 39.4, which bands Medium; exploited in the wild, it is High.
+    one = finding(DJANGO, vectors={"ghsa": TOTAL_LOSS})
+    raised = assess(one, all_answers({"THR-1": Answer.YES}), per_source(one))
+    written = risk_of(a_report((one,), (raised,)), one.advisory.advisory_id)["scores"][0]
+    assert (written["score"], written["score_band"], written["band"]) == (39.4, "Medium", "High")
+    assert written["floors"] == [{
+        "rule_id": "FLOOR-EXPLOITED-HIGH", "answered_yes": ["THR-1"],
+        "band_before": "Medium", "band_after": "High",
+    }]
+
+
+def test_a_score_no_floor_raised_writes_no_floor_and_one_band_twice():
+    # THR-1 is Unknown here, and only an explicit Yes triggers a floor.
+    one = finding(DJANGO, vectors={"ghsa": TOTAL_LOSS})
+    written = risk_of(a_report((one,), (weighed(one),)), one.advisory.advisory_id)["scores"][0]
+    assert written["floors"] == [] and written["score_band"] == written["band"]

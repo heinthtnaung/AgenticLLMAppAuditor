@@ -8,7 +8,7 @@ from organisation.risk import FindingRisk, assess, per_source
 from report.council_beside import COUNCIL_SOURCE, NOT_IN_THE_SCORE
 from report.record import build_report
 from report.text_risk import risk_block
-from report_samples import PROVENANCE, catalogue, component, finding
+from report_samples import LOW_CONFIDENTIALITY, PROVENANCE, catalogue, component, finding
 from scoring.library import APPROVED_QUESTIONS
 from scoring.question import Answer
 
@@ -153,3 +153,20 @@ def bands_column(lines: list[str], weighed_one: FindingRisk) -> int:
     """Give where one finding's bands start on its line of the block."""
     line = next(one for one in lines if one.strip().startswith(weighed_one.advisory_id))
     return line.index(" and ".join(weighed_one.bands), len(weighed_one.advisory_id))
+
+
+def test_each_floor_is_printed_under_the_score_column_naming_its_rule_source_and_bands():
+    # 39.4 and 25.9 both band Medium by the number; exploited, both are High.
+    vectors = {"ghsa": TOTAL_LOSS, "nvd": LOW_CONFIDENTIALITY}
+    one = finding(DJANGO, advisory_id="CVE-1", vectors=vectors)
+    printed = block(weighed(one, all_answers({"THR-1": Answer.YES})), findings=(one,)).split("\n")
+    assert printed[2].startswith("  CVE-1  nvd 25.9 to ghsa 39.4") and printed[2].endswith("High")
+    assert printed[3:] == [
+        "         floored by FLOOR-EXPLOITED-HIGH: ghsa Medium to High",
+        "         floored by FLOOR-EXPLOITED-HIGH: nvd Medium to High",
+    ]
+
+
+def test_a_score_no_floor_raised_prints_no_floor_line():
+    one = finding(DJANGO, advisory_id="CVE-1", vectors={"ghsa": TOTAL_LOSS})
+    assert "floored by" not in block(weighed(one, SETTLED), findings=(one,))

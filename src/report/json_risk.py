@@ -6,7 +6,8 @@ category's weight in the total is written inside that category's entry, the
 technical term's beside the technical score -- a reader reaches the same number
 from this record alone, pairing nothing by position. The raw total is written beside
 the clamped score because the clamp is invisible in the score alone, and the
-clamp is the step the design is most particular about.
+clamp is the step the design is most particular about. For the same reason a
+severity floor is written beside the band it raised, with the band before it.
 
 The categories are written once per finding rather than once per source: the
 environment does not change with who published a vector, only the technical term
@@ -56,14 +57,28 @@ def council_figure_of(report: Report, advisory_id: str) -> dict[str, Any] | None
 
 def scored_of(scored: Any) -> dict[str, Any]:
     """Give one organisation score, the technical severity it was weighed from, and its weight."""
+    # Both bands: a floor raises the band and never the number, so the band the
+    # number gives is written beside the band the floors left it at.
     return {
         "technical_from": technical_from(scored.technical),
         "technical_score": scored.technical_score,
         "technical_weight": weight_of(scored, Category.TECHNICAL),
         "score": scored.score,
+        "score_band": scored.score_band,
         "band": scored.band,
+        "floors": [floor_of(one) for one in scored.floors],
         "provisional": scored.is_provisional,
         "unknown_questions": list(scored.unknown_questions),
+    }
+
+
+def floor_of(floor: Any) -> dict[str, Any]:
+    """Give one severity floor that raised a band: its rule, the Yes answers, and both bands."""
+    return {
+        "rule_id": floor.rule_id,
+        "answered_yes": list(floor.answered_yes),
+        "band_before": floor.band_before,
+        "band_after": floor.band_after,
     }
 
 

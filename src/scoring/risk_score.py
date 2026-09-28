@@ -1,4 +1,4 @@
-"""The Organisation Risk Score: four clamped categories, weighted, summed, banded.
+"""The Organisation Risk Score: four clamped categories, weighted, summed, banded, floored.
 
 Deterministic by construction -- no model, no clock, no randomness, no network.
 The same answers give the same number on every machine, and the record keeps
@@ -6,7 +6,9 @@ every category **and the weight it carried** beside the total, so somebody can
 re-derive the number by hand from the record rather than from this file.
 
 The bands are in `scoring.bands`, and they are the organisation bands rather
-than the CVSS ones.
+than the CVSS ones. The floors in `scoring.floors` are applied here and nowhere
+else, to the band and never to the number, from the answers the score was
+weighed from; the band the number gives is kept beside the band the floors left.
 """
 
 import math
@@ -16,7 +18,8 @@ from typing import Mapping
 
 from scoring.bands import risk_band
 from scoring.category import CategoryScore
-from scoring.question import Category
+from scoring.floors import AppliedFloor, applied_floors, floored_band
+from scoring.question import Answer, Category
 from scoring.technical import TechnicalInput, is_technical_unknown, technical_category_score
 
 # The table in `docs/SCORING_MODEL.md`. The source document also prints an inline
@@ -57,6 +60,23 @@ class RiskScore:
     weights: tuple[CategoryWeight, ...]
     is_provisional: bool
     unknown_questions: tuple[str, ...]
+    # The band the number gives, before any floor; `band` is the one after them.
+    score_band: str
+    floors: tuple[AppliedFloor, ...]
+
+    def __post_init__(self) -> None:
+        """Refuse a band or a floor that does not follow from the score and the answers here."""
+        # As `CategoryScore` holds its clamp: the type holds the floors, so a
+        # hand-built record cannot claim a floor its answers do not meet.
+        banded = risk_band(self.score)
+        floors = applied_floors(banded, answers_of(self.exposure, self.business, self.threat))
+        expected = (banded, floors, floored_band(banded, floors))
+        if (self.score_band, self.floors, self.band) == expected:
+            return
+        raise ValueError(
+            f"A score of {self.score} bands {banded} and, after its floors, {expected[2]}; "
+            f"this record says {self.score_band} and {self.band}"
+        )
 
 
 def organisation_risk_score(
@@ -72,9 +92,10 @@ def organisation_risk_score(
     technical_score = technical_category_score(technical)
     score = weighted_total(technical_score, exposure, business, threat)
     unknown = unknown_questions_of(exposure, business, threat)
+    floors = applied_floors(risk_band(score), answers_of(exposure, business, threat))
     return RiskScore(
         score=score,
-        band=risk_band(score),
+        band=floored_band(risk_band(score), floors),
         technical=technical,
         technical_score=technical_score,
         exposure=exposure,
@@ -83,6 +104,8 @@ def organisation_risk_score(
         weights=recorded_weights(),
         is_provisional=bool(unknown) or is_technical_unknown(technical),
         unknown_questions=unknown,
+        score_band=risk_band(score),
+        floors=floors,
     )
 
 
@@ -110,6 +133,12 @@ def weighted_total(
         threat.score * CATEGORY_WEIGHTS[Category.THREAT],
     ]
     return round(math.fsum(weighted), SCORE_DECIMALS)
+
+
+def answers_of(*categories: CategoryScore) -> dict[str, Answer]:
+    """Give every answer the score was weighed from, by question id, for the floors to read."""
+    answered = chain.from_iterable(category.answers for category in categories)
+    return {one.question.question_id: one.answer for one in answered}
 
 
 def unknown_questions_of(*categories: CategoryScore) -> tuple[str, ...]:

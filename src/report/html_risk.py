@@ -14,6 +14,10 @@ reader's next question -- which source sits at which end -- is already answered.
 The findings whose band depends on the source come first: that is the question
 this section can newly answer, and it has both answers.
 
+A severity floor that raised a band is named beside the score it raised, with
+the band before and after: the chip carries the band the floors left, which
+the number on it alone would no longer explain.
+
 A vector a council settled is shown under the scores on its own CVSS chip,
 saying the risk score does not use it: beside the scores, never one of them.
 """
@@ -28,6 +32,7 @@ from report.risk_order import bands_contested_first
 RISK_SCALE = "org"
 PROVISIONAL = "provisional"
 BAND_MOVES = "the source changes the band"
+FLOORED_BY = "floored by"
 
 RISK_LEDE = (
     "0 to 100, computed by this system from the answers this organisation gave. It is not "
@@ -96,8 +101,17 @@ def risk_row(scored) -> str:
     return (
         tag("span", text(source_of(scored)), "source-name")
         + scored_chip(RISK_SCALE, number(scored.score), scored.band, "risk")
+        + floors_note(scored)
         + unknown_answers(scored)
     )
+
+
+def floors_note(scored) -> str:
+    """Name each floor that raised this score's band, from the band before to the band after."""
+    if not scored.floors:
+        return ""
+    steps = [f"{one.rule_id}: {one.band_before} to {one.band_after}" for one in scored.floors]
+    return tag("span", text(f"{FLOORED_BY} {', '.join(steps)}"), "refusal")
 
 
 def source_of(scored) -> str:

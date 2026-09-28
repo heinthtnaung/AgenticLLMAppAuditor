@@ -26,7 +26,7 @@ catalogued nothing.
 | `src/deps/` | built | Syft and Trivy: the components a directory declares, the advisories published against them, and the database's own build date; and which manifests have no lock file Syft reads |
 | `src/cvss/` | built | a CVSS v3 vector parsed and validated, Temporal metrics included, and its Base score by the published equations |
 | `src/findings/` | built | the join — a CVE affecting an installed component, with every source's score kept apart and attributed |
-| `src/scoring/` | built | the approved question library, per-question weights, categories clamped then weighted, and the band |
+| `src/scoring/` | built | the approved question library, per-question weights, categories clamped then weighted, the band, and the two severity floors that can raise it |
 | `src/council/` | built | the roster and its `egress` gate, redaction, the prompt, a provider registry holding one local Ollama client, the quotation check, the order check, the chairman and the runner |
 | `src/organisation/` | built | the answer file, the approval record, the rule for which findings need approval, and one risk score per published source |
 | `src/report/` | built | the record every run produces, and its three renderings: a terminal report, the JSON audit artefact, and one self-contained HTML page |
@@ -353,6 +353,25 @@ straddling `Medium and Low` — `CVE-2021-4279` among them at `21.9 to 29.4`, a 
 that is Critical to NVD assessed as Low to Medium for an organisation that
 exposes nothing and would lose nothing. `docs/SCORING_MODEL.md` calls that the
 point of the exercise.
+
+**Two answers can raise a band the weights leave low.** A Yes to THR-1,
+exploited in the wild, puts a finding at High at least, and a Yes to THR-1,
+EXP-1 and BUS-1 together puts it at Critical: `FLOOR-EXPLOITED-HIGH` and
+`FLOOR-EXPLOITED-EXPOSED-CRITICAL`, whose reasons are in `docs/SCORING_MODEL.md`.
+Only the band moves, and only an explicit Yes counts; Unknown, No and N/A never
+raise one. Neither run above shows a floor, because `CVE-2021-4279`, the one
+finding answered exploited, already sits at or above the band each floor it
+meets would set.
+
+Given the skeleton with the `by_advisory` block above added, `CVE-2021-4279`
+scores `ghsa 37.9 to nvd 45.4`, Medium by the weights, and reads `High`, with a
+line under it for each source:
+`floored by FLOOR-EXPLOITED-HIGH: ghsa Medium to High`. The page puts
+`floored by FLOOR-EXPLOITED-HIGH: Medium to High` beside each score's chip. In
+the JSON each of `scores` carries `score_band`, the band its number gives,
+beside `band`, the band after the floors, and `floors`, one entry per floor that
+raised it, with `rule_id`, `answered_yes`, `band_before` and `band_after`. It is
+empty where none did.
 
 **The questions are fixed.** Twelve of them, across exposure, business impact
 and threat — technical severity is not asked, because it comes from the
