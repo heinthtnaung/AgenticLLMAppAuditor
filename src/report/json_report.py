@@ -26,6 +26,7 @@ from report.json_council import council_of
 from report.json_risk import approval_of, risk_of
 from report.provenance import AdvisoryDatabase
 from report.absences import Absence
+from report.approval_needed import needing_approval, reasons_for
 from report.record import Report
 
 INDENT = 2
@@ -74,6 +75,8 @@ def run_of(report: Report) -> dict[str, Any]:
         "findings_with_a_refused_source": sum(
             1 for finding in report.findings if carries_a_refused_source(finding)
         ),
+        # By `organisation.approval_rule`; with no answers, only disagreement can mark one.
+        "findings_needing_approval": len(needing_approval(report)),
     }
 
 
@@ -88,6 +91,7 @@ def database_of(database: Any) -> dict[str, Any]:
 
 def finding_of(report: Report, finding: Any) -> dict[str, Any]:
     """Give one finding with every source's assessment beside every other's."""
+    reasons = reasons_for(report, finding)
     return {
         "component": component_of(finding),
         "advisory": advisory_of(finding),
@@ -98,6 +102,8 @@ def finding_of(report: Report, finding: Any) -> dict[str, Any]:
         "severity_bands": list(bands_crossed(finding)),
         "council": council_of(report, finding.advisory.advisory_id),
         "organisation_risk": risk_of(report, finding.advisory.advisory_id),
+        "needs_approval": bool(reasons),
+        "approval_reasons": [reason.value for reason in reasons],
     }
 
 

@@ -12,9 +12,15 @@ whose readable sources match beside a refused vector gets those rows in a group
 of its own, because a vector nobody could read is not agreement; one nobody
 scored says so rather than showing a zero. A refused vector is kept on
 whichever card it belongs to, marked not scored.
+
+A finding `organisation.approval_rule` marks as needing approval carries the
+mark on its heading, naming the halves of the rule it meets, whichever group
+its card is in.
 """
 
 from cvss.score import severity_band
+from organisation.approval_rule import ApprovalReason
+from report.approval_needed import NEEDS_APPROVAL, reasons_for
 from report.disagreement import (
     agreement_unchecked,
     bands_crossed,
@@ -55,7 +61,7 @@ def contested_section(report: Report) -> str:
     contested = [one for one in report.findings if sources_disagree(one)]
     if not contested:
         return ""
-    cards = [contested_card(one) for one in most_contested_first(tuple(contested))]
+    cards = [contested_card(report, one) for one in most_contested_first(tuple(contested))]
     return section(f"Sources disagree ({len(contested)})", CONTESTED_LEDE, "".join(cards))
 
 
@@ -64,7 +70,7 @@ def unchecked_section(report: Report) -> str:
     unchecked = [one for one in report.findings if agreement_unchecked(one)]
     if not unchecked:
         return ""
-    cards = [finding_card(one, source_list(one)) for one in unchecked]
+    cards = [finding_card(report, one, source_list(one)) for one in unchecked]
     return section(f"A source was refused ({len(unchecked)})", REFUSED_LEDE, "".join(cards))
 
 
@@ -73,7 +79,7 @@ def agreeing_section(report: Report) -> str:
     agreed = [one for one in report.findings if sources_agree(one)]
     if not agreed:
         return ""
-    cards = [finding_card(one, source_list(one)) for one in agreed]
+    cards = [finding_card(report, one, source_list(one)) for one in agreed]
     return section(f"Sources agree ({len(agreed)})", AGREEING_LEDE, "".join(cards))
 
 
@@ -82,33 +88,42 @@ def unscored_section(report: Report) -> str:
     unscored = [one for one in report.findings if not one.is_scored]
     if not unscored:
         return ""
-    return section(
-        f"Not scored ({len(unscored)})", UNSCORED_LEDE, "".join(map(unscored_card, unscored))
-    )
+    cards = [unscored_card(report, one) for one in unscored]
+    return section(f"Not scored ({len(unscored)})", UNSCORED_LEDE, "".join(cards))
 
 
-def finding_card(finding, body: str) -> str:
+def finding_card(report: Report, finding, body: str) -> str:
     """Put one finding on a card: what it is, then what its group shows about it."""
-    return tag("article", finding_name(finding) + body + unreadable_list(finding), "finding")
+    named = finding_name(finding, reasons_for(report, finding))
+    return tag("article", named + body + unreadable_list(finding), "finding")
 
 
-def contested_card(finding) -> str:
+def contested_card(report: Report, finding) -> str:
     """Give one contested finding: how far apart its sources are, then every one of them."""
-    return finding_card(finding, spread_line(finding) + source_list(finding))
+    return finding_card(report, finding, spread_line(finding) + source_list(finding))
 
 
-def unscored_card(finding) -> str:
+def unscored_card(report: Report, finding) -> str:
     """Give one unscored finding, saying whether anything was published at all."""
     if finding.unreadable:
-        return finding_card(finding, "")
-    return finding_card(finding, tag("p", text(NOTHING_PUBLISHED), "spread"))
+        return finding_card(report, finding, "")
+    return finding_card(report, finding, tag("p", text(NOTHING_PUBLISHED), "spread"))
 
 
-def finding_name(finding) -> str:
-    """Name the advisory, linked to its page when it has one, and the component it is against."""
+def finding_name(finding, reasons: tuple[ApprovalReason, ...] = ()) -> str:
+    """Name the advisory, linked to its page when it has one, the component, and any approval."""
     named = tag("span", advisory_name(finding.advisory), "advisory")
-    component = f"{finding.component.name} {finding.component.version}"
-    return tag("h3", named + tag("span", text(component), "component"), "finding-name")
+    installed = f"{finding.component.name} {finding.component.version}"
+    component = tag("span", text(installed), "component")
+    return tag("h3", named + component + approval_flag(reasons), "finding-name")
+
+
+def approval_flag(reasons: tuple[ApprovalReason, ...]) -> str:
+    """Mark a finding needing approval on its heading, naming the halves of the rule it meets."""
+    if not reasons:
+        return ""
+    said = " and ".join(reason.value for reason in reasons)
+    return tag("span", text(f"{NEEDS_APPROVAL}: {said}"), "flag")
 
 
 def advisory_name(advisory) -> str:

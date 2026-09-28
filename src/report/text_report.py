@@ -20,7 +20,8 @@ from organisation.approval import Approval
 from report.provenance import AdvisoryDatabase
 from report.absences import NOTHING_ABSENT
 from report.record import Report
-from report.summary_words import counts, inventory_pointer, unread_pointer
+from report.summary_words import approval_count, counts, inventory_pointer, unread_pointer
+from report.text_approval import approval_needed_block
 from report.text_council import council_block
 from report.text_findings import (
     agreeing_block,
@@ -47,6 +48,7 @@ def as_text(report: Report) -> str:
         council_block(report),
         unmatched_block(report),
         unidentified_block(report),
+        approval_needed_block(report),
         approval_line(report),
         absences_block(report),
     ]
@@ -74,7 +76,12 @@ def database_line(run) -> str:
 
 def summary(report: Report) -> str:
     """Say how much there is, re-flowed to the page, with the pointer to what was left out."""
-    lines = [*wrapped(counts(report), 0), inventory_pointer(report), unread_pointer(report)]
+    lines = [
+        *wrapped(counts(report), 0),
+        inventory_pointer(report),
+        unread_pointer(report),
+        *wrapped(approval_count(report), 0),
+    ]
     return "\n".join(line for line in lines if line)
 
 

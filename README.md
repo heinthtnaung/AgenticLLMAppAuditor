@@ -28,7 +28,7 @@ catalogued nothing.
 | `src/findings/` | built | the join — a CVE affecting an installed component, with every source's score kept apart and attributed |
 | `src/scoring/` | built | the approved question library, per-question weights, categories clamped then weighted, and the band |
 | `src/council/` | built | the roster and its `egress` gate, redaction, the prompt, a provider registry holding one local Ollama client, the quotation check, the order check, the chairman and the runner |
-| `src/organisation/` | built | the answer file, the approval record, and one risk score per published source |
+| `src/organisation/` | built | the answer file, the approval record, the rule for which findings need approval, and one risk score per published source |
 | `src/report/` | built | the record every run produces, and its three renderings: a terminal report, the JSON audit artefact, and one self-contained HTML page |
 | `src/cli/` | built | the arguments, the preflight refusals, the order the packages run in, which findings the council is put to, the progress it prints to stderr, the three report files in `reports/`, and the exit code |
 | question selector | design | every approved question is asked, rather than the few a CVE's prerequisites call for |
@@ -67,6 +67,8 @@ Audit of fetched/vulnscout
   syft 1.52.0  ·  trivy 0.74.0  ·  advisory database built 2026-09-23T20:20:57.734988316Z
 
 18 findings across 60 components. 5 carry sources that disagree.
+Approval is needed for 5 of 18: sources that disagree. With no organisation answers, none was
+checked for a High or Critical Organisation Risk Score. No approval is recorded for this audit.
 
 SOURCES DISAGREE (5)
   CVE-2025-13465  lodash-es 4.17.21
@@ -83,6 +85,13 @@ SOURCES AGREE (13)
 MATCHED NOTHING
   55 components carry no advisory
   0 advisories matched no component
+
+NEEDS APPROVAL (5)
+  CVE-2026-13149  sources that disagree
+  CVE-2021-4279   sources that disagree
+  CVE-2025-13465  sources that disagree
+  CVE-2026-2950   sources that disagree
+  CVE-2026-4800   sources that disagree
 
 NOT ASSESSED
   Organisation Risk Score
@@ -357,6 +366,38 @@ Without `--answers` there is no Organisation Risk Score, and the report says so
 under `NOT ASSESSED` rather than printing a zero. With `--answers` and nothing
 found there is none either, and rather than claim nobody answered, it reads
 `answers were supplied, but there was no finding to weigh them against`.
+
+### Some findings are marked as needing approval
+
+**A finding needs approval when any source's Organisation Risk Score is High or
+Critical, or its published sources disagree.** The first is where a finding
+matters in this environment, and what to do about it is a risk decision no model
+may make. The second is a conflict nobody has resolved, and nothing in this tool
+resolves it. Any source's score counts, not only the lowest, because a High from
+one reading is a High somebody has to own. The rule is code, in
+`src/organisation/approval_rule.py`, so the same record marks the same findings
+every time.
+
+| Where | What it shows |
+|---|---|
+| the summary | the count and which halves of the rule were checked, as `Approval is needed for 5 of 18: sources that disagree.` |
+| text | a `NEEDS APPROVAL (n)` block before `APPROVAL` and `NOT ASSESSED`, one line per finding with the reasons it meets |
+| the page | `needs approval: sources that disagree` on the finding's heading, and the summary's approval sentences as a paragraph of their own |
+| JSON | `needs_approval` and `approval_reasons` on every finding, and `run.findings_needing_approval` |
+
+**Without `--answers` only disagreement is checked**, because there is no risk
+score to band, and the summary says so, as in the run at the top of this page:
+`With no organisation answers, none was checked for a High or Critical Organisation Risk Score.`
+When a finding needs approval and the answer file records none, the summary
+adds `No approval is recorded for this audit.`
+
+**One approval covers the audit.** The answer file's `approval` is recorded once
+and stands for every marked finding, so no finding can be approved apart from
+the rest. With the answers above, all 18 findings land High or Critical on some
+source, so all 18 are marked and the mark tells none of them apart:
+`Approval is needed for 18 of 18: a High or Critical Organisation Risk Score, or sources that disagree.`
+The exit code does not change, because a marked finding is a finding and the
+run exits `1` already.
 
 ### The exit code says which of four things happened
 
@@ -856,7 +897,7 @@ design document wins.
 │   ├── cvss/                 vector parser, metric vocabulary, Base score
 │   ├── deps/                 the Syft and Trivy runners, the database's build date, unread manifests
 │   ├── findings/             the join, and every source's score kept apart
-│   ├── organisation/         the answer file, the approval, one score per source
+│   ├── organisation/         the answer file, the approval and what needs it, one score per source
 │   ├── report/               the record, and the text, JSON and HTML renderings
 │   └── scoring/              the approved questions and the risk score engine
 └── tests/                    mirrors what it tests: src/ by module, the README under docs/

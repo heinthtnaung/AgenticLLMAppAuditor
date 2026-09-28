@@ -13,8 +13,16 @@ file is not a clean result, and the summary is the first thing a reader reads.
 So there it never stands alone: the pointer leads from the counts to the
 manifests named under not assessed. "0 findings across 0 components" says less
 still -- nothing was checked at all -- and gets a pointer of its own.
+
+**The findings needing approval are counted beside the rule that marked them.**
+Without organisation answers there is no risk score, so only disagreement can
+mark one, and a count that did not say so would read as both halves checked.
+Where any finding needs approval and none is recorded, the summary says that too.
 """
 
+from organisation.approval import NotApproved
+from organisation.approval_rule import ApprovalReason
+from report.approval_needed import needing_approval
 from report.council_words import counted
 from report.disagreement import carries_a_refused_source, sources_disagree
 from report.record import Report
@@ -23,6 +31,12 @@ DISAGREE_CLAUSE = "{} sources that disagree"
 REFUSED_CLAUSE = "{} a source this calculator could not read"
 UNREAD_POINTER = "Not in these counts: {} with no lock file Syft reads, named under not assessed."
 EMPTY_POINTER = "Not a clean result: Syft catalogued no component, so nothing was checked."
+APPROVAL_COUNT = "Approval is needed for {} of {}: {}."
+BOTH_HALVES = f"{ApprovalReason.RISK_BAND.value}, or {ApprovalReason.SOURCES_DISAGREE.value}"
+UNWEIGHED = (
+    f"With no organisation answers, none was checked for {ApprovalReason.RISK_BAND.value}."
+)
+UNAPPROVED = "No approval is recorded for this audit."
 
 
 def counts(report: Report) -> str:
@@ -55,3 +69,18 @@ def inventory_pointer(report: Report) -> str:
     if report.component_count:
         return ""
     return EMPTY_POINTER
+
+
+def approval_count(report: Report) -> str:
+    """Count the findings needing approval and the rule that marked them, and say if unapproved."""
+    if not report.findings:
+        return ""
+    needing = len(needing_approval(report))
+    # Without answers there is no risk score, so only disagreement could mark a finding.
+    halves = BOTH_HALVES if report.risk else ApprovalReason.SOURCES_DISAGREE.value
+    said = [APPROVAL_COUNT.format(needing, len(report.findings), halves)]
+    if not report.risk:
+        said.append(UNWEIGHED)
+    if needing and isinstance(report.approval, NotApproved):
+        said.append(UNAPPROVED)
+    return " ".join(said)

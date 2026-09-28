@@ -251,3 +251,13 @@ human act rather than being read from a clock, which is also what keeps a run's
 JSON byte-identical between two runs over the same inputs. Stamping one would
 need an approval command, which does not exist — and it would be the first clock
 anywhere in `src/`.
+
+**Which findings need that approval is a rule, not a judgement.** A finding
+needs approval when any source's Organisation Risk Score is High or Critical, or
+its published sources disagree on a metric (`src/organisation/approval_rule.py`).
+Any source's band counts, because a finding is scored once per source and
+picking one would be the precedence this model leaves open. Without answers
+there is no score to band, so only disagreement can mark a finding, and the
+report says that half alone was checked. The approval stays one per audit: it
+covers every marked finding, and nothing records a decision on one finding
+apart from the rest.

@@ -67,6 +67,8 @@ flowchart TD
     ctx --> rec
     asked["What was asked for<br/>an answer file, council members<br/>kept even when nothing was found"] --> rec
     rec --> rnd["Rendered as text, as JSON,<br/>and as one HTML page"]
+    rec --> apr["Which findings need approval<br/>src/organisation/approval_rule, read off the record:<br/>any source's risk band High or Critical,<br/>or published sources that disagree"]
+    apr -->|"marked on each finding,<br/>counted in the summary"| rnd
     rnd --> out["stdout: the one --format names"]
     rnd --> saved[("reports/: all three, named after<br/>the repository's directory")]
     out --> hum["Human reviews"]
@@ -128,6 +130,14 @@ The record also keeps what was asked for, because an absent score or ruling has
 two causes. With `--answers` or a council asked for and nothing found, there is
 still no score and no ruling, and the reason says there was no finding to weigh
 or to put, rather than that nobody asked.
+
+**Which findings need approval is read off the record, not stored in it.** One
+rule, `src/organisation/approval_rule.py`, marks a finding that any source's
+risk band puts at High or Critical, or whose published sources disagree. Every
+rendering applies it to the same record, so none can mark a different set.
+Without answers there is no band, so only disagreement can mark a finding, and
+the summary says so. The approval itself is one per audit, in the answer file,
+and covers every marked finding.
 
 **The council feeds the record and not the context**, and the missing edge is
 deliberate. Every finding is scored once per published source, because choosing
@@ -521,7 +531,7 @@ flowchart LR
         b8["src/report<br/>the record, and three renderings of it:<br/>text, JSON, one self-contained HTML page"]
         b9["src/cli<br/>arguments, preflight, the audit order,<br/>the council's scope and its record, the<br/>stderr progress stream, the report files<br/>in reports/, and the exit code a<br/>pipeline reads"]
         b6["src/scoring<br/>the approved question library, categories<br/>clamped then weighted, and the band"]
-        b10["src/organisation<br/>the answer file, the approval record,<br/>one score per source"]
+        b10["src/organisation<br/>the answer file, the approval record,<br/>the rule for what needs approval,<br/>one score per source"]
         b0 --> b1
         b0 --> b2
         b0 --> b3

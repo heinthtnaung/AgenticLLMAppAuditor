@@ -34,7 +34,7 @@ from report.html_risk import risk_section
 from report.html_style import STYLESHEET
 from report.provenance import AdvisoryDatabase
 from report.record import Report
-from report.summary_words import counts, inventory_pointer, unread_pointer
+from report.summary_words import approval_count, counts, inventory_pointer, unread_pointer
 
 DOCTYPE = "<!DOCTYPE html>"
 LANGUAGE = "en"
@@ -102,10 +102,16 @@ def database_line(run) -> str:
 
 
 def summary_line(report: Report) -> str:
-    """Say how much there is, with the pointer to what was left out, in one paragraph."""
+    """Say how much there is, with the pointer to what was left out, then what needs approval."""
     pointers = (inventory_pointer(report), unread_pointer(report))
     said = " ".join(part for part in (counts(report), *pointers) if part)
-    return tag("p", text(said), "count")
+    return tag("p", text(said), "count") + approval_count_line(report)
+
+
+def approval_count_line(report: Report) -> str:
+    """Count the findings needing approval in a paragraph of its own, or give nothing when none."""
+    said = approval_count(report)
+    return tag("p", text(said), "count") if said else ""
 
 
 def legend() -> str:
