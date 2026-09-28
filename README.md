@@ -664,10 +664,12 @@ never a whole vector, never the CVE id.
 **Only the quotation is checked.** Each item the model offers names a disputed
 metric, says why in its own words, and quotes the advisory. The first item on
 each disputed metric with a `why` that is not empty and a quotation the advisory
-contains is kept. Every other item is dropped and counted: a quotation not in
-the advisory, an item on a metric the sources agree on, a second item on a
-metric, an empty `why`. If nothing is kept, or the call fails, or the reply
-cannot be read, the finding is not explained and the record says why. Nothing
+contains is kept. Every other item is dropped, and the record keeps it with the
+first reason that applies, in this order: `not a disputed metric`, `empty why`,
+`unverified quotation`, `repeat`. The text and the page show only how many were
+dropped, never a dropped item's words or quotation. If nothing is kept, or the
+call fails, or the reply cannot be read, the finding is not explained and the
+record says why. Nothing
 checks the `why`, and nothing reads an explanation back: no score, band or
 council vector comes from it.
 
@@ -684,10 +686,19 @@ In the JSON, every finding carries `llm_explanation`:
 each item a `metric`, `why`, `evidence`, `evidence_verified` and
 `"why_checked": false`, or `{"assessed": false, "because"}`. `evidence_verified`
 covers the quotation alone; `why_checked` says so, so a machine reader cannot
-take it as covering the prose. Where no finding was explained, `NOT ASSESSED`
-names `Why the sources differ` with one of three reasons: no council was asked
-for, as in the run at the top of this page, no finding's sources disagree, or
-no explanation quoted the advisory.
+take it as covering the prose.
+
+Every `llm_explanation` also carries `dropped_items`, each a `metric`, `why`,
+`evidence`, `evidence_verified`, `"why_checked": false` and its `reason`, and
+`dropped` is how many there are. On a dropped item `evidence_verified` is the
+quotation check's own answer: a repeat quotes the advisory as surely as the item
+kept. `dropped_items` is empty where nothing was offered, and where nothing was
+kept it holds what was, beside a `because` such as
+`small:1b: the model offered 1 item, and none was kept (unverified quotation 1)`.
+Where no finding was explained, `NOT ASSESSED` names `Why the sources differ`
+with one of three reasons: no council was asked for, as in the run at the top of
+this page; no finding's sources disagree; or
+`a model was asked why the sources differ, and no explanation was kept`.
 
 **It costs one call per disputed finding.** It has been tested only with
 stand-in models, and nothing yet measures whether an explanation is right: the

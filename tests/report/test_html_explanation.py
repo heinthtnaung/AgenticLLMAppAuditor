@@ -31,3 +31,9 @@ def test_the_section_follows_the_sources_and_is_never_in_the_risk_figures():
     page = as_html(fully_assessed())
     assert page.index("Sources disagree (") < page.index("Why the sources differ (")
     assert "It does not say what can be read" not in risk_section(fully_assessed())
+
+
+def test_an_item_not_kept_never_reads_as_an_explanation():
+    page = explanation_section(explained_report())
+    assert "A second go." not in page and "all of the files" not in page
+    assert "It is bad." not in page and "the whole disk" not in page

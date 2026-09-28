@@ -239,7 +239,7 @@ flowchart TD
     val --> cal
     cal --> f3["organisation_risk_score"]
     pv -->|"each source's value on the<br/>disputed metrics, and the<br/>redacted advisory"| exl
-    exl --> xq["Quotation check<br/>an item kept only where its quotation<br/>is in the advisory; the why is<br/>the model's words, unchecked"]
+    exl --> xq["Quotation check<br/>an item kept only where its quotation<br/>is in the advisory, the rest recorded<br/>with the reason; the why is<br/>the model's words, unchecked"]
     xq --> f4["llm_explanation"]
     f1 --> out["Report: every entry side by side"]
     f2 --> out
@@ -276,8 +276,9 @@ back door.
 The explainer's arrow comes from the published vectors, not from the
 calculation: it is told each source's value on the metrics they dispute, never a
 whole vector, and reads the redacted advisory beside them. Its boundary is the
-quotation check. An item reaches `llm_explanation` only where its quotation is
-in the advisory; the `why` beside it is the model's words and goes through
+quotation check. An item is kept only where its quotation is in the advisory;
+the rest go into `llm_explanation` as dropped items, each with its reason, and
+onto no page. The `why` beside a kept item is the model's words and goes through
 unchecked, labelled as such, and into no number.
 
 What this does not show: which source wins when they disagree, because nothing

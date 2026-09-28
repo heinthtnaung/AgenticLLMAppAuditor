@@ -22,13 +22,14 @@ asks for one, so every saved pass re-derives without it.
 
 from typing import Mapping
 
-from council.explanation import Explanation, Explained, explain
+from council.explanation import DroppedItem, Explanation, Explained, explain
 from council.providers import PROVIDER_CLIENTS, AskMember
 from council.roster import Member, Roster, members_to_ask
 from findings.finding import Finding
 from cli.council_run import NO_TEXT_TO_READ, advisory_text
 from cli.progress import NO_EXPLANATION_PROGRESS, ExplanationProgress
 from report.explanation_record import (
+    DroppedMetric,
     ExplainedMetric,
     ExplanationRecord,
     SourcesExplained,
@@ -95,9 +96,17 @@ def values_on(finding: Finding, metric: str) -> dict[str, str]:
 
 
 def record_of(advisory_id: str, said: Explanation) -> ExplanationRecord:
-    """Put what the explainer gave into the report's terms."""
+    """Put what the explainer gave into the report's terms, what it did not keep included."""
+    dropped = tuple(dropped_of(one) for one in said.dropped)
     if not isinstance(said, Explained):
-        return SourcesNotExplained(advisory_id, f"{said.model}: {said.because}")
+        return SourcesNotExplained(advisory_id, f"{said.model}: {said.because}", dropped)
     # Verified, every one: `council.explanation` keeps no item whose quotation is not in the text.
     items = tuple(ExplainedMetric(one.metric, one.why, one.quotation, True) for one in said.items)
-    return SourcesExplained(advisory_id, said.model, said.prompt_version, items, said.dropped)
+    return SourcesExplained(advisory_id, said.model, said.prompt_version, items, dropped)
+
+
+def dropped_of(dropped: DroppedItem) -> DroppedMetric:
+    """Put one item that was not kept into the report's terms, with its reason."""
+    said = dropped.item
+    found, reason = dropped.quotation_found, dropped.reason
+    return DroppedMetric(said.metric, said.why, said.quotation, found, reason)

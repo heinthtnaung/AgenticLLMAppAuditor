@@ -5,8 +5,10 @@ on them (`council.explanation_prompt`). What comes back is kept item by item:
 
 - **kept** -- an item on a disputed metric whose quotation is in the advisory the
   model read (`council.evidence.is_quotation_from`), the first such on its metric;
-- **dropped and counted** -- an item whose quotation is not there, one about a
-  metric the sources agree on, or a second on a metric already kept.
+- **dropped, and kept in the record with why** -- the first of these that applies:
+  not a disputed metric, an empty `why`, an unverified quotation, or a repeat of
+  a metric already kept. A dropped item is recorded as the council records an
+  unverified quotation, so a finding nothing was kept for can still be read.
 
 If nothing is kept the finding is not explained, and the reason is recorded, as
 it is when the call fails or the reply cannot be read. **The `why` is never
@@ -16,6 +18,7 @@ checked**: it is the model's prose, and only the quotation beside it is evidence
 council's vector and the Organisation Risk Score are computed without it.
 """
 
+from collections import Counter
 from dataclasses import dataclass
 from typing import Mapping
 
@@ -27,14 +30,34 @@ from council.roster import Member
 from council.transport import ModelUnavailable
 
 
+# Why an item was not kept, the first that applies, in this order.
+NOT_A_DISPUTED_METRIC = "not a disputed metric"
+EMPTY_WHY = "empty why"
+UNVERIFIED_QUOTATION = "unverified quotation"
+REPEAT = "repeat"
+
+
+@dataclass(frozen=True)
+class DroppedItem:
+    """An item the model offered and this did not keep: what it said, and why it was not kept.
+
+    `quotation_found` is the quotation check's answer, asked of every dropped
+    item: a repeat or an item on an agreed metric can quote the advisory exactly.
+    """
+
+    item: ExplanationItem
+    reason: str
+    quotation_found: bool
+
+
 @dataclass(frozen=True)
 class Explained:
-    """An explanation kept: the items whose quotation is in the advisory, and how many were not."""
+    """An explanation kept: the items whose quotation is in the advisory, and those dropped."""
 
     model: str
     prompt_version: str
     items: tuple[ExplanationItem, ...]
-    dropped: int
+    dropped: tuple[DroppedItem, ...]
 
 
 @dataclass(frozen=True)
@@ -44,6 +67,7 @@ class NotExplained:
     model: str
     prompt_version: str
     because: str
+    dropped: tuple[DroppedItem, ...] = ()
 
 
 Explanation = Explained | NotExplained
@@ -60,34 +84,48 @@ def explain(
     # ModelUnavailable is the server; ValueError is a reply that is not the shape asked for.
     except (ModelUnavailable, ValueError) as fault:
         return NotExplained(explainer.model, prompt.version, f"no readable explanation: {fault}")
-    kept = admissible(items, prompt)
+    kept, dropped = sorted_out(items, prompt)
     if not kept:
-        return NotExplained(explainer.model, prompt.version, none_kept(len(items)))
-    return Explained(explainer.model, prompt.version, kept, dropped=len(items) - len(kept))
+        return NotExplained(explainer.model, prompt.version, none_kept(dropped), dropped)
+    return Explained(explainer.model, prompt.version, kept, dropped)
 
 
-def admissible(
+def sorted_out(
     items: tuple[ExplanationItem, ...], prompt: ExplanationPrompt
-) -> tuple[ExplanationItem, ...]:
-    """Keep the first item on each disputed metric whose quotation is in the text the model read."""
+) -> tuple[tuple[ExplanationItem, ...], tuple[DroppedItem, ...]]:
+    """Keep the first good item on each disputed metric, and drop every other with its reason."""
     kept: dict[str, ExplanationItem] = {}
+    dropped: list[DroppedItem] = []
     for item in items:
-        if item.metric in kept or not quoted_on_a_disputed_metric(item, prompt):
+        reason = drop_reason(item, prompt, kept)
+        if reason:
+            found = is_quotation_from(item.quotation, prompt.advisory_shown)
+            dropped.append(DroppedItem(item, reason, found))
             continue
         kept[item.metric] = item
-    return tuple(kept.values())
+    return tuple(kept.values()), tuple(dropped)
 
 
-def quoted_on_a_disputed_metric(item: ExplanationItem, prompt: ExplanationPrompt) -> bool:
-    """Say whether an item is about a disputed metric, says something, and quotes the advisory."""
-    if item.metric not in prompt.metrics or not item.why:
-        return False
-    return is_quotation_from(item.quotation, prompt.advisory_shown)
+def drop_reason(
+    item: ExplanationItem, prompt: ExplanationPrompt, kept: Mapping[str, ExplanationItem]
+) -> str:
+    """Say why an item is not kept, the first reason that applies, or nothing where it is kept."""
+    if item.metric not in prompt.metrics:
+        return NOT_A_DISPUTED_METRIC
+    if not item.why:
+        return EMPTY_WHY
+    if not is_quotation_from(item.quotation, prompt.advisory_shown):
+        return UNVERIFIED_QUOTATION
+    if item.metric in kept:
+        return REPEAT
+    return ""
 
 
-def none_kept(offered: int) -> str:
-    """Say why nothing was kept, from how many items the model offered."""
-    if not offered:
+def none_kept(dropped: tuple[DroppedItem, ...]) -> str:
+    """Say why nothing was kept: no item offered, or every one dropped, counted by reason."""
+    if not dropped:
         return "the model offered no item"
-    items = "item" if offered == 1 else "items"
-    return f"the model offered {offered} {items}, and none quoted the advisory on a disputed metric"
+    items = "item" if len(dropped) == 1 else "items"
+    reasons = Counter(one.reason for one in dropped)
+    counted = ", ".join(f"{reason} {count}" for reason, count in sorted(reasons.items()))
+    return f"the model offered {len(dropped)} {items}, and none was kept ({counted})"

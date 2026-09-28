@@ -92,6 +92,6 @@ def test_a_run_with_no_council_asks_no_model_why_and_says_so(tmp_path, monkeypat
     record = json.loads(out)
     assert asked == []
     assert record["findings"][0]["llm_explanation"] == {
-        "assessed": False, "because": NO_EXPLAINER_ASKED,
+        "assessed": False, "because": NO_EXPLAINER_ASKED, "dropped_items": [],
     }
     assert {"what": EXPLANATION, "because": NO_EXPLAINER_ASKED} in record["not_assessed"]

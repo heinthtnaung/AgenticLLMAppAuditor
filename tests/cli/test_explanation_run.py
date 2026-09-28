@@ -16,7 +16,7 @@ from cli.explanation_run import (
 from council.explanation_prompt import EXPLANATION_PROMPT_VERSION, ExplanationPrompt
 from council.roster import Member, Roster
 from findings.finding import build_finding
-from report.explanation_record import SourcesExplained, SourcesNotExplained
+from report.explanation_record import DroppedMetric, SourcesExplained, SourcesNotExplained
 from cli_samples import ADVISORY, LEGAL, LODASH, QUOTATION, advisory_like
 
 DISPUTED = build_finding(LODASH, ADVISORY)
@@ -100,7 +100,8 @@ def test_an_explanation_that_quoted_nothing_says_which_model_and_why():
     (record,) = explanations((DISPUTED,), EXPLAINER, {"ollama": inventing})
     assert record == SourcesNotExplained(
         ADVISORY.advisory_id,
-        "big:27b: the model offered 1 item, and none quoted the advisory on a disputed metric",
+        "big:27b: the model offered 1 item, and none was kept (unverified quotation 1)",
+        (DroppedMetric("C", "x", "not in it", False, "unverified quotation"),),
     )
 
 

@@ -30,7 +30,7 @@ def test_each_metric_shows_every_source_s_value_the_model_s_words_and_the_quotat
 
 def test_a_finding_the_model_could_not_explain_says_why():
     text = " ".join(block_lines())
-    said = "CVE-UNEXPLAINED  not explained: big:27b: the model offered 1 item, and none quoted"
+    said = "CVE-UNEXPLAINED  not explained: big:27b: the model offered 1 item, and none was kept"
     assert said in text
 
 
@@ -46,3 +46,10 @@ def test_the_block_stands_beside_the_sources_and_never_in_the_risk_figures():
 
 def test_a_run_that_asked_no_model_has_no_block():
     assert explanation_block(replace(explained_report(), explanations={})) == ""
+
+
+def test_an_item_not_kept_never_reads_as_an_explanation():
+    # Counted on the page and kept in the record; its words are not the model's account.
+    page = explanation_block(explained_report())
+    assert "A second go." not in page and "all of the files" not in page
+    assert "It is bad." not in page and "the whole disk" not in page

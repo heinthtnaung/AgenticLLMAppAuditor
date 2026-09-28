@@ -1,5 +1,7 @@
 """Guards on the one absence of an explanation: why no finding's sources were explained."""
 
+import pytest
+
 from explanation_runs import EXPLAINER, disputed, explained_report, replying, INVENTED
 from cli.explanation_run import explanations
 from report.absences import (
@@ -9,10 +11,16 @@ from report.absences import (
     NOTHING_TO_EXPLAIN,
     Coverage,
 )
+from council.transport import ModelUnavailable
 from report.record import build_report
 from report_samples import PROVENANCE, catalogue, component, finding
 
 COUNCIL_NAMED = Coverage(council_named=True)
+
+
+def timing_out(member, prompt):
+    """Fail as a slow server fails, so nothing is quoted at all."""
+    raise ModelUnavailable("did not answer within 180 s")
 
 
 def explanation_absence(report) -> list[str]:
@@ -31,13 +39,16 @@ def test_a_council_run_with_no_disagreement_says_there_was_nothing_to_explain():
     assert explanation_absence(report) == [NOTHING_TO_EXPLAIN]
 
 
-def test_a_council_run_whose_every_explanation_quoted_nothing_says_so():
+@pytest.mark.parametrize("model", [replying(INVENTED), {"ollama": timing_out}],
+                         ids=["every item dropped", "the call failed"])
+def test_a_council_run_that_kept_no_explanation_says_so_whatever_stopped_it(model):
     found = (disputed("CVE-1"),)
-    records = explanations(found, EXPLAINER, replying(INVENTED))
+    records = explanations(found, EXPLAINER, model)
     report = build_report(
         PROVENANCE, catalogue(component()), found, {}, coverage=COUNCIL_NAMED, explanations=records
     )
     assert explanation_absence(report) == [NONE_EXPLAINED]
+    assert NONE_EXPLAINED.endswith("and no explanation was kept")
 
 
 def test_one_explanation_kept_is_no_absence_whatever_the_others_came_to():

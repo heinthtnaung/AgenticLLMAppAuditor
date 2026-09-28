@@ -4,7 +4,9 @@ A projection of `council.explanation`, because `src/report/` does not import the
 council. **The `why` is the model's own prose and nothing checked it**; the
 quotation beside it is the one part held to the advisory, and only items whose
 quotation was found there are kept. The record says so on every item rather
-than leaving a reader to assume an explanation was verified.
+than leaving a reader to assume an explanation was verified. **What was not kept
+is recorded too**, each with why, as the council records an unverified
+quotation: it is how a finding nothing was kept for can be read afterwards.
 
 **Nothing reads this back.** No score, band or council vector is computed from
 it: the Organisation Risk Score and the council's rulings are fixed before it is
@@ -25,18 +27,38 @@ class ExplainedMetric:
 
 
 @dataclass(frozen=True)
+class DroppedMetric:
+    """An item the model offered and nothing kept: what it said, and why it was not kept.
+
+    `reason` is one of `council.explanation`'s: not a disputed metric, empty why,
+    unverified quotation, or repeat. `evidence_verified` is the quotation check's
+    own answer, since a repeat can quote the advisory exactly.
+    """
+
+    metric: str
+    why: str
+    evidence: str
+    evidence_verified: bool
+    reason: str
+
+
+@dataclass(frozen=True)
 class SourcesExplained:
     """A model's account of why one finding's sources differ, kept item by item.
 
-    `dropped` counts the items not kept: a quotation not in the advisory, an item
-    about a metric the sources agree on, or a second one on a metric.
+    `dropped_items` are the items not kept, each with its reason.
     """
 
     advisory_id: str
     model: str
     prompt_version: str
     items: tuple[ExplainedMetric, ...]
-    dropped: int
+    dropped_items: tuple[DroppedMetric, ...] = ()
+
+    @property
+    def dropped(self) -> int:
+        """Count the items not kept."""
+        return len(self.dropped_items)
 
     def __post_init__(self) -> None:
         """Refuse an explanation with no item kept, which is not an explanation at all."""
@@ -46,10 +68,11 @@ class SourcesExplained:
 
 @dataclass(frozen=True)
 class SourcesNotExplained:
-    """A finding with no explanation of its sources, and why there is none."""
+    """A finding with no explanation of its sources, why there is none, and what was not kept."""
 
     advisory_id: str
     because: str
+    dropped_items: tuple[DroppedMetric, ...] = ()
 
     def __post_init__(self) -> None:
         """Refuse an unexplained absence, which reads on a report as an oversight."""

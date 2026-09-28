@@ -42,9 +42,9 @@ NO_EXPLAINER_ASKED = (
     "no council was asked for, so no model was asked why the published sources differ"
 )
 NOTHING_TO_EXPLAIN = "no finding's published sources disagree, so there was nothing to explain"
-NONE_EXPLAINED = (
-    "a model was asked why the sources differ, and no explanation it gave quoted the advisory"
-)
+# Always true of it: the explainer kept nothing, whether its call failed, its reply
+# could not be read, or every item it offered was dropped for one of its reasons.
+NONE_EXPLAINED = "a model was asked why the sources differ, and no explanation was kept"
 # A run that found nothing has no score and no ruling even when the operator
 # asked for both, and saying nobody asked would be the wrong cause.
 NOTHING_TO_WEIGH = "answers were supplied, but there was no finding to weigh them against"
