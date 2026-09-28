@@ -64,6 +64,9 @@ flowchart TD
     ans["Answer file<br/>--answers: the approved questions<br/>answered by id, and who approved"] --> ctx
     fin --> rec["Report record<br/>and what was not assessed"]
     cou --> rec
+    cou --> expl["Why the sources differ, beside a council<br/>one model, once per disputed finding,<br/>after the council and escalation;<br/>only its quotation is checked"]
+    expl --> rec
+    expl -. "one line per call" .-> err
     ctx --> rec
     asked["What was asked for<br/>an answer file, council members<br/>kept even when nothing was found"] --> rec
     rec --> rnd["Rendered as text, as JSON,<br/>and as one HTML page"]
@@ -149,6 +152,14 @@ this repository, the settled values of `qwen2.5:7b-instruct` and
 asked in either order (`measurements/README.md`), so nothing a council settles
 reaches the score.
 
+**The explanation feeds the record too, and nothing else.** Beside a council,
+once the council and any escalation are done with every finding, one model is
+asked why each disputed finding's sources differ: the escalation model where one
+is named, otherwise the council's first local member. It sees each source's
+value on the disputed metrics and the redacted advisory, and an item survives
+only where its quotation is in the advisory. Its prose is labelled as the
+model's and never checked, and no score, band or vector is computed from it.
+
 One record, three renderings, all of them saved. Every run renders text for a
 terminal, JSON for the audit artefact, and one self-contained HTML page that
 fetches nothing, and writes all three into `reports/` in the directory it ran
@@ -183,11 +194,13 @@ nothing in `reports/` is kept to diff against.
 
 ## 2. The published scores
 
-**Built, apart from the LLM column.** The published vectors, the calculator, the
-weighted calculation and the report are real, and `organisation_risk_score` is
-produced once per source when an operator answers. What is missing is every role
-in the middle: no analyst, no selector, no checker, no explainer, so
-`llm_explanation` is reported as not assessed.
+**Built, apart from three roles of the LLM column.** The published vectors, the
+calculator, the weighted calculation and the report are real, and
+`organisation_risk_score` is produced once per source when an operator answers.
+The explainer is built: beside a council, one model says why each disputed
+finding's sources differ, after the council is done, and only its quotation is
+checked. What is missing is the rest of the middle: no analyst, no selector, no
+checker. Without a council, `llm_explanation` is reported as not assessed.
 
 ```mermaid
 flowchart TD
@@ -201,7 +214,7 @@ flowchart TD
         anl["Analyst: exploit prerequisites"]
         sel["Selector: questions from the approved library"]
         chk["Checker: incomplete or contradictory answers"]
-        exl["Explainer: the rationale"]
+        exl["Explainer: why the sources differ<br/>one call per disputed finding,<br/>after the council, beside a council only"]
     end
 
     subgraph ENGINE["Role 3: the engine. Every number, deterministic"]
@@ -225,8 +238,9 @@ flowchart TD
     anl --> val
     val --> cal
     cal --> f3["organisation_risk_score"]
-    cal --> exl
-    exl --> f4["llm_explanation"]
+    pv -->|"each source's value on the<br/>disputed metrics, and the<br/>redacted advisory"| exl
+    exl --> xq["Quotation check<br/>an item kept only where its quotation<br/>is in the advisory; the why is<br/>the model's words, unchecked"]
+    xq --> f4["llm_explanation"]
     f1 --> out["Report: every entry side by side"]
     f2 --> out
     f3 --> out
@@ -258,6 +272,13 @@ The `validate` box is the boundary, not a formality. Model output reaches the
 engine only as a typed structure that application code has already refused or
 accepted. A reply that arrives unchecked is the model deciding a number by the
 back door.
+
+The explainer's arrow comes from the published vectors, not from the
+calculation: it is told each source's value on the metrics they dispute, never a
+whole vector, and reads the redacted advisory beside them. Its boundary is the
+quotation check. An item reaches `llm_explanation` only where its quotation is
+in the advisory; the `why` beside it is the model's words and goes through
+unchecked, labelled as such, and into no number.
 
 What this does not show: which source wins when they disagree, because nothing
 ranks them — that is the council in diagram 4. The field names are from
@@ -562,7 +583,7 @@ flowchart LR
         b11["src/deps/manifests<br/>the manifests no lock file<br/>Syft reads is beside"]
         b4["src/cvss<br/>vector parser, metric vocabulary,<br/>Base score equations"]
         b5["src/findings<br/>the join, every source's score apart"]
-        b7["src/council<br/>roster and the egress gate, redaction,<br/>prompt, provider registry, chairman,<br/>the local server's settings,<br/>the members --council runs,<br/>the order check, and escalation<br/>to one local model"]
+        b7["src/council<br/>roster and the egress gate, redaction,<br/>prompt, provider registry, chairman,<br/>the local server's settings,<br/>the members --council runs,<br/>the order check, escalation<br/>to one local model, and the explainer"]
         b8["src/report<br/>the record, and three renderings of it:<br/>text, JSON, one self-contained HTML page"]
         b9["src/cli<br/>arguments, preflight, the audit order,<br/>the council's scope and its record, the<br/>stderr progress stream, the report files<br/>in reports/, and the exit code a<br/>pipeline reads"]
         b6["src/scoring<br/>the approved question library, categories<br/>clamped then weighted, the band,<br/>the severity floors on it<br/>and the version naming those rules"]

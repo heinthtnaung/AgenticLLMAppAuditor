@@ -20,6 +20,7 @@ from cli_samples import (
     DATED,
     QUOTATION,
     advisory_like,
+    explaining_nothing,
     scanners_answering,
     written_answers,
 )
@@ -64,6 +65,7 @@ def test_a_vector_escalation_completed_never_moves_the_organisation_risk_score(
 ):
     scanners_answering(monkeypatch, advisories={advisory.purl: (advisory,)})
     monkeypatch.setattr(audit_module, "assessments", escalating_far_from_published)
+    explaining_nothing(monkeypatch)
     answers = written_answers(tmp_path)
     beside = run_audit(options_for(tmp_path, ("small",), answers), DATED)
     alone = run_audit(options_for(tmp_path, answers=answers), DATED)
@@ -88,6 +90,7 @@ def escalations_asked(asked: list):
 def test_with_the_setting_unset_a_council_run_escalates_nothing_and_says_so(tmp_path, monkeypatch):
     asked = []
     scanners_answering(monkeypatch)
+    explaining_nothing(monkeypatch)
     monkeypatch.setattr(audit_module, "assessments", escalations_asked(asked))
     report = run_audit(options_for(tmp_path, ("small",)), DATED)
     assert asked == [None]
@@ -97,6 +100,7 @@ def test_with_the_setting_unset_a_council_run_escalates_nothing_and_says_so(tmp_
 def test_the_setting_names_the_local_model_a_council_run_escalates_to(tmp_path, monkeypatch):
     asked = []
     scanners_answering(monkeypatch)
+    explaining_nothing(monkeypatch)
     monkeypatch.setenv("AUDITOR_ESCALATION_MODEL", BIG)
     monkeypatch.setattr(audit_module, "assessments", escalations_asked(asked))
     report = run_audit(options_for(tmp_path, ("small",)), DATED)

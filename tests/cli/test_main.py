@@ -5,7 +5,6 @@ import json
 
 import pytest
 
-from cli import audit as audit_module
 from cli import main as entry
 from cli.main import (
     COULD_NOT_RUN, FOUND_NOTHING, FOUND_NOTHING_BUT_UNCHECKED, FOUND_SOMETHING, main,
@@ -123,44 +122,6 @@ def test_a_run_that_worked_says_only_where_its_reports_went(monkeypatch, tmp_pat
     _, _, error = run_command_line([], monkeypatch, tmp_path)
     assert error.startswith(WRITTEN_TO)
     assert error.count("\n") == 1
-
-
-def reporting_council(
-    findings, roster, clients=None, progress=None, every_finding=False, escalation=None
-):
-    """Stand in for a council run, saying what it is doing through the progress it was given."""
-    progress.starting("CVE-2021-23337")
-    progress.asking("AV", "qwen2.5:7b-instruct")
-    return ()
-
-
-def test_progress_is_said_on_the_error_stream_and_never_on_stdout(monkeypatch, tmp_path):
-    # The whole constraint: `--format json` writes the record to stdout and it
-    # has to stay pipeable, so progress and the record share a process and
-    # nothing else.
-    monkeypatch.setattr(audit_module, "assessments", reporting_council)
-    given = ["--council-member", "qwen2.5:7b-instruct"]
-    _, out, error = run_command_line(given, monkeypatch, tmp_path)
-    assert error.strip()
-    assert error.strip() not in out
-    assert out.startswith("Audit of")
-
-
-def test_the_audit_record_stays_parseable_while_progress_is_being_said(monkeypatch, tmp_path):
-    monkeypatch.setattr(audit_module, "assessments", reporting_council)
-    given = ["--council-member", "qwen2.5:7b-instruct", "--format", "json"]
-    _, out, error = run_command_line(given, monkeypatch, tmp_path)
-    assert error.strip()
-    assert json.loads(out)["run"]["finding_count"] == 1
-
-
-def test_progress_locates_the_run_by_finding_metric_and_member(monkeypatch, tmp_path):
-    monkeypatch.setattr(audit_module, "assessments", reporting_council)
-    given = ["--council-member", "qwen2.5:7b-instruct"]
-    _, _, error = run_command_line(given, monkeypatch, tmp_path)
-    assert "CVE-2021-23337" in error
-    assert "AV" in error
-    assert "qwen2.5:7b-instruct" in error
 
 
 def absent_from(out: str) -> dict[str, str]:

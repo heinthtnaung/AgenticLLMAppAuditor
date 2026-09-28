@@ -13,7 +13,7 @@ one vendor field.
 | `scores` | the sources | one entry per source whose published vector was read |
 | `unreadable` | the sources | one entry per source whose vector the calculator refused |
 | `organisation_risk_score` | this system | 0–100, this environment's assessment |
-| `llm_explanation` | the model | why they differ, with evidence |
+| `llm_explanation` | the model | why they differ, in the model's words beside a quotation from the advisory; the quotation is checked and the words are not |
 
 Each entry in `scores`:
 

@@ -109,6 +109,13 @@ def scanners_answering(monkeypatch, components=(LODASH,), advisories=None) -> No
     monkeypatch.setattr(trivy_runner, "is_available", lambda: True)
 
 
+def explaining_nothing(monkeypatch) -> None:
+    """Stand in for the explainer, for a test about something else, so no model is asked why."""
+    from cli import audit
+
+    monkeypatch.setattr(audit, "explanations", lambda findings, explainer, **_: ())
+
+
 def run_command_line(argv, monkeypatch, tmp_path, **scan) -> tuple[int, str, str]:
     """Run the command line with the scanners answered and every report kept in `tmp_path`."""
     from cli import main as entry

@@ -28,6 +28,7 @@ from report.record import Report, build_report
 
 from cli.arguments import Options
 from cli.council_run import ORDER_CHECK, assessments, build_roster, escalation_member, watching
+from cli.explanation_run import explainer_of, explaining, explanations
 from cli.organisation_run import organisation_of, weigh_findings
 
 
@@ -44,6 +45,8 @@ def run_audit(
     advisories = trivy_runner.scan_directory(options.repository, database.cache)
     findings = build_findings(catalogue.components, advisories)
     council = council_of(findings, options, progress_to, local)
+    # Only once every value the council and escalation produce is in, for every finding.
+    explained = explanations_of(findings, options, progress_to, local)
     answers, approval = organisation_of(options.answers)
     return build_report(
         provenance=provenance_of(options.repository, database.built_at, local),
@@ -54,11 +57,17 @@ def run_audit(
         risk=weighed(findings, answers, options),
         approval=approval,
         overridden=tuple(answers.by_advisory),
-        coverage=Coverage(
-            answers_given=options.answers is not None,
-            council_named=bool(options.council_models),
-            unread_manifests=unread,
-        ),
+        coverage=coverage_of(options, unread),
+        explanations=explained,
+    )
+
+
+def coverage_of(options: Options, unread: tuple[str, ...]) -> Coverage:
+    """Say what the operator asked this run for, and which manifests it could read nothing from."""
+    return Coverage(
+        answers_given=options.answers is not None,
+        council_named=bool(options.council_models),
+        unread_manifests=unread,
     )
 
 
@@ -120,3 +129,12 @@ def council_of(findings, options: Options, progress_to: TextIO, local: LocalMode
     return assessments(
         findings, roster, progress=watcher, every_finding=every, escalation=escalation
     )
+
+
+def explanations_of(findings, options: Options, progress_to: TextIO, local: LocalModels | None):
+    """Ask why the sources differ on each disputed finding, or ask nothing where no council ran."""
+    if local is None:
+        return ()
+    roster = build_roster(options.council_models)
+    explainer = explainer_of(roster, escalation_member(local.escalation_model))
+    return explanations(findings, explainer, progress=explaining(findings, progress_to))

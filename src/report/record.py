@@ -25,6 +25,7 @@ from organisation.approval import ApprovalOutcome, NotApproved
 from organisation.risk import FindingRisk
 from report.absences import NO_APPROVAL_GIVEN, Absence, Coverage, absences
 from report.council_record import CouncilOutcome
+from report.explanation_record import ExplanationRecord
 from report.provenance import RunProvenance
 
 
@@ -52,25 +53,23 @@ class Report:
     unidentified_artifacts: tuple[UnidentifiedArtifact, ...]
     not_assessed: tuple[Absence, ...]
     council: Mapping[str, CouncilOutcome] = field(default_factory=dict)
+    # Why the sources differ, as a model wrote it; nothing is computed from it.
+    explanations: Mapping[str, ExplanationRecord] = field(default_factory=dict)
     risk: Mapping[str, FindingRisk] = field(default_factory=dict)
     approval: ApprovalOutcome = field(default_factory=lambda: NotApproved(NO_APPROVAL_GIVEN))
     coverage: Coverage = Coverage()
 
 
 def build_report(
-    provenance: RunProvenance,
-    catalogue: Catalogue,
-    findings: Iterable[Finding],
-    advisories_by_purl: Mapping[str, tuple[Advisory, ...]],
-    council: Iterable[CouncilOutcome] = (),
-    risk: Iterable[FindingRisk] = (),
-    approval: ApprovalOutcome | None = None,
-    overridden: Iterable[str] = (),
-    coverage: Coverage = Coverage(),
+    provenance: RunProvenance, catalogue: Catalogue,
+    findings: Iterable[Finding], advisories_by_purl: Mapping[str, tuple[Advisory, ...]],
+    council: Iterable[CouncilOutcome] = (), risk: Iterable[FindingRisk] = (),
+    approval: ApprovalOutcome | None = None, overridden: Iterable[str] = (),
+    coverage: Coverage = Coverage(), explanations: Iterable[ExplanationRecord] = (),
 ) -> Report:
     """Gather one run into the record both renderings read."""
     raised = tuple(findings)
-    settled, weighed = by_advisory(council), by_advisory(risk)
+    settled, weighed, explained = by_advisory(council), by_advisory(risk), by_advisory(explanations)
     decided = approval or NotApproved(NO_APPROVAL_GIVEN)
     return Report(
         provenance=provenance,
@@ -80,8 +79,11 @@ def build_report(
         advisories_without_components=unmatched_purls(catalogue.components, advisories_by_purl),
         unidentified_artifacts=catalogue.unidentified,
         overrides_without_findings=overrides_without_findings(overridden, raised),
-        not_assessed=absences(settled, weighed, decided, coverage, len(catalogue.components)),
+        not_assessed=absences(
+            settled, weighed, decided, coverage, len(catalogue.components), explained, raised
+        ),
         council=settled,
+        explanations=explained,
         risk=weighed,
         approval=decided,
         coverage=coverage,

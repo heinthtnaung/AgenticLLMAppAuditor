@@ -23,6 +23,7 @@ from report.disagreement import (
     sources_disagree,
 )
 from report.json_council import council_of
+from report.json_explanation import explanation_of
 from report.json_risk import approval_of, risk_of
 from report.provenance import AdvisoryDatabase
 from report.absences import Absence
@@ -103,6 +104,7 @@ def finding_of(report: Report, finding: Any) -> dict[str, Any]:
         "score_spread": score_spread(finding),
         "severity_bands": list(bands_crossed(finding)),
         "council": council_of(report, finding.advisory.advisory_id),
+        "llm_explanation": explanation_of(report, finding.advisory.advisory_id),
         "organisation_risk": risk_of(report, finding.advisory.advisory_id),
         "needs_approval": bool(reasons),
         "approval_reasons": [reason.value for reason in reasons],

@@ -23,6 +23,7 @@ from report.html_absences import (
     unidentified_section,
 )
 from report.html_council import council_section
+from report.html_explanation import explanation_section
 from report.html_findings import (
     agreeing_section,
     contested_section,
@@ -55,6 +56,7 @@ def as_html(report: Report) -> str:
         run_header(report),
         legend(),
         contested_section(report),
+        explanation_section(report),
         unchecked_section(report),
         agreeing_section(report),
         unscored_section(report),

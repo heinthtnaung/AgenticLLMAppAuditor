@@ -19,6 +19,7 @@ from cli_samples import (
     SYFT_VERSION,
     TRIVY_VERSION,
     advisory_like,
+    explaining_nothing,
     scanners_answering,
     written_answers,
 )
@@ -152,6 +153,7 @@ def test_a_councils_settled_vector_never_moves_the_organisation_risk_score(
     # and stays provisional, though a council settled a vector for it.
     scanners_answering(monkeypatch, advisories={advisory.purl: (advisory,)})
     monkeypatch.setattr(audit_module, "assessments", settling_far_from_published)
+    explaining_nothing(monkeypatch)
     answers = written_answers(tmp_path)
     beside = run_audit(options_for(tmp_path, ("small",), answers), DATED)
     alone = run_audit(options_for(tmp_path, answers=answers), DATED)

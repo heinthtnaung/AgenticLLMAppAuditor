@@ -33,6 +33,8 @@ COUNCIL_LINE = "council"
 # An escalation call is counted apart: how many a run makes is known only once
 # the council has left something open, so it has no total to count towards.
 ESCALATION_LINE = "escalation"
+# One call per finding whose sources disagree, made once the council is done.
+EXPLANATION_LINE = "explanation"
 
 
 @dataclass
@@ -98,6 +100,34 @@ class NoProgress:
 
 
 NO_PROGRESS = NoProgress()
+
+
+@dataclass
+class ExplanationProgress:
+    """How far the explanations have got, said on the error stream before each call."""
+
+    findings: int
+    out: TextIO
+    asked: int = field(default=0, init=False)
+
+    def explaining(self, advisory_id: str, model: str) -> None:
+        """Say which finding the explainer is about to be asked about, before it is."""
+        self.asked += 1
+        self.out.write(
+            f"{EXPLANATION_LINE} {self.asked}/{self.findings}  finding {advisory_id}  {model}\n"
+        )
+        self.out.flush()
+
+
+@dataclass(frozen=True)
+class NoExplanationProgress:
+    """Say nothing about explanations, which is what a run nobody is watching needs."""
+
+    def explaining(self, advisory_id: str, model: str) -> None:
+        """Say nothing."""
+
+
+NO_EXPLANATION_PROGRESS = NoExplanationProgress()
 
 
 def orders_asked(order_check: bool) -> int:

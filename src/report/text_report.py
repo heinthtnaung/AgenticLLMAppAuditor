@@ -23,6 +23,7 @@ from report.record import Report
 from report.summary_words import approval_count, counts, inventory_pointer, unread_pointer
 from report.text_approval import approval_needed_block
 from report.text_council import council_block
+from report.text_explanation import explanation_block
 from report.text_findings import (
     agreeing_block,
     contested_block,
@@ -41,6 +42,7 @@ def as_text(report: Report) -> str:
         heading(report),
         summary(report),
         contested_block(report),
+        explanation_block(report),
         unchecked_block(report),
         agreeing_block(report),
         unscored_block(report),

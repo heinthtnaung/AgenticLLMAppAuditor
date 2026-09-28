@@ -27,7 +27,7 @@ catalogued nothing.
 | `src/cvss/` | built | a CVSS v3 vector parsed and validated, Temporal metrics included, and its Base score by the published equations |
 | `src/findings/` | built | the join — a CVE affecting an installed component, with every source's score kept apart and attributed |
 | `src/scoring/` | built | the approved question library, per-question weights, categories clamped then weighted, the band, the two severity floors that can raise it, and the version naming those rules |
-| `src/council/` | built | the roster and its `egress` gate, redaction, the prompt, a provider registry holding one local Ollama client, the quotation check, the order check, the chairman, the runner, and escalation of what the council leaves open to one larger local model |
+| `src/council/` | built | the roster and its `egress` gate, redaction, the prompt, a provider registry holding one local Ollama client, the quotation check, the order check, the chairman, the runner, escalation of what the council leaves open to one larger local model, and the explainer that says why a finding's sources differ |
 | `src/organisation/` | built | the answer file, the approval record, the rule for which findings need approval, and one risk score per published source |
 | `src/report/` | built | the record every run produces, and its three renderings: a terminal report, the JSON audit artefact, and one self-contained HTML page |
 | `src/cli/` | built | the arguments, the preflight refusals, the order the packages run in, which findings the council is put to, the progress it prints to stderr, the three report files in `reports/`, and the exit code |
@@ -100,6 +100,8 @@ NOT ASSESSED
     no answer file was given, so nobody was asked about this environment
   Council ruling
     no council assessed this run, so no council reading stands beside the published scores
+  Why the sources differ
+    no council was asked for, so no model was asked why the published sources differ
 ```
 
 Three of the five disagreements and eleven of the thirteen agreements are elided
@@ -645,6 +647,52 @@ live or been measured on the pilot's findings, so nothing yet says whether one
 settles open metrics correctly. The measurement harness replays its passes with
 none (`PASS_ESCALATION = None` in `measurements/council_eval/variants.py`).
 
+### Beside a council, one model says why the sources differ
+
+**Each finding whose readable sources disagree gets one more call, asking why.**
+It is made only when a council was asked for, and only after the council and any
+escalation have finished with every finding, so the one model asked is loaded
+once. That model is the escalation model where one is named, otherwise the
+council's first local member, and the record names it: the explainer runs on this
+machine. A roster with neither is refused once its council has run, with
+`audit: no local member to explain with: the explainer runs on this machine, and no escalation model is named`,
+and `audit` exits `2`. Every `--council-member` is local, so the command line
+cannot build such a roster today. The model is shown each source's value on the
+disputed metrics alone, with what those values mean, and the redacted advisory:
+never a whole vector, never the CVE id.
+
+**Only the quotation is checked.** Each item the model offers names a disputed
+metric, says why in its own words, and quotes the advisory. The first item on
+each disputed metric with a `why` that is not empty and a quotation the advisory
+contains is kept. Every other item is dropped and counted: a quotation not in
+the advisory, an item on a metric the sources agree on, a second item on a
+metric, an empty `why`. If nothing is kept, or the call fails, or the reply
+cannot be read, the finding is not explained and the record says why. Nothing
+checks the `why`, and nothing reads an explanation back: no score, band or
+council vector comes from it.
+
+The text puts a `WHY THE SOURCES DIFFER (n)` block after `SOURCES DISAGREE`, and
+the page a section after "Sources disagree", each under a lede saying only the
+quotation is checked. From a run with stand-in models, one finding reads
+`CVE-2021-23337  explained by small:1b  ·  4 items not kept`, then its metric,
+`C  ghsa H  ·  nvd L`, the model's words,
+`model-written, not checked: It says commands run, not what they can read.`,
+and `“A remote attacker can inject commands”  ·  quotation found in the advisory`.
+
+In the JSON, every finding carries `llm_explanation`:
+`{"assessed": true, "model", "prompt_version": "sources-differ-1", "items", "dropped"}`,
+each item a `metric`, `why`, `evidence`, `evidence_verified` and
+`"why_checked": false`, or `{"assessed": false, "because"}`. `evidence_verified`
+covers the quotation alone; `why_checked` says so, so a machine reader cannot
+take it as covering the prose. Where no finding was explained, `NOT ASSESSED`
+names `Why the sources differ` with one of three reasons: no council was asked
+for, as in the run at the top of this page, no finding's sources disagree, or
+no explanation quoted the advisory.
+
+**It costs one call per disputed finding.** It has been tested only with
+stand-in models, and nothing yet measures whether an explanation is right: the
+quotation is in the advisory, and that is all that is known of it.
+
 ### It is asked only about the findings the sources do not settle
 
 The council reconciles sources, so a finding whose sources already agree is not
@@ -735,7 +783,9 @@ The denominators are what this run will actually do: 5 findings after scoping,
 not 18, and only the members it can reach. A total counting calls nobody makes
 is a progress bar that never fills. An escalation call is counted apart, as
 `escalation 1  finding 1/1 CVE-2021-23337  AC  big:27b`, with no total, because
-how many a run makes is known only once each council has answered.
+how many a run makes is known only once each council has answered. The
+explanations come last, one line each, counted against the disputed findings:
+`explanation 1/1  finding CVE-2021-23337  small:1b`.
 
 One member answers all eight metrics of a finding before the next is asked.
 Two members that do not fit in the GPU's memory together are then swapped once

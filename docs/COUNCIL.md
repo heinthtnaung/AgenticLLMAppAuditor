@@ -694,8 +694,10 @@ Per assessment: each member's answer and evidence, the model, provider, family
 and both prompt versions behind it, in order and reversed, whether that member
 ran local or hosted, the roster as configured, the chairman's reasoning, the
 escalation model's reply on each metric the council left open, beside what the
-council had left it as, the final vector, and the computed score. A score nobody can re-derive is not a
-score, and a roster nobody can reconstruct is not a council.
+council had left it as, the final vector, and the computed score. Per finding
+whose sources disagree: the explanation's kept items, how many were dropped, the
+model that wrote it, and its prompt version, `sources-differ-1`. A score nobody can
+re-derive is not a score, and a roster nobody can reconstruct is not a council.
 
 ## What is built, and what is not
 
@@ -706,8 +708,9 @@ the reply parser, the quotation check, the chairman, and the runner that puts
 one advisory to every reachable member, one member at a time: a member answers
 all eight metrics, each in both orders, before the next is asked, and the order
 check reconciles its two replies. Then escalation puts what the council left
-open to the escalation model, where one is named. `src/cvss` is the engine it
-hands a vector to.
+open to the escalation model, where one is named. The explainer's prompt, its
+reply parser and the step that keeps only quoted items are there too
+(`src/council/explanation*.py`). `src/cvss` is the engine it hands a vector to.
 
 **The scope is built too, and it is not in that package.** `src/cli/council_run.py`
 chooses which findings a run is put to, records each one it passes over with the
@@ -761,7 +764,8 @@ stays on this machine by rule.
 `src/cli/council_run.py` chooses the findings and runs the council over them,
 escalation included, `src/cli/council_outcome.py` says what a run comes to, a
 vector or the metrics still open, `src/cli/council_detail.py` turns a run into
-the record the report holds, and
+the record the report holds, `src/cli/explanation_run.py` asks why each
+disputed finding's sources differ once the council is done, and
 `src/cli/organisation_run.py` weighs the risk score from the published sources
 without reading the council. The package itself stays a component:
 `src/council/` imports `src/cvss` and nothing else of this project's, and only

@@ -126,6 +126,11 @@ class MemberPrompt:
     withheld: tuple[str, ...]
     version: str
 
+    @property
+    def subject(self) -> str:
+        """Name the metric asked about, as a refusal of this prompt says it."""
+        return self.metric
+
 
 def build_prompt(metric: str, advisory_text: str, reversed_options: bool = False) -> MemberPrompt:
     """Build the prompt asking one member for one metric of one advisory, in either order."""

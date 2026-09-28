@@ -10,7 +10,7 @@ from cli import audit as audit_module
 from cli.arguments import TEXT_FORMAT, Options
 from cli.audit import run_audit
 from cli.main import COULD_NOT_RUN, FOUND_SOMETHING
-from cli_samples import DATED, run_command_line, scanners_answering
+from cli_samples import DATED, explaining_nothing, run_command_line, scanners_answering
 from council import settings
 from council.settings import Settings, SettingsError, current_settings
 from report.provenance import LocalModels
@@ -54,6 +54,7 @@ def test_a_council_run_states_the_window_and_timeout_it_used_beside_the_pinning(
     tmp_path, monkeypatch
 ):
     scanners_answering(monkeypatch)
+    explaining_nothing(monkeypatch)
     monkeypatch.setattr(audit_module, "current_settings", lambda: WIDER)
     monkeypatch.setattr(audit_module, "assessments", asking_nobody)
     report = run_audit(options_for(tmp_path, ("small:1b",)), DATED)
@@ -83,6 +84,7 @@ def test_the_json_record_states_the_local_models_and_null_when_none_was_asked(
     tmp_path, monkeypatch
 ):
     monkeypatch.setattr(audit_module, "assessments", asking_nobody)
+    explaining_nothing(monkeypatch)
     _, asked, _ = run_command_line(["--format", "json", *MEMBER], monkeypatch, tmp_path)
     _, alone, _ = run_command_line(["--format", "json"], monkeypatch, tmp_path)
     assert json.loads(asked)["run"]["local_models"] == {
@@ -120,6 +122,7 @@ def test_the_council_flag_runs_the_members_the_file_names_on_the_roster_a_flag_b
         return ()
 
     scanners_answering(monkeypatch)
+    explaining_nothing(monkeypatch)
     monkeypatch.setattr(audit_module, "assessments", listening)
     operator_file.write_text("AUDITOR_COUNCIL_MEMBERS=gemma4:latest,small:1b\n", encoding="utf-8")
     from_file = run_audit(options_for(tmp_path, from_settings=True), DATED)

@@ -57,7 +57,8 @@ def test_the_terminal_puts_the_pointer_on_the_line_under_the_counts():
 def test_the_page_puts_the_pointer_in_the_same_paragraph_as_the_counts():
     page = as_html(reading_nothing_from(*UNREAD))
     pointer = html.escape(unread_pointer(reading_nothing_from(*UNREAD)), quote=True)
-    assert f"carry sources that disagree. {pointer}</p>" in page
+    # Singular or plural by how many disagree; the pointer follows the count either way.
+    assert f"sources that disagree. {pointer}</p>" in page
 
 
 def test_neither_page_points_anywhere_when_every_manifest_was_read():

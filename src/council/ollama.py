@@ -35,7 +35,7 @@ from typing import Any
 from urllib.parse import urlsplit
 
 from council.envelope import MODEL_FIELD, PROMPT_COUNT_FIELD, ModelReply, read_envelope
-from council.prompt import MemberPrompt
+from council.question import Question
 from council.settings import LOOPBACK_HOSTS, current_settings
 from council.transport import ModelUnavailable, Transport, post_json
 
@@ -94,17 +94,17 @@ class LocalModel:
 
 
 def ask(
-    prompt: MemberPrompt,
+    prompt: Question,
     pinning: LocalModel | None = None,
     transport: Transport = post_json,
 ) -> ModelReply:
-    """Put one member's prompt to a local model and give back what it said."""
+    """Put one question to a local model and give back what it said."""
     pinned = pinning or LocalModel()
     envelope = transport(generate_url(pinned), build_request(prompt, pinned))
     return read_answer(envelope, prompt, pinned)
 
 
-def read_answer(envelope: Any, prompt: MemberPrompt, pinning: LocalModel) -> ModelReply:
+def read_answer(envelope: Any, prompt: Question, pinning: LocalModel) -> ModelReply:
     """Read the reply to one prompt, refusing it if the server did not read the prompt whole."""
     reply = read_envelope(envelope, pinning)
     refuse_cut_prompt(envelope.get(PROMPT_COUNT_FIELD), prompt, pinning)
@@ -116,7 +116,7 @@ def generate_url(pinning: LocalModel) -> str:
     return f"{pinning.host.rstrip('/')}{GENERATE_PATH}"
 
 
-def build_request(prompt: MemberPrompt, pinning: LocalModel) -> dict[str, Any]:
+def build_request(prompt: Question, pinning: LocalModel) -> dict[str, Any]:
     """Build the Ollama request for one prompt, pinned, not streamed, and sure to fit."""
     refuse_overlong_prompt(prompt, pinning)
     return {
@@ -135,19 +135,19 @@ def build_request(prompt: MemberPrompt, pinning: LocalModel) -> dict[str, Any]:
     }
 
 
-def estimated_tokens(prompt: MemberPrompt) -> int:
+def estimated_tokens(prompt: Question) -> int:
     """Estimate what a prompt will cost the model to read, in tokens."""
     return (len(prompt.system) + len(prompt.user)) // CHARACTERS_PER_TOKEN
 
 
-def refuse_overlong_prompt(prompt: MemberPrompt, pinning: LocalModel) -> None:
+def refuse_overlong_prompt(prompt: Question, pinning: LocalModel) -> None:
     """Refuse a prompt the window cannot hold, rather than let the server cut it in silence."""
     estimated = estimated_tokens(prompt)
     usable = int(pinning.context_tokens * USABLE_CONTEXT_FRACTION)
     if estimated <= usable:
         return
     raise ValueError(
-        f"This {prompt.metric} prompt is roughly {estimated} tokens, about "
+        f"This {prompt.subject} prompt is roughly {estimated} tokens, about "
         f"{estimated - usable} more than the {usable} usable of the {pinning.context_tokens} "
         f"{pinning.model} is pinned to. Ollama would cut it without saying so and the member "
         f"would assess part of the advisory as though it were all of it. Shorten the "
@@ -155,7 +155,7 @@ def refuse_overlong_prompt(prompt: MemberPrompt, pinning: LocalModel) -> None:
     )
 
 
-def refuse_cut_prompt(counted: Any, prompt: MemberPrompt, pinning: LocalModel) -> None:
+def refuse_cut_prompt(counted: Any, prompt: Question, pinning: LocalModel) -> None:
     """Refuse an answer to a prompt the server read only part of, having cut it without an error."""
     # Ollama counts the cached part of a prompt too -- a warm Qwen call read 532
     # with 531 cached -- and a server reporting no count cannot be held to one.
@@ -165,7 +165,7 @@ def refuse_cut_prompt(counted: Any, prompt: MemberPrompt, pinning: LocalModel) -
     if counted >= estimated * CUT_PROMPT_FRACTION:
         return
     raise ModelUnavailable(
-        f"{pinning.model} read this {prompt.metric} prompt as {counted} tokens, where about "
+        f"{pinning.model} read this {prompt.subject} prompt as {counted} tokens, where about "
         f"{estimated} were sent: Ollama cut it to fit the {pinning.context_tokens} pinned, and "
         f"an answer to part of an advisory is not an answer to the advisory"
     )

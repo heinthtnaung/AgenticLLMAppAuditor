@@ -25,7 +25,9 @@ from scoring.library import APPROVED_QUESTIONS
 from scoring.question import Answer
 
 UNREAD = ("frontend/package.json", "package.json")
-WHAT_A_BARE_RUN_LEAVES_OUT = ["Organisation Risk Score", "Approval record", "Council ruling"]
+WHAT_A_BARE_RUN_LEAVES_OUT = [
+    "Organisation Risk Score", "Approval record", "Council ruling", "Why the sources differ",
+]
 
 
 def all_answers(overrides=None) -> dict:

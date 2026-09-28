@@ -17,7 +17,7 @@ about a run.
 from typing import Callable, Mapping
 
 from council.ollama import LocalModel, ask
-from council.prompt import MemberPrompt
+from council.question import Question
 from council.roster import (
     OLLAMA_PROVIDER,
     Member,
@@ -27,13 +27,13 @@ from council.roster import (
     members_to_ask,
 )
 
-# Ask one member one prompt and give back what it said, verbatim.
-AskMember = Callable[[Member, MemberPrompt], str]
+# Ask one member one question and give back what it said, verbatim.
+AskMember = Callable[[Member, Question], str]
 
 NO_CLIENT_FOR_PROVIDER = "no client for provider {provider!r} exists on this machine"
 
 
-def ask_local_model(member: Member, prompt: MemberPrompt) -> str:
+def ask_local_model(member: Member, prompt: Question) -> str:
     """Put a prompt to a member running on the local Ollama server."""
     return ask(prompt, LocalModel(model=member.model)).text
 

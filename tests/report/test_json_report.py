@@ -82,7 +82,9 @@ def test_a_finding_nobody_scored_carries_no_score_rather_than_a_zero():
 
 def test_what_was_not_assessed_is_a_field_and_not_an_omission():
     named = [entry["what"] for entry in as_dictionary(a_report())["not_assessed"]]
-    assert named == ["Organisation Risk Score", "Approval record", "Council ruling"]
+    assert named == [
+        "Organisation Risk Score", "Approval record", "Council ruling", "Why the sources differ",
+    ]
 
 
 def test_a_council_that_did_not_run_is_null_rather_than_absent():

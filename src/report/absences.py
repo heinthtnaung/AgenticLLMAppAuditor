@@ -18,6 +18,8 @@ from typing import Mapping
 from organisation.approval import ApprovalOutcome, NotApproved
 from organisation.risk import FindingRisk
 from report.council_record import CouncilOutcome, was_assessed
+from findings.finding import Finding
+from report.explanation_record import ExplanationRecord, SourcesExplained
 
 NO_ANSWERS_GIVEN = "no organisation answers were supplied, so no environment was weighed"
 NO_APPROVAL_GIVEN = "nobody has approved or overridden this audit"
@@ -32,6 +34,16 @@ NO_COUNCIL_RUN = (
 # ruling nor a reason there is none.
 NOTHING_WAS_PUT_TO_IT = (
     "the council was put to no finding, so no council reading stands beside the published scores"
+)
+# Why the published sources differ is asked of a model only beside a council,
+# once per finding whose sources disagree; each reason is a different fact.
+EXPLANATION = "Why the sources differ"
+NO_EXPLAINER_ASKED = (
+    "no council was asked for, so no model was asked why the published sources differ"
+)
+NOTHING_TO_EXPLAIN = "no finding's published sources disagree, so there was nothing to explain"
+NONE_EXPLAINED = (
+    "a model was asked why the sources differ, and no explanation it gave quoted the advisory"
 )
 # A run that found nothing has no score and no ruling even when the operator
 # asked for both, and saying nobody asked would be the wrong cause.
@@ -48,8 +60,8 @@ UNREAD_MANIFEST = "no lock file Syft reads is beside it, so no version it declar
 # claiming everything was assessed: a scoped council leaves findings unasked,
 # and says so in its own section.
 NOTHING_ABSENT = (
-    "Nothing: the component inventory, the Organisation Risk Score, the approval record and a "
-    "council ruling are all here."
+    "Nothing: the component inventory, the Organisation Risk Score, the approval record, a "
+    "council ruling and an explanation of why the sources differ are all here."
 )
 
 
@@ -85,6 +97,8 @@ def absences(
     approval: ApprovalOutcome,
     coverage: Coverage,
     catalogued: int,
+    explained: Mapping[str, ExplanationRecord],
+    findings: tuple[Finding, ...],
 ) -> tuple[Absence, ...]:
     """Name what this run did not assess, so no reader takes silence for a nil result."""
     named = [
@@ -94,7 +108,12 @@ def absences(
     ]
     if isinstance(approval, NotApproved):
         named.append(Absence("Approval record", approval.reason))
-    return tuple([*named, *council_absence(council, coverage.council_named)])
+    council_named = coverage.council_named
+    return tuple([
+        *named,
+        *council_absence(council, council_named),
+        *explanation_absence(explained, council_named, findings),
+    ])
 
 
 def inventory_absence(catalogued: int) -> list[Absence]:
@@ -129,3 +148,15 @@ def council_reason(council: Mapping[str, CouncilOutcome], council_named: bool) -
     if council:
         return NOTHING_WAS_PUT_TO_IT
     return NOTHING_TO_PUT if council_named else NO_COUNCIL_RUN
+
+
+def explanation_absence(
+    explained: Mapping[str, ExplanationRecord], council_named: bool, findings: tuple[Finding, ...]
+) -> list[Absence]:
+    """Name a run with no explanation kept: nobody asked, nothing disputed, or nothing quoted."""
+    if any(isinstance(one, SourcesExplained) for one in explained.values()):
+        return []
+    if not council_named:
+        return [Absence(EXPLANATION, NO_EXPLAINER_ASKED)]
+    disputed = any(one.disputed_metrics() for one in findings)
+    return [Absence(EXPLANATION, NONE_EXPLAINED if disputed else NOTHING_TO_EXPLAIN)]

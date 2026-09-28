@@ -66,7 +66,8 @@ def test_the_two_kinds_of_nothing_are_counted_apart():
 
 
 @pytest.mark.parametrize(
-    "named", ["Organisation Risk Score", "Approval record", "Council ruling"]
+    "named",
+    ["Organisation Risk Score", "Approval record", "Council ruling", "Why the sources differ"],
 )
 def test_what_was_not_assessed_is_printed_rather_than_left_out(named):
     assert named in rendered()

@@ -5,7 +5,13 @@ import pathlib
 import re
 from itertools import chain, product
 
-from cli.progress import NO_PROGRESS, CouncilProgress, orders_asked
+from cli.progress import (
+    NO_EXPLANATION_PROGRESS,
+    NO_PROGRESS,
+    CouncilProgress,
+    ExplanationProgress,
+    orders_asked,
+)
 
 CLOCK = re.compile(r"\b(datetime\.now|time\.time|utcnow|date\.today|perf_counter|monotonic)\b")
 
@@ -115,6 +121,21 @@ def test_a_run_nobody_is_watching_says_nothing():
     # A scan with no council takes about a second and needs none of this.
     NO_PROGRESS.starting("CVE-1")
     NO_PROGRESS.asking("AV", "qwen")
+
+
+def test_each_explanation_is_said_before_it_is_asked_counting_towards_its_total():
+    out = io.StringIO()
+    watching = ExplanationProgress(2, out)
+    watching.explaining("CVE-1", "big:27b")
+    watching.explaining("CVE-2", "big:27b")
+    assert out.getvalue().splitlines() == [
+        "explanation 1/2  finding CVE-1  big:27b",
+        "explanation 2/2  finding CVE-2  big:27b",
+    ]
+
+
+def test_a_run_nobody_watches_says_nothing_of_explanations_either():
+    NO_EXPLANATION_PROGRESS.explaining("CVE-1", "big:27b")
 
 
 def clock_reads(path: pathlib.Path) -> list[str]:
