@@ -7,7 +7,9 @@ from full_runs import fully_assessed
 from organisation.approval import Approval, Decision, NotApproved
 from organisation.risk import assess, per_source
 from report.absences import (
+    COMPONENT_INVENTORY,
     NO_COUNCIL_RUN,
+    NOTHING_CATALOGUED,
     NOTHING_ABSENT,
     NOTHING_TO_PUT,
     NOTHING_TO_WEIGH,
@@ -133,7 +135,7 @@ def test_asking_for_something_with_no_finding_to_ask_about_names_that_cause(aske
 
 def test_each_manifest_nothing_was_read_from_is_named_first_with_why():
     unread = Coverage(unread_manifests=UNREAD)
-    report = build_report(PROVENANCE, catalogue(), (), {}, coverage=unread)
+    report = build_report(PROVENANCE, catalogue(DJANGO), (), {}, coverage=unread)
     named = [(one.what, one.because) for one in report.not_assessed]
     assert named[:2] == [(path, UNREAD_MANIFEST) for path in UNREAD]
     assert [one for one, _ in named[2:]] == WHAT_A_BARE_RUN_LEAVES_OUT
@@ -149,3 +151,20 @@ def test_a_run_that_assessed_everything_else_still_names_an_unread_manifest():
     report = fully_assessed(Coverage(unread_manifests=("package.json",)))
     assert [one.what for one in report.not_assessed] == ["package.json"]
     assert NOTHING_ABSENT not in as_text(report)
+
+
+def test_an_inventory_with_no_component_in_it_is_named_first_with_why():
+    # "0 findings across 0 components" was once the whole of what such a run said.
+    first = a_report().not_assessed[0]
+    assert (first.what, first.because) == (COMPONENT_INVENTORY, NOTHING_CATALOGUED)
+
+
+def test_an_inventory_holding_a_component_is_not_named_absent():
+    named = [one.what for one in a_report(components=(DJANGO,)).not_assessed]
+    assert COMPONENT_INVENTORY not in named
+
+
+def test_an_empty_inventory_is_named_before_the_manifests_nothing_was_read_from():
+    unread = Coverage(unread_manifests=UNREAD)
+    report = build_report(PROVENANCE, catalogue(), (), {}, coverage=unread)
+    assert [one.what for one in report.not_assessed][:3] == [COMPONENT_INVENTORY, *UNREAD]

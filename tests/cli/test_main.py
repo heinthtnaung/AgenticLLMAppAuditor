@@ -7,10 +7,12 @@ import pytest
 
 from cli import audit as audit_module
 from cli import main as entry
-from cli.main import COULD_NOT_RUN, FOUND_NOTHING, FOUND_NOTHING_BUT_UNREAD, FOUND_SOMETHING, main
+from cli.main import (
+    COULD_NOT_RUN, FOUND_NOTHING, FOUND_NOTHING_BUT_UNCHECKED, FOUND_SOMETHING, main,
+)
 from cli.preflight import CannotRun
 from cli.report_files import WRITTEN_TO
-from cli_samples import REPORTS_FOLDER, TRIVY_VERSION, run_command_line, written_answers
+from cli_samples import LODASH, REPORTS_FOLDER, TRIVY_VERSION, run_command_line, written_answers
 from deps.scanner import ScannerFailed, ScannerUnavailable
 from deps.trivy_database import CACHE_VARIABLE, XDG_CACHE_VARIABLE
 from report.absences import (
@@ -32,7 +34,7 @@ def test_a_run_that_found_something_exits_one(monkeypatch, tmp_path):
 
 
 def test_a_run_that_found_nothing_exits_zero(monkeypatch, tmp_path):
-    code, out, _ = run_command_line([], monkeypatch, tmp_path, components=(), advisories={})
+    code, out, _ = run_command_line([], monkeypatch, tmp_path, components=(LODASH,), advisories={})
     assert code == FOUND_NOTHING
     assert "0 findings" in out
 
@@ -58,7 +60,7 @@ def test_a_run_that_could_not_happen_exits_two_and_says_why(monkeypatch, tmp_pat
 
 
 def test_the_four_outcomes_are_four_different_codes():
-    assert len({FOUND_NOTHING, FOUND_SOMETHING, COULD_NOT_RUN, FOUND_NOTHING_BUT_UNREAD}) == 4
+    assert len({FOUND_NOTHING, FOUND_SOMETHING, COULD_NOT_RUN, FOUND_NOTHING_BUT_UNCHECKED}) == 4
 
 
 def test_a_bad_command_line_also_leaves_by_the_could_not_run_door():

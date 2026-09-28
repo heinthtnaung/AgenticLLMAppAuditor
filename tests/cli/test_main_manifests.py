@@ -7,11 +7,13 @@ from typing import Iterator
 
 import pytest
 
-from cli.main import COULD_NOT_RUN, FOUND_NOTHING, FOUND_NOTHING_BUT_UNREAD, FOUND_SOMETHING
-from cli_samples import REPORTS_FOLDER, REPOSITORY_NAME, run_command_line
+from cli.main import COULD_NOT_RUN, FOUND_NOTHING, FOUND_NOTHING_BUT_UNCHECKED, FOUND_SOMETHING
+from cli_samples import LODASH, REPORTS_FOLDER, REPOSITORY_NAME, run_command_line
 from report.absences import UNREAD_MANIFEST
 
-NOTHING_FOUND = {"components": (), "advisories": {}}
+# A component nobody published against, so the inventory is not empty: an empty
+# one exits 3 on its own, which `test_main_empty_inventory` holds.
+NOTHING_FOUND = {"components": (LODASH,), "advisories": {}}
 UNLISTABLE = 0o000
 OWNER_ALL = 0o700
 NEEDS_PERMISSIONS = pytest.mark.skipif(
@@ -62,7 +64,7 @@ def test_a_run_that_found_nothing_but_could_not_read_a_manifest_exits_three(
     # dependencies nobody had checked.
     with_unread_manifest(tmp_path)
     code, _, _ = run_command_line([], monkeypatch, tmp_path, **NOTHING_FOUND)
-    assert code == FOUND_NOTHING_BUT_UNREAD
+    assert code == FOUND_NOTHING_BUT_UNCHECKED
 
 
 def test_a_run_that_found_nothing_and_read_every_manifest_exits_zero(monkeypatch, tmp_path):

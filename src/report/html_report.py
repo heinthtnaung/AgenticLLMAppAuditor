@@ -32,7 +32,7 @@ from report.html_risk import risk_section
 from report.html_style import STYLESHEET
 from report.provenance import AdvisoryDatabase
 from report.record import Report
-from report.summary_words import counts, unread_pointer
+from report.summary_words import counts, inventory_pointer, unread_pointer
 
 DOCTYPE = "<!DOCTYPE html>"
 LANGUAGE = "en"
@@ -101,7 +101,8 @@ def database_line(run) -> str:
 
 def summary_line(report: Report) -> str:
     """Say how much there is, with the pointer to what was left out, in one paragraph."""
-    said = " ".join(part for part in (counts(report), unread_pointer(report)) if part)
+    pointers = (inventory_pointer(report), unread_pointer(report))
+    said = " ".join(part for part in (counts(report), *pointers) if part)
     return tag("p", text(said), "count")
 
 

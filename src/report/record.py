@@ -80,7 +80,7 @@ def build_report(
         advisories_without_components=unmatched_purls(catalogue.components, advisories_by_purl),
         unidentified_artifacts=catalogue.unidentified,
         overrides_without_findings=overrides_without_findings(overridden, raised),
-        not_assessed=absences(settled, weighed, decided, coverage),
+        not_assessed=absences(settled, weighed, decided, coverage, len(catalogue.components)),
         council=settled,
         risk=weighed,
         approval=decided,

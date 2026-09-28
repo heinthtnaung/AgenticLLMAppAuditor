@@ -18,7 +18,8 @@ attributed, a council of local models asked if you name one, and every finding
 weighed against your environment into an Organisation Risk Score if you answer
 the approved questions. The two optional halves are named as absent when you
 leave them out — `NOT ASSESSED`, never a zero and never an omission. So is every
-manifest the scan could read no version from.
+manifest the scan could read no version from, and an inventory in which Syft
+catalogued nothing.
 
 | Part | State | What it is |
 |---|---|---|
@@ -162,7 +163,8 @@ walking them would name the packages installed there as unread manifests.
 | `composer.json` | `composer.lock` |
 | `Gemfile` | `Gemfile.lock` |
 
-Each goes first under `NOT ASSESSED`, by its path within the repository, with
+Each is named under `NOT ASSESSED` by its path within the repository, ahead of
+everything but an empty inventory, with
 `no lock file Syft reads is beside it, so no version it declares was checked`.
 The summary gains a pointer, so the counts never stand alone: a second line in
 text, and the end of the same summary paragraph on the page. With two such
@@ -345,10 +347,10 @@ found there is none either, and rather than claim nobody answered, it reads
 
 | Code | Meaning |
 |---|---|
-| `0` | the audit ran, found nothing, and read every manifest |
+| `0` | the audit ran, catalogued components, found nothing, and read every manifest |
 | `1` | the audit ran and found something |
 | `2` | the audit could not run, or could not save its reports |
-| `3` | the audit ran and found nothing, but could not read a manifest |
+| `3` | the audit ran and found nothing, but could not read a manifest or catalogued no component |
 
 **`2` is the one that matters.** A missing database, an absent scanner or a path
 that is not there would otherwise exit 0 beside a genuinely clean repository, and
@@ -358,13 +360,23 @@ command line and a directory the manifest walk cannot list exit with, so every
 written exits `2` even with the record on stdout, because it did not do
 everything it was asked to.
 
-**`3` keeps nothing found over an unread manifest apart from `0`.** A
+**`3` keeps nothing found over something unchecked apart from `0`.** A
 `package.json` with no lock file yields no package, so `0` there would put a
 green build on dependencies nobody checked; a pipeline that passes only on `0`
 stops on `3`. A run with findings exits `1` whether or not it read every
 manifest, because the findings already stop the build, so on `1` read the JSON
 artefact's `not_assessed` as well: each unread manifest is an entry there,
 named by its path, with the lock-file reason as its `because`.
+
+**An inventory of nothing exits `3` too.** Where Syft catalogues no component,
+in an empty directory or one whose only manifest has no lock file, nothing was
+checked against an advisory, and `0 findings across 0 components` would pass a
+pipeline on a scan of nothing. The summary gains
+`Not a clean result: Syft catalogued no component, so nothing was checked.`,
+and `Component inventory` goes first under `NOT ASSESSED`, with
+`Syft catalogued no component, so nothing was checked against an advisory`. The
+JSON's `not_assessed` carries the same pair as `what` and `because`. It is `3`
+and not `2` because the run did all it was asked and wrote its reports.
 
 ### The council is off unless you ask for it
 

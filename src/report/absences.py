@@ -4,10 +4,12 @@ A report of a half-built tool that looks complete is worse than one that says
 what it did not do: an Organisation Risk Score printed as 0 reads as a finding
 assessed and found harmless. So each thing a run did not assess is an `Absence`
 with its reason, and the reasons are kept apart where the causes differ --
-nobody asked, there was nothing to ask about, or a manifest could not be read.
+nobody asked, there was nothing to ask about, a manifest could not be read, or
+nothing was catalogued to check at all.
 
 `Coverage` is what the operator asked the run for and what it could not read,
-which the absences alone are drawn from; `report.record` carries both.
+which, with the number of components catalogued, is all the absences are drawn
+from; `report.record` carries both.
 """
 
 from dataclasses import dataclass
@@ -35,6 +37,10 @@ NOTHING_WAS_PUT_TO_IT = (
 # asked for both, and saying nobody asked would be the wrong cause.
 NOTHING_TO_WEIGH = "answers were supplied, but there was no finding to weigh them against"
 NOTHING_TO_PUT = "council members were named, but there was no finding to put to them"
+# An inventory with nothing in it had nothing checked against an advisory, so
+# "0 findings" over it is no result at all, and silence would pass it as clean.
+COMPONENT_INVENTORY = "Component inventory"
+NOTHING_CATALOGUED = "Syft catalogued no component, so nothing was checked against an advisory"
 # Said of each manifest the scan read no version from; `deps.manifests` says what counts as read.
 UNREAD_MANIFEST = "no lock file Syft reads is beside it, so no version it declares was checked"
 # Said under the heading when nothing is absent, because an empty heading is the
@@ -42,7 +48,8 @@ UNREAD_MANIFEST = "no lock file Syft reads is beside it, so no version it declar
 # claiming everything was assessed: a scoped council leaves findings unasked,
 # and says so in its own section.
 NOTHING_ABSENT = (
-    "Nothing: the Organisation Risk Score, the approval record and a council ruling are all here."
+    "Nothing: the component inventory, the Organisation Risk Score, the approval record and a "
+    "council ruling are all here."
 )
 
 
@@ -77,12 +84,24 @@ def absences(
     risk: Mapping[str, FindingRisk],
     approval: ApprovalOutcome,
     coverage: Coverage,
+    catalogued: int,
 ) -> tuple[Absence, ...]:
     """Name what this run did not assess, so no reader takes silence for a nil result."""
-    named = [*manifest_absences(coverage), *risk_absence(risk, coverage.answers_given)]
+    named = [
+        *inventory_absence(catalogued),
+        *manifest_absences(coverage),
+        *risk_absence(risk, coverage.answers_given),
+    ]
     if isinstance(approval, NotApproved):
         named.append(Absence("Approval record", approval.reason))
     return tuple([*named, *council_absence(council, coverage.council_named)])
+
+
+def inventory_absence(catalogued: int) -> list[Absence]:
+    """Name an inventory with no component in it, first, because then nothing was checked."""
+    if catalogued:
+        return []
+    return [Absence(COMPONENT_INVENTORY, NOTHING_CATALOGUED)]
 
 
 def manifest_absences(coverage: Coverage) -> list[Absence]:

@@ -56,7 +56,8 @@ flowchart TD
 
     adb --> pre
     adb --> trivy
-    walk -->|"the manifests read from nothing,<br/>named first under not assessed"| rec
+    comp -->|"no component catalogued,<br/>named first under not assessed"| rec
+    walk -->|"the manifests read from nothing,<br/>named next under not assessed"| rec
 
     fin --> cou["Council, only if members were named,<br/>by --council-member, or by AUDITOR_COUNCIL_MEMBERS<br/>under --council, and only for the findings<br/>their sources do not settle — diagram 4"]
     fin --> ctx["Organisation context<br/>scored once per source<br/>diagram 3"]
@@ -94,16 +95,21 @@ refusal there is "could not run", which a pipeline must be able to tell from
 The manifest walk exists for the same reason. Syft reads a `package.json`,
 `composer.json` or `Gemfile` through the lock file beside it and through nothing
 else, so one with no lock file yields no package, and `0 findings` over it reads
-like a clean repository. The walk names each one, and the record lists it first
-under not assessed with a line in the summary saying the counts leave it out;
-a directory it cannot list is "could not run" rather than passed over.
+like a clean repository. The walk names each one, and the record lists it under
+not assessed, after only an empty inventory, with a line in the summary saying
+the counts leave it out; a directory it cannot list is "could not run" rather
+than passed over. An inventory in which Syft catalogued nothing is the widest
+case: `0 findings across 0 components` checked nothing at all. The record names
+it first under not assessed, as the component inventory, with a summary line
+saying it is not a clean result.
 
-Unlike those refusals, an unread manifest does not stop the run; it changes
-what nothing found is called. A run that finds nothing exits `3` rather than
-`0` while one is unread, so a pipeline reading only the code does not go green
-on it. A run that finds something exits `1` either way, and `not_assessed` in
-the JSON is where the unread ones are named. What counts as read was measured
-against Syft 1.52, and `README.md` names the four ways the walk falls short.
+Unlike those refusals, neither stops the run; each changes what nothing found
+is called. A run that finds nothing exits `3` rather than `0` while a manifest
+is unread or nothing was catalogued, so a pipeline reading only the code does
+not go green on it. A run that finds something exits `1` whatever it could not
+read, and `not_assessed` in the JSON is where both are named. What counts as
+read was measured against Syft 1.52, and `README.md` names the four ways the
+walk falls short.
 
 Syft is one box because it is one call: it finds the manifests and catalogues
 them in the same pass; the walk before it feeds it nothing. The

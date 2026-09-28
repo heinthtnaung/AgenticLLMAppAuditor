@@ -12,7 +12,7 @@ from full_runs import fully_assessed
 from report.absences import Coverage
 from report.html_report import as_html
 from report.record import Report, build_report
-from report.summary_words import counts, unread_pointer
+from report.summary_words import EMPTY_POINTER, counts, inventory_pointer, unread_pointer
 from report.text_report import as_text
 from report_samples import (
     LOW_CONFIDENTIALITY,
@@ -64,6 +64,27 @@ def test_neither_page_points_anywhere_when_every_manifest_was_read():
     report = reading_nothing_from()
     assert "Not in these counts" not in as_text(report)
     assert "Not in these counts" not in as_html(report)
+
+
+def cataloguing_nothing() -> Report:
+    """Build a record whose scan catalogued no component at all."""
+    return build_report(PROVENANCE, catalogue(), (), {})
+
+
+def test_an_inventory_holding_a_component_adds_nothing_about_it_to_the_summary():
+    assert inventory_pointer(reading_nothing_from()) == ""
+
+
+def test_an_inventory_of_nothing_is_said_not_to_be_a_clean_result():
+    assert inventory_pointer(cataloguing_nothing()) == EMPTY_POINTER
+
+
+def test_both_pages_put_the_empty_inventory_pointer_beside_the_counts():
+    lines = as_text(cataloguing_nothing()).split("\n")
+    counted_at = next(number for number, line in enumerate(lines) if " across " in line)
+    assert lines[counted_at + 1] == EMPTY_POINTER
+    pointer = html.escape(EMPTY_POINTER, quote=True)
+    assert f"carry sources that disagree. {pointer}</p>" in as_html(cataloguing_nothing())
 
 
 def with_sources(*vectors: dict[str, str]):

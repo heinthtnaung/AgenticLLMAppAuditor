@@ -4,10 +4,10 @@ Four outcomes, because a pipeline has to tell them apart:
 
 | Code | Meaning |
 |---|---|
-| 0 | the audit ran, found nothing, and read every manifest |
+| 0 | the audit ran, catalogued components, found nothing, and read every manifest |
 | 1 | the audit ran and found something |
 | 2 | the audit could not run |
-| 3 | the audit ran and found nothing, but could not read a manifest |
+| 3 | the audit ran and found nothing, but could not read a manifest or catalogued nothing |
 
 **Conflating `0` and `2` is how a broken scan passes a pipeline.** A missing
 database, an absent scanner or a path that is not there would otherwise exit 0
@@ -20,6 +20,12 @@ every "could not run" leaves by the same door.
 are never checked, and `0` there would put a green build on them. `3` keeps
 that apart from `0`. A run with findings exits `1` whatever it could not read,
 because the findings alone already stop the build.
+
+**Nor is nothing found in an inventory of nothing.** A directory Syft catalogues
+no component in had nothing checked against an advisory, and `0` there would
+pass a pipeline on a scan of nothing. It is `3` and not `2`: the run did all it
+was asked and wrote its reports, and, as with an unread manifest, what it found
+says nothing about what it could not see.
 """
 
 import os
@@ -61,7 +67,7 @@ REFUSALS = (
 FOUND_NOTHING = 0
 FOUND_SOMETHING = 1
 COULD_NOT_RUN = 2
-FOUND_NOTHING_BUT_UNREAD = 3
+FOUND_NOTHING_BUT_UNCHECKED = 3
 
 
 def main(
@@ -95,10 +101,11 @@ def main(
 
 
 def outcome(report: Report) -> int:
-    """Give the code for a run that ran: findings, nothing, or nothing over an unread manifest."""
+    """Give the code for a run that ran: findings, nothing, or nothing over what went unchecked."""
     if report.findings:
         return FOUND_SOMETHING
-    return FOUND_NOTHING_BUT_UNREAD if report.coverage.unread_manifests else FOUND_NOTHING
+    unchecked = bool(report.coverage.unread_manifests) or report.component_count == 0
+    return FOUND_NOTHING_BUT_UNCHECKED if unchecked else FOUND_NOTHING
 
 
 def renderings(report: Report) -> dict[str, str]:
