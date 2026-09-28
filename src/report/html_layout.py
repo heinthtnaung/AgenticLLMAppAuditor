@@ -37,6 +37,13 @@ def tag(name: str, content: str, css_class: str = "") -> str:
     return f"<{name}{named}>{content}</{name}>"
 
 
+def link(address: str, content: str) -> str:
+    """Link already-escaped content to a page a reader may open, which this page never fetches."""
+    # No referrer: a report served from an internal host would otherwise hand its
+    # own address, repository name and all, to whichever advisory site is opened.
+    return f'<a href="{text(address)}" rel="noreferrer">{content}</a>'
+
+
 def listing(items: list[str], css_class: str = "") -> str:
     """Put already-rendered items in a list, so no caller loops inside a loop."""
     return tag("ul", "".join(tag("li", item) for item in items), css_class)

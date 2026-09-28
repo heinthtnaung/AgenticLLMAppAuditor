@@ -49,6 +49,11 @@ REFUSED_DISSENT = {**SAME_THREE, "ghsa": ENVIRONMENTAL_VECTOR}
 
 DATABASE = AdvisoryDatabase(built_at="2026-09-22T02:00:05Z")
 
+# The page Trivy names for CVE-2019-14234, and one carrying the characters an
+# href has to have escaped.
+ADVISORY_URL = "https://avd.aquasec.com/nvd/cve-2019-14234"
+ESCAPED_URL = "https://example.test/advisory?id=\"1\"&x=<b>"
+
 # Fixture versions, deliberately not shaped like real ones. The last pair were
 # plausible numbers and one of them was wrong for a machine nobody had checked;
 # what a run records is what `deps` asks the tools, which `tests/cli` pins.

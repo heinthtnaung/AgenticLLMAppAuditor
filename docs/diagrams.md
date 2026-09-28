@@ -47,7 +47,7 @@ flowchart TD
         rdir --> walk["Manifest walk<br/>each package.json, composer.json or Gemfile<br/>with no lock file Syft reads beside it<br/>a directory it cannot list = could not run"]
         walk --> syft["Syft scans the directory<br/>lockfiles and manifests, one pass"]
         syft --> comp[("Components<br/>name, version, purl, where found")]
-        trivy["Trivy reads the database<br/>--cache-dir: the cache the preflight dated<br/>advisories per purl, and a published<br/>vector for each source that wrote one"]
+        trivy["Trivy reads the database<br/>--cache-dir: the cache the preflight dated<br/>advisories per purl, a published<br/>vector for each source that wrote one,<br/>and the advisory's own page, if named"]
         comp --> join["Join on the versioned purl"]
         trivy --> join
         join --> asm["Score each source's vector<br/>src/cvss, published equations"]
@@ -611,12 +611,14 @@ to guard does not exist. That is why the hosted provider client keeps a box of
 its own with an edge back into the registry it would be registered in.
 
 **The web page left the middle column.** The `src/report/html_*.py` modules
-render the record as one HTML file with the stylesheet inlined and no script, no
-font and no link out, because the page is produced behind a proxy and opened
-from disk. What that is not is a web application: nothing is served, nothing is
-interactive, and there is no build step and no JavaScript — which is the whole of
-`frontend-developer`'s remit, and none of it is written. The box is gone because
-a reader can open the report in a browser today, not because that remit is met.
+render the record as one HTML file with the stylesheet inlined, no script and
+no font, because the page is produced behind a proxy and opened from disk, so
+it fetches nothing. The one address on it is each advisory's own page, as a
+link a reader follows or does not. What that is not is a web application:
+nothing is served, nothing is interactive, and there is no build step and no
+JavaScript — which is the whole of `frontend-developer`'s remit, and none of it
+is written. The box is gone because a reader can open the report in a browser
+today, not because that remit is met.
 
 The third column is there so the page is not read as claiming the rest is
 absent: the rules, the design documents and the agent definitions are written,

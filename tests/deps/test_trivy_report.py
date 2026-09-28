@@ -129,3 +129,25 @@ def test_a_document_that_is_not_a_trivy_report_is_refused(report):
 def test_a_scores_block_of_the_wrong_shape_is_refused():
     with pytest.raises(ScannerFailed, match="'CVSS' must be an object"):
         read_advisories(trivy_report_of(trivy_record(CVSS="9.8")))
+
+
+def test_an_advisory_keeps_the_page_trivy_names_for_it():
+    advisory = read_advisories(load(REPORT))[DJANGO_PURL][0]
+    assert advisory.url == "https://avd.aquasec.com/nvd/cve-2019-14234"
+
+
+@pytest.mark.parametrize(
+    "record", [trivy_record(), trivy_record(PrimaryURL="")], ids=["absent", "empty"]
+)
+def test_an_advisory_with_no_page_named_carries_none_rather_than_an_empty_link(record):
+    # An empty string would render as a link to nothing that looks like a link.
+    assert read_advisories(trivy_report_of(record))[DJANGO_PURL][0].url is None
+
+
+@pytest.mark.parametrize(
+    "url", ["javascript:alert(1)", "avd.aquasec.com/nvd/cve-2019-14234", 7, ["https://x"]]
+)
+def test_a_page_that_is_no_web_link_is_refused_by_name(url):
+    # The page puts this in an href, where a script scheme escapes into a live one.
+    with pytest.raises(ScannerFailed, match="'CVE-2019-14234' carries a PrimaryURL that is not"):
+        read_advisories(trivy_report_of(trivy_record(PrimaryURL=url)))

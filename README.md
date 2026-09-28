@@ -133,10 +133,25 @@ Rerun once the fault is fixed.
 
 All three render the same record and none of them works a number out, so a
 figure cannot differ between them. The HTML page fetches nothing — the
-stylesheet is inlined and there is no script, no font, no image and no link out
-— because a scan runs behind the corporate proxy and the report is opened from
-disk. A page that fetched its stylesheet would arrive unreadable in the
-environment it was made for.
+stylesheet is inlined and there is no script, no font and no image — because a
+scan runs behind the corporate proxy and the report is opened from disk. A page
+that fetched its stylesheet would arrive unreadable in the environment it was
+made for.
+
+**Each advisory links to its own page, where Trivy names one.** The address is
+Trivy's `PrimaryURL`. On the page a finding's advisory id is a link, which a
+reader follows or does not; nothing opens it for them. It carries
+`rel="noreferrer"`, so a report served from an internal host does not hand its
+own address to the advisory's site. The JSON's `advisory` carries it as `url`,
+always present and `null` where Trivy names none. On this repository all 18
+findings carry one.
+
+The text report prints no link, because a link beside the id runs past the
+page's width; `tests/report/test_text_findings.py` asserts that it prints none.
+A `PrimaryURL` that is not an `http://` or `https://` address is refused rather
+than put on the page as a link a browser would run, and `audit` exits `2`
+naming it:
+`audit: Advisory 'CVE-2026-4800' carries a PrimaryURL that is not a web link: 'javascript:alert(1)'`.
 
 What HTML costs is comparison. Text and JSON both read line by line, so two runs
 diff; a styling change rewrites an HTML file the whole way down, which is why

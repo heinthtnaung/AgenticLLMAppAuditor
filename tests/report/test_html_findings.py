@@ -10,14 +10,17 @@ marked not scored, rather than becoming a zero.
 from report.html_findings import (
     agreeing_section,
     contested_section,
+    finding_name,
     unchecked_section,
     unscored_section,
 )
 from report.html_report import as_html
 from report.record import build_report
 from report_samples import (
+    ADVISORY_URL,
     CONFIDENTIALITY_ONLY,
     ENVIRONMENTAL_VECTOR,
+    ESCAPED_URL,
     LOW_CONFIDENTIALITY,
     PROVENANCE,
     REFUSED_DISSENT,
@@ -132,3 +135,28 @@ def test_no_heading_is_written_for_a_source_the_finding_does_not_carry():
     page = agreeing_section(report_of(finding(DJANGO, vectors={"ghsa": CONFIDENTIALITY_ONLY})))
     assert "nvd" not in page
     assert "<th" not in page
+
+
+def test_an_advisory_with_a_page_is_named_by_a_link_to_it():
+    named = finding_name(finding(DJANGO, url=ADVISORY_URL))
+    linked = f'<a href="{ADVISORY_URL}" rel="noreferrer">CVE-2019-14234</a>'
+    assert f'<span class="advisory">{linked}</span>' in named
+
+
+def test_an_advisory_with_no_page_is_named_in_plain_text_and_links_nowhere():
+    named = finding_name(finding(DJANGO))
+    assert '<span class="advisory">CVE-2019-14234</span>' in named
+    assert "<a " not in named
+
+
+def test_a_link_is_escaped_so_nothing_trivy_read_can_close_the_href():
+    named = finding_name(finding(DJANGO, url=ESCAPED_URL))
+    assert 'href="https://example.test/advisory?id=&quot;1&quot;&amp;x=&lt;b&gt;"' in named
+
+
+def test_an_advisory_link_is_the_only_address_on_the_page_and_nothing_fetches_it():
+    # A reader follows a link or does not; a script, a stylesheet or an image
+    # would be fetched on opening, which a scan run offline cannot afford.
+    page = as_html(report_of(finding(DJANGO, url=ADVISORY_URL)))
+    assert page.count("https://") == 1 and f'<a href="{ADVISORY_URL}"' in page
+    assert "<script" not in page and "<link" not in page and " src=" not in page

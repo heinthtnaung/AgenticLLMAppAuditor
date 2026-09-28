@@ -3,6 +3,7 @@
 from report.record import build_report
 from report.text_report import as_text
 from report_samples import (
+    ADVISORY_URL,
     BOTTOM_OF_HIGH,
     CONFIDENTIALITY_ONLY,
     CORPUS_DISSENT,
@@ -125,3 +126,11 @@ def test_a_source_whose_vector_ends_in_a_temporal_metric_is_read_and_disputes():
     assert "A SOURCE WAS REFUSED" not in text
     assert lines_under("SOURCES DISAGREE (1)", text)
     assert "AC, C" in text
+
+
+def test_the_terminal_prints_no_advisory_link_which_the_record_and_the_page_carry():
+    # Accepted on purpose: an agreeing finding is one line, already near the
+    # page's width, and a link beside it runs past the edge. The JSON's
+    # `advisory.url` and the page's linked id carry it; printing it turns this red.
+    linked = (finding(DJANGO, url=ADVISORY_URL), finding(PYYAML, url=ADVISORY_URL, vectors={}))
+    assert ADVISORY_URL not in rendered(linked, components=(DJANGO, PYYAML))

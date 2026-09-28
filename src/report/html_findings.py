@@ -24,7 +24,7 @@ from report.disagreement import (
     sources_disagree,
 )
 from report.html_layout import (
-    CVSS_SCALE, listing, number, scored_chip, section, separated, tag, text,
+    CVSS_SCALE, link, listing, number, scored_chip, section, separated, tag, text,
 )
 from report.record import Report
 
@@ -105,10 +105,17 @@ def unscored_card(finding) -> str:
 
 
 def finding_name(finding) -> str:
-    """Name the advisory and the installed component it was raised against."""
-    named = tag("span", text(finding.advisory.advisory_id), "advisory")
+    """Name the advisory, linked to its page when it has one, and the component it is against."""
+    named = tag("span", advisory_name(finding.advisory), "advisory")
     component = f"{finding.component.name} {finding.component.version}"
     return tag("h3", named + tag("span", text(component), "component"), "finding-name")
+
+
+def advisory_name(advisory) -> str:
+    """Give the advisory's id, as a link to its page, or as plain text where none is published."""
+    if advisory.url is None:
+        return text(advisory.advisory_id)
+    return link(advisory.url, text(advisory.advisory_id))
 
 
 def spread_line(finding) -> str:

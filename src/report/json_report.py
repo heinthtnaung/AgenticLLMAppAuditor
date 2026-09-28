@@ -114,12 +114,13 @@ def component_of(finding: Any) -> dict[str, Any]:
 
 
 def advisory_of(finding: Any) -> dict[str, Any]:
-    """Name the advisory, and the fix if one is published."""
+    """Name the advisory, the fix if one is published, and its own page if Trivy names one."""
     advisory = finding.advisory
     return {
         "advisory_id": advisory.advisory_id,
         "summary": advisory.summary,
         "fixed_version": advisory.fixed_version,
+        "url": advisory.url,
     }
 
 

@@ -2,8 +2,10 @@
 
 **Nothing is fetched at any point.** A scan runs behind a corporate proxy and
 the page is opened from a file, so the stylesheet is inlined and there is no
-script, no font, no image and no link out. A report that fetched a stylesheet
-would arrive unreadable in the environment it was made for.
+script, no font, no image and no stylesheet link. A report that fetched a
+stylesheet would arrive unreadable in the environment it was made for. The one
+address on the page is each advisory's own, as a link a reader follows or does
+not; nothing opens it for them.
 
 **Nothing here computes a number.** Every figure is the one the engine put in
 the record, rendered beside the vector or the answer it came from. A second
@@ -67,7 +69,7 @@ def as_html(report: Report) -> str:
 
 
 def document(title: str, body: str) -> str:
-    """Put the page together: no script, no link, nothing fetched at any point."""
+    """Put the page together: no script, no stylesheet link, nothing fetched at any point."""
     page = [DOCTYPE, f'<html lang="{LANGUAGE}">', head(title), tag("body", body), "</html>"]
     return "\n".join([*page, ""])
 
