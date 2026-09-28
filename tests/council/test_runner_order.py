@@ -36,7 +36,7 @@ def who_replied(round_: MetricRound) -> tuple[str, ...]:
 
 
 def test_members_are_asked_in_roster_order():
-    # Ordered by cost, which is what makes an escalation policy mean anything.
+    # Roster order is the order members are asked in and their replies are held in.
     roster = Roster((member("cheap"), member("dear"), member("dearest")))
     run = assess(RAW_ADVISORY, roster, FALLBACKS, clients_of(replying()))
     assert run.asked == ("cheap", "dear", "dearest")

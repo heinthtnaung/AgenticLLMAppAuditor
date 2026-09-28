@@ -7,6 +7,7 @@ import pytest
 
 import council.ollama
 import eval_samples as samples
+from council_eval import compose as compose_module
 from cli.council_run import OLLAMA_PROVIDER, assess_one, build_roster
 from council.prompt import PROMPT_VERSION, REVERSED_PROMPT_VERSION
 from council_eval.collect import ask_item
@@ -149,3 +150,13 @@ def test_a_pass_that_names_no_window_is_refused():
     unnamed = {key: value for key, value in samples.header().items() if key != "num_ctx"}
     with pytest.raises(ValueError, match=r"recorded at windows \['None'\]"):
         replay_roster((samples.item(),), (samples.MODEL,), Replies(headers=(unnamed,), calls={}))
+
+
+def test_a_replay_names_no_escalation_model_rather_than_leaving_it_to_a_default(monkeypatch):
+    options = []
+    recorded = passes()
+    monkeypatch.setattr(
+        compose_module, "assess_one", lambda *given, **named: options.append(named)
+    )
+    replay_roster((samples.item(),), (samples.MODEL, samples.OTHER_MODEL), recorded)
+    assert options == [{"order_check": False, "escalation": None}]

@@ -22,8 +22,10 @@ from report.council_record import (
     MemberIdentity,
     MemberSaid,
     MetricRuling,
+    Outcome,
     SaidKind,
 )
+from report.provenance import LocalModels
 
 SETTLED = "settled"
 NO_VECTOR = "no vector"
@@ -34,6 +36,11 @@ ONE_QUOTATION_EACH = "every metric on one member's quotation, nothing cross-chec
 NOT_ASKED = "not asked"
 VERIFIED = "quotation found in the advisory"
 UNVERIFIED = "quotation not found in the advisory"
+ESCALATED_TO = "→ escalated to"
+NO_SETTLEMENT = "no settlement"
+NOT_CONTESTED = "is not one of the contested values"
+ESCALATION_MODEL = "escalation model"
+NO_ESCALATION = "no escalation model named: a metric the council left open stays open"
 
 
 def who(member: MemberIdentity) -> str:
@@ -67,6 +74,42 @@ def unanswered(said: MemberSaid) -> str:
     if said.reason:
         return f"{said.kind.value}: {said.reason}"
     return said.kind.value
+
+
+def escalation_named(local: LocalModels | None) -> list[str]:
+    """Say which model the metrics the council left open went to, or that none was named."""
+    # Nothing where the record does not say how the models were asked.
+    if local is None:
+        return []
+    if local.escalation_model is None:
+        return [NO_ESCALATION]
+    return [f"{ESCALATION_MODEL} {local.escalation_model}: asked each metric the council left open"]
+
+
+def outcome_said(ruling: MetricRuling) -> str:
+    """Say what came of a metric: its outcome, or what escalating it made of the council's."""
+    if ruling.escalation is None:
+        return ruling.outcome.value
+    escalation = ruling.escalation
+    sent = f"{escalation.prior.value} {ESCALATED_TO} {escalation.said.member.model}"
+    if ruling.outcome is Outcome.SETTLED:
+        return f"{sent}: {ruling.value} (verified)"
+    return f"{sent}: {NO_SETTLEMENT}, {why_unsettled(escalation.said)}"
+
+
+def why_unsettled(said: MemberSaid) -> str:
+    """Say why what the escalation model said settled nothing."""
+    if said.kind is not SaidKind.ANSWERED:
+        return unanswered(said)
+    if not said.verified:
+        return f"{said.value}, {UNVERIFIED}"
+    # Verified and the same both ways settles an unresolved metric, so this is a contest.
+    return f"{said.value} {NOT_CONTESTED}"
+
+
+def escalated_who(member: MemberIdentity) -> str:
+    """Name the escalation model where it is listed below the council's members."""
+    return f"{who(member)}, {ESCALATION_MODEL}"
 
 
 def chairman_said(ruling: MetricRuling) -> list[str]:

@@ -1,11 +1,13 @@
 """What the chairman decided about one metric, and what it decided it from.
 
 Three outcomes, three types, because they are not three shapes of one thing. A
-settled metric has a value the evidence supports; a contested one has no value
-yet and is the escalation policy's problem; an unresolved one has no member
-evidence at all and falls back to a published vector. One record with the value
-left out would let a reader take a contested metric for a settled one, and the
-whole point of the council is that a reader can tell.
+settled metric has a value the evidence supports; a contested one has no value;
+an unresolved one has no verified member evidence at all, and carries a
+published fallback where a caller offered one. Either of the last two goes to
+the escalation model where one is named (`council.escalation`), and stays as it
+is unless that settles it. One record with the value left out would let a
+reader take a contested metric for a settled one, and the whole point of the
+council is that a reader can tell.
 """
 
 from dataclasses import dataclass
@@ -16,15 +18,17 @@ from council.answer import Confidence, MemberAnswer
 
 
 class Basis(Enum):
-    """What settled a metric: one quotation alone, several without a dissent, or the verified one.
+    """What settled a metric: one quotation, several agreeing, the verified one, or escalation.
 
-    All three range over the members that **offered a quotation**, whether or
-    not it turned out to be in the advisory. A member that quoted nothing -- one
+    The first three range over the members that **offered a quotation**, whether
+    or not it turned out to be in the advisory. A member that quoted nothing -- one
     that declined, one that guessed, one whose call failed, one whose two orders
     of the options disagreed -- took no part in the disagreement and cannot
     create one, so a dissenting guess does not make the
     basis EVIDENCE. Nor does it make it AGREED: beside one quotation and nothing
     else, the basis is SOLE, because agreement needs a second member to agree.
+    ESCALATED is a metric the council left contested or unresolved, settled by
+    the escalation model (`chairman.rule_on_escalation`).
     These strings go into a record a human reads, so they name the set rather
     than leaving "answered" to be worked out.
     """
@@ -32,6 +36,7 @@ class Basis(Enum):
     SOLE = "one member offered a quotation, and no other member offered one"
     AGREED = "every member that offered a quotation supported this value"
     EVIDENCE = "members offering quotations disagreed, and the verified one settled it"
+    ESCALATED = "the council left it open, and the escalation model's verified quotation settled it"
 
 
 @dataclass(frozen=True)

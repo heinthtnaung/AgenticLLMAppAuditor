@@ -7,6 +7,7 @@ import re
 import pytest
 
 import eval_samples as samples
+from council_eval import collect as collect_module
 from cli.council_run import OLLAMA_PROVIDER, assess_one, build_roster
 from council.prompt import REVERSED_PROMPT_VERSION
 from cvss.metrics import METRIC_ORDER
@@ -69,3 +70,15 @@ def test_an_item_asked_in_a_variant_s_words_is_sent_them_on_every_metric():
     ask_item(samples.item(), samples.MODEL, server, LIBRARY_REVERSED)
     assert all(LIBRARY_GUIDANCE in payload["system"] for payload in server.posted[1:])
     assert len(server.posted[1:]) == len(METRIC_ORDER)
+
+
+def test_an_item_is_asked_naming_no_escalation_model_rather_than_leaving_it_to_a_default(
+    monkeypatch,
+):
+    # A pass holds one model's calls: an escalation would ask a model it never recorded.
+    options = []
+    monkeypatch.setattr(
+        collect_module, "assess_one", lambda *given, **named: options.append(named)
+    )
+    ask_item(samples.item(), samples.MODEL, samples.FakeServer())
+    assert options == [{"order_check": False, "escalation": None}]

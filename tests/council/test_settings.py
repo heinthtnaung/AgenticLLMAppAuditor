@@ -6,6 +6,7 @@ import pytest
 
 import council.ollama
 from council import settings
+from council.env_file import NAMES
 from council.ollama import LocalModel, build_request
 from council.prompt import build_prompt
 from council.settings import Settings, SettingsError, current_settings, load_settings
@@ -30,17 +31,6 @@ def test_the_environment_wins_over_the_file_and_the_file_over_the_default(tmp_pa
     chosen = load_settings({"AUDITOR_TIMEOUT_SECONDS": "900"}, written)
     assert (chosen.model, chosen.timeout_seconds) == ("gemma4:latest", 900.0)
     assert chosen.context_tokens == 8192
-
-
-def test_only_auditor_lines_are_read_and_no_other_line_is_parsed_or_quoted(tmp_path):
-    written = env_file(
-        tmp_path, "NO_PROXY=localhost", f"OPENROUTER_API_KEY={SECRET}", "a line that is no setting",
-        "# a comment", "AUDITOR_CONTEXT_TOKENS=nonsense",
-    )
-    with pytest.raises(SettingsError) as refused:
-        load_settings({}, written)
-    assert "AUDITOR_CONTEXT_TOKENS is 'nonsense'" in str(refused.value)
-    assert SECRET not in str(refused.value) and "NO_PROXY" not in str(refused.value)
 
 
 def test_a_file_s_other_keys_are_passed_over_when_its_settings_are_good(tmp_path):
@@ -80,32 +70,9 @@ def test_a_window_that_is_not_a_positive_whole_number_is_refused(value):
         load_settings({"AUDITOR_CONTEXT_TOKENS": value}, Path("/absent.env"))
 
 
-def test_a_misspelt_setting_in_the_file_is_refused_naming_it_and_not_its_value(tmp_path):
-    written = env_file(tmp_path, "AUDITOR_MODLE=gemma4:latest")
-    said = r"line 1 sets AUDITOR_MODLE, which is not a setting"
-    with pytest.raises(SettingsError, match=said) as refused:
-        load_settings({}, written)
-    assert "gemma4" not in str(refused.value)
-
-
 def test_a_misspelt_setting_in_the_environment_is_refused():
     with pytest.raises(SettingsError, match="the environment sets AUDITOR_TIMEOUT"):
         load_settings({"AUDITOR_TIMEOUT": "600"}, Path("/absent.env"))
-
-
-def test_a_setting_written_twice_or_without_its_value_is_refused(tmp_path):
-    twice = env_file(tmp_path, "AUDITOR_MODEL=a:1b", "AUDITOR_MODEL=b:2b")
-    with pytest.raises(SettingsError, match="set twice: at .* line 1, and at .* line 2"):
-        load_settings({}, twice)
-    with pytest.raises(SettingsError, match="AUDITOR_MODEL has no '='"):
-        load_settings({}, env_file(tmp_path, "AUDITOR_MODEL gemma4:latest"))
-
-
-def test_quotes_and_an_export_are_read_as_an_operator_writes_them(tmp_path):
-    quoted = ('export AUDITOR_MODEL="gemma4:latest"', "AUDITOR_CONTEXT_TOKENS='16384'")
-    written = env_file(tmp_path, *quoted)
-    chosen = load_settings({}, written)
-    assert (chosen.model, chosen.context_tokens) == ("gemma4:latest", 16384)
 
 
 def test_no_test_reads_the_operator_s_settings_file():
@@ -128,7 +95,7 @@ def test_a_member_named_no_further_takes_its_model_window_and_server_from_the_se
 def test_the_committed_example_holds_every_setting_at_its_default_and_nothing_else():
     example = Path(settings.__file__).resolve().parents[2] / ".env.example"
     lines = [line for line in example.read_text("utf-8").splitlines() if line and line[0] != "#"]
-    assert [line.split("=")[0] for line in lines] == list(settings.NAMES)
+    assert [line.split("=")[0] for line in lines] == list(NAMES)
     assert load_settings({}, example) == DEFAULTS
 
 
@@ -136,3 +103,9 @@ def test_the_members_setting_is_known_here_and_changes_no_setting_of_the_server(
     # Read by `council.member_setting` only; here it is a name, and not a misspelling.
     written = env_file(tmp_path, "AUDITOR_COUNCIL_MEMBERS=a:1b,a:1b")
     assert load_settings({"AUDITOR_COUNCIL_MEMBERS": ""}, written) == DEFAULTS
+
+
+def test_the_escalation_setting_is_known_here_and_changes_no_setting_of_the_server(tmp_path):
+    # Read by `council.escalation_setting` only; here it is a name, and not a misspelling.
+    written = env_file(tmp_path, "AUDITOR_ESCALATION_MODEL=qwen3.8:27b")
+    assert load_settings({"AUDITOR_ESCALATION_MODEL": ""}, written) == DEFAULTS

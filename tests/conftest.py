@@ -16,7 +16,7 @@ from pathlib import Path
 
 import pytest
 
-from council import settings
+from council import env_file, settings
 
 # Inside the project, so its absence is checkable, and never written by anything.
 NO_ENV_FILE = Path(__file__).resolve().parent / "no-operator-settings.env"
@@ -27,6 +27,6 @@ def pytest_configure(config: pytest.Config) -> None:
     if NO_ENV_FILE.exists():
         raise RuntimeError(f"{NO_ENV_FILE} must not exist: tests read their settings from it")
     settings.ENV_FILE = NO_ENV_FILE
-    for name in [name for name in os.environ if name.startswith(settings.PREFIX)]:
+    for name in [name for name in os.environ if name.startswith(env_file.PREFIX)]:
         del os.environ[name]
     settings.current_settings.cache_clear()

@@ -23,6 +23,7 @@ from council.run import MemberFailure
 from report.council_record import (
     MemberIdentity,
     MemberSaid,
+    MetricEscalation,
     MetricRuling,
     Outcome,
     SaidKind,
@@ -47,6 +48,17 @@ def ruling_of(round_, advisory_shown: str) -> MetricRuling:
         basis=basis_of(round_.ruling),
         confidence=confidence_of(round_.ruling),
         fallback_source=fallback_source_of(round_.ruling),
+        escalation=escalation_of(round_, advisory_shown),
+    )
+
+
+def escalation_of(round_, advisory_shown: str) -> MetricEscalation | None:
+    """Record what the escalation model said of a metric the council left open, if asked."""
+    if round_.escalation is None:
+        return None
+    return MetricEscalation(
+        prior=outcome_of(round_.escalation.prior),
+        said=said_by(round_.escalation.reply, advisory_shown),
     )
 
 
@@ -111,12 +123,21 @@ def value_of(ruling) -> str:
 
 
 def nothing_cross_checked(run) -> bool:
-    """Say whether nothing in a run was cross-checked: one member reached, or every basis sole."""
+    """Say whether nothing was cross-checked: one member, or each metric on one quotation."""
     # Two members reached is not two members checked: one that guessed every
     # metric leaves each resting on the other's quotation alone.
-    return run.single_assessor or all(
-        getattr(round_.ruling, "basis", None) is Basis.SOLE for round_ in run.rounds
-    )
+    return run.single_assessor or all(rests_on_one_quotation(round_) for round_ in run.rounds)
+
+
+def rests_on_one_quotation(round_) -> bool:
+    """Say whether a metric settled on one quotation alone, a member's or the escalation model's."""
+    basis = getattr(round_.ruling, "basis", None)
+    if basis is Basis.ESCALATED:
+        # A contest escalates to a value a council member's verified quotation
+        # already supports, so two quotations stand behind it; an unresolved
+        # metric had none, and the escalation model's is the only one.
+        return isinstance(round_.escalation.prior, UnresolvedMetric)
+    return basis is Basis.SOLE
 
 
 def basis_of(ruling) -> str:

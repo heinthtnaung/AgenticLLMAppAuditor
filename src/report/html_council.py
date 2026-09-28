@@ -33,13 +33,13 @@ from report.council_record import (
     CouncilNotAsked,
     CouncilWithoutVector,
     MetricRuling,
-    Outcome,
-    PassedOver,
-    grouped_by_reason,
+    council_left_open,
     was_assessed,
 )
+from report.council_passed_over import PassedOver, grouped_by_reason
 from report.council_words import (
-    NOT_ASKED, NO_VECTOR, SETTLED, could_not_settle, counted, metrics_settled, uncross_checked,
+    NOT_ASKED, NO_VECTOR, SETTLED, could_not_settle, counted, escalation_named, metrics_settled,
+    uncross_checked,
 )
 from report.html_layout import figure_chip, listing, section, separated, tag, text
 from report.html_metric import metric_details
@@ -63,7 +63,11 @@ def council_section(report: Report) -> str:
     assessed = [one for one in outcomes if was_assessed(one)]
     body = listing([council_entry(one) for one in assessed], "council") if assessed else ""
     passed = [one for one in outcomes if not was_assessed(one)]
-    return section(f"Council ({len(assessed)})", COUNCIL_LEDE, body + passed_over(passed))
+    named = "".join(
+        tag("p", text(one), "escalation-model")
+        for one in escalation_named(report.provenance.local_models)
+    )
+    return section(f"Council ({len(assessed)})", COUNCIL_LEDE, named + body + passed_over(passed))
 
 
 def passed_over(passed: list[CouncilNotAsked]) -> str:
@@ -83,8 +87,9 @@ def reason_row(group: PassedOver) -> str:
 
 def council_entry(outcome: CouncilAssessment | CouncilWithoutVector) -> str:
     """Give one advisory: what the council made of it, then the metrics it left open."""
-    unsettled = [one for one in outcome.rulings if one.outcome is not Outcome.SETTLED]
-    settled = [one for one in outcome.rulings if one.outcome is Outcome.SETTLED]
+    # An escalated metric is opened whatever came of it: the council did not settle it.
+    unsettled = [one for one in outcome.rulings if council_left_open(one)]
+    settled = [one for one in outcome.rulings if not council_left_open(one)]
     return outcome_line(outcome) + settled_note(settled) + open_metrics(unsettled)
 
 

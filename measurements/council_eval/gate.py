@@ -31,8 +31,9 @@ from cvss.score import SEVERITY_BANDS
 from report.council_beside import CVSS_SCALE_NAME
 from report.council_record import CouncilOutcome
 from report.council_words import SETTLED
-from report.text_council import ADVISORY_DEPTH, QUOTATION_DEPTH, advisory_lines
+from report.text_council import advisory_lines
 from report.text_layout import INDENT, SOURCE_SEPARATOR
+from report.text_metric import ADVISORY_DEPTH, QUOTATION_DEPTH
 
 BLOCK_OPENING = "COUNCIL ("
 SETTLED_LINE = re.compile(rf"^(\d+) metrics? {SETTLED}$")

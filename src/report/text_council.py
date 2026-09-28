@@ -11,12 +11,6 @@ one advisory and reaching different values, each with a quotation that verifies,
 is not something a count can express -- and a human exercising the override the
 design gives them needs to see who said what, on what evidence.
 
-**The quotation is never shortened.** On a contested metric it *is* the
-disagreement: it is the entire reason two models reached different values, and an
-extract of it hides what a human is being asked to adjudicate. A terminal has
-less room than a browser, so a long quotation is re-flowed across lines rather
-than cut -- the width goes to the cases somebody must decide.
-
 **The settled rest is counted by what settled it.** A metric where the chairman
 overruled a dissenter reads nothing like one nobody argued about, and a bare
 `settled` says neither. The bases come off the record, so this counts them
@@ -28,7 +22,8 @@ the rest out would say no council had run on them, which is a different and fals
 thing. They are grouped by reason and listed by id, so a reader can see whether
 their own CVE was passed over.
 
-The sentences this shares with the web page are `report.council_words`.
+What one of those metrics looks like is `report.text_metric`. The sentences this
+shares with the web page are `report.council_words`.
 """
 
 from collections import Counter
@@ -39,41 +34,24 @@ from report.council_record import (
     CouncilAssessment,
     CouncilNotAsked,
     CouncilWithoutVector,
-    MemberSaid,
     MetricRuling,
-    Outcome,
-    PassedOver,
-    SaidKind,
-    grouped_by_reason,
+    council_left_open,
     was_assessed,
 )
+from report.council_passed_over import PassedOver, grouped_by_reason
 from report.council_words import (
     NOT_ASKED,
     NO_VECTOR,
     SETTLED,
-    chairman_said,
-    checked,
-    confident,
     could_not_settle,
     counted,
+    escalation_named,
     metrics_settled,
-    unanswered,
     uncross_checked,
-    who,
 )
 from report.record import Report
 from report.text_layout import SOURCE_SEPARATOR, indented, section, wrapped
-
-# The depths the block indents to, named because four of them read as arithmetic.
-ADVISORY_DEPTH = 1
-METRIC_DEPTH = 2
-MEMBER_DEPTH = 3
-QUOTATION_DEPTH = 4
-# A quotation is delimited and never escaped, so it shows character for character.
-# Typographic marks, because an apostrophe or a straight quote inside it cannot
-# be mistaken for either of them.
-OPEN_QUOTE = "“"
-CLOSE_QUOTE = "”"
+from report.text_metric import ADVISORY_DEPTH, MEMBER_DEPTH, METRIC_DEPTH, ruling_lines
 
 
 def council_block(report: Report) -> str:
@@ -84,7 +62,9 @@ def council_block(report: Report) -> str:
     assessed = [one for one in outcomes if was_assessed(one)]
     entries = chain.from_iterable(advisory_lines(one) for one in assessed)
     passed = [one for one in outcomes if not was_assessed(one)]
-    return section(f"COUNCIL ({len(assessed)})", [*entries, *passed_over_lines(passed)])
+    escalated = escalation_named(report.provenance.local_models)
+    named = [indented(ADVISORY_DEPTH, one) for one in escalated]
+    return section(f"COUNCIL ({len(assessed)})", [*named, *entries, *passed_over_lines(passed)])
 
 
 def passed_over_lines(passed: list[CouncilNotAsked]) -> list[str]:
@@ -104,8 +84,9 @@ def reason_lines(group: PassedOver) -> list[str]:
 
 def advisory_lines(outcome: CouncilAssessment | CouncilWithoutVector) -> list[str]:
     """Give one advisory's heading, then the metrics the chairman could not settle."""
-    unsettled = [one for one in outcome.rulings if one.outcome is not Outcome.SETTLED]
-    settled = [one for one in outcome.rulings if one.outcome is Outcome.SETTLED]
+    # An escalated metric is shown whatever came of it: the council did not settle it.
+    unsettled = [one for one in outcome.rulings if council_left_open(one)]
+    settled = [one for one in outcome.rulings if not council_left_open(one)]
     heading = SOURCE_SEPARATOR.join([headline(outcome), *uncross_checked(outcome)])
     return [
         indented(ADVISORY_DEPTH, f"{outcome.advisory_id}  {heading}"),
@@ -135,44 +116,3 @@ def settled_lines(settled: list[MetricRuling]) -> list[str]:
 def basis_line(basis: str, count: int) -> str:
     """Say how many of the settled metrics rested on one basis, in the chairman's own words."""
     return indented(MEMBER_DEPTH, f"{count}  {basis}")
-
-
-def ruling_lines(ruling: MetricRuling) -> list[str]:
-    """Give one unsettled metric, what the chairman made of it, and every member behind it."""
-    spoke = counted(len(ruling.said), "member")
-    said = SOURCE_SEPARATOR.join([ruling.metric, ruling.outcome.value, spoke])
-    return [
-        indented(METRIC_DEPTH, said),
-        *chairman_lines(ruling),
-        *chain.from_iterable(member_lines(one) for one in ruling.said),
-    ]
-
-
-def chairman_lines(ruling: MetricRuling) -> list[str]:
-    """Give what the chairman decided and why, where it decided anything at all."""
-    told = chairman_said(ruling)
-    return [indented(MEMBER_DEPTH, SOURCE_SEPARATOR.join(told))] if told else []
-
-
-def member_lines(said: MemberSaid) -> list[str]:
-    """Give one member's answer, what it was worth to it, and its quotation in full."""
-    named = who(said.member)
-    if said.kind is not SaidKind.ANSWERED:
-        return [indented(MEMBER_DEPTH, f"{named}  {unanswered(said)}")]
-    answered = SOURCE_SEPARATOR.join(
-        [said.value, confident(said.confidence), checked(said.verified)]
-    )
-    return [
-        indented(MEMBER_DEPTH, f"{named}  {answered}"),
-        *evidence_lines(said.evidence),
-    ]
-
-
-def evidence_lines(quotation: str) -> list[str]:
-    """Quote a member's evidence whole, re-flowed to the page rather than shortened."""
-    # Re-flowing is not shortening: every word survives, on as many lines as it
-    # takes. Cutting it would hide the text a human is being asked to judge.
-    if not quotation:
-        return []
-    folded = " ".join(quotation.split())
-    return wrapped(f"{OPEN_QUOTE}{folded}{CLOSE_QUOTE}", QUOTATION_DEPTH)

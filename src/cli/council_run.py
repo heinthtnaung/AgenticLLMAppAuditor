@@ -32,35 +32,24 @@ to say which. This one says *none*: every metric is given a
 exactly the precedence the design refuses to set, arriving through the back door
 of an error path.
 
-The consequence is deliberate and worth stating. A council that leaves any metric
-unresolved produces no vector, so the finding's published scores stand side by
-side with no council reading beside them. The vector is discarded; **the fact
-that a council ran is not**, and neither is what it could not settle -- that is
-the escalation policy's input, and a record without it would say no council had
-run at all.
+What a run comes to in the record is `cli.council_outcome`; what it may escalate,
+and to which model, is `council.escalation`.
 """
 
 from cvss.metrics import METRIC_ORDER
-from council.chairman import agreed_vector
+from council.escalation import escalate, refuse_unfit_escalation
 from council.roster import Member, Roster, members_to_ask
 from council.prompt import build_prompt
 from council.runner import PROVIDER_CLIENTS, assess
-from council.ruling import ContestedMetric, NoFallbackPublished, UnresolvedMetric
-from council.run import CouncilRun
+from council.ruling import NoFallbackPublished
 from findings.finding import Finding
-from cli.council_detail import nothing_cross_checked, rulings_of
+from cli.council_detail import rulings_of
+from cli.council_outcome import outcome_of
 from cli.progress import NO_PROGRESS, CouncilProgress, orders_asked
-from report.council_record import (
-    CouncilAssessment,
-    CouncilNotAsked,
-    CouncilOutcome,
-    CouncilWithoutVector,
-    MetricRuling,
-)
+from report.council_record import CouncilNotAsked, CouncilOutcome
 
 OLLAMA_PROVIDER = "ollama"
 FAMILY_SEPARATOR = ":"
-VECTOR_VERSION = "3.1"
 # Every audit asks each metric in both orders (`council.order_check`); only the
 # evaluation harness, which records and replays passes in one order, turns it off.
 ORDER_CHECK = True
@@ -93,14 +82,24 @@ def local_member(model: str) -> Member:
     )
 
 
+def escalation_member(model: str | None) -> Member | None:
+    """Describe the escalation model as a local member, or give None where none is named."""
+    if model is None:
+        return None
+    return local_member(model)
+
+
 def assessments(
     findings: tuple[Finding, ...], roster: Roster,
     clients=PROVIDER_CLIENTS, progress=NO_PROGRESS,
     every_finding: bool = False, order_check: bool = ORDER_CHECK,
+    escalation: Member | None = None,
 ) -> tuple[CouncilOutcome, ...]:
     """Put the council to the findings that need one, and record why the rest were passed over."""
+    # Refused before any call, rather than once the first advisory's council has run.
+    refuse_unfit_escalation(escalation, tuple(one.name for one in roster.members), clients)
     assessed = [
-        assess_one(one, roster, clients, progress, order_check)
+        assess_one(one, roster, clients, progress, order_check, escalation)
         for one in to_assess(findings, every_finding)
     ]
     return (*assessed, *passed_over(findings, every_finding))
@@ -137,48 +136,17 @@ def skipped_because(finding: Finding, every_finding: bool) -> str:
 def assess_one(
     finding: Finding, roster: Roster, clients,
     progress=NO_PROGRESS, order_check: bool = ORDER_CHECK,
+    escalation: Member | None = None,
 ) -> CouncilOutcome:
-    """Put one advisory to the council, handing on a vector only where it reached one."""
+    """Put one advisory to the council and escalate what it left open, handing on any vector."""
     progress.starting(finding.advisory.advisory_id)
     text = advisory_text(finding)
-    run = assess(text, roster, FALLBACKS, clients, progress.asking, order_check)
+    council = assess(text, roster, FALLBACKS, clients, progress.asking, order_check)
+    run = escalate(council, text, escalation, clients, progress.escalating)
     # The text the members actually read, which is what their quotations were
     # checked against and so what the record has to re-check them against.
     rulings = rulings_of(run, build_prompt(METRIC_ORDER[0], text).advisory_shown)
     return outcome_of(finding, run, rulings)
-
-
-def outcome_of(
-    finding: Finding, run: CouncilRun, rulings: tuple[MetricRuling, ...]
-) -> CouncilOutcome:
-    """Record what one council run reached: a vector, or the metrics it could not settle."""
-    unresolved = metrics_of(run, UnresolvedMetric)
-    contested = metrics_of(run, ContestedMetric)
-    if unresolved or contested:
-        # With no fallback offered, an unsettled metric has no value and a partial
-        # vector is not something the engine may be handed. The run is still
-        # recorded: it happened, and what it could not settle is the result.
-        return CouncilWithoutVector(
-            advisory_id=finding.advisory.advisory_id,
-            single_assessor=run.single_assessor,
-            unresolved_metrics=unresolved,
-            contested_metrics=contested,
-            rulings=rulings,
-        )
-    return CouncilAssessment(
-        advisory_id=finding.advisory.advisory_id,
-        vector=str(agreed_vector(run.rulings, VECTOR_VERSION)),
-        single_assessor=run.single_assessor,
-        rulings=rulings,
-        nothing_cross_checked=nothing_cross_checked(run),
-    )
-
-
-def metrics_of(run, kind) -> tuple[str, ...]:
-    """Name the metrics a run left in one state, in specification order."""
-    return tuple(
-        metric for metric in METRIC_ORDER if isinstance(run.rulings.get(metric), kind)
-    )
 
 
 def watching(

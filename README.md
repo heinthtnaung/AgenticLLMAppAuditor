@@ -27,14 +27,13 @@ catalogued nothing.
 | `src/cvss/` | built | a CVSS v3 vector parsed and validated, Temporal metrics included, and its Base score by the published equations |
 | `src/findings/` | built | the join — a CVE affecting an installed component, with every source's score kept apart and attributed |
 | `src/scoring/` | built | the approved question library, per-question weights, categories clamped then weighted, the band, the two severity floors that can raise it, and the version naming those rules |
-| `src/council/` | built | the roster and its `egress` gate, redaction, the prompt, a provider registry holding one local Ollama client, the quotation check, the order check, the chairman and the runner |
+| `src/council/` | built | the roster and its `egress` gate, redaction, the prompt, a provider registry holding one local Ollama client, the quotation check, the order check, the chairman, the runner, and escalation of what the council leaves open to one larger local model |
 | `src/organisation/` | built | the answer file, the approval record, the rule for which findings need approval, and one risk score per published source |
 | `src/report/` | built | the record every run produces, and its three renderings: a terminal report, the JSON audit artefact, and one self-contained HTML page |
 | `src/cli/` | built | the arguments, the preflight refusals, the order the packages run in, which findings the council is put to, the progress it prints to stderr, the three report files in `reports/`, and the exit code |
 | question selector | design | every approved question is asked, rather than the few a CVE's prerequisites call for |
 | answer validation | design | no model reads the answers back for gaps or contradictions |
 | hosted provider client | design | the local client works; nothing reaches OpenRouter or another API, so a hosted member is skipped for want of one. An adapter and a registry entry, and no other module moves |
-| escalation policy | design | a contested metric is recorded as contested and nothing re-asks it on a costlier member |
 | an approval command | design | an approval is recorded, never stamped: the time arrives with it in the answer file, because there is no clock anywhere in `src/` |
 
 Diagram 5 of [`docs/diagrams.md`](docs/diagrams.md) draws the same boundary from
@@ -512,17 +511,18 @@ server's reason, as a `--council-member` name does. `--council` beside a
 `--council-member` is refused too, rather than one of them winning.
 `--council-all-findings` works with either.
 
-### The members, server, window and timeout are settings; the sampling is not
+### The models, server, window and timeout are settings; the sampling is not
 
-Five `AUDITOR_*` keys: one names the members `--council` runs, and four set how
-local models are asked. Each is read from the environment first, then from
-`.env` at the project root, then its default. `.env.example` holds all five,
-the members left empty: copy it to `.env`, which git ignores, and change what
-you need.
+Six `AUDITOR_*` keys: one names the members `--council` runs, one the model a
+council escalates to, and four set how local models are asked. Each is read
+from the environment first, then from `.env` at the project root, then its
+default. `.env.example` holds all six, the members and the escalation model left
+empty: copy it to `.env`, which git ignores, and change what you need.
 
 | Key | Default | What it sets |
 |---|---|---|
 | `AUDITOR_COUNCIL_MEMBERS` | unset: no members | the models `audit --council` runs, comma-separated, in the order they are asked. Nothing else uses it, and `--council` with it unset or empty is refused |
+| `AUDITOR_ESCALATION_MODEL` | unset: no escalation | one local model, as `ollama list` names it, that a metric the council leaves contested or unresolved is sent to. An empty environment variable turns it off over a `.env` that names one; two names are refused |
 | `AUDITOR_SERVER_URL` | `http://127.0.0.1:11434` | the Ollama server. It must be this machine, `127.0.0.1`, `localhost` or `::1`, or it is refused; an address ending `/api/generate`, the older form, is read without it |
 | `AUDITOR_TIMEOUT_SECONDS` | `180` | how long one call may wait; a call that waits longer fails as `did not answer within N s` |
 | `AUDITOR_CONTEXT_TOKENS` | `8192` | the window every member is pinned to, which the context guard scales with |
@@ -537,9 +537,10 @@ Temperature 0, seed 11 and `think: false` are not settings. They are what makes
 a local member reproducible, and a run whose sampling a file can change is not
 comparable with the last one (`docs/COUNCIL.md`). The window and the timeout
 can change a result too, so the JSON record's `run.local_models` states the
-server, window and timeout a council run used, beside those three and
-`"order_check": true`, every metric asked in both orders. It is `null` for a
-run with no member.
+server, window and timeout a council run used, beside those three,
+`"order_check": true`, every metric asked in both orders, and
+`escalation_model`, the model named or `null`. It is `null` itself for a run
+with no member.
 
 **Only `AUDITOR_*` lines of `.env` are read**, so the file can hold other keys:
 every other line is passed over unparsed and never quoted. A misspelt
@@ -601,6 +602,49 @@ other row. Every member row names both prompts it was asked,
 fills both; the second is `null` only for a member asked in one order, as the
 measurement harness replays them.
 
+### A metric the council leaves open can go to one larger local model
+
+**Name one in `AUDITOR_ESCALATION_MODEL`, and every metric the order-checked
+council leaves contested or unresolved is put to it**, in both orders like a
+member. Nothing else is: not a settled metric, and never the whole advisory.
+With it unset, the default, an open metric stays open. It is read only on a
+council run, so a `.env` naming one starts nothing on its own.
+
+**It settles a metric only on a reply that would have counted from a member:**
+the same value both ways round, with a quotation the advisory contains. On a
+contested metric the value must also be one the council's verified quotations
+already support, so escalation can side with evidence but never add a reading.
+Anything else leaves the metric as the council left it, with what the model said
+recorded. A metric it settles carries the basis `ESCALATED`, "the council left
+it open, and the escalation model's verified quotation settled it".
+
+**It is local, and it is not a member.** The name is a model on the local
+Ollama server, so a hosted escalation cannot be written: hosted escalation is
+excluded, not deferred. A model already on the council is refused after the
+scan, before any model is asked, and `audit` exits `2` with
+`audit: big:27b is on the council, so it cannot also be the model the council's open metrics escalate to`.
+
+In the text and the page, a metric that went to the model says what came of it.
+From a run with stand-in models, a contest it settled and an unresolved metric
+it could not:
+`AC  ·  contested → escalated to big:27b: L (verified)  ·  2 members` and
+`UI  ·  unresolved → escalated to big:27b: no settlement, guessed R with nothing quoted  ·  2 members`.
+The model is listed under the members as `big:27b (big), escalation model`. In
+the JSON, each metric carries `escalation`: `prior_outcome`, what the council left it
+as, then the model's row in the shape of a member's, and `null` on a metric
+nobody escalated. The metric's own `outcome` is what came of it.
+
+**It costs two calls per open metric**, a number known only once the council has
+answered, so the progress stream counts them apart. It runs after each
+advisory's council, so a model too large to stay loaded beside the members
+is loaded once per advisory; that has not been timed. Nothing escalated reaches
+the Organisation Risk Score, as nothing a council settles does.
+
+**It has been tested only with stand-in models.** No escalation model has run
+live or been measured on the pilot's findings, so nothing yet says whether one
+settles open metrics correctly. The measurement harness replays its passes with
+none (`PASS_ESCALATION = None` in `measurements/council_eval/variants.py`).
+
 ### It is asked only about the findings the sources do not settle
 
 The council reconciles sources, so a finding whose sources already agree is not
@@ -634,6 +678,14 @@ more than it did. A finding it was never asked about, one it could not settle,
 and a run with no members named are three different facts and read as three. A
 run that named members and found nothing is a fourth, and reads `council members
 were named, but there was no finding to put to them`.
+
+**The section opens by saying whether anything could be escalated.** The first
+line under the `COUNCIL (n)` heading in text, and the first after the section's
+lede on the page, is
+`escalation model big:27b: asked each metric the council left open`, naming the
+model, or `no escalation model named: a metric the council left open stays open`.
+It is left out only for a record that says nothing of how local models were
+asked, so every council run carries one or the other.
 
 **A finding the council settled shows what its vector scores, answers or no.**
 Its heading line reads `settled`, the vector, and that vector's own CVSS base
@@ -681,7 +733,9 @@ one finding, the second line is
 
 The denominators are what this run will actually do: 5 findings after scoping,
 not 18, and only the members it can reach. A total counting calls nobody makes
-is a progress bar that never fills.
+is a progress bar that never fills. An escalation call is counted apart, as
+`escalation 1  finding 1/1 CVE-2021-23337  AC  big:27b`, with no total, because
+how many a run makes is known only once each council has answered.
 
 One member answers all eight metrics of a finding before the next is asked.
 Two members that do not fit in the GPU's memory together are then swapped once

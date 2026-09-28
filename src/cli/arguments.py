@@ -27,7 +27,7 @@ import argparse
 from dataclasses import dataclass
 from pathlib import Path
 
-from council.settings import COUNCIL_MEMBERS
+from council.env_file import COUNCIL_MEMBERS
 
 PROGRAM = "audit"
 DESCRIPTION = "Audit a repository against the pinned advisory database, offline."

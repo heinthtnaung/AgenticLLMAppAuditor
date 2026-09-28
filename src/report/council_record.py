@@ -19,7 +19,6 @@ told apart by remembering to check.
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Sequence
 
 
 class SaidKind(Enum):
@@ -77,8 +76,24 @@ class MemberSaid:
 
 
 @dataclass(frozen=True)
+class MetricEscalation:
+    """A metric the council left open, put to the escalation model, and what that model said.
+
+    `prior` is what the council left it as, contested or unresolved. The ruling
+    holding this says what came of it: settled on the escalation, or unchanged.
+    """
+
+    prior: Outcome
+    said: MemberSaid
+
+
+@dataclass(frozen=True)
 class MetricRuling:
-    """What the chairman decided about one metric, and what every member said first."""
+    """What the chairman decided about one metric, and what every member said first.
+
+    `escalation` is None where the council settled the metric, and on every
+    metric of a run that named no escalation model.
+    """
 
     metric: str
     outcome: Outcome
@@ -87,6 +102,7 @@ class MetricRuling:
     basis: str = ""
     confidence: str = ""
     fallback_source: str = ""
+    escalation: MetricEscalation | None = None
 
 
 @dataclass(frozen=True)
@@ -136,8 +152,8 @@ class CouncilWithoutVector:
 
     Its own type rather than an assessment with the vector left out. A council
     that ran and settled nothing is not a council that did not run: the second
-    is an absence, the first is a result, and what it could not settle is the
-    escalation policy's whole input.
+    is an absence, the first is a result, and what it left open, after any
+    escalation, is what the record has to show.
     """
 
     advisory_id: str
@@ -150,27 +166,11 @@ class CouncilWithoutVector:
 CouncilOutcome = CouncilAssessment | CouncilWithoutVector | CouncilNotAsked
 
 
-@dataclass(frozen=True)
-class PassedOver:
-    """One reason the council was not put to some findings, and which findings they were."""
-
-    because: str
-    advisory_ids: tuple[str, ...]
+def council_left_open(ruling: MetricRuling) -> bool:
+    """Say whether the council itself left a metric open, whatever escalation made of it."""
+    return ruling.outcome is not Outcome.SETTLED or ruling.escalation is not None
 
 
 def was_assessed(outcome: CouncilOutcome) -> bool:
     """Say whether a council actually read this advisory, rather than passing over it."""
     return not isinstance(outcome, CouncilNotAsked)
-
-
-def grouped_by_reason(passed: Sequence[CouncilNotAsked]) -> tuple[PassedOver, ...]:
-    """Group the findings the council was not put to by the reason it was not put to them."""
-    # Grouped once for every rendering rather than in each: three renderings
-    # grouping one list three ways is three chances to group it differently.
-    reasons = sorted({one.because for one in passed})
-    return tuple(PassedOver(one, named_for(one, passed)) for one in reasons)
-
-
-def named_for(because: str, passed: Sequence[CouncilNotAsked]) -> tuple[str, ...]:
-    """Name every finding passed over for one reason, in the order the record holds them."""
-    return tuple(one.advisory_id for one in passed if one.because == because)

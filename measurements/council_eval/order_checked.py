@@ -39,7 +39,7 @@ from report.council_record import CouncilOutcome
 from council_eval.compose import pass_variant, pass_window
 from council_eval.dataset import Item
 from council_eval.replies import ReplayClient, Replies
-from council_eval.variants import PASS_ORDER_CHECK
+from council_eval.variants import PASS_ESCALATION, PASS_ORDER_CHECK
 
 STABLE = "stable"
 ORDER_SENSITIVE = "order-sensitive"
@@ -108,7 +108,10 @@ def order_checked_roster(
         for item in items
     ]
     outcomes = tuple(
-        assess_one(item.finding, roster, {OLLAMA_PROVIDER: client}, order_check=PASS_ORDER_CHECK)
+        assess_one(
+            item.finding, roster, {OLLAMA_PROVIDER: client},
+            order_check=PASS_ORDER_CHECK, escalation=PASS_ESCALATION,
+        )
         for item, client in zip(items, clients)
     )
     return outcomes, list(chain.from_iterable(client.verdicts for client in clients))

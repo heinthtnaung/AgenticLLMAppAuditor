@@ -1,11 +1,12 @@
-"""One metric the chairman could not settle, opened to every member behind it.
+"""One metric the council could not settle, opened to every member behind it.
 
 `docs/COUNCIL.md` keeps, per assessment, **each member's answer and evidence**,
 the model, provider, family and prompt version behind it. So a metric that went
 unsettled opens to every member's value, its confidence, whether its quotation
 was found in the advisory, and the quotation **in full** -- on a contested metric
 the quotation is the disagreement, and nobody can adjudicate one from an extract
-of it.
+of it. Where the metric was escalated, the escalation model's reply follows the
+members', in the same terms.
 
 Its own file rather than part of `report.html_council`, which chooses *which*
 advisories and metrics a reader sees. This renders one of them, and the two
@@ -16,7 +17,9 @@ so the two cannot come to word one record differently.
 """
 
 from report.council_record import MemberSaid, MetricRuling, SaidKind
-from report.council_words import chairman_said, checked, confident, counted, unanswered, who
+from report.council_words import (
+    chairman_said, checked, confident, counted, escalated_who, outcome_said, unanswered, who,
+)
 from report.html_layout import listing, separated, tag, text
 
 # Marked, because it is the one a reader scanning a column of near-identical
@@ -28,13 +31,14 @@ VERIFIED_CLASS = "verified"
 def metric_details(ruling: MetricRuling) -> str:
     """Give one unsettled metric: what the chairman made of it, then every member."""
     headed = tag("summary", metric_summary(ruling))
-    return tag("details", headed + chairman_line(ruling) + members(ruling.said), "metric")
+    spoke = chairman_line(ruling) + members(ruling.said) + escalation(ruling)
+    return tag("details", headed + spoke, "metric")
 
 
 def metric_summary(ruling: MetricRuling) -> str:
     """Head the disclosure with the metric, its outcome, and how many spoke to it."""
     named = tag("code", text(ruling.metric))
-    return separated([named, text(ruling.outcome.value), text(counted(len(ruling.said), "member"))])
+    return separated([named, text(outcome_said(ruling)), text(counted(len(ruling.said), "member"))])
 
 
 def chairman_line(ruling: MetricRuling) -> str:
@@ -48,9 +52,23 @@ def members(said: tuple[MemberSaid, ...]) -> str:
     return listing([member_row(one) for one in said], "members")
 
 
+def escalation(ruling: MetricRuling) -> str:
+    """List what the escalation model said of a metric, below the members, where it was asked."""
+    if ruling.escalation is None:
+        return ""
+    said = ruling.escalation.said
+    # Styled as the members are, and marked apart from them.
+    return listing([said_row(escalated_who(said.member), said)], "members escalation")
+
+
 def member_row(said: MemberSaid) -> str:
     """Give one member's answer, what it was worth to it, and its quotation in full."""
-    named = tag("span", text(who(said.member)), "member-name")
+    return said_row(who(said.member), said)
+
+
+def said_row(name: str, said: MemberSaid) -> str:
+    """Give one model's answer under the name it is listed by, and its quotation in full."""
+    named = tag("span", text(name), "member-name")
     if said.kind is not SaidKind.ANSWERED:
         return named + tag("span", text(unanswered(said)), "refusal")
     answered = [

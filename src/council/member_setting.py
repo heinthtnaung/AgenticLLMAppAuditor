@@ -1,7 +1,7 @@
 """The members `--council` runs: `AUDITOR_COUNCIL_MEMBERS`, read as every other setting is.
 
 An environment variable wins over `.env`, only `AUDITOR_*` lines are read, and a
-misspelt key is refused -- by the same loader as the rest of `council.settings`.
+misspelt key is refused -- by the same loader as every setting, `council.env_file`.
 The value is model names separated by commas, in the order they are asked.
 
 **Unset is no members, never a default model.** A council asked for with nobody
@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Mapping
 
 from council import settings
-from council.settings import (
+from council.env_file import (
     COUNCIL_MEMBERS,
     FROM_ENVIRONMENT,
     SettingsError,

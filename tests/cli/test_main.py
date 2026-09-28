@@ -125,7 +125,9 @@ def test_a_run_that_worked_says_only_where_its_reports_went(monkeypatch, tmp_pat
     assert error.count("\n") == 1
 
 
-def reporting_council(findings, roster, clients=None, progress=None, every_finding=False):
+def reporting_council(
+    findings, roster, clients=None, progress=None, every_finding=False, escalation=None
+):
     """Stand in for a council run, saying what it is doing through the progress it was given."""
     progress.starting("CVE-2021-23337")
     progress.asking("AV", "qwen2.5:7b-instruct")

@@ -361,9 +361,11 @@ and why 30/25/25/20 is the one to use.
 
 **Built, except the hosted client.** `src/council/` is the roster and its gate,
 the redaction, the prompt, the local Ollama client, the quotation check, the
-order check, the chairman and the runner; `src/cvss` is the engine below.
-Nothing reaches a hosted member, and no escalation policy re-asks a contested
-metric.
+order check, the chairman, the runner and escalation; `src/cvss` is the engine
+below. Nothing reaches a hosted member. A metric the council leaves contested or
+unresolved goes to one larger local model where `AUDITOR_ESCALATION_MODEL` names
+one, and never to a hosted model: that is excluded, not deferred. Escalation has
+been run with stand-in models only.
 
 ```mermaid
 flowchart TD
@@ -408,13 +410,20 @@ flowchart TD
 
     chr --> st{"What do the verified answers<br/>support, metric by metric?"}
     st -->|"one value"| settled["Settled"]
-    st -->|"more than one value"| pol["Contested<br/>no policy re-asks it yet"]
+    st -->|"more than one value"| pol["Contested"]
     st -->|"nothing verified"| unr["Unresolved<br/>the command line names no<br/>published source to fall back to"]
+    pol --> esc{"AUDITOR_ESCALATION_MODEL<br/>names a local model?"}
+    unr --> esc
+    esc -->|"yes"| eask["The escalation model reads the metric<br/>in both orders, as a member does<br/>local only, never a member"]
+    eask --> eok{"The same value both ways,<br/>its quotation verified, and on<br/>a contest one of the contested values?"}
+    eok -->|"yes"| escd["Settled, basis ESCALATED"]
+    eok -->|"no"| stays["Left as the council left it<br/>what the model said recorded"]
+    esc -->|"no"| stays
     settled --> all{"All eight<br/>metrics settled?"}
+    escd --> all
     all -->|"yes"| vec["One agreed vector<br/>plus rationale plus confidence"]
     all -->|"no"| novec["No vector<br/>no council figure beside the scores"]
-    pol --> novec
-    unr --> novec
+    stays --> novec
 
     subgraph DETERM["Engine: the only place a number appears"]
         eng["Published CVSS equations<br/>deterministic, no model"]
@@ -424,8 +433,9 @@ flowchart TD
     vec --> eng
     num --> hmn["Human approves or overrides"]
 
-    rec["Record: every member and its provider,<br/>every member skipped and why, every finding<br/>not asked and why, every guess and<br/>order-sensitive pair, what the<br/>chairman decided from, and the vector or<br/>the metrics that stopped one"]
+    rec["Record: every member and its provider,<br/>every member skipped and why, every finding<br/>not asked and why, every guess and<br/>order-sensitive pair, what the<br/>chairman decided from, the escalation<br/>model named or that none was, what it said,<br/>and the vector or the metrics that stopped one"]
     chr -.-> rec
+    eask -.-> rec
     skip -.-> rec
     pass -.-> rec
     novec -.-> rec
@@ -454,7 +464,17 @@ the run is still recorded with what it could not settle, and no council reading
 stands beside the finding's published scores. In the two Qwen–Gemma runs kept, no
 finding reached a vector: 0 of 5, and 0 of 18. With `llama3.2:latest` in
 Gemma's place, 1 of 5 and 4 of 18 did, and `measurements/README.md` says why
-that is not better reading.
+that is not better reading. None of those runs had an escalation model.
+
+**Escalation is a second reading of what is open, not a second council.** A
+metric left contested or unresolved goes to one more local model, asked in both
+orders like a member, and settles only on a reply the chairman would take from a
+member: the same value both ways round, with a quotation the advisory contains.
+On a contest the value must also be one the council's verified quotations already
+support, so the model can side with evidence and never add a reading. Anything
+else leaves the metric where the council left it, and the record keeps both. It
+costs two calls per open metric, known only once the council has answered, and
+it has been run with stand-in models only.
 
 The `Not asked` box reaches the record for the same reason the `Skipped` one
 does. A finding the council was passed over, a finding it assessed and could not
@@ -542,7 +562,7 @@ flowchart LR
         b11["src/deps/manifests<br/>the manifests no lock file<br/>Syft reads is beside"]
         b4["src/cvss<br/>vector parser, metric vocabulary,<br/>Base score equations"]
         b5["src/findings<br/>the join, every source's score apart"]
-        b7["src/council<br/>roster and the egress gate, redaction,<br/>prompt, provider registry, chairman,<br/>the local server's settings,<br/>the members --council runs<br/>and the order check"]
+        b7["src/council<br/>roster and the egress gate, redaction,<br/>prompt, provider registry, chairman,<br/>the local server's settings,<br/>the members --council runs,<br/>the order check, and escalation<br/>to one local model"]
         b8["src/report<br/>the record, and three renderings of it:<br/>text, JSON, one self-contained HTML page"]
         b9["src/cli<br/>arguments, preflight, the audit order,<br/>the council's scope and its record, the<br/>stderr progress stream, the report files<br/>in reports/, and the exit code a<br/>pipeline reads"]
         b6["src/scoring<br/>the approved question library, categories<br/>clamped then weighted, the band,<br/>the severity floors on it<br/>and the version naming those rules"]
@@ -578,12 +598,10 @@ flowchart LR
         d2["Question selector<br/>every approved question is asked instead"]
         d3["Answer validation<br/>no model reads the answers for contradictions"]
         d6["Hosted provider client<br/>an adapter, and an entry in<br/>the provider registry"]
-        d11["Escalation policy<br/>nothing re-asks a contested metric"]
         d12["An approval command<br/>nothing stamps a decision; the time<br/>arrives with it in the answer file"]
     end
 
     d6 --> b7
-    b7 --> d11
     d2 --> b10
     d3 --> b10
     b10 --> d12
@@ -626,9 +644,10 @@ differ.
 What remains in the middle column is smaller than it looks and none of it blocks
 a run. Two are refinements of things that work: a selector would ask fewer
 questions than all twelve, and answer validation would read the answers for
-contradictions. Two are the council's: a hosted client, and an escalation policy
-for a contested metric. The fifth is the only one that changes what a record can
-claim — nothing stamps an approval, because the time arrives with the human act
+contradictions. One is the council's: a hosted client. Escalation left this
+column when it was built, and a hosted escalation never enters it, because it is
+excluded rather than deferred. The fourth is the only one that changes what a
+record can claim — nothing stamps an approval, because the time arrives with the human act
 in the answer file rather than from a clock, and there is no clock anywhere in
 `src/`. An approval command would be the first one.
 
@@ -653,8 +672,8 @@ and the third-party tools are installed. None of that is code this project
 wrote.
 
 What this does not show: an order of work for the middle column, because no such
-plan exists. That column is also not evenly documented — the escalation policy
-and the hosted client are described in `docs/COUNCIL.md`, the selector and the
+plan exists. That column is also not evenly documented — the hosted client is
+described in `docs/COUNCIL.md`, the selector and the
 answer validation in `docs/SCORING_MODEL.md`, and the approval command only as a
 note there on where an approval's time comes from.
 

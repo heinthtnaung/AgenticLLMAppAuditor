@@ -54,7 +54,9 @@ class LocalModels:
     """How every local member of the run was asked: server, window, timeout, pinning and orders.
 
     `order_check` says each metric was asked with the options in order and
-    reversed, a value counting only where both gave it.
+    reversed, a value counting only where both gave it. `escalation_model` names
+    the local model the metrics the council left open were sent to, and is None
+    where `AUDITOR_ESCALATION_MODEL` named none, so nothing was escalated.
     """
 
     server: str
@@ -64,6 +66,7 @@ class LocalModels:
     seed: int
     think: bool
     order_check: bool
+    escalation_model: str | None
 
 
 @dataclass(frozen=True)

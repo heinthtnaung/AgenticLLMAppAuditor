@@ -29,6 +29,10 @@ BOTH_ORDERS = 2
 ONE_ORDER = 1
 # Said after the metric on a reversed call, so its line is not the in-order call's twice.
 REVERSED_LABEL = " (options reversed)"
+COUNCIL_LINE = "council"
+# An escalation call is counted apart: how many a run makes is known only once
+# the council has left something open, so it has no total to count towards.
+ESCALATION_LINE = "escalation"
 
 
 @dataclass
@@ -45,6 +49,7 @@ class CouncilProgress:
     # Each metric asked in the options' order and reversed, where the run checks both.
     orders: int = ONE_ORDER
     asked: int = field(default=0, init=False)
+    escalated: int = field(default=0, init=False)
     reached: int = field(default=0, init=False)
     advisory_id: str = field(default="", init=False)
 
@@ -61,10 +66,18 @@ class CouncilProgress:
     def asking(self, metric: str, member: str, reversed_options: bool = False) -> None:
         """Say which member is about to be asked which metric, and in which order, before it is."""
         self.asked += 1
+        self.say(f"{COUNCIL_LINE} {self.asked}/{self.calls}", metric, member, reversed_options)
+
+    def escalating(self, metric: str, member: str, reversed_options: bool = False) -> None:
+        """Say which metric the escalation model is about to be asked, and in which order."""
+        self.escalated += 1
+        self.say(f"{ESCALATION_LINE} {self.escalated}", metric, member, reversed_options)
+
+    def say(self, counted: str, metric: str, member: str, reversed_options: bool) -> None:
+        """Write the line for one call about to be made, flushed so it shows before the call."""
         order = REVERSED_LABEL if reversed_options else ""
         self.out.write(
-            f"council {self.asked}/{self.calls}  "
-            f"finding {self.reached}/{self.findings} {self.advisory_id}  "
+            f"{counted}  finding {self.reached}/{self.findings} {self.advisory_id}  "
             f"{metric}{order}  {member}\n"
         )
         self.out.flush()
@@ -78,6 +91,9 @@ class NoProgress:
         """Note nothing."""
 
     def asking(self, metric: str, member: str, reversed_options: bool = False) -> None:
+        """Say nothing."""
+
+    def escalating(self, metric: str, member: str, reversed_options: bool = False) -> None:
         """Say nothing."""
 
 

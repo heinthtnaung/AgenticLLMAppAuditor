@@ -14,7 +14,13 @@ record says so.
 from typing import Any
 
 from report.council_beside import figure_of
-from report.council_record import CouncilAssessment, CouncilNotAsked, MemberSaid, MetricRuling
+from report.council_record import (
+    CouncilAssessment,
+    CouncilNotAsked,
+    MemberSaid,
+    MetricEscalation,
+    MetricRuling,
+)
 
 
 def council_of(report, advisory_id: str) -> dict[str, Any] | None:
@@ -50,7 +56,17 @@ def ruling_of(ruling: MetricRuling) -> dict[str, Any]:
         "confidence": ruling.confidence or None,
         "fallback_source": ruling.fallback_source or None,
         "members": [said_of(one) for one in ruling.said],
+        "escalation": escalation_of(ruling.escalation),
     }
+
+
+def escalation_of(escalation: MetricEscalation | None) -> dict[str, Any] | None:
+    """Give what the escalation model said of a metric the council left open, or null."""
+    if escalation is None:
+        return None
+    # What the council left it as, beside what the model said; the metric's own
+    # outcome, above this, is what came of it.
+    return {"prior_outcome": escalation.prior.value, **said_of(escalation.said)}
 
 
 def said_of(said: MemberSaid) -> dict[str, Any]:

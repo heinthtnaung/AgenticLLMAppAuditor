@@ -126,7 +126,9 @@ def test_the_advisories_an_answer_file_overrides_reach_the_record(tmp_path, monk
     assert len(report.findings) == 1
 
 
-def settling_far_from_published(findings, roster, clients=None, progress=None, every_finding=False):
+def settling_far_from_published(
+    findings, roster, clients=None, progress=None, every_finding=False, escalation=None
+):
     """Stand in for a council run with the real one, its members reading every metric low."""
     def said(member, prompt):
         """Answer one metric from the table, quoting the advisory so the quotation verifies."""

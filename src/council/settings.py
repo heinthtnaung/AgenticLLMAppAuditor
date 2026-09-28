@@ -1,6 +1,6 @@
 """The local model server's settings: an environment variable wins, then `.env`, then the default.
 
-Five settings, each named `AUDITOR_*`:
+Four settings, each named `AUDITOR_*`:
 
 - `AUDITOR_MODEL`, the model asked where none is named -- by a measurement
   such as `prompt_tokens.py` or a bare `LocalModel()`, never by an audit, and
@@ -8,18 +8,12 @@ Five settings, each named `AUDITOR_*`:
 - `AUDITOR_SERVER_URL`, the Ollama server, which must be this machine;
 - `AUDITOR_TIMEOUT_SECONDS`, how long one call may take;
 - `AUDITOR_CONTEXT_TOKENS`, the window a member is pinned to, which the
-  context guard in `council.ollama` scales with;
-- `AUDITOR_COUNCIL_MEMBERS`, the models `--council` runs, read by
-  `council.member_setting` and by nothing else.
+  context guard in `council.ollama` scales with.
 
-**A council is never switched on here.** A setting names members; only
-`--council` or `--council-member` runs one.
-
-**Only `AUDITOR_*` lines of `.env` are read.** The file is the operator's and
-holds other things -- on this machine, a key for a hosted service this project
-does not use -- so every other line is passed over unparsed. No refusal quotes
-any value but the one it refuses. A misspelt `AUDITOR_*` key is refused rather
-than ignored, and a bad value is refused naming where it came from.
+How `.env` is read, and which other `AUDITOR_*` names exist, is
+`council.env_file`. **A council is never switched on here.** A setting names
+members; only `--council` or `--council-member` runs one. A bad value is
+refused naming where it came from.
 
 **Not settings, on purpose:** temperature, seed and `think` stay pinned in
 `council.ollama`, because they are what makes a local member reproducible, and
@@ -35,17 +29,19 @@ from pathlib import Path
 from typing import Callable, Mapping
 from urllib.parse import urlsplit
 
-ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
-PREFIX = "AUDITOR_"
-EXPORT = "export "
-COMMENT = "#"
-QUOTES = "\"'"
+from council.env_file import (
+    CONTEXT,
+    FROM_ENVIRONMENT,
+    MODEL,
+    SERVER,
+    TIMEOUT,
+    SettingsError,
+    auditor_lines,
+    refuse_unknown_names,
+)
 
-MODEL = "AUDITOR_MODEL"
-SERVER = "AUDITOR_SERVER_URL"
-TIMEOUT = "AUDITOR_TIMEOUT_SECONDS"
-CONTEXT = "AUDITOR_CONTEXT_TOKENS"
-COUNCIL_MEMBERS = "AUDITOR_COUNCIL_MEMBERS"
+# Looked up each time a setting is read, which is how the tests point it at no file at all.
+ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
 
 # The window's default is measured, and pinned rather than generous: the worst
 # advisory of 1,187 takes the prompt to 4,897 tokens by Qwen's count and 5,689 by
@@ -57,19 +53,12 @@ DEFAULTS = {
     TIMEOUT: "180",
     CONTEXT: "8192",
 }
-# Every name a setting may have. The members have no default, so no default names them.
-NAMES = (*DEFAULTS, COUNCIL_MEMBERS)
 
 LOOPBACK_HOSTS = ("127.0.0.1", "localhost", "::1")
 SERVER_SCHEMES = ("http", "https")
 # What an earlier version of this project had operators write, endpoint and all.
 OLD_ENDPOINT = "/api/generate"
-FROM_ENVIRONMENT = "the environment"
 FROM_DEFAULT = "the default"
-
-
-class SettingsError(ValueError):
-    """A setting is misspelt, malformed or out of range, and where it came from is named."""
 
 
 @dataclass(frozen=True)
@@ -108,52 +97,6 @@ def chosen_value(
     if name in environment:
         return environment[name], FROM_ENVIRONMENT
     return from_file.get(name, (DEFAULTS[name], FROM_DEFAULT))
-
-
-def auditor_lines(env_file: Path) -> dict[str, tuple[str, str]]:
-    """Read the `AUDITOR_*` lines of a settings file, with where each stands, and no other line."""
-    if not env_file.is_file():
-        return {}
-    found: dict[str, tuple[str, str]] = {}
-    with env_file.open(encoding="utf-8") as lines:
-        for number, raw in enumerate(lines, start=1):
-            line = raw.strip().removeprefix(EXPORT).strip()
-            if not line.startswith(PREFIX):
-                continue
-            where = f"{env_file} line {number}"
-            name, value = auditor_setting(line, where)
-            if name in found:
-                raise SettingsError(f"{name} is set twice: at {found[name][1]}, and at {where}")
-            found[name] = (value, where)
-    return found
-
-
-def auditor_setting(line: str, where: str) -> tuple[str, str]:
-    """Split one `AUDITOR_*` line into its name and value, refusing a line that is neither."""
-    name, equals, value = line.partition("=")
-    name = name.strip()
-    if not equals:
-        named = name.split()[0]
-        raise SettingsError(f"{where}: a setting is written NAME=value, and {named} has no '='")
-    refuse_unknown_names({name: ""}, where)
-    return name, unquoted(value.strip())
-
-
-def refuse_unknown_names(names: Mapping[str, str], where: str) -> None:
-    """Refuse an `AUDITOR_*` name that is not a setting, quoting the name and never its value."""
-    unknown = sorted(name for name in names if name.startswith(PREFIX) and name not in NAMES)
-    if unknown:
-        raise SettingsError(
-            f"{where} sets {', '.join(unknown)}, which is not a setting; "
-            f"the settings are {', '.join(NAMES)}"
-        )
-
-
-def unquoted(value: str) -> str:
-    """Take one matched pair of quotes off a value, leaving an unmatched quote where it is."""
-    if len(value) >= 2 and value[0] == value[-1] and value[0] in QUOTES:
-        return value[1:-1]
-    return value
 
 
 def model_of(value: str, source: str) -> str:

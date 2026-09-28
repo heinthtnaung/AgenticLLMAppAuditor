@@ -60,10 +60,11 @@ exact rate moves with a different corpus; that the disagreement is widespread
 does not.
 
 The source notes sketch a ladder: a small local model, then a larger one, then
-a cloud one, each asked whether the published scores align. The ladder survives
-here as a **policy**, not as the shape of the council. A hosted model is an
-ordinary member of the roster; escalation is one way to order members, not the
-only way a hosted model takes part.
+a cloud one, each asked whether the published scores align. Two rungs of it are
+built, both on this machine: the council, then one larger local model asked only
+what the council left open ("Escalation", below). **The cloud rung is excluded,
+not deferred**: by the project's rule escalation stays local, so a hosted model
+takes part only as an ordinary member of the roster, opted in like any other.
 
 ## What the council decides, and what it does not
 
@@ -336,20 +337,23 @@ quotation is not in the text supports nothing, however many members give it.
 - **The verified answers support one value** → that value, with the confidence
   of the weakest of them, and a record of what it rests on.
 - **They support more than one value** → the metric is contested, and goes to
-  the escalation policy.
-- **There are none** → the metric is unresolved. Fall back to a published
-  vector, and record both that the fallback happened and which source it came
-  from — there is usually more than one, and they often differ.
+  the escalation model where one is named.
+- **There are none** → the metric is unresolved, and goes to the escalation
+  model where one is named. Fall back to a published vector, and record both
+  that the fallback happened and which source it came from — there is usually
+  more than one, and they often differ.
 
-**What a settled value rests on is one of three bases**, counted over **every
-member that offered a value with a quotation**, verified or not. The record
-carries the basis's own words, from `src/council/ruling.py`:
+**What a settled value rests on is one of four bases.** The first three are
+counted over **every member that offered a value with a quotation**, verified
+or not; the fourth is escalation's. The record carries the basis's own words,
+from `src/council/ruling.py`:
 
 | Basis | When | What the record says |
 |---|---|---|
 | `SOLE` | one member offered a quotation, and nobody else did | "one member offered a quotation, and no other member offered one" |
 | `AGREED` | two or more offered quotations, all for this value | "every member that offered a quotation supported this value" |
 | `EVIDENCE` | one of them offered a quotation for another value | "members offering quotations disagreed, and the verified one settled it" |
+| `ESCALATED` | the council left it contested or unresolved, and the escalation model settled it | "the council left it open, and the escalation model's verified quotation settled it" |
 
 A guess, a decline, an order-sensitive reply and a failed call offer no
 quotation, so none of them counts toward a basis. Beside one quotation and
@@ -364,7 +368,7 @@ vector needs all eight metrics, so one unresolved metric with no fallback means
 no vector — and the run is not discarded with it. What ran, and which metrics it
 could not settle, survives into the report: throwing that away told a reader no
 council had run at all, which is a different and false thing, and what went
-unsettled is the escalation policy's input.
+unsettled is what escalation is asked about.
 
 The fallback rule above is unchanged; what has changed is that a caller must now
 name the published source to fall back to. The command line names none, because
@@ -382,14 +386,19 @@ The basis is the one place a member is counted: one quotation with no other
 beside it reads `SOLE`, and that changes what the record admits, never the
 ruling.
 
-**A vector all eight of whose metrics read `SOLE` is marked as a whole.** Each
-metric rests on one member's quotation, not necessarily the same member's, so
-nothing in it was cross-checked although two or more members were reached. The
+**A vector every metric of which rests on one quotation is marked as a whole.**
+Each metric rests on one quotation, not necessarily the same model's, so nothing
+in the vector was cross-checked although two or more members were reached. The
 text and the page say `every metric on one member's quotation, nothing
 cross-checked` beside the vector; a vector from a single assessor keeps its own
 mark instead. The JSON's `nothing_cross_checked` is true for either, false for
 a vector some metric of which was cross-checked, and `null` where no vector
 came out.
+
+A metric rests on one quotation when it reads `SOLE`, or when it was
+`ESCALATED` from unresolved, where the escalation model's quotation is the only
+one. One escalated from a contest counts as cross-checked, because the value it
+settled already had a member's verified quotation behind it.
 
 **Agreement is not evidence.** n members agreeing with nothing verified settles
 nothing: that metric is unresolved and falls back to a published vector. It is
@@ -437,7 +446,10 @@ reason:
 
 ```
 COUNCIL (1)
+  no escalation model named: a metric the council left open stays open
   CVE-2021-4279  settled  ·  CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H  ·  CVSS 9.8 Critical
+    8 metrics settled
+      8  every member that offered a quotation supported this value
   3 findings not asked
     no published source disagrees, so there is nothing to reconcile
       CVE-2026-14257, CVE-2026-53550
@@ -453,27 +465,60 @@ second was a silent drop until scoping landed, folded in with "no council ran".
 that passed over three, because counting the skips into it would claim the
 council did more than it did.
 
-## Escalation is a policy, not a tier
+## Escalation: one larger local model, for what the council leaves open
 
-Order the roster by cost. Ask the cheapest members first, and send only a
-metric that came out contested or unresolved to a costlier one — never the
-whole CVE. Record which member answered which metric.
+**A metric the order-checked council leaves contested or unresolved goes to one
+more model, and nothing else does** (`src/council/escalation.py`). The model is
+named by `AUDITOR_ESCALATION_MODEL` (`README.md`); unset or empty, there is no
+escalation and an open metric stays open. It is asked each open metric in both
+orders, exactly as a member is, and its two readings become one reply by the
+members' rule. A settled metric is never sent: the model is asked what is open,
+not all eight.
 
-Asking every member every time is the other policy: more money, fewer rounds.
-Neither changes what a member returns or what the chairman does with it.
+**The chairman decides what the reply is worth** (`chairman.rule_on_escalation`).
+It settles the metric only on an answer that names the same value both ways
+round, with a quotation that is in the text the model read. On a contested
+metric the value must also be one of the contested values, the ones the
+council's verified quotations already support, so escalation can side with
+evidence but never add a reading. A decline, a guess, an order-sensitive pair,
+an unverified quotation, a value nobody contested and a failed call all leave the
+metric as the council left it, and the record keeps what the model said beside
+what the council had left.
 
-**It is not built, and what is missing is a precondition rather than the will to
-build it.** A metric is contested only when two distinct values *both* verify, so
-one cheap member can never make one. Ask a single cheap member first and every
-metric it can quote comes back settled by it alone: the `contested` trigger never
-fires, the costly member is never reached on the metrics that most need it, and
-the round is marked single-assessor. **That buys speed by deleting the
-cross-check escalation exists to protect.**
+**One model, on this machine, and never a member.** The name is a model on the
+local Ollama server, so a hosted one cannot be written: **hosted escalation is
+excluded by the project's rule, not deferred.** A model already on the council
+is refused before any model is asked, because a member escalating to itself
+would read the same prompt again and count twice. So is a value naming two
+models.
+
+**What it costs.** Two calls per open metric, a count known only once the
+council has answered, so the progress stream counts them apart and without a
+total. It runs after each advisory's council, so a model too large to stay
+loaded beside the members is loaded once per advisory; that has not been timed.
+
+**What is not yet known.** It has been tested with stand-in models only. No
+escalation model has run live, and none has been measured on the pilot's
+findings, so nothing yet shows that one settles an open metric correctly rather
+than merely settling it. The evaluation harness replays its passes with no
+escalation model (`PASS_ESCALATION = None` in
+`measurements/council_eval/variants.py`), so no figure in
+`measurements/README.md` includes one.
+
+### A contest needs two members to find it
+
+**The trigger is what members reply, so a contest needs two or more members that
+can contest something between themselves.** A metric is contested only when two
+distinct values *both* verify, so one member can never make one. A council of
+one settles every metric it can quote on its own, escalation never sees those,
+and the run is marked single-assessor; only what that member left unresolved is
+escalated. **One member plus escalation buys a second reading of the gaps, not
+the cross-check.**
 
 It is not a hypothetical. A two-member run on this machine had Qwen and Gemma
 quote the same sentence about `CVE-2021-4279` and give different Attack Vector
-values — a contested metric, found because two cheap members read it. A cheap
-tier of one would have recorded that as settled. Both Qwen–Gemma runs in
+values — a contested metric, found because two members read it. A council of
+one would have recorded that as settled. Both Qwen–Gemma runs in
 `measurements/council_runs/`, `scoped` and `full`, show it at lines 63–67 of
 each report, and the shape is common: 8 of the scoped run's 17 contested
 metrics have it, and 20 of the full run's 61.
@@ -486,16 +531,11 @@ show Llama's answer, on the 39 metrics the full run could not settle, it
 guessed 16 times and declined none, and a guess cannot contest anything.
 `measurements/README.md` has the counts.
 
-The argument holds for the trigger this section defines, a metric that came
-out contested or unresolved, and not for escalation in general. A trigger on the
-finding instead — the metrics its published sources dispute — would reach the
-costly member even from a one-member cheap tier, because that disagreement
-exists before any member answers. It is a different policy from the one
-described here.
-
-So, for this trigger, the condition to build against is a **cheap tier of two
-or more members that can contest something between themselves**. Below that,
-escalation is not a cheaper council; it is a single assessor wearing one.
+The argument holds for this trigger, a metric that came out contested or
+unresolved, and not for escalation in general. A trigger on the finding instead
+— the metrics its published sources dispute — would reach the escalation model
+even from a one-member council, because that disagreement exists before any
+member answers. That is a different policy, and it is not built.
 
 ## What a hosted member costs
 
@@ -587,7 +627,8 @@ names every member that ran, its provider, and whether it was local or hosted.
 A record that does not say where the text went is not an audit record.
 
 **Money and time.** Calls scale with n × the findings the scope leaves × metrics
-× 2, every metric asked in both orders.
+× 2, every metric asked in both orders, and an escalation model adds 2 for each
+metric the council leaves open.
 The runner asks every member in turn, local or hosted, and waits for each
 answer before it makes the next call. Local members are free and share one
 Ollama server, so for them n buys latency instead of money. A hosted member
@@ -598,9 +639,10 @@ budget decision as much as a design one.
 
 ## A roster as configuration
 
-**A sketch.** The one roster setting built is `AUDITOR_COUNCIL_MEMBERS`, the
-local models `audit --council` runs, comma-separated (`README.md`). The roster
-below, with families, hosted members, `egress` and a policy, has no committed
+**A sketch.** Two roster settings are built: `AUDITOR_COUNCIL_MEMBERS`, the
+local models `audit --council` runs, comma-separated, and
+`AUDITOR_ESCALATION_MODEL`, the one local model it escalates to (`README.md`).
+The roster below, with families, hosted members and `egress`, has no committed
 format: it shows what a reader would be editing rather than a schema to write
 against. The model names are examples; check the provider's catalogue for
 current ids.
@@ -613,24 +655,25 @@ council:
       model: qwen2.5:7b
       family: qwen
       options: {temperature: 0, seed: 11}
-    - name: large-local
+    - name: other-local
       provider: ollama
-      model: qwen3:8b
-      family: qwen
+      model: gemma4:latest
+      family: gemma
       options: {temperature: 0, seed: 11}
     - name: hosted-other-family
       provider: openrouter
       model: anthropic/claude-sonnet-5
       family: claude
       egress: allow        # absent or false: skipped, and the skip is reported
-  policy: escalate         # or: ask-all
-  escalate_on: [contested, unresolved]
-  escalate_to: hosted-other-family
+  escalation:              # built, as AUDITOR_ESCALATION_MODEL
+    model: qwen2.5:14b     # local only, and never one of the members
+    on: [contested, unresolved]
 ```
 
 Adding a member is a list entry; removing one is deleting it. `egress` is the
 opt-in, and it fails closed: a hosted member without it does not run, and the
-report says it did not.
+report says it did not. The escalation block names a local model and no
+provider, because hosted escalation is excluded rather than deferred.
 
 **There is no `chairman` key, because there is no chairman model.**
 `src/council/chairman.py` makes no model call at all: it keeps the answers whose
@@ -650,7 +693,8 @@ one back inside the path a vector takes to a number.
 Per assessment: each member's answer and evidence, the model, provider, family
 and both prompt versions behind it, in order and reversed, whether that member
 ran local or hosted, the roster as configured, the chairman's reasoning, the
-final vector, and the computed score. A score nobody can re-derive is not a
+escalation model's reply on each metric the council left open, beside what the
+council had left it as, the final vector, and the computed score. A score nobody can re-derive is not a
 score, and a roster nobody can reconstruct is not a council.
 
 ## What is built, and what is not
@@ -661,8 +705,9 @@ provider registry and the local Ollama client in it, the HTTP seam under that,
 the reply parser, the quotation check, the chairman, and the runner that puts
 one advisory to every reachable member, one member at a time: a member answers
 all eight metrics, each in both orders, before the next is asked, and the order
-check reconciles its two replies. `src/cvss` is the engine it hands a
-vector to.
+check reconciles its two replies. Then escalation puts what the council left
+open to the escalation model, where one is named. `src/cvss` is the engine it
+hands a vector to.
 
 **The scope is built too, and it is not in that package.** `src/cli/council_run.py`
 chooses which findings a run is put to, records each one it passes over with the
@@ -672,27 +717,22 @@ reason, and counts the calls the scope leaves for the progress stream.
 reach, and the client that speaks to each, sit apart from the dispatch that puts
 a metric to every member — separated by what makes each of them change. A hosted
 client and a member's own temperature and seed are provider-layer changes and
-touch nothing else; asking every member becoming escalating a contested metric,
-and any change to the shape of the run record, are dispatch changes and touch
-nothing else. The first two gaps below sit on opposite sides of that line, which
-is the useful thing to know before building either.
+touch nothing else; what is asked after the members, and any change to the shape
+of the run record, are dispatch changes. Escalation is the second kind: it runs
+after the runner, in `src/council/escalation.py`, and asks the escalation model
+through the runner's own `ask_one_member`, as it asks a member.
 
 **A member with no client is reported, never stubbed.** A stub would answer, and
 its answer would be fiction recorded as an assessment. So the two reasons a
 member goes unasked stay distinguishable in the record: not configured, and
 refused by policy.
 
-Five things described above are not built, each deferred rather than forgotten:
+Four things described above are not built, each deferred rather than forgotten:
 
 - **No hosted provider client.** OpenRouter or another API is a sketch, so a
   hosted member is skipped for want of one — a second reason on top of
   `egress`, and the one that outlasts opting in. Adding one is an adapter and
   an entry in the provider registry; no other module moves.
-- **No escalation policy.** The runner asks every member every metric, which is
-  the other policy named above. A contested metric is recorded as contested and
-  nothing re-asks it on a costlier member. It is deferred on a condition rather
-  than on time: the section above gives the measurement and the cheap tier it
-  would need.
 - **The answering model is not recorded.** A reply says which member was asked,
   not which weights answered. That costs nothing while every member is a pinned
   local one, and becomes the reproducibility hole described above on the day a
@@ -714,9 +754,14 @@ Five things described above are not built, each deferred rather than forgotten:
   the guarantee stays honest. A hole that is reported is not the same thing as a
   hole that is hidden.
 
+Hosted escalation is not on this list, because it is not deferred: escalation
+stays on this machine by rule.
+
 **`src/cli/` orchestrates all of it**, and that is where to look for the wiring.
 `src/cli/council_run.py` chooses the findings and runs the council over them,
-`src/cli/council_detail.py` turns a run into the record the report holds, and
+escalation included, `src/cli/council_outcome.py` says what a run comes to, a
+vector or the metrics still open, `src/cli/council_detail.py` turns a run into
+the record the report holds, and
 `src/cli/organisation_run.py` weighs the risk score from the published sources
 without reading the council. The package itself stays a component:
 `src/council/` imports `src/cvss` and nothing else of this project's, and only

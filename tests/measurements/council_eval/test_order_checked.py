@@ -3,6 +3,7 @@
 import pytest
 
 import eval_samples as samples
+from council_eval import order_checked as order_checked_module
 from cli.council_run import local_member
 from council.prompt import PROMPT_VERSION, build_prompt
 from council.reply import read_reply
@@ -121,3 +122,13 @@ def test_a_replay_fault_is_never_taken_for_a_member_failing():
     # The client passes on only what the runner records as a failure; a replay
     # fault must stop the scoring instead.
     assert not issubclass(ReplayMismatch, (ModelUnavailable, ValueError))
+
+
+def test_an_order_checked_replay_names_no_escalation_model(monkeypatch):
+    forward, reversed_ = one_pass(samples.ANSWERS, BASELINE), one_pass(REVERSED_ANSWERS, REVERSED)
+    options = []
+    monkeypatch.setattr(
+        order_checked_module, "assess_one", lambda *given, **named: options.append(named)
+    )
+    order_checked_roster((samples.item(),), (samples.MODEL,), forward, reversed_)
+    assert options == [{"order_check": False, "escalation": None}]

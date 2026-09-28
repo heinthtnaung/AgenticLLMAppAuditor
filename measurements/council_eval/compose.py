@@ -5,8 +5,8 @@ the chairman is code. So what a roster decides on an item is fixed by what each
 of its members said, and each member's words are in its own pass. Replaying
 them through `cli.council_run.assess_one` gives the record the audit itself
 would have written, without asking any model again -- with its order check
-off, since a pass holds one order; `order_checked` rebuilds a checked roster
-from two passes.
+off, since a pass holds one order, and with no escalation model, since no pass
+holds one; `order_checked` rebuilds a checked roster from two passes.
 
 That rests on one more thing: a member's reply must not depend on what else
 was loaded or asked before it. Measured, it can -- `qwen2.5:7b-instruct` answers
@@ -23,7 +23,7 @@ from report.council_record import CouncilOutcome
 
 from council_eval.dataset import Item
 from council_eval.replies import PROMPT_VERSION_FIELD, WINDOW_FIELD, ReplayClient, Replies
-from council_eval.variants import PASS_ORDER_CHECK, Variant, variant_asked
+from council_eval.variants import PASS_ESCALATION, PASS_ORDER_CHECK, Variant, variant_asked
 
 
 def replay_roster(
@@ -41,7 +41,8 @@ def replay_item(
     """Rebuild one item's council record, every member answering from its recorded calls."""
     client = ReplayClient(item.key, replies.calls, variant, window)
     return assess_one(
-        item.finding, roster, {OLLAMA_PROVIDER: client}, order_check=PASS_ORDER_CHECK
+        item.finding, roster, {OLLAMA_PROVIDER: client},
+        order_check=PASS_ORDER_CHECK, escalation=PASS_ESCALATION,
     )
 
 

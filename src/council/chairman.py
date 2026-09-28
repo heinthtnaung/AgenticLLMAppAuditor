@@ -8,11 +8,20 @@ advisory supports nothing, however many members give it.
 
 That makes the design's first two rules one computation. Among the answers whose
 quotation verified, either they support one value -- settled -- or they do not,
-and the metric is contested and belongs to the escalation policy. The record
-keeps what a settled value rests on as the `Basis`, because "one member quoted
-it", "nobody dissented" and "the evidence overruled a dissenter" are different
-things to read afterwards. Telling the first from the second is the one place a
-member is counted, and it changes what the record admits, never the ruling.
+and the metric is contested, which the escalation model may then settle
+(`rule_on_escalation`, below). The record keeps what a settled value rests on as
+the `Basis`, because "one member quoted it", "nobody dissented" and "the evidence
+overruled a dissenter" are different things to read afterwards. Telling the
+first from the second is the one place a member is counted, and it changes what
+the record admits, never the ruling.
+
+**A metric the council left open may be settled once more, by escalation.** The
+escalation model's reply settles it only where that reply is the same value in
+both orders, its quotation is in the advisory, and -- on a contested metric --
+the value is one the council's verified quotations already support. Anything
+else leaves the metric as the council left it. So on a contest it can only side
+with a value that already has verified evidence behind it, and on an unresolved
+metric its quotation has to verify like anyone's.
 
 **The chairman hands over a vector, never a score.** Nothing in this package
 imports `src/scoring/`, and if it ever needs to, something has gone wrong.
@@ -24,6 +33,7 @@ from cvss.metrics import METRIC_ORDER
 from cvss.vector import CvssVector
 from council.answer import MemberAnswer, MemberReply, weakest_confidence
 from council.evidence import is_quotation_from
+from council.run import MemberFailure
 from council.ruling import (
     Basis,
     ContestedMetric,
@@ -84,6 +94,49 @@ def basis_of(value: str, answers: Sequence[MemberAnswer]) -> Basis:
     return Basis.AGREED
 
 
+def rule_on_escalation(
+    prior: MetricRuling, reply: MemberReply | MemberFailure, advisory_text: str
+) -> MetricRuling:
+    """Settle a metric the council left open on the escalation model's reply, or leave it be."""
+    refuse_escalating(prior, reply)
+    if not escalation_settles(prior, reply, advisory_text):
+        return prior
+    return SettledMetric(
+        metric=prior.metric,
+        value=reply.value,
+        confidence=reply.confidence,
+        basis=Basis.ESCALATED,
+        supporting=(reply,),
+    )
+
+
+def escalation_settles(
+    prior: MetricRuling, reply: MemberReply | MemberFailure, advisory_text: str
+) -> bool:
+    """Say whether an escalated reply may settle what the council left open."""
+    # Order-stable is the reply's type: `order_check.reconciled` gives an answer
+    # only where both orders named its value.
+    if not isinstance(reply, MemberAnswer):
+        return False
+    if not is_quotation_from(reply.evidence, advisory_text):
+        return False
+    if isinstance(prior, ContestedMetric):
+        return reply.value in {candidate.value for candidate in prior.candidates}
+    return True
+
+
+def refuse_escalating(prior: MetricRuling, reply: MemberReply | MemberFailure) -> None:
+    """Refuse an escalation of a settled metric, of another metric, or asked in one order."""
+    if isinstance(prior, SettledMetric):
+        raise ValueError(f"{prior.metric} is settled; only an open metric is escalated")
+    if reply.metric != prior.metric:
+        raise ValueError(f"{reply.metric} answered where {prior.metric} was escalated")
+    if not reply.member.reversed_prompt_version:
+        raise ValueError(
+            f"{prior.metric} was escalated in one order; an escalation is asked in both"
+        )
+
+
 def agreed_vector(rulings: Mapping[str, MetricRuling], version: str) -> CvssVector:
     """Assemble the one vector the chairman hands over, refusing an unfinished council."""
     refuse_unfinished(rulings)
@@ -112,9 +165,8 @@ def refuse_unfinished(rulings: Mapping[str, MetricRuling]) -> None:
     missing = [metric for metric in METRIC_ORDER if metric not in rulings]
     if missing:
         raise ValueError(f"No ruling on {', '.join(missing)}; a vector needs all eight metrics")
-    # Every unfinished metric at once, not the first one found: a council that
-    # left two metrics contested should send both to the escalation policy in
-    # one round rather than learn about the second after settling the first.
+    # Every unfinished metric at once, not the first one found, so a refusal
+    # names everything that stops a vector rather than the first thing it met.
     unfinished = sorted(metric for metric, ruling in rulings.items() if not has_value(ruling))
     if unfinished:
         raise ValueError(

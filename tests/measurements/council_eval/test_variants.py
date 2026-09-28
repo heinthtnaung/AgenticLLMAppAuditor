@@ -18,6 +18,7 @@ from council_eval.variants import (
     LIBRARY_GUIDANCE,
     LIBRARY_LEAD,
     LIBRARY_REVERSED,
+    PASS_ESCALATION,
     REVERSED,
     VARIANTS,
     Variant,
@@ -158,3 +159,10 @@ def test_the_product_s_reversed_prompt_is_this_variant_word_for_word(metric):
     # So a pass taken in either the product or the evaluation answers the other.
     product = build_prompt(metric, samples.ADVISORY_TEXT, reversed_options=True)
     assert product == asked(metric, REVERSED)
+
+
+def test_a_pass_is_asked_and_replayed_with_no_escalation_model():
+    # A known gap, asserted so that closing it turns this red. An audit may
+    # escalate what its council left open; a pass holds one model's calls, so a
+    # replay rebuilds the audit without escalation, and nothing here measures it.
+    assert PASS_ESCALATION is None

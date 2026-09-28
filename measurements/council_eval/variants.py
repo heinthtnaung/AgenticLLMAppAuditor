@@ -52,6 +52,9 @@ REVERSED_SUFFIX = "+reversed-1"
 # product's reversed prompt, which no variant changes. `order_checked` pairs two
 # passes instead.
 PASS_ORDER_CHECK = False
+# A pass holds one model's calls and nothing else, so it is asked and replayed
+# with no escalation model: escalating would ask a model no pass recorded.
+PASS_ESCALATION = None
 
 
 class VariantMismatch(RuntimeError):

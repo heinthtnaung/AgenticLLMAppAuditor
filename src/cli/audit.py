@@ -15,6 +15,7 @@ from dataclasses import replace
 from pathlib import Path
 from typing import TextIO
 
+from council.escalation_setting import escalation_model
 from council.member_setting import council_members
 from council.ollama import PINNED_SEED, PINNED_TEMPERATURE, PINNED_THINKING
 from council.settings import current_settings
@@ -26,7 +27,7 @@ from report.provenance import AdvisoryDatabase, LocalModels, RunProvenance
 from report.record import Report, build_report
 
 from cli.arguments import Options
-from cli.council_run import ORDER_CHECK, assessments, build_roster, watching
+from cli.council_run import ORDER_CHECK, assessments, build_roster, escalation_member, watching
 from cli.organisation_run import organisation_of, weigh_findings
 
 
@@ -42,7 +43,7 @@ def run_audit(
     catalogue = syft_runner.scan_directory(options.repository)
     advisories = trivy_runner.scan_directory(options.repository, database.cache)
     findings = build_findings(catalogue.components, advisories)
-    council = council_of(findings, options, progress_to)
+    council = council_of(findings, options, progress_to, local)
     answers, approval = organisation_of(options.answers)
     return build_report(
         provenance=provenance_of(options.repository, database.built_at, local),
@@ -96,6 +97,7 @@ def local_models_of(options: Options) -> LocalModels | None:
         seed=PINNED_SEED,
         think=PINNED_THINKING,
         order_check=ORDER_CHECK,
+        escalation_model=escalation_model(),
     )
 
 
@@ -106,11 +108,15 @@ def weighed(findings, answers, options: Options):
     return weigh_findings(findings, answers)
 
 
-def council_of(findings, options: Options, progress_to: TextIO):
+def council_of(findings, options: Options, progress_to: TextIO, local: LocalModels | None):
     """Put the council to the findings that need one, or run none, which is the default."""
-    if not options.council_models:
+    # `local` is None exactly when no member was named, which is when no council runs.
+    if local is None:
         return ()
     every = options.council_all_findings
     roster = build_roster(options.council_models)
     watcher = watching(findings, roster, progress_to, every)
-    return assessments(findings, roster, progress=watcher, every_finding=every)
+    escalation = escalation_member(local.escalation_model)
+    return assessments(
+        findings, roster, progress=watcher, every_finding=every, escalation=escalation
+    )
