@@ -1,0 +1,52 @@
+pass qwen2.5:7b-instruct
+  model: qwen2.5:7b-instruct
+  digest: 845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e
+  ollama: 0.34.3
+  prompt_version: member-base-metric-3
+  temperature: 0
+  seed: 11
+  num_ctx: 8192
+  think: False
+  turn_start: cold: the model is unloaded before each item
+  dataset_sha256: 2575a98327867c3bbc98860cb6d57bdb972a10f26eeaf7ba0b2e74e91bbe0d66
+  commit: a4e536525fe53e7c60fb4f02cde58d2b596af9f6
+  started: 2026-09-24T18:50:28+08:00
+  uncommitted at launch: 21 paths
+pass gemma4:latest
+  model: gemma4:latest
+  digest: c6eb396dbd5992bbe3f5cdb947e8bbc0ee413d7c17e2beaae69f5d569cf982eb
+  ollama: 0.34.3
+  prompt_version: member-base-metric-3
+  temperature: 0
+  seed: 11
+  num_ctx: 8192
+  think: False
+  turn_start: cold: the model is unloaded before each item
+  dataset_sha256: 2575a98327867c3bbc98860cb6d57bdb972a10f26eeaf7ba0b2e74e91bbe0d66
+  commit: 76a4b2c86741c7acf0214b4892862e4f136d346c
+  started: 2026-09-25T15:57:04+08:00
+  uncommitted at launch: 18 paths
+
+ROSTER qwen2.5:7b-instruct  (18 items)
+2 vectors; 2 with a full R1: 0 exact, 2 adjacent, 0 major; 0 without a full R1, not graded
+finding         council band  R1 band  bands apart  grade
+CVE-2026-6321   Medium        High     1            adjacent
+CVE-2026-53550  High          Medium   1            adjacent
+
+ROSTER gemma4:latest  (18 items)
+12 vectors; 10 with a full R1: 3 exact, 6 adjacent, 1 major; 2 without a full R1, not graded
+finding         council band  R1 band  bands apart  grade
+CVE-2026-14257  Medium        High     1            adjacent
+CVE-2026-13676  None          High     3            major
+CVE-2026-16221  Critical      High     1            adjacent
+CVE-2026-18446  High          High     0            exact
+CVE-2026-6321   Critical      High     1            adjacent
+CVE-2026-6322   High          High     0            exact
+CVE-2026-75975  High          High     0            exact
+CVE-2026-76172  Critical      High     1            adjacent
+CVE-2026-53550  High          Medium   1            adjacent
+CVE-2026-4800   Critical      High     1            adjacent
+
+ROSTER qwen2.5:7b-instruct + gemma4:latest  (18 items)
+0 vectors; 0 with a full R1: 0 exact, 0 adjacent, 0 major; 0 without a full R1, not graded
+finding  council band  R1 band  bands apart  grade

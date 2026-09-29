@@ -224,6 +224,9 @@ model, with no rerun of either order.
 | `qwen-llama.order-checked.txt` | 14 KB | Qwen, Llama and their pair, order-checked |
 | `qwen-gemma4.order-checked.txt` | 14 KB | Qwen, Gemma and their pair, order-checked |
 | `qwen-coder.order-checked.txt` | 15 KB | Qwen, the coder and their pair, order-checked |
+| `qwen-llama.grades.txt` | 3 KB | Qwen, Llama and their pair's vectors by band distance from R1, order-checked |
+| `qwen-gemma4.grades.txt` | 3 KB | Qwen, Gemma and their pair's vectors by band distance from R1, order-checked |
+| `qwen-coder.grades.txt` | 3 KB | Qwen, the coder and their pair's vectors by band distance from R1, order-checked |
 
 ## Re-deriving every figure
 
@@ -242,8 +245,18 @@ python measurements/council_eval order-checked --dataset $D \
     --forward $R/pilot-vulnscout/$Q $R/qwen2.5-coder-vulnscout/qwen2.5-coder-7b-instruct.run1.replies.jsonl \
     --reversed $R/reversed-vulnscout/$Q \
     $R/order-checked-vulnscout/qwen2.5-coder-7b-instruct.reversed.run1.replies.jsonl
+python measurements/council_eval grades --dataset $D \
+    --forward $R/pilot-vulnscout/$Q $R/pilot-vulnscout/llama3.2-latest.run2.replies.jsonl \
+    --reversed $R/reversed-vulnscout/$Q $R/reversed-vulnscout/llama3.2-latest.run1.replies.jsonl
+python measurements/council_eval grades --dataset $D \
+    --forward $R/pilot-vulnscout/$Q $R/gemma4-vulnscout/gemma4-latest.run1.replies.jsonl \
+    --reversed $R/reversed-vulnscout/$Q $R/order-checked-vulnscout/gemma4-latest.reversed.run1.replies.jsonl
+python measurements/council_eval grades --dataset $D \
+    --forward $R/pilot-vulnscout/$Q $R/qwen2.5-coder-vulnscout/qwen2.5-coder-7b-instruct.run1.replies.jsonl \
+    --reversed $R/reversed-vulnscout/$Q \
+    $R/order-checked-vulnscout/qwen2.5-coder-7b-instruct.reversed.run1.replies.jsonl
 ```
 
-Each prints what its `.txt` here holds. The unchecked rosters are the `score`
-files of `../pilot-vulnscout/`, `../gemma4-vulnscout/` and
-`../qwen2.5-coder-vulnscout/`.
+Each prints what its `.txt` here holds; the three `grades` lines print the
+`.grades.txt` files. The unchecked rosters are the `score` files of
+`../pilot-vulnscout/`, `../gemma4-vulnscout/` and `../qwen2.5-coder-vulnscout/`.

@@ -54,6 +54,7 @@ So the window is clean by the rule in `../README.md`.
 | `ollama-journal.run1.tsv` | 28 KB | the server's requests and loads for the run window |
 | `turns.txt` | 1 KB | the excerpt, counted |
 | `library.score.txt` | 13 KB | every roster against R1 and the baseline |
+| `library.grades.txt` | 2 KB | each roster's vectors by band distance from R1: exact, adjacent or major |
 | `values.txt` | 1 KB | every value each model named, beside the option listed last |
 | `quoting.txt` | 1 KB | whose quotation each lone settlement rests on, and unverified quotations of the prompt |
 | `compare.txt` | 3 KB | each model's pass against its pilot pass, call by call |
@@ -70,6 +71,7 @@ P=measurements/council_eval_runs/pilot-vulnscout
 D=$P/vulnscout.dataset.json
 Q=$R/qwen2.5-7b-instruct.run1.replies.jsonl; L=$R/llama3.2-latest.run1.replies.jsonl
 python measurements/council_eval score --dataset $D --replies $Q $L
+python measurements/council_eval grades --dataset $D --replies $Q $L
 python measurements/council_eval values --dataset $D --replies $Q $L
 python measurements/council_eval quoting --dataset $D --replies $Q $L
 python measurements/council_eval turns --excerpt $R/ollama-journal.run1.tsv

@@ -37,6 +37,7 @@ line, which is why `turns.txt` counts "18 n/a".
 | `ollama-journal.run1.tsv` | 14 KB | the server's requests and loads for the window |
 | `turns.txt` | 1 KB | the excerpt, counted |
 | `gemma4.score.txt` | 14 KB | Qwen alone, Gemma alone, and the pair, against R1 and the baseline |
+| `gemma4.grades.txt` | 2 KB | each roster's vectors by band distance from R1: exact, adjacent or major |
 | `values.txt` | 1 KB | every value Gemma named, beside the option listed last |
 | `quoting.txt` | 1 KB | the pair's lone settlements and unverified quotations |
 
@@ -46,6 +47,7 @@ line, which is why `turns.txt` counts "18 n/a".
 R=measurements/council_eval_runs/gemma4-vulnscout; P=measurements/council_eval_runs/pilot-vulnscout
 D=$P/vulnscout.dataset.json; G=$R/gemma4-latest.run1.replies.jsonl; Q=$P/qwen2.5-7b-instruct.run1.replies.jsonl
 python measurements/council_eval score --dataset $D --replies $Q $G
+python measurements/council_eval grades --dataset $D --replies $Q $G
 python measurements/council_eval values --dataset $D --replies $G
 python measurements/council_eval quoting --dataset $D --replies $Q $G
 python measurements/council_eval turns --excerpt $R/ollama-journal.run1.tsv

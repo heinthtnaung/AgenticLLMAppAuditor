@@ -1,0 +1,68 @@
+pass qwen2.5:7b-instruct
+  model: qwen2.5:7b-instruct
+  digest: 845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e
+  ollama: 0.34.3
+  prompt_version: member-base-metric-3
+  temperature: 0
+  seed: 11
+  num_ctx: 8192
+  think: False
+  turn_start: cold: the model is unloaded before each item
+  dataset_sha256: 2575a98327867c3bbc98860cb6d57bdb972a10f26eeaf7ba0b2e74e91bbe0d66
+  commit: a4e536525fe53e7c60fb4f02cde58d2b596af9f6
+  started: 2026-09-24T18:50:28+08:00
+  uncommitted at launch: 21 paths
+pass qwen2.5-coder:7b-instruct
+  model: qwen2.5-coder:7b-instruct
+  digest: dae161e27b0e90dd1856c8bb3209201fd6736d8eb66298e75ed87571486f4364
+  ollama: 0.34.3
+  prompt_version: member-base-metric-3
+  temperature: 0
+  seed: 11
+  num_ctx: 8192
+  think: False
+  turn_start: cold: the model is unloaded before each item
+  dataset_sha256: 2575a98327867c3bbc98860cb6d57bdb972a10f26eeaf7ba0b2e74e91bbe0d66
+  commit: 76a4b2c86741c7acf0214b4892862e4f136d346c
+  started: 2026-09-25T16:01:20+08:00
+  uncommitted at launch: 21 paths
+pass qwen2.5:7b-instruct
+  model: qwen2.5:7b-instruct
+  digest: 845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e
+  ollama: 0.34.3
+  prompt_version: member-base-metric-3+reversed-1
+  temperature: 0
+  seed: 11
+  num_ctx: 8192
+  think: False
+  turn_start: cold: the model is unloaded before each item
+  dataset_sha256: 2575a98327867c3bbc98860cb6d57bdb972a10f26eeaf7ba0b2e74e91bbe0d66
+  commit: a4e536525fe53e7c60fb4f02cde58d2b596af9f6
+  started: 2026-09-25T10:27:48+08:00
+  uncommitted at launch: 37 paths
+pass qwen2.5-coder:7b-instruct
+  model: qwen2.5-coder:7b-instruct
+  digest: dae161e27b0e90dd1856c8bb3209201fd6736d8eb66298e75ed87571486f4364
+  ollama: 0.34.3
+  prompt_version: member-base-metric-3+reversed-1
+  temperature: 0
+  seed: 11
+  num_ctx: 8192
+  think: False
+  turn_start: cold: the model is unloaded before each item
+  dataset_sha256: 2575a98327867c3bbc98860cb6d57bdb972a10f26eeaf7ba0b2e74e91bbe0d66
+  commit: 76a4b2c86741c7acf0214b4892862e4f136d346c
+  started: 2026-09-25T16:22:33+08:00
+  uncommitted at launch: 27 paths
+
+ROSTER qwen2.5:7b-instruct, order-checked  (18 items)
+0 vectors; 0 with a full R1: 0 exact, 0 adjacent, 0 major; 0 without a full R1, not graded
+finding  council band  R1 band  bands apart  grade
+
+ROSTER qwen2.5-coder:7b-instruct, order-checked  (18 items)
+0 vectors; 0 with a full R1: 0 exact, 0 adjacent, 0 major; 0 without a full R1, not graded
+finding  council band  R1 band  bands apart  grade
+
+ROSTER qwen2.5:7b-instruct + qwen2.5-coder:7b-instruct, order-checked  (18 items)
+0 vectors; 0 with a full R1: 0 exact, 0 adjacent, 0 major; 0 without a full R1, not graded
+finding  council band  R1 band  bands apart  grade

@@ -50,6 +50,7 @@ model.
 | `ollama-journal.run1.tsv` | 28 KB | the server's requests and loads for the run window |
 | `turns.txt` | 1 KB | the excerpt, counted |
 | `reversed.score.txt` | 11 KB | every roster against R1 and the baseline |
+| `reversed.grades.txt` | 2 KB | each roster's vectors by band distance from R1: exact, adjacent or major |
 | `values.txt` | 1 KB | every value each model named, beside the option listed last |
 | `quoting.txt` | 1 KB | whose quotation each lone settlement rests on, and unverified quotations of the prompt |
 | `compare.txt` | 4 KB | each model's pass against its pilot pass, call by call |

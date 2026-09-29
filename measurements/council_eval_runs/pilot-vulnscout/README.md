@@ -63,10 +63,11 @@ eight metrics.
   another agent's, and they load nothing.
 
 **Scored:** Qwen run 1 and Llama run 2, the clean run of each available at the
-time, give `pilot.score.txt`. The run-3 pair gives `pilot.run3.score.txt`. The
-two are identical but for each pass's start time and its count of uncommitted
-paths. `compare.txt` shows all 144 replies of each model byte-identical across
-all three runs, the interfered calls included.
+time, give `pilot.score.txt`. The run-3 pair gives `pilot.run3.score.txt` and
+`pilot.run3.grades.txt`. Each is identical to its run-1/run-2 counterpart but
+for each pass's start time and its count of uncommitted paths. `compare.txt`
+shows all 144 replies of each model byte-identical across all three runs, the
+interfered calls included.
 
 ## Files
 
@@ -78,12 +79,13 @@ all three runs, the interfered calls included.
 | `ollama-journal.run{1,2,3}.tsv` | 28–29 KB each | the server's requests and loads for each run window |
 | `gate.txt` | 1 KB | the replay against `gpu-full.report.txt`, for the scored pair and the run-3 pair |
 | `pilot.score.txt`, `pilot.run3.score.txt` | 12 KB each | every roster against R1 and the baseline |
+| `pilot.grades.txt`, `pilot.run3.grades.txt` | 2 KB each | each roster's vectors by band distance from R1: exact, adjacent or major |
 | `compare.txt` | 2 KB | each model's three runs, pairwise, byte for byte |
 | `quoting.txt` | 1 KB | whose quotation each lone settlement rests on, and unverified quotations of the prompt |
 | `turns.txt` | 1 KB | the three journal excerpts, counted |
 | `values.txt` | 1 KB | every value each model of the scored pair named, beside the option listed last; added on 2026-09-25 as the baseline cell of `../README.md` |
 
-804 KB in all.
+808 KB in all.
 
 ## Re-deriving every figure
 
@@ -97,6 +99,8 @@ python measurements/council_eval gate --dataset $D/vulnscout.dataset.json \
     --recorded measurements/council_runs/gpu-full.report.txt
 python measurements/council_eval score --dataset $D/vulnscout.dataset.json \
     --replies $Q.run1.replies.jsonl $L.run2.replies.jsonl
+python measurements/council_eval grades --dataset $D/vulnscout.dataset.json \
+    --replies $Q.run1.replies.jsonl $L.run2.replies.jsonl
 python measurements/council_eval compare --first $Q.run1.replies.jsonl --second $Q.run3.replies.jsonl
 python measurements/council_eval quoting --dataset $D/vulnscout.dataset.json \
     --replies $Q.run1.replies.jsonl $L.run2.replies.jsonl
@@ -106,8 +110,9 @@ python measurements/council_eval values --dataset $D/vulnscout.dataset.json \
 ```
 
 Each prints what its `.txt` here holds. `score` on the scored pair reproduces
-`pilot.score.txt` byte for byte. An excerpt was cut with `server-log --journal`
-from `journalctl -u ollama -o short-iso` for the window in the table.
+`pilot.score.txt` byte for byte, and `grades` reproduces `pilot.grades.txt`. An
+excerpt was cut with `server-log --journal` from `journalctl -u ollama -o
+short-iso` for the window in the table.
 
 ## What it shows, and what it cannot
 
