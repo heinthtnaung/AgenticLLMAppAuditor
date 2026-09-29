@@ -231,3 +231,9 @@ reports/
 # a `.env` or a `__pycache__` that fell into the corpus.
 !measurements/rootfs/**/lib/
 !measurements/rootfs/**/var/
+
+# AI-agent working files and the report's source documents stay on this machine
+# and are never committed.
+/CLAUDE.md
+.claude/
+docs/sources/
