@@ -10,9 +10,9 @@ operator answers the approved questions. What is optional is named as absent in
 the record rather than left out or printed as a zero. Each diagram states its
 own boundary, and diagram 5 is about nothing else.
 
-`CLAUDE.md` rule 19 binds this file: after any change to how the system works —
-a new component, a changed flow, a deleted one — **the diagrams are updated in
-the same change**. A stale diagram is worse than none, because it is
+The project binds this file to one rule: after any change to how the system
+works — a new component, a changed flow, a deleted one — **the diagrams are
+updated in the same change**. A stale diagram is worse than none, because it is
 confidently wrong. A change that touches no flow says so rather than skipping in
 silence.
 
@@ -629,9 +629,8 @@ flowchart LR
     b10 --> d12
 
     subgraph REAL["Real today, but not this project's code"]
-        x1["CLAUDE.md, the binding rules"]
+        x1["The working rules and agent definitions,<br/>on the development machine, and the design<br/>brief, kept outside the repository"]
         x2["README.md, the short guide, and docs/:<br/>the full guide, setup, development,<br/>the scoring model, the council, this page"]
-        x3["Six agent definitions in .claude/agents/"]
         x4["Syft, Trivy, Ollama and a downloaded advisory DB"]
     end
 ```
@@ -684,13 +683,13 @@ no font, because the page is produced behind a proxy and opened from disk, so
 it fetches nothing. The one address on it is each advisory's own page, as a
 link a reader follows or does not. What that is not is a web application:
 nothing is served, nothing is interactive, and there is no build step and no
-JavaScript — which is the whole of `frontend-developer`'s remit, and none of it
-is written. The box is gone because a reader can open the report in a browser
-today, not because that remit is met.
+JavaScript. The box is gone because a reader can open the report in a browser
+today, not because a web application exists.
 
 The third column is there so the page is not read as claiming the rest is
-absent: the rules, the design documents and the agent definitions are written,
-and the third-party tools are installed. None of that is code this project
+absent: the documents are written, the third-party tools are installed, and the
+working rules and agent definitions exist on the development machine, with the
+design brief kept outside the repository. None of that is code this project
 wrote.
 
 What this does not show: an order of work for the middle column, because no such
@@ -701,7 +700,8 @@ note there on where an approval's time comes from.
 
 ## Keeping this page true
 
-The check is rule 19, and it is cheap to run against a change:
+The check is the rule this page opens with, and it is cheap to run against a
+change:
 
 | The change | This page |
 |---|---|

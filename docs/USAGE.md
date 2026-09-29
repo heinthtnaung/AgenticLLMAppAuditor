@@ -87,9 +87,9 @@ diff; a styling change rewrites an HTML file the whole way down, which is why
 `json` stays the format to keep.
 
 **It is a page, not an application.** Nothing is served and nothing is
-interactive; there is no JavaScript and no build step. The browser-facing half
-`frontend-developer` exists for is unwritten, and it has no box in diagram 5
-because nothing has designed it either.
+interactive; there is no JavaScript and no build step. A browser-facing
+application is unwritten, and it has no box in diagram 5 because nothing has
+designed it either.
 
 ## A manifest with no lock file is named, not counted
 

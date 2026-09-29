@@ -1,7 +1,7 @@
 """What the audit command takes.
 
 **The repository is an argument and nothing clones it.** Fetching needs the
-corporate proxy on and scanning needs it off -- `CLAUDE.md` says the two go in
+corporate proxy on and scanning needs it off -- `docs/SETUP.md` says the two go in
 opposite directions -- so a command doing both would flip that state mid-run.
 `docs/diagrams.md` already puts the advisory database's download out of band for
 the same reason, and the repository belongs on the same side of that line: the

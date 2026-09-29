@@ -250,7 +250,7 @@ flags.
 |---|---|
 | [docs/USAGE.md](docs/USAGE.md) | the full guide: every flag, output, setting and council behaviour |
 | [docs/SETUP.md](docs/SETUP.md) | prerequisites in depth, the advisory database, the proxy |
-| [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | build status, the tests and their flags, the agents, the layout |
+| [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | build status, the tests and their flags, the layout |
 | [docs/SCORING_MODEL.md](docs/SCORING_MODEL.md) | how the Organisation Risk Score is computed |
 | [docs/COUNCIL.md](docs/COUNCIL.md) | how the council works, and why |
 | [docs/diagrams.md](docs/diagrams.md) | every flow, as diagrams |

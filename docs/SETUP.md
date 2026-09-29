@@ -132,7 +132,7 @@ export NO_PROXY=localhost,127.0.0.1 no_proxy=localhost,127.0.0.1
 
 Without it, `urllib` sends loopback requests to the proxy, which answers 502.
 The failure reads as the local service being down, which sends you looking in
-the wrong place. `CLAUDE.md` carries the same note.
+the wrong place.
 
 **This project and Ollama's own command line need none of it.** `audit`, the
 live test and the measurement scripts reach Ollama through

@@ -1,7 +1,7 @@
 # Working on the auditor
 
-What is built, how the tests run, who works on what, and where everything is.
-[The README](../README.md) is for running it; `CLAUDE.md` is the binding rules.
+What is built, how the tests run, and where everything is.
+[The README](../README.md) is for running it.
 
 ## Status
 
@@ -80,36 +80,23 @@ root, the tests that provoke a permission refusal skip too.
 
 ## Working on it
 
-`CLAUDE.md` is binding. Work that breaks one of its rules is not done. Read it
-before writing anything; it is short.
-
-Six agents are defined in `.claude/agents/`:
-
-| Agent | For |
-|---|---|
-| `python-developer` | the deterministic half — parsers, data models, CLI, the scoring engine |
-| `ai-engineer` | prompts, the Ollama client, parsing model replies, measuring whether a model is any good |
-| `frontend-developer` | the browser-facing JavaScript — components, state, styling, the build |
-| `tester` | writes tests, runs the suite, reproduces bugs |
-| `technical-writer` | the README, `docs/*.md`, docstrings, design records |
-| `judge` | reviews finished work against `CLAUDE.md`; read-only, and it never edits |
-
-Where an agent's instructions disagree with `docs/SCORING_MODEL.md`, the
-design document wins.
+The working rules and agent definitions this project is developed with stay on
+the development machine, and the design brief `docs/SCORING_MODEL.md` was read
+from is kept outside this repository. `CLAUDE.md`, `.claude/` and
+`docs/sources/`, the report's source documents, are in `.gitignore`, so a clone
+has none of them. Where any other instruction disagrees with
+`docs/SCORING_MODEL.md`, the design document wins.
 
 ## Repository layout
 
 ```text
 .
-├── CLAUDE.md                 the binding rules
 ├── README.md                 the short guide
 ├── LICENSE                   MIT
 ├── .gitignore
 ├── pytest.ini                src on the path, tests under tests/
 ├── pyproject.toml            the package, and the `audit` command
 ├── requirements.txt          pytest; the runtime is standard library
-├── .claude/
-│   └── agents/               six agent definitions
 ├── measurements/             the corpus and council runs behind cited figures
 ├── docs/
 │   ├── USAGE.md              the full guide: every flag, output and setting
@@ -117,8 +104,7 @@ design document wins.
 │   ├── DEVELOPMENT.md        this file
 │   ├── SCORING_MODEL.md      the Organisation Risk Score
 │   ├── COUNCIL.md            the assessor council
-│   ├── diagrams.md           every flow, as diagrams
-│   └── sources/              the two documents the design was read from
+│   └── diagrams.md           every flow, as diagrams
 ├── src/
 │   ├── cli/                  arguments, preflight, the audit order, the council scope, the report files, the exit code
 │   ├── council/              the roster, redaction, the providers, the chairman

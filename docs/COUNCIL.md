@@ -59,12 +59,13 @@ vectors came from.
 exact rate moves with a different corpus; that the disagreement is widespread
 does not.
 
-The source notes sketch a ladder: a small local model, then a larger one, then
-a cloud one, each asked whether the published scores align. Two rungs of it are
-built, both on this machine: the council, then one larger local model asked only
-what the council left open ("Escalation", below). **The cloud rung is excluded,
-not deferred**: by the project's rule escalation stays local, so a hosted model
-takes part only as an ordinary member of the roster, opted in like any other.
+The project's source notes, kept outside this repository, sketch a ladder: a
+small local model, then a larger one, then a cloud one, each asked whether the
+published scores align. Two rungs of it are built, both on this machine: the
+council, then one larger local model asked only what the council left open
+("Escalation", below). **The cloud rung is excluded, not deferred**: by the
+project's rule escalation stays local, so a hosted model takes part only as an
+ordinary member of the roster, opted in like any other.
 
 ## What the council decides, and what it does not
 

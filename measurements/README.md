@@ -154,8 +154,8 @@ modification time, the recorder's included.
 
 | When | What | Whose record |
 |---|---|---|
-| 19:47:51 | the last edit to the recorder's docstrings, during `gpu-scoped` (launched 19:46:18) and before `gpu-full` launched at 19:48:13 | `python-developer`'s own report of the edit |
-| 19:56:50 | the recorder's last write, after `gpu-full` ended at 19:55:16 | its modification time, read by the judge before the commits |
+| 19:47:51 | the last edit to the recorder's docstrings, during `gpu-scoped` (launched 19:46:18) and before `gpu-full` launched at 19:48:13 | the developing agent's own report of the edit |
+| 19:56:50 | the recorder's last write, after `gpu-full` ended at 19:55:16 | its modification time, read by the reviewing agent before the commits |
 | — | that write changed the usage example from `gemma4:latest` to `llama3.2:latest`, held back until the recording was done | the session's record, not a file time |
 
 **The tool did not time any run:** `src/` reads no clock. The start and end are
@@ -195,10 +195,10 @@ first three are the files `gpu-full` launched with beyond `gpu-scoped`'s, so
 `gpu-scoped` ran them as `4111b95` holds them; neither provenance file names
 the last two, so both runs did. In each case that is `061361f`'s code.
 
-Everything else depends on the judge's reading of modification times before
-the commits, which cannot be repeated: every `src/` file changed after the 19:46:18
-launch matched `061361f` once docstrings were removed, and every other modified
-file was last written before the launch.
+Everything else depends on the reviewing agent's reading of modification times
+before the commits, which cannot be repeated: every `src/` file changed after
+the 19:46:18 launch matched `061361f` once docstrings were removed, and every
+other modified file was last written before the launch.
 
 **The GPU baseline is faster, and no single change is why.** A full run took
 7 min 3 s against 71 min 39 s, and a scoped one 1 min 54 s against 20 min 57 s,
