@@ -1,4 +1,4 @@
-"""What the council did, on the page: which advisories, and what came of each.
+"""What the council did, on its tab: which advisories, and what came of each.
 
 Which metrics a reader is shown is decided here; what one of them looks like
 opened is `report.html_metric`. The sentences this shares with the terminal
@@ -7,90 +7,78 @@ differently.
 
 **Settled and unsettled are read differently.** Agreement is most of the page and
 nobody reads it, so the settled metrics are counted; the rest are disclosed one
-`<details>` each, which costs no JavaScript.
+`<details class="metric">` each. A toolbar opens or closes them all at once;
+without JavaScript each still opens on its own, and with the script, printing
+opens every one.
 
-**The settled rest is counted by what settled it.** Only a settled ruling carries
-a basis -- `src/council/ruling.py` puts it on `SettledMetric` and nowhere else --
-so a contested metric's disclosure has no why to show and the counting line is
-where the chairman's own words belong. A metric where it overruled a dissenter
-reads nothing like one nobody argued about, and a bare `settled` says neither.
-
-**A run one member answered says so.** `docs/COUNCIL.md` marks it single-assessor
-so no reader takes council-grade confidence from one model, and a page that
-dropped the mark leaves a council of one looking like a council of two.
-
-**And the findings it was never put to are named, with the reason.** A scoped run
-assesses the findings whose sources do not settle them; a page that simply left
-the rest out would say no council had run on them, which is a different and false
-thing.
+**A run one member answered says so**, and **the findings it was never put to are
+named, with the reason**: a scoped run assesses only the findings whose sources do
+not settle them, and a page that dropped the rest would say no council had run on
+them.
 """
 
 from collections import Counter
 
 from report.council_beside import figure_of
 from report.council_record import (
-    CouncilAssessment,
-    CouncilNotAsked,
-    CouncilWithoutVector,
-    MetricRuling,
-    council_left_open,
+    CouncilAssessment, CouncilNotAsked, CouncilWithoutVector, MetricRuling, council_left_open,
     was_assessed,
 )
 from report.council_passed_over import PassedOver, grouped_by_reason
 from report.council_words import (
     NOT_ASKED, NO_VECTOR, SETTLED, could_not_settle, counted, escalation_named, metrics_settled,
-    models_named, uncross_checked,
+    uncross_checked,
 )
-from report.html_layout import figure_chip, listing, section, separated, tag, text
+from report.html_filters import empty_line, search_box, toggle_all_button, toolbar
+from report.html_layout import empty_note, figure_chip, listing, panel_head, separated, tag, text
 from report.html_metric import metric_details
+from report.html_vector import vector_markup
 from report.record import Report
 
+COUNCIL_LIST = "council-list"
+NO_COUNCIL = "No council ran on this audit."
+NO_MATCH = "No advisory matches."
 COUNCIL_LEDE = (
     "What the assessor council settled, and what it could not. Every metric the chairman "
     "could not settle opens to each member's answer, the quotation behind it in full, and "
     "whether that quotation was found in the advisory."
 )
 
-def council_section(report: Report) -> str:
-    """Say what the council assessed, what it could not settle, and what it was never put to."""
-    # Four states a reader has to tell apart: no council ran, which is this
-    # section being absent and the absence named under `Not assessed`; a council
-    # settled a vector; a council ran and could not; and a finding it was never
-    # put to, which is the one a scoped run would otherwise drop in silence.
+
+def council_panel(report: Report) -> str:
+    """Give the Council tab: what it settled, what it could not, and what it was never put to."""
     if not report.council:
-        return ""
+        return panel_head("Council", COUNCIL_LEDE) + empty_note(NO_COUNCIL)
     outcomes = [report.council[one] for one in sorted(report.council)]
     assessed = [one for one in outcomes if was_assessed(one)]
-    body = listing([council_entry(one) for one in assessed], "council") if assessed else ""
     passed = [one for one in outcomes if not was_assessed(one)]
+    head = panel_head(f"Council ({len(assessed)})", COUNCIL_LEDE)
+    named = escalation_lines(report)
+    cards = "".join(council_card(one) for one in assessed) + empty_line(NO_MATCH)
+    host = f'<div id="{COUNCIL_LIST}" class="cards">{cards}</div>'
+    return head + council_toolbar() + named + host + passed_over(passed)
+
+
+
+def council_toolbar() -> str:
+    """Give the bar that opens or closes every unsettled metric and searches the cards."""
+    toggle = toggle_all_button(COUNCIL_LIST, "Expand all metrics", "Collapse all metrics")
+    return toolbar(COUNCIL_LIST, toggle + search_box("Search the council's advisories"))
+
+
+def escalation_lines(report: Report) -> str:
+    """Say which model the metrics the council left open went to, or that none was named."""
     local = report.provenance.local_models
-    named = "".join(
-        tag("p", text(one), "escalation-model") for one in escalation_named(local)
-    ) + "".join(tag("p", text(one), "models") for one in models_named(local))
-    return section(f"Council ({len(assessed)})", COUNCIL_LEDE, named + body + passed_over(passed))
+    return "".join(tag("p", text(one), "escalation-model") for one in escalation_named(local))
 
 
-def passed_over(passed: list[CouncilNotAsked]) -> str:
-    """Name the findings the council was not put to, grouped by the reason it was not."""
-    if not passed:
-        return ""
-    headed = tag("p", text(f"{counted(len(passed), 'finding')} {NOT_ASKED}"), "not-asked")
-    rows = [reason_row(one) for one in grouped_by_reason(passed)]
-    return headed + listing(rows, "not-asked")
-
-
-def reason_row(group: PassedOver) -> str:
-    """Give one reason findings were passed over, and name every finding it covers."""
-    named = tag("code", text(", ".join(group.advisory_ids)))
-    return tag("span", text(group.because), "absence-why") + named
-
-
-def council_entry(outcome: CouncilAssessment | CouncilWithoutVector) -> str:
-    """Give one advisory: what the council made of it, then the metrics it left open."""
-    # An escalated metric is opened whatever came of it: the council did not settle it.
+def council_card(outcome: CouncilAssessment | CouncilWithoutVector) -> str:
+    """Give one advisory as a linkable card: outcome, settled count, then open metrics."""
     unsettled = [one for one in outcome.rulings if council_left_open(one)]
     settled = [one for one in outcome.rulings if not council_left_open(one)]
-    return outcome_line(outcome) + settled_note(settled) + open_metrics(unsettled)
+    body = outcome_line(outcome) + settled_note(settled) + open_metrics(unsettled)
+    ident = text(outcome.advisory_id)
+    return f'<article class="card" id="council-{ident}" data-tags="">{body}</article>'
 
 
 def outcome_line(outcome: CouncilAssessment | CouncilWithoutVector) -> str:
@@ -103,7 +91,7 @@ def outcome_line(outcome: CouncilAssessment | CouncilWithoutVector) -> str:
 def headline(outcome: CouncilAssessment | CouncilWithoutVector) -> str:
     """Say whether the council handed over a vector, or what stopped it."""
     if isinstance(outcome, CouncilAssessment):
-        vector = tag("code", text(outcome.vector))
+        vector = vector_markup(outcome.vector)
         return separated([text(SETTLED), vector, figure_chip(figure_of(outcome))])
     return separated([text(NO_VECTOR), text(could_not_settle(outcome))])
 
@@ -136,3 +124,18 @@ def basis_row(basis: str, count: int) -> str:
 def open_metrics(unsettled: list[MetricRuling]) -> str:
     """Open one disclosure per metric the chairman could not settle."""
     return "".join(metric_details(one) for one in unsettled)
+
+
+def passed_over(passed: list[CouncilNotAsked]) -> str:
+    """Name the findings the council was not put to, grouped by the reason it was not."""
+    if not passed:
+        return ""
+    headed = tag("p", text(f"{counted(len(passed), 'finding')} {NOT_ASKED}"), "not-asked")
+    rows = [reason_row(one) for one in grouped_by_reason(passed)]
+    return headed + listing(rows, "not-asked")
+
+
+def reason_row(group: PassedOver) -> str:
+    """Give one reason findings were passed over, and name every finding it covers."""
+    named = tag("code", text(", ".join(group.advisory_ids)))
+    return tag("span", text(group.because), "absence-why") + named

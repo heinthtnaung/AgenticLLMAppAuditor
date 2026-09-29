@@ -11,7 +11,7 @@ from report.council_words import (
     outcome_said,
     why_unsettled,
 )
-from report.html_council import council_section
+from report.html_council import council_panel
 from report.model_identity import OllamaVersion
 from report.provenance import LocalModels
 from report.record import build_report
@@ -54,7 +54,7 @@ def council_pages(escalation_model: str | None, outcome) -> tuple[str, str]:
     provenance = replace(PROVENANCE, local_models=asked_locally(escalation_model))
     raised = (finding(component(), advisory_id=outcome.advisory_id),)
     report = build_report(provenance, catalogue(component()), raised, {}, (outcome,))
-    return council_block(report), council_section(report)
+    return council_block(report), council_panel(report)
 
 
 def test_a_run_naming_no_escalation_model_says_so_on_both_pages():

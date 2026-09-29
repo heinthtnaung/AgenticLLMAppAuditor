@@ -1,0 +1,110 @@
+/* Tokens and both themes, the base reset, and the type and helper rules. */
+:root {
+  color-scheme: light dark;
+  --page-bg: #f4f6f9;
+  --page-fg: #14181d;
+  --muted-fg: #5a626c;
+  --card-bg: #ffffff;
+  --card-border: #dbe0e6;
+  --rule: #e9ecf1;
+  --chip-bg: #eef1f5;
+  --chip-border: #ccd3db;
+  --code-bg: #f2f4f7;
+  --accent-fg: #1a5fb4;
+  --masthead-bg: #ffffff;
+  --tabbar-bg: #ffffff;
+  --alarm-bg: #fdecea;
+  --alarm-fg: #7f1d12;
+  --alarm-border: #f0b4ab;
+  --ok-bg: #e6f4ec;
+  --ok-fg: #12603c;
+  --ok-border: #a5d9bd;
+  --warn-bg: #fbf1d8;
+  --warn-fg: #6b5210;
+  --note-bg: #f1f4f8;
+  --note-border: #c6cedb;
+  --callout-bg: #eef2fc;
+  --callout-border: #d2dcf3;
+  --flash-bg: #fff3c4;
+  --diff-bg: #fbe6c8;
+  --diff-fg: #7a4a10;
+  --shadow: 0 1px 2px rgba(20, 24, 29, .06);
+  --band-critical-bg: #8c1d13; --band-critical-fg: #ffffff;
+  --band-high-bg: #a8551b;     --band-high-fg: #ffffff;
+  --band-medium-bg: #74600f;   --band-medium-fg: #ffffff;
+  --band-low-bg: #1f6b45;      --band-low-fg: #ffffff;
+  --band-none-bg: #4c545e;     --band-none-fg: #ffffff;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --page-bg: #101318;
+    --page-fg: #e6e9ee;
+    --muted-fg: #9aa3ae;
+    --card-bg: #1a1f26;
+    --card-border: #2c333d;
+    --rule: #262e38;
+    --chip-bg: #222932;
+    --chip-border: #39424e;
+    --code-bg: #1e242c;
+    --accent-fg: #7ab0f0;
+    --masthead-bg: #161b21;
+    --tabbar-bg: #161b21;
+    --alarm-bg: #3a1a16;
+    --alarm-fg: #ffb4a8;
+    --alarm-border: #6b2b22;
+    --ok-bg: #12301f;
+    --ok-fg: #a5d9bd;
+    --ok-border: #2f5c43;
+    --warn-bg: #33290f;
+    --warn-fg: #e3d194;
+    --note-bg: #1c222a;
+    --note-border: #333c47;
+    --callout-bg: #191f2e;
+    --callout-border: #2e3a54;
+    --flash-bg: #4a3f13;
+    --diff-bg: #5a4413;
+    --diff-fg: #f2d9a8;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3);
+    --band-critical-bg: #f0a79b; --band-critical-fg: #2a0b06;
+    --band-high-bg: #f0c39a;     --band-high-fg: #2e1705;
+    --band-medium-bg: #e3d194;   --band-medium-fg: #2b2405;
+    --band-low-bg: #a5d9bd;      --band-low-fg: #08301d;
+    --band-none-bg: #c2c9d2;     --band-none-fg: #1a1f26;
+  }
+}
+
+.band-critical { --band-bg: var(--band-critical-bg); --band-fg: var(--band-critical-fg); }
+.band-high     { --band-bg: var(--band-high-bg);     --band-fg: var(--band-high-fg); }
+.band-medium   { --band-bg: var(--band-medium-bg);   --band-fg: var(--band-medium-fg); }
+.band-low      { --band-bg: var(--band-low-bg);      --band-fg: var(--band-low-fg); }
+.band-none     { --band-bg: var(--band-none-bg);     --band-fg: var(--band-none-fg); }
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  margin: 0; background: var(--page-bg); color: var(--page-fg);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 15px; line-height: 1.5;
+}
+.wrap { max-width: 75rem; margin: 0 auto; padding: 0 1.25rem; }
+a { color: var(--accent-fg); }
+h1 { font-size: 1.5rem; margin: 0 0 .2rem; }
+h2 { font-size: 1.05rem; margin: 0 0 .4rem; }
+h3 { font-size: 1rem; font-weight: 600; margin: 0; }
+h4 { font-size: .92rem; font-weight: 600; margin: 0; }
+p { margin: 0 0 .5rem; }
+ul { list-style: none; margin: 0; padding: 0; }
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .82em;
+  background: var(--code-bg); border: 1px solid var(--rule); border-radius: 4px;
+  padding: .05rem .3rem; overflow-wrap: anywhere;
+}
+.muted { color: var(--muted-fg); }
+.small { font-size: .85em; }
+.fine { color: var(--muted-fg); font-size: .9em; }
+.count { color: var(--muted-fg); font-size: .9em; margin: .2rem 0; }
+.eyebrow {
+  text-transform: uppercase; letter-spacing: .08em; font-size: .72rem;
+  font-weight: 600; color: var(--muted-fg); margin: 0 0 .15rem;
+}
+.separator { color: var(--muted-fg); margin: 0 .4rem; }

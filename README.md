@@ -117,7 +117,8 @@ audit fetched/vulnscout --format json
 ```
 
 Prints the JSON record on stdout (`--format html` prints the page). All three
-files are saved either way.
+files are saved either way. The HTML is one self-contained, tabbed page — its
+stylesheet and script inlined — that opens in a browser offline.
 
 ### Score it against your environment
 

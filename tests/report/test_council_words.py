@@ -43,7 +43,7 @@ from report.council_words import (
     uncross_checked,
     who,
 )
-from report.html_council import council_section
+from report.html_council import council_panel
 from report.html_metric import member_row
 from report.record import build_report
 from report.text_council import council_block
@@ -153,7 +153,7 @@ def test_both_renderings_word_one_record_the_same_way():
         AWKWARD_QUOTE, "7 metrics settled", "could not settle AV", "high confidence",
     ]
     # Unescaped, because the page is compared on the text a reader sees.
-    page = html.unescape(council_section(report))
+    page = html.unescape(council_panel(report))
     terminal = " ".join(council_block(report).split())
     assert [one for one in said if one not in page] == []
     assert [one for one in said if one not in terminal] == []
@@ -167,7 +167,7 @@ def test_a_vector_resting_on_one_members_quotations_is_marked_on_both_pages():
     assert uncross_checked(lone) == [ONE_QUOTATION_EACH]
     one = finding(DJANGO, advisory_id=lone.advisory_id)
     report = build_report(PROVENANCE, catalogue(DJANGO), (one,), {}, (lone,))
-    assert ONE_QUOTATION_EACH in html.unescape(council_section(report))
+    assert ONE_QUOTATION_EACH in html.unescape(council_panel(report))
     assert ONE_QUOTATION_EACH in " ".join(council_block(report).split())
 
 

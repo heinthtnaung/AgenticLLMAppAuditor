@@ -22,7 +22,7 @@ catalogued nothing.
 | `src/scoring/` | built | the approved question library, per-question weights, categories clamped then weighted, the band, the two severity floors that can raise it, and the version naming those rules |
 | `src/council/` | built | the roster and its `egress` gate, redaction, the prompt, a provider registry holding one local Ollama client, the quotation check, the order check, the chairman, the runner, escalation of what the council leaves open to one larger local model, and the explainer that says why a finding's sources differ |
 | `src/organisation/` | built | the answer file, the approval record, the rule for which findings need approval, and one risk score per published source |
-| `src/report/` | built | the record every run produces, and its three renderings: a terminal report, the JSON audit artefact, and one self-contained HTML page |
+| `src/report/` | built | the record every run produces, and its three renderings: a terminal report, the JSON audit artefact, and one self-contained, tabbed HTML page with its stylesheet and script inlined |
 | `src/cli/` | built | the arguments, the preflight refusals, the order the packages run in, which findings the council is put to, the server version and model digests a council run records, the progress it prints to stderr, the three report files in `reports/`, and the exit code |
 | question selector | design | every approved question is asked, rather than the few a CVE's prerequisites call for |
 | answer validation | design | no model reads the answers back for gaps or contradictions |

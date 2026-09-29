@@ -66,6 +66,34 @@ TEMPORAL_METRICS: tuple[Metric, ...] = (
     Metric(REPORT_CONFIDENCE, "Report Confidence", ("X", "C", "R", "U")),
 )
 
+# The name in words of every value of every readable metric, keyed by abbreviation
+# then by value letter, from the CVSS v3.1 specification (sections 2 and 3). A
+# report names a value -- "Attack Vector: Network" -- and reads it from here, so the
+# vocabulary is stated once rather than restated wherever a vector is rendered. Each
+# inner mapping lists the same letters, in the same order, as the metric's `values`;
+# `test_metrics_value_names.py` fails loudly the day the two drift.
+VALUE_NAMES: dict[str, dict[str, str]] = {
+    ATTACK_VECTOR: {"N": "Network", "A": "Adjacent", "L": "Local", "P": "Physical"},
+    ATTACK_COMPLEXITY: {"L": "Low", "H": "High"},
+    PRIVILEGES_REQUIRED: {"N": "None", "L": "Low", "H": "High"},
+    USER_INTERACTION: {"N": "None", "R": "Required"},
+    SCOPE: {SCOPE_UNCHANGED: "Unchanged", SCOPE_CHANGED: "Changed"},
+    CONFIDENTIALITY: {"H": "High", "L": "Low", "N": "None"},
+    INTEGRITY: {"H": "High", "L": "Low", "N": "None"},
+    AVAILABILITY: {"H": "High", "L": "Low", "N": "None"},
+    EXPLOIT_CODE_MATURITY: {
+        "X": "Not Defined", "H": "High", "F": "Functional",
+        "P": "Proof-of-Concept", "U": "Unproven",
+    },
+    REMEDIATION_LEVEL: {
+        "X": "Not Defined", "U": "Unavailable", "W": "Workaround",
+        "T": "Temporary Fix", "O": "Official Fix",
+    },
+    REPORT_CONFIDENCE: {
+        "X": "Not Defined", "C": "Confirmed", "R": "Reasonable", "U": "Unknown",
+    },
+}
+
 ENVIRONMENTAL_METRICS: tuple[str, ...] = (
     "CR", "IR", "AR", "MAV", "MAC", "MPR", "MUI", "MS", "MC", "MI", "MA",
 )

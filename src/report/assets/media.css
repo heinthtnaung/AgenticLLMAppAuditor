@@ -1,0 +1,26 @@
+/* Narrow-screen and print rules. */
+@media (max-width: 52rem) {
+  .split { grid-template-columns: 1fr; }
+}
+@media (max-width: 34rem) {
+  .scales { grid-template-columns: 1fr; }
+  .purls { columns: 1; }
+  .member-name, .answer-id, .answer-value { min-width: 0; }
+  table.data.rt thead { display: none; }
+  table.data.rt tbody tr { display: block; padding: .5rem .2rem; }
+  table.data.rt td {
+    display: grid; grid-template-columns: 7rem 1fr; gap: .5rem;
+    border-top: 0; padding: .2rem .5rem; align-items: baseline;
+  }
+  table.data.rt td::before {
+    content: attr(data-label); font-size: .72rem;
+    text-transform: uppercase; letter-spacing: .05em; color: var(--muted-fg);
+  }
+  /* A pill in the value column hugs its text rather than stretching the column. */
+  table.data.rt td > .badge { justify-self: start; }
+  table.data.rt tbody tr + tr { border-top: 1px solid var(--rule); }
+}
+@media print {
+  .tabbar, .toolbar { display: none; }
+  .panel { display: block !important; }
+}

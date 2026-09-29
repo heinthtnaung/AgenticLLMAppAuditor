@@ -1,4 +1,4 @@
-"""Guards on the markup the page shares: escaping, and a number that never changes.
+"""Guards on the markup the page shares: escaping, a number that never changes, chips and cells.
 
 Everything a scanner read reaches the page through `text`, so a summary carrying
 a `<` cannot close a tag; and every figure reaches it through `number`, which
@@ -6,7 +6,9 @@ formats and refuses rather than rounding. Both are one function precisely so
 there is one place to hold.
 """
 
-from report.html_layout import listing, number, scored_chip, section, separated, tag, text
+from report.html_layout import (
+    badge, cell, group, jump, listing, mini_chip, number, scored_chip, separated, tag, text,
+)
 
 CLOSING_TAG = "</style><script>alert(1)</script>"
 
@@ -33,8 +35,6 @@ def test_a_number_is_written_exactly_as_the_record_carries_it():
 
 
 def test_a_number_that_is_not_a_number_is_refused_rather_than_printed():
-    # The refusal is the guard against a figure arriving as prose somebody
-    # formatted elsewhere, which would be a second place a score is written.
     for wrong in ("7.5", None, [7.5]):
         try:
             number(wrong)
@@ -53,14 +53,15 @@ def test_a_boolean_is_refused_because_true_is_not_the_figure_one():
     raise AssertionError("True was rendered as a figure instead of refused")
 
 
-def test_a_section_with_nothing_in_it_is_not_put_on_the_page():
-    assert section("Council", "a lede", "") == ""
+def test_a_group_with_nothing_in_it_is_not_put_on_the_page():
+    assert group("Council", "a lede", "") == ""
 
 
-def test_a_section_carries_its_title_and_the_line_saying_what_it_holds():
-    rendered = section("Council", "what it settled", "<p>body</p>")
+def test_a_group_carries_its_title_and_the_line_saying_what_it_holds():
+    rendered = group("Council", "what it settled", "<p>body</p>")
     assert "<h2>Council</h2>" in rendered
-    assert '<p class="lede">what it settled</p>' in rendered
+    assert '<p class="fine">what it settled</p>' in rendered
+    assert rendered.endswith("<p>body</p>")
 
 
 def test_a_list_wraps_each_item_so_no_caller_loops_inside_a_loop():
@@ -78,6 +79,27 @@ def test_a_chip_says_which_scale_it_is_on_as_well_as_which_band():
     assert '<span class="scale">cvss</span>' in chip
     assert '<span class="value">9.8</span>' in chip
     assert 'class="cvss band-critical"' in chip
+
+
+def test_a_mini_chip_carries_the_source_the_value_and_the_band_it_lands_in():
+    # In a table cell a finding shows one mini per source, so the source rides on
+    # the chip and the CVSS scale stays a square while the org scale is a pill.
+    chip = mini_chip("ghsa", "6.5", "Medium", "cvss")
+    assert '<span class="src">ghsa</span>' in chip
+    assert '<span class="value">6.5</span>' in chip
+    assert 'class="mini cvss band-medium"' in chip
+
+
+def test_a_badge_carries_its_tone_so_an_alarm_reads_as_one():
+    assert badge("Disagree", "alarm") == '<span class="badge badge-alarm">Disagree</span>'
+
+
+def test_a_cell_is_labelled_so_a_phone_can_read_the_row_stacked():
+    assert cell("CVSS", "<b>x</b>") == '<td data-label="CVSS"><b>x</b></td>'
+
+
+def test_a_jump_links_to_another_place_on_this_page_and_never_off_it():
+    assert jump("risk/CVE-1", "Org risk") == '<a class="goto" href="#risk/CVE-1">Org risk</a>'
 
 
 def test_an_element_with_no_class_is_written_without_an_empty_one():

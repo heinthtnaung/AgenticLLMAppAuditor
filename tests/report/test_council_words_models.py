@@ -4,7 +4,7 @@ from dataclasses import replace
 
 from council_runs import DISSENTING, council_ran
 from report.council_words import UNKNOWN_DIGEST, UNKNOWN_VERSION, models_named
-from report.html_council import council_section
+from report.html_report import as_html
 from report.model_identity import (
     ESCALATION_ROLE,
     MEMBER_ROLE,
@@ -32,12 +32,12 @@ SAID = "models: qwen2.5:7b 845dbda0ea48, gemma4:latest (escalation) digest unkno
 
 
 def pages(local: LocalModels) -> tuple[str, str]:
-    """Render one council record's section on the terminal and on the web page."""
+    """Render one council record on the terminal, and the whole web page it lands on."""
     outcome = council_ran(**DISSENTING)
     raised = (finding(component(), advisory_id=outcome.advisory_id),)
     report = build_report(replace(PROVENANCE, local_models=local), catalogue(component()), raised,
                           {}, (outcome,))
-    return council_block(report), council_section(report)
+    return council_block(report), as_html(report)
 
 
 def test_each_model_is_named_with_the_start_of_its_digest_and_the_server_s_version():
@@ -45,7 +45,9 @@ def test_each_model_is_named_with_the_start_of_its_digest_and_the_server_s_versi
     assert UNKNOWN_DIGEST in SAID
 
 
-def test_both_pages_carry_the_line_beside_the_council():
+def test_both_pages_carry_the_models_line_the_redesign_puts_in_the_header_meta():
+    # The terminal keeps it beside the council; the web page moves it to the
+    # masthead meta, where the run's other provenance is.
     assert all(SAID in page for page in pages(ASKED))
 
 

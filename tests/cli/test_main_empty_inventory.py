@@ -53,4 +53,4 @@ def test_the_page_names_the_empty_inventory_under_not_assessed(monkeypatch, tmp_
         f'<span class="absence-what">{html.escape(COMPONENT_INVENTORY)}</span> '
         f'<span class="absence-why">{html.escape(NOTHING_CATALOGUED)}</span>'
     )
-    assert named in written(tmp_path, "html").split("<h2>Not assessed</h2>")[1]
+    assert named in written(tmp_path, "html").split('<p class="eyebrow">Not assessed</p>')[1]

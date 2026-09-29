@@ -602,7 +602,7 @@ flowchart LR
         b4["src/cvss<br/>vector parser, metric vocabulary,<br/>Base score equations"]
         b5["src/findings<br/>the join, every source's score apart"]
         b7["src/council<br/>roster and the egress gate, redaction,<br/>prompt, provider registry, chairman,<br/>the local server's settings,<br/>the members --council runs,<br/>the order check, escalation<br/>to one local model, and the explainer"]
-        b8["src/report<br/>the record, and three renderings of it:<br/>text, JSON, one self-contained HTML page"]
+        b8["src/report<br/>the record, and three renderings of it:<br/>text, JSON, one self-contained tabbed HTML<br/>page, its stylesheet and script inlined"]
         b9["src/cli<br/>arguments, preflight, the audit order,<br/>the council's scope and its record,<br/>the two reads of the model server it makes,<br/>the stderr progress stream, the report files<br/>in reports/, and the exit code a<br/>pipeline reads"]
         b6["src/scoring<br/>the approved question library, categories<br/>clamped then weighted, the band,<br/>the severity floors on it<br/>and the version naming those rules"]
         b10["src/organisation<br/>the answer file, the approval record,<br/>the rule for what needs approval,<br/>one score per source"]
@@ -695,13 +695,14 @@ to guard does not exist. That is why the hosted provider client keeps a box of
 its own with an edge back into the registry it would be registered in.
 
 **The web page left the middle column.** The `src/report/html_*.py` modules
-render the record as one HTML file with the stylesheet inlined, no script and
-no font, because the page is produced behind a proxy and opened from disk, so
-it fetches nothing. The one address on it is each advisory's own page, as a
+render the record as one tabbed HTML file with the stylesheet and script inlined
+and no font, because the page is produced behind a proxy and opened from disk,
+so it fetches nothing. The one address on it is each advisory's own page, as a
 link a reader follows or does not. What that is not is a web application:
-nothing is served, nothing is interactive, and there is no build step and no
-JavaScript. The box is gone because a reader can open the report in a browser
-today, not because a web application exists.
+nothing is served, there is no build step, and the one inline script ships as it
+is written, not bundled, with the page still readable when it does not run. The
+box is gone because a reader can open the report in a browser today, not because
+a web application exists.
 
 The third column is there so the page is not read as claiming the rest is
 absent: the documents are written, the third-party tools are installed, and the

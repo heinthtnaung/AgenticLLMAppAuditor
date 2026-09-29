@@ -23,3 +23,15 @@ audit = "cli.main:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+# The HTML report inlines its stylesheet and script, read at render time from
+# this folder (`report.html_assets`). Ship them so an installed copy renders the
+# same self-contained page a source checkout does.
+[tool.setuptools.package-data]
+report = [
+    "assets/tokens.css",
+    "assets/layout.css",
+    "assets/components.css",
+    "assets/media.css",
+    "assets/report.js",
+]
