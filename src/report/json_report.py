@@ -24,6 +24,7 @@ from report.disagreement import (
 )
 from report.json_council import council_of
 from report.json_explanation import explanation_of
+from report.json_local_models import local_models_of
 from report.json_risk import approval_of, risk_of
 from report.json_secrets import secrets_of
 from report.provenance import AdvisoryDatabase
@@ -67,7 +68,7 @@ def run_of(report: Report) -> dict[str, Any]:
         # Which rules weighed and banded the Organisation Risk Score; `scoring.version`.
         "scoring_rules_version": provenance.scoring_rules_version,
         # The window and the timeout can change a result, so they sit beside the pinning.
-        "local_models": vars(provenance.local_models) if provenance.local_models else None,
+        "local_models": local_models_of(provenance.local_models),
         "component_count": report.component_count,
         "finding_count": len(report.findings),
         # Readable sources only: a vector the calculator refused is not counted

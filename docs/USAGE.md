@@ -491,6 +491,19 @@ server, window and timeout a council run used, beside those three,
 `escalation_model`, the model named or `null`. It is `null` itself for a run
 with no member.
 
+**It also names the server, and the weights it held under each tag when the run
+began.** A tag such as `gemma4:latest` names whatever weights the server holds
+under it, and pulling again changes them without changing a word of the record.
+So a council run reads the server twice before any model is asked, `/api/tags`
+and `/api/version`, through the same no-proxy client every call uses, at the
+settings' server, which `council.settings` holds to loopback. Each read waits
+`READ_TIMEOUT_SECONDS`, 30 s, not the generation timeout, since both come before
+the scan. It records `ollama_version` once and, under `models`, each model it
+asks with its `role`, `member` or `escalation`, and its `digest`. The explainer
+is always one of those. What the server does not say is recorded as not said:
+`"known": false` and the `reason`, never a guessed value, and the audit carries
+on.
+
 **Only `AUDITOR_*` lines of `.env` are read**, so the file can hold other keys:
 every other line is passed over unparsed and never quoted. A misspelt
 `AUDITOR_*` key, a key written twice and a bad value are each refused, the value
@@ -699,6 +712,14 @@ lede on the page, is
 model, or `no escalation model named: a metric the council left open stays open`.
 It is left out only for a record that says nothing of how local models were
 asked, so every council run carries one or the other.
+
+The next line names every model the run asks, with the first 12 characters of
+its digest, and the server's version. From a run with stand-in models and a
+stand-in server listing the two members and not the escalation model:
+`models: qwen2.5:7b-instruct 845dbda0ea48, llama3.2:latest a80c4f17acd5, qwen2.5:14b (escalation) digest unknown; Ollama 0.34.3`.
+Where the server gives no digest or no version, both pages show only `digest
+unknown` or `Ollama version unknown`; the reason it gave none is in the JSON
+record alone, under `run.local_models`. The record keeps each digest whole.
 
 **A finding the council settled shows what its vector scores, answers or no.**
 Its heading line reads `settled`, the vector, and that vector's own CVSS base

@@ -27,6 +27,7 @@ APPROVAL_BLOCK = {"approver": "hein", "decision": "approved", "recorded_at": "20
 # version hardcoded in `src/` pass the very test written to forbid one.
 SYFT_VERSION = "syft-under-test"
 TRIVY_VERSION = "trivy-under-test"
+OLLAMA_VERSION = "ollama-under-test"
 
 TOTAL_LOSS = "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
 LOW_CONFIDENTIALITY = "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N"
@@ -94,10 +95,17 @@ def written_answers(directory: Path) -> Path:
     return answers
 
 
+def answering_server(url: str, timeout: float) -> dict:
+    """Answer the model server's two reads as a server that holds no model a test names."""
+    if url.endswith("/api/version"):
+        return {"version": OLLAMA_VERSION}
+    return {"models": []}
+
+
 def scanners_answering(
     monkeypatch, components=(LODASH,), advisories=None, secrets=(), trivy_report=None
 ) -> None:
-    """Answer for both scanners, so no test shells out or opens a socket.
+    """Answer for both scanners and the model server's reads, so no test opens a socket.
 
     Given `trivy_report`, Trivy answers with that document and the real parsers
     read it, as they would Trivy's own; otherwise the parsed scan is answered.
@@ -117,6 +125,7 @@ def scanners_answering(
     monkeypatch.setattr(audit.trivy_runner, "installed_version", lambda: TRIVY_VERSION)
     monkeypatch.setattr(syft_runner, "is_available", lambda: True)
     monkeypatch.setattr(trivy_runner, "is_available", lambda: True)
+    monkeypatch.setattr(audit, "get_json", answering_server)
 
 
 def explaining_nothing(monkeypatch) -> None:

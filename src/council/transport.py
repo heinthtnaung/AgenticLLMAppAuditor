@@ -1,20 +1,23 @@
 """Posting one JSON request to a model server, behind a seam a test can replace.
 
-Every call a member makes goes through `post_json`, and nothing else in the
-council opens a socket. A test passes its own function of the same shape and no
-suite ever needs a model running.
+Every call a member makes goes through `post_json`, and the two reads of the
+server a council run makes -- its version and its models' digests -- through
+`get_json`; nothing else in the council opens a socket. A test passes its own
+function of the same shape and no suite ever needs a model running.
 
 **No proxy, ever.** On a machine with a corporate proxy set, `urllib` sends a
 request for 127.0.0.1 to that proxy, which answers 502 -- a failure that reads
 exactly like the model server being down. Bypassing the proxy here fixes it for
 good, rather than each operator remembering to export NO_PROXY.
 
-**Nothing here keeps a call on loopback.** `post_json` posts to the URL it is
-handed. The guarantee lives one layer up, in `council.ollama.refuse_remote_host`,
-which is where a test holds it. The distinction is worth keeping straight
-because the proxy bypass above is right only while every caller is local: the
-hosted client `docs/COUNCIL.md` describes would need the proxy back, so it wants
-its own transport rather than this one with the rule relaxed.
+**Nothing here keeps a call on loopback.** `post_json` and `get_json` send to
+the URL they are handed. The guarantee lives one layer up:
+`council.ollama.refuse_remote_host` for a member's call, and
+`council.settings.server_of` for the two reads, whose host is always the
+settings' server. The distinction is worth keeping straight because the proxy
+bypass above is right only while every caller is local: the hosted client
+`docs/COUNCIL.md` describes would need the proxy back, so it wants its own
+transport rather than this one with the rule relaxed.
 """
 
 import json
@@ -56,8 +59,17 @@ def post_json(url: str, payload: dict[str, Any], timeout: float | None = None) -
 
     With no `timeout` given, the operator's `AUDITOR_TIMEOUT_SECONDS` is waited.
     """
+    return fetch_json(url, build_request(url, payload), timeout)
+
+
+def get_json(url: str, timeout: float) -> Any:
+    """Read one JSON document from the model server, such as its version, refusing anything else."""
+    return fetch_json(url, url, timeout)
+
+
+def fetch_json(url: str, request: urllib.request.Request | str, timeout: float | None) -> Any:
+    """Send one request around the proxy and parse the JSON that comes back, or fail saying why."""
     timeout = current_settings().timeout_seconds if timeout is None else timeout
-    request = build_request(url, payload)
     try:
         with NO_PROXY_OPENER.open(request, timeout=timeout) as response:
             body = response.read().decode("utf-8")

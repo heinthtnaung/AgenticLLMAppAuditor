@@ -39,7 +39,7 @@ from report.council_record import (
 from report.council_passed_over import PassedOver, grouped_by_reason
 from report.council_words import (
     NOT_ASKED, NO_VECTOR, SETTLED, could_not_settle, counted, escalation_named, metrics_settled,
-    uncross_checked,
+    models_named, uncross_checked,
 )
 from report.html_layout import figure_chip, listing, section, separated, tag, text
 from report.html_metric import metric_details
@@ -63,10 +63,10 @@ def council_section(report: Report) -> str:
     assessed = [one for one in outcomes if was_assessed(one)]
     body = listing([council_entry(one) for one in assessed], "council") if assessed else ""
     passed = [one for one in outcomes if not was_assessed(one)]
+    local = report.provenance.local_models
     named = "".join(
-        tag("p", text(one), "escalation-model")
-        for one in escalation_named(report.provenance.local_models)
-    )
+        tag("p", text(one), "escalation-model") for one in escalation_named(local)
+    ) + "".join(tag("p", text(one), "models") for one in models_named(local))
     return section(f"Council ({len(assessed)})", COUNCIL_LEDE, named + body + passed_over(passed))
 
 

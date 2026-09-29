@@ -10,13 +10,21 @@ from cli import audit as audit_module
 from cli.arguments import TEXT_FORMAT, Options
 from cli.audit import run_audit
 from cli.main import COULD_NOT_RUN, FOUND_SOMETHING
-from cli_samples import DATED, explaining_nothing, run_command_line, scanners_answering
+from cli_samples import (
+    DATED,
+    OLLAMA_VERSION,
+    explaining_nothing,
+    run_command_line,
+    scanners_answering,
+)
 from council import settings
 from council.settings import Settings, SettingsError, current_settings
+from report.model_identity import MEMBER_ROLE, OllamaVersion, UnknownDigest
 from report.provenance import LocalModels
 
 WIDER = Settings("gemma4:latest", "http://127.0.0.1:11434", 600.0, 16_384)
 MEMBER = ["--council-member", "small:1b"]
+NOT_LISTED = "the server lists no model named small:1b"
 
 
 def options_for(path: Path, models: tuple[str, ...] = (), from_settings: bool = False) -> Options:
@@ -61,6 +69,8 @@ def test_a_council_run_states_the_window_and_timeout_it_used_beside_the_pinning(
     assert report.provenance.local_models == LocalModels(
         server="http://127.0.0.1:11434", context_tokens=16_384, timeout_seconds=600.0,
         temperature=0, seed=11, think=False, order_check=True, escalation_model=None,
+        ollama_version=OllamaVersion(OLLAMA_VERSION),
+        models=(UnknownDigest("small:1b", MEMBER_ROLE, NOT_LISTED),),
     )
 
 
@@ -91,6 +101,10 @@ def test_the_json_record_states_the_local_models_and_null_when_none_was_asked(
         "server": "http://127.0.0.1:11434", "context_tokens": 8192, "timeout_seconds": 180.0,
         "temperature": 0, "seed": 11, "think": False, "order_check": True,
         "escalation_model": None,
+        "ollama_version": {"version": OLLAMA_VERSION, "known": True},
+        "models": [{
+            "model": "small:1b", "role": "member", "known": False, "reason": NOT_LISTED,
+        }],
     }
     assert json.loads(alone)["run"]["local_models"] is None
 

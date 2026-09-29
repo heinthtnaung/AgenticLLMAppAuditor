@@ -70,6 +70,8 @@ flowchart TD
     expl -. "one line per call" .-> err
     ctx --> rec
     asked["What was asked for<br/>an answer file, council members<br/>kept even when nothing was found"] --> rec
+    asked --> ident["If a council was named, before the scan:<br/>two reads of the model server, /api/tags then /api/version<br/>the version and each model's digest, into the record<br/>a run naming no member reads nothing"]
+    ident --> rec
     rec --> rnd["Rendered as text, as JSON,<br/>and as one HTML page"]
     rec --> apr["Which findings need approval<br/>src/organisation/approval_rule, read off the record:<br/>any source's risk band High or Critical,<br/>or published sources that disagree"]
     apr -->|"marked on each finding,<br/>counted in the summary"| rnd
@@ -123,6 +125,13 @@ are used. Each match reaches the record as a file, a line range and a rule,
 never the text it matched. A secret is something found, so a run with one exits
 `1` whatever else it found or could not read; it has no CVSS, so no score, no
 band and no council ever touches it.
+
+**A council run reads the model server before the scan.** Once members are
+named, and only then, it asks the server for its version and each model's
+digest, so the record names the weights the server held under each tag when the
+run began, even if the server is later gone (`docs/USAGE.md`). A run naming no
+member makes neither read. They come before the scan and wait a 30 s timeout,
+not the generation one, so a hung server does not hold the audit.
 
 Syft is one box because it is one call: it finds the manifests and catalogues
 them in the same pass; the walk before it feeds it nothing. The
@@ -408,7 +417,7 @@ flowchart TD
     red --> shown["The text a member sees<br/>no id, no published vector,<br/>no other member's answer"]
 
     subgraph ROSTER["The roster: n members, added and removed by the operator<br/>named by --council-member, or by AUDITOR_COUNCIL_MEMBERS<br/>for --council; that setting alone starts nothing"]
-        subgraph LOCALM["Local: Ollama on this machine<br/>server, window and timeout from AUDITOR_* settings<br/>temperature, seed and think pinned in code"]
+        subgraph LOCALM["Local: Ollama on this machine<br/>server, window and timeout from AUDITOR_* settings<br/>temperature, seed and think pinned in code<br/>the server's version and each model's digest<br/>read once per run, into the record"]
             m1["Member 1, local"]
             m2["Member 2, local"]
             mdot["... to member n"]
@@ -463,7 +472,7 @@ flowchart TD
     vec --> eng
     num --> hmn["Human approves or overrides"]
 
-    rec["Record: every member and its provider,<br/>every member skipped and why, every finding<br/>not asked and why, every guess and<br/>order-sensitive pair, what the<br/>chairman decided from, the escalation<br/>model named or that none was, what it said,<br/>and the vector or the metrics that stopped one"]
+    rec["Record: every member and its provider,<br/>every member skipped and why, every finding<br/>not asked and why, every guess and<br/>order-sensitive pair, what the<br/>chairman decided from, the escalation<br/>model named or that none was, what it said,<br/>each model's digest and the server's version,<br/>read once when the run began,<br/>and the vector or the metrics that stopped one"]
     chr -.-> rec
     eask -.-> rec
     skip -.-> rec
@@ -594,7 +603,7 @@ flowchart LR
         b5["src/findings<br/>the join, every source's score apart"]
         b7["src/council<br/>roster and the egress gate, redaction,<br/>prompt, provider registry, chairman,<br/>the local server's settings,<br/>the members --council runs,<br/>the order check, escalation<br/>to one local model, and the explainer"]
         b8["src/report<br/>the record, and three renderings of it:<br/>text, JSON, one self-contained HTML page"]
-        b9["src/cli<br/>arguments, preflight, the audit order,<br/>the council's scope and its record, the<br/>stderr progress stream, the report files<br/>in reports/, and the exit code a<br/>pipeline reads"]
+        b9["src/cli<br/>arguments, preflight, the audit order,<br/>the council's scope and its record,<br/>the two reads of the model server it makes,<br/>the stderr progress stream, the report files<br/>in reports/, and the exit code a<br/>pipeline reads"]
         b6["src/scoring<br/>the approved question library, categories<br/>clamped then weighted, the band,<br/>the severity floors on it<br/>and the version naming those rules"]
         b10["src/organisation<br/>the answer file, the approval record,<br/>the rule for what needs approval,<br/>one score per source"]
         b0 --> b1

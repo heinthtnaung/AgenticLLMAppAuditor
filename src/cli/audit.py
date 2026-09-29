@@ -19,6 +19,7 @@ from council.escalation_setting import escalation_model
 from council.member_setting import council_members
 from council.ollama import PINNED_SEED, PINNED_TEMPERATURE, PINNED_THINKING
 from council.settings import current_settings
+from council.transport import get_json
 from deps import manifests, syft_runner, trivy_runner
 from deps.trivy_database import DatedDatabase
 from findings.finding import build_findings
@@ -29,6 +30,7 @@ from report.record import Report, build_report
 from cli.arguments import Options
 from cli.council_run import ORDER_CHECK, assessments, build_roster, escalation_member, watching
 from cli.explanation_run import explainer_of, explaining, explanations
+from cli.model_identity import local_identities
 from cli.organisation_run import organisation_of, weigh_findings
 
 
@@ -98,7 +100,9 @@ def local_models_of(options: Options) -> LocalModels | None:
     # Read only once a flag has named members: a setting alone never starts a council.
     if not options.council_models:
         return None
-    chosen = current_settings()
+    chosen, escalation = current_settings(), escalation_model()
+    # Two reads of the server, and only here: a run naming no member makes neither.
+    version, models = local_identities(options.council_models, escalation, chosen.server, get_json)
     return LocalModels(
         server=chosen.server,
         context_tokens=chosen.context_tokens,
@@ -107,7 +111,9 @@ def local_models_of(options: Options) -> LocalModels | None:
         seed=PINNED_SEED,
         think=PINNED_THINKING,
         order_check=ORDER_CHECK,
-        escalation_model=escalation_model(),
+        escalation_model=escalation,
+        ollama_version=version,
+        models=models,
     )
 
 

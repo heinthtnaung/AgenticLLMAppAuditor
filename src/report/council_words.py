@@ -25,6 +25,13 @@ from report.council_record import (
     Outcome,
     SaidKind,
 )
+from report.model_identity import (
+    ESCALATION_ROLE,
+    ModelDigest,
+    ModelIdentity,
+    OllamaVersion,
+    ServerVersion,
+)
 from report.provenance import LocalModels
 
 SETTLED = "settled"
@@ -41,6 +48,10 @@ NO_SETTLEMENT = "no settlement"
 NOT_CONTESTED = "is not one of the contested values"
 ESCALATION_MODEL = "escalation model"
 NO_ESCALATION = "no escalation model named: a metric the council left open stays open"
+# Enough of a digest to tell two weights apart on the page; the record keeps it whole.
+SHORT_DIGEST = 12
+UNKNOWN_DIGEST = "digest unknown"
+UNKNOWN_VERSION = "Ollama version unknown"
 
 
 def who(member: MemberIdentity) -> str:
@@ -84,6 +95,26 @@ def escalation_named(local: LocalModels | None) -> list[str]:
     if local.escalation_model is None:
         return [NO_ESCALATION]
     return [f"{ESCALATION_MODEL} {local.escalation_model}: asked each metric the council left open"]
+
+
+def models_named(local: LocalModels | None) -> list[str]:
+    """Name every model the run asks with the start of its digest, and the server's version."""
+    if local is None:
+        return []
+    named = ", ".join(model_said(one) for one in local.models)
+    return [f"models: {named}; {version_said(local.ollama_version)}"]
+
+
+def model_said(model: ModelIdentity) -> str:
+    """Name one model, its role where it is not a member, and the start of its digest."""
+    role = f" ({model.role})" if model.role == ESCALATION_ROLE else ""
+    weights = model.digest[:SHORT_DIGEST] if isinstance(model, ModelDigest) else UNKNOWN_DIGEST
+    return f"{model.model}{role} {weights}"
+
+
+def version_said(version: ServerVersion) -> str:
+    """Name the server's version, or say it is unknown; the record says why."""
+    return f"Ollama {version.version}" if isinstance(version, OllamaVersion) else UNKNOWN_VERSION
 
 
 def outcome_said(ruling: MetricRuling) -> str:

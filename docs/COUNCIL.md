@@ -697,11 +697,12 @@ Per assessment: each member's answer and evidence, the model, provider, family
 and both prompt versions behind it, in order and reversed, whether that member
 ran local or hosted, the roster as configured, the chairman's reasoning, the
 escalation model's reply on each metric the council left open, beside what the
-council had left it as, the final vector, and the computed score. Per finding
-whose sources disagree: the explanation's kept items, every item it dropped
-with the reason, the model that wrote it, and its prompt version,
-`sources-differ-1`. A score nobody can re-derive is not a score, and a roster
-nobody can reconstruct is not a council.
+council had left it as, the final vector, and the computed score. Per run: the
+server's version and the digest of every local model the run asks
+(`run.local_models`). Per finding whose sources disagree: the explanation's
+kept items, every item it dropped with the reason, the model that wrote it, and
+its prompt version, `sources-differ-1`. A score nobody can re-derive is not a
+score, and a roster nobody can reconstruct is not a council.
 
 ## What is built, and what is not
 
@@ -740,10 +741,13 @@ Four things described above are not built, each deferred rather than forgotten:
   hosted member is skipped for want of one — a second reason on top of
   `egress`, and the one that outlasts opting in. Adding one is an adapter and
   an entry in the provider registry; no other module moves.
-- **The answering model is not recorded.** A reply says which member was asked,
-  not which weights answered. That costs nothing while every member is a pinned
-  local one, and becomes the reproducibility hole described above on the day a
-  hosted member runs. What *is* pinned now is the other half: a test holds the
+- **The answering model is recorded per run, not per reply.** A council run
+  records the digest the local server lists for each model it asks, read once
+  before its first call (`run.local_models.models`), so a tag re-pointed
+  between two runs shows in their records. A reply still says which member was
+  asked, not which weights answered it, and a hosted member would give no
+  digest at all: the reproducibility hole described above on the day one
+  runs. What *is* pinned now is the other half: a test holds the
   member's own model to the client it is asked through. Before the provider
   layer was separated that line had no test, being the one line that opens a
   socket, and every local member could have run the server's default model with
