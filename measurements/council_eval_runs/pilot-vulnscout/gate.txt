@@ -1,0 +1,17 @@
+# scored pair: qwen run1 + llama run2
+144 metrics: 105 settled, 13 contested, 26 unresolved; 4 vectors
+  CVE-2026-16221  CVSS:3.1/AV:L/AC:H/PR:H/UI:R/S:C/C:H/I:H/A:L
+  CVE-2026-18446  CVSS:3.1/AV:L/AC:H/PR:L/UI:R/S:C/C:L/I:L/A:L
+  CVE-2026-53550  CVSS:3.1/AV:L/AC:H/PR:H/UI:R/S:C/C:H/I:H/A:H
+  CVE-2026-4800  CVSS:3.1/AV:L/AC:H/PR:H/UI:R/S:C/C:H/I:H/A:H
+gate passed: the replay prints what the recorded audit printed
+exit 0
+
+# clean third pair: qwen run3 + llama run3
+144 metrics: 105 settled, 13 contested, 26 unresolved; 4 vectors
+  CVE-2026-16221  CVSS:3.1/AV:L/AC:H/PR:H/UI:R/S:C/C:H/I:H/A:L
+  CVE-2026-18446  CVSS:3.1/AV:L/AC:H/PR:L/UI:R/S:C/C:L/I:L/A:L
+  CVE-2026-53550  CVSS:3.1/AV:L/AC:H/PR:H/UI:R/S:C/C:H/I:H/A:H
+  CVE-2026-4800  CVSS:3.1/AV:L/AC:H/PR:H/UI:R/S:C/C:H/I:H/A:H
+gate passed: the replay prints what the recorded audit printed
+exit 0

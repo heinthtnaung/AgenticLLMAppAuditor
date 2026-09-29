@@ -1,0 +1,11 @@
+member               settled on its quotation alone  unverified  of which the prompt's
+llama3.2:latest      2                               20          3
+qwen2.5:7b-instruct  62                              16          11
+
+member               metric  prompt quoted
+llama3.2:latest      AC      1
+llama3.2:latest      AV      2
+qwen2.5:7b-instruct  AC      5
+qwen2.5:7b-instruct  AV      3
+qwen2.5:7b-instruct  C       1
+qwen2.5:7b-instruct  I       2

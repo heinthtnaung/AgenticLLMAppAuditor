@@ -1,0 +1,32 @@
+{
+  "_questions": {
+    "EXP-1": "Is the affected service internet-facing?",
+    "EXP-2": "Is it reachable from an untrusted network?",
+    "EXP-3": "Is the vulnerable port or API exposed?",
+    "EXP-4": "Is the asset isolated or segmented?",
+    "EXP-5": "Is the component disabled?",
+    "BUS-1": "Is the asset business-critical?",
+    "BUS-2": "Is it running in production?",
+    "BUS-3": "Does it hold sensitive or regulated data?",
+    "BUS-4": "Would an outage halt a business process?",
+    "THR-1": "Is this vulnerability being exploited in the wild?",
+    "THR-2": "Is public exploit code available?",
+    "THR-3": "Is exploitation automated by worms or scanners?"
+  },
+  "answers": {
+    "EXP-1": "No",
+    "EXP-2": "No",
+    "EXP-3": "No",
+    "EXP-4": "No",
+    "EXP-5": "No",
+    "BUS-1": "No",
+    "BUS-2": "No",
+    "BUS-3": "No",
+    "BUS-4": "No",
+    "THR-1": "No",
+    "THR-2": "No",
+    "THR-3": "No"
+  },
+  "by_advisory": {},
+  "approval": {}
+}

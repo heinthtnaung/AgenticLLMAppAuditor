@@ -1,0 +1,19 @@
+{
+  "artifacts": [],
+  "artifactRelationships": [],
+  "source": {
+    "id": "8fca3cc13ac5b29fd107505fdf3fb63b65a61b686f96ae94a482673eeb295636",
+    "name": "sample",
+    "version": "",
+    "type": "directory"
+  },
+  "distro": {},
+  "descriptor": {
+    "name": "syft",
+    "version": "1.52.0"
+  },
+  "schema": {
+    "version": "16.1.10",
+    "url": "https://raw.githubusercontent.com/anchore/syft/main/schema/json/schema-16.1.10.json"
+  }
+}

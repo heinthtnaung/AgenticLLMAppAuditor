@@ -1,0 +1,6 @@
+command: audit fetched/vulnscout --answers answers.example.json --council-member qwen2.5:7b-instruct --council-member gemma4:latest 
+commit:  4111b958bae74b1f4b64dca48efc5a6ecca58f77
+src/ changes at launch:
+started: 2026-09-23T17:25:39+08:00
+ended:   2026-09-23T17:46:36+08:00
+exit:    1

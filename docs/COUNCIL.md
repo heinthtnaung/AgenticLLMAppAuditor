@@ -1,0 +1,775 @@
+# The assessor council
+
+A product feature, not a development practice. Published sources disagree about
+a CVE's severity on two findings in five; a roster of models assesses the
+advisory independently and a chairman reconciles them.
+
+Read `docs/SCORING_MODEL.md` first. Everything here sits inside its rule: **the
+council never produces a number.**
+
+## Why more than one model
+
+Sources disagree routinely, and the disagreement is already on this machine.
+`trivy fs` over a manifest of eight deliberately out-of-date PyPI packages
+returns 124 findings, and their CVSS v3 vectors come from five sources at once:
+
+| Source | Findings carrying its vector |
+|---|---|
+| `redhat` | 117 (94%) |
+| `ghsa` | 115 (93%) |
+| `nvd` | 102 (82%) |
+| `bitnami` | 68 (55%) |
+| `julia` | 3 (2%) |
+
+Four sources assess 57 of the findings, three assess 51, two assess 11, one
+assesses 2, and 3 carry no vector at all. **87% arrive with three or more
+independent assessments**, offline, before anything is fetched.
+
+They contradict each other on two in five. Of the 119 findings carrying at least
+two of `nvd`, `redhat` and `ghsa`, 49 disagree — `nvd` against `redhat` on 46,
+`ghsa` against `redhat` on 34, `ghsa` against `nvd` on 18.
+
+Often the gap is one metric: `CVE-2025-37164` is 10.0 to the CNA and 9.8 to
+Tenable, `S:C` against `S:U`, and both are arithmetically right. Sometimes it is
+three.
+
+```
+CVE-2026-26007
+  nvd     CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:N/A:N
+  redhat  CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N
+```
+
+Attack Complexity, User Interaction and Integrity, from the same advisory. That
+is a reading of text, not a calculation, and a reading is where one opinion is
+worth little.
+
+So **reconciling sources is the normal path**, not a special case for contested
+CVEs; a design that treated it as an exception would be wrong about two findings
+in five. And **there is no reference source**: `nvd` covers fewer findings than
+`redhat` or `ghsa`, and `redhat` contradicts it on 46 of the 119. They are three
+peers. No member is marked against any one of them — the council decides which
+reading the advisory supports.
+
+The competing vectors ship inside the Trivy database, so none of this costs a
+fetch and the offline guarantee holds. Where a *member* runs is a separate
+question, answered further down: that is who assesses, not where the published
+vectors came from.
+
+**One corpus.** Eight PyPI packages, one manifest, one database snapshot. The
+exact rate moves with a different corpus; that the disagreement is widespread
+does not.
+
+The source notes sketch a ladder: a small local model, then a larger one, then
+a cloud one, each asked whether the published scores align. Two rungs of it are
+built, both on this machine: the council, then one larger local model asked only
+what the council left open ("Escalation", below). **The cloud rung is excluded,
+not deferred**: by the project's rule escalation stays local, so a hosted model
+takes part only as an ordinary member of the roster, opted in like any other.
+
+## What the council decides, and what it does not
+
+```
+n council members  ->  a metric value + the sentence that supports it
+chairman           ->  one agreed vector + a rationale + a confidence  <- code, no model
+scoring engine     ->  the number                                      <- code, no model
+human              ->  approve or override
+```
+
+**The chairman hands over a vector, never a score.** The engine turns a vector
+into a number by the published formula, the same way every time. A model that
+emitted 7.4 directly would be unauditable, and `docs/SCORING_MODEL.md` forbids
+it. That holds for every member, local or hosted, at every n.
+
+**That number is shown beside the Organisation Risk Score, never weighed into
+it.** The risk score is weighed from the published sources alone, and a
+settled vector's own CVSS base score sits under the finding saying the risk
+score does not use it. The same figure, with its CVSS band, heads the council's
+own entry for the finding, so a run with no answers, and so no risk score, still
+shows what a settled vector scores (`src/report/council_beside.py`). Measured
+against published vectors on the 18 vulnscout findings, the settled values of a
+council of `qwen2.5:7b-instruct` and `llama3.2:latest` scored below answering
+the commonest value on every metric, asked in either order
+(`measurements/README.md`). A reader can
+weigh a reading that loses to a constant; the score should not.
+
+**The order a prompt lists a metric's values in is part of the instrument.** A
+2 × 2 with the same pair on the same findings listed them in reverse. Llama's
+User Interaction and Attack Complexity followed the list's order, not the
+advisory, and so did Qwen's User Interaction without the library paragraph;
+all of Llama's reversed User Interaction answers were guesses. The CVSS User
+Guide's paragraph on libraries, added to the prompt, moved neither model toward
+that convention (`measurements/README.md`). So every council run now counts a
+value only when both orders give it, at twice the calls. Measured, that took
+those answers out of the ruling, and at 18 findings it changed no rate
+distinguishably. Whether a council settled more depended on the roster: of 144
+metrics, the pair settled 83 checked against 105 unchecked, and Qwen with
+`gemma4:latest` 86 against 65 ("Order-checked", same file).
+
+## The roster
+
+The council is **n members, added and removed by the operator**. A member is
+one model reached through one provider, and a roster mixes the two kinds
+freely.
+
+**Any model pulled into the local Ollama can be a local member**, by the name
+Ollama gives it, named with `--council-member` or in `AUDITOR_COUNCIL_MEMBERS`
+for `audit --council` (`docs/USAGE.md`). What this project has measured of
+members' readings is of `qwen2.5:7b-instruct` and `llama3.2:latest` as a pair,
+and of `gemma4:latest` and `qwen2.5-coder:7b-instruct` one pass each. It says
+nothing of another model: a model you add needs its own evaluation before its
+readings are trusted (`measurements/README.md`).
+
+| Kind | Reached through | What it costs |
+|---|---|---|
+| local | Ollama on this machine | nothing per call; pinnable; shares one Ollama server with the other local members |
+| hosted | OpenRouter or another API | money per call; not pinnable; the text leaves the machine; an API could answer calls in parallel, but the runner asks each member in turn |
+
+Nothing in the design counts members towards a ruling, so nothing depends on n
+being three, or odd, or anything else. The basis a settled value records is the
+one place a member is counted, and it changes what the record admits, never
+the ruling. The edges are still real:
+
+- **n = 0** is a configuration error. Refuse the run. Do not fall back to the
+  published vector and call the result an assessment.
+- **n = 1** is not a council. It degrades to a single assessor: the quotation
+  check still runs and the chairman still hands over a vector, but with no
+  cross-check a metric can only come out settled, on the `SOLE` basis, or
+  unresolved — `contested` can never arise. The record marks the run
+  single-assessor, so no reader takes council-grade confidence from one
+  model. **The count is of the members a run will ask, not of the roster**:
+  three members of whom two are hosted without `egress` cross-check nothing,
+  and that run is marked single-assessor exactly as a roster of one is.
+  Two members reached is not two members checked either: a vector every
+  metric of which settled on the `SOLE` basis is marked `every metric on one
+  member's quotation, nothing cross-checked`, worded apart because more than
+  one member was asked.
+- **Even n** needs no rule, because nothing is counted towards a ruling. Two
+  members on `S:C` and two on `S:U` is not a tie; it is four pieces of
+  evidence, and the chairman ranks them by whether the quotation verifies.
+  That is the path an odd roster takes too.
+
+## Panel, not chain
+
+Each member sees **the advisory text only** — not the other members' answers,
+not the published scores, not the CVE id.
+
+- **Not the other members**, or they converge and you get one opinion in n hats.
+- **Not the published scores**, or you measure whether a model can copy.
+- **Not the CVE id**, or a model that recognises `CVE-2021-44228` recites it
+  from training and you measure memorisation.
+
+**The rule is applied to the text, not asked for in the prompt.** A sentence in
+a prompt cannot unsee an id, and an advisory's own text routinely carries the id
+and, in some feeds, a vector. Both are replaced by markers rather than deleted,
+so a sentence still reads as a sentence and can still be quoted — and the
+redacted text is what the quotation check is given, because checking against the
+original would fail every quotation spanning a redaction and report an absence
+the advisory never had.
+
+A score written as prose is not caught. That gap is measured rather than
+assumed, and the measurement is the reason it stays open. Across **1,187
+distinct advisories** — seven offline scans covering PyPI, npm, Go, Rust, Debian
+11 and Alpine, plus vulnscout's 18, none of which carries one — exactly one
+does. That is on the database built 2026-09-22; on its successor the scans give
+1,189, and still exactly one (`measurements/README.md`). Redacted, tornado's
+`GHSA-pw6j-qg29-8w7f` reads:
+
+```
+Proposed CVSS 3.1: [published score withheld] (5.9, medium); attack complexity
+is High because...
+```
+
+The marker takes out the vector and the sentence publishes the score beside it.
+**There are two leaks there and only one of them is catchable.** `(5.9, medium)`
+is a pattern away and would cost nothing. "attack complexity is High" is the
+published value of a metric a member may be assessing, three words later, and no
+pattern reaches it without eating the advisory's own reasoning — which is the
+text the member is there to read. Catching the cheap half would let this system
+say the published scores are withheld while the Attack Complexity value stands
+in the one advisory that proves otherwise. An open gap a reader knows about is
+worth more than a claim that is true 1,186 times. **Half-redaction is worse than
+none here**, not merely less complete: a visible `[published score withheld]`
+marker tells a reader the text was handled, so taking the number out while
+"attack complexity is High" stands three words later makes the leak harder to
+notice than leaving both in place.
+
+Two limits on that corpus: an Ubuntu scan returned no findings and was dropped,
+and RHSA advisories are untested by occurrence, because RHEL needs an rpm
+database that cannot be synthesised offline. The manifests and the synthetic
+package databases those scans ran over are in `measurements/`, so the corpus is
+something a reader can rebuild rather than take on trust.
+
+A chain — each model refining the last — is the tempting alternative and it
+cannot be measured. Once the second model sees the first's answer, agreement
+between them means nothing. **Independent members can be scored; a chain
+cannot.**
+
+Independence comes from the training, not from the provider or the name. Five
+OpenRouter models drawn from one family are less diverse than one local model
+plus one hosted model of another lineage. Adding a member raises cost with
+certainty and raises independence only when the family differs. Record each
+member's family, so a reader can judge what a roster's agreement was worth.
+
+## No retrieval layer
+
+**A member's whole input fits in its context, so there is nothing to retrieve.**
+A prompt carries one metric's definitions and one advisory — never all eight
+metrics — and a local member pins its window, 8,192 tokens by default
+(`AUDITOR_CONTEXT_TOKENS`, `docs/USAGE.md`), rather than taking whatever maximum the
+model offers; the record states the window a run used. Measured against the
+prompt that runs, with the tokens counted by `qwen2.5:7b-instruct`:
+
+| Input | Size |
+|---|---|
+| the prompt, with the advisory taken out | 421 tokens |
+| advisory, median of the 18 under test | 776 characters, roughly 200 tokens |
+| advisory, longest of those 18 | 4,585 characters, roughly 1,150 tokens |
+| advisory, longest of the same 1,187 | 17,893 characters, taking the prompt to 4,897 tokens |
+
+The worst case measured is **4,897 against 8,192, a margin of 1.7×** — not the
+several times over that an 18-advisory corpus suggested. Another model counts
+the same prompt its own way: `llama3.2:latest` 4,791 and `gemma4:latest` 5,689,
+a margin of 1.4× (`measurements/prompt_tokens.2026-09-25.txt`).
+
+**That margin is guarded rather than merely large.** Ollama 0.34.3 cuts a
+prompt too long for its window to half the window and answers with a 200:
+9,378 tokens against the 8,192 pinned were cut to 4,098. A member would then
+assess half an advisory and answer as if it had read the whole. Sent to a
+256-token window, a 532-token prompt was cut to 130, and Qwen answered Attack
+Vector `P` at medium confidence where the whole advisory gets `N`. Its quotation
+came from the part that survived, so the quotation check would pass it
+(`tests/council/recorded_shapes.json`). So a prompt whose estimate, at four
+characters to the token, passes 75% of the window is refused before it is
+sent. On the worst prompt the tokenizers measured count
+from 2.9% under that estimate (Llama) to 15.3% over it (Gemma). Across 1,440
+saved calls of four models, the most any counted past the estimate is 23%,
+Gemma on one of the pilot's prompts; Qwen runs from 17% under to 15% over, and
+Llama from 16% under to 10% over
+(`tests/measurements/test_prompt_tokens_records.py`). At 23% over, a prompt at
+the limit still leaves about 600 of 8,192 tokens for the reply, where the
+longest reply recorded is 121.
+After the call, an answer to a prompt the server counted at under 70% of the
+estimate is refused as well, because that is what a cut looks like, and the
+member is recorded as failed with both numbers.
+
+That check rests on two things Ollama 0.34.3 does, each pinned by a test in
+`tests/council/test_ollama_context.py`. Its count takes in the cached part of a
+prompt: a warm Qwen call read 532 tokens, 531 of them from the cache. And it
+cuts to half the window, as it did all three times recorded: 4,098 and 4,099 of
+8,192, and 130 of 256. **A server that cut to fill the window instead would
+count about the window, and would not be caught**; a test there asserts that
+gap.
+
+The definitions are identical for every query, which makes them a constant
+rather than something to look up. **They go in the prompt.** A vector store
+would add a failure mode, the wrong passage retrieved or the one that mattered
+missed, to a problem that does not exist.
+
+**The gap that looks like a retrieval problem is not one.** `CVE-2025-37164`'s
+record is a single sentence that says nothing about Scope, the metric its
+sources dispute. No reader could settle it from that text, and retrieval cannot
+fetch a document nobody collected. That is missing source data, and the fix is a
+corpus question — collect the vendor advisory, or let the metric stand
+unresolved.
+
+**What would change the answer.** A body of past human adjudications too large
+to hold in context, of which there are none yet; a corpus grown to whole vendor
+advisory sites, where which passage matters varies per CVE; or wanting to cite
+specification passages in a rationale — and that last is better served by a
+small fixed lookup than by a vector store.
+
+## What a member returns
+
+```
+metric           which one it is assessing
+value            the value it supports
+evidence         a verbatim quotation from the advisory
+confidence       high / medium / low
+member           which member answered, and whether it ran local or hosted
+```
+
+**Evidence is a quotation, not a paraphrase.** It must appear in the text it was
+given, and application code checks that. A rationale can argue anything; a
+quotation can be verified. It is the same check for every member; a hosted
+member earns no extra trust by costing money.
+
+A member that cannot find supporting text must say so rather than guess. Some
+advisories carry no evidence for some metrics — `CVE-2025-37164`'s record is one
+sentence that says nothing about Scope, so *no* reader could settle it. That
+absence is a result and must survive to the report.
+
+**Three replies, then, not two.** A member supports a value with a quotation,
+reports an absence, or offers a value it cannot quote. The last is the thing the
+paragraph above forbids, and it is recorded as its own kind rather than folded
+into the absence: **an absence is a fact about the advisory; a guess is a fact
+about the member.** One can be counted per member across a corpus, and neither
+can once they are mixed. A guess weighs exactly what an absence weighs, which is
+nothing — it can neither settle a metric nor make one contested.
+
+**And a fourth, from asking twice.** Every metric is put to a member with its
+values in the specification's order and then reversed, and the two replies
+become one (`src/council/order_check.py`). The same value both ways stands as
+the in-order reply, quotation, confidence and kind included. Two different
+values make the member **order-sensitive**, recorded with both, which like a
+decline weighs nothing. A failure in either order is a failure, a reversed one
+saying so; otherwise a decline in either is a decline. A lean to the middle
+option survives it, because the middle stays in the middle when the list is
+reversed.
+
+**Expect guesses, and expect the fallback.** Asked about a metric its text is
+silent on, a model tends to answer regardless: `qwen2.5:7b-instruct` returned
+`{"value": "N", "evidence": "", "confidence": "low"}` on two metrics of one
+advisory, asked twice each. That is two metrics, one model, one advisory — far
+too small to be a property of local models, and enough to say the design should
+not expect a polite refusal. Those replies are guesses, they carry nothing, and
+the metric comes out unresolved. Which is the evidence rule working: no advisory
+contains the sentence "no user interaction is required", so a metric rested on
+silence has nothing to verify against.
+
+## What the chairman does
+
+**Deterministic throughout: no model is asked anything here.** Its reasoning is
+recorded whichever way it goes. It reads all n answers at once, and the rules do
+not change with n. **Every rule below is about the verified answers alone** —
+those whose evidence is a real quotation from the advisory. An answer whose
+quotation is not in the text supports nothing, however many members give it.
+
+- **The verified answers support one value** → that value, with the confidence
+  of the weakest of them, and a record of what it rests on.
+- **They support more than one value** → the metric is contested, and goes to
+  the escalation model where one is named.
+- **There are none** → the metric is unresolved, and goes to the escalation
+  model where one is named. Fall back to a published vector, and record both
+  that the fallback happened and which source it came from — there is usually
+  more than one, and they often differ.
+
+**What a settled value rests on is one of four bases.** The first three are
+counted over **every member that offered a value with a quotation**, verified
+or not; the fourth is escalation's. The record carries the basis's own words,
+from `src/council/ruling.py`:
+
+| Basis | When | What the record says |
+|---|---|---|
+| `SOLE` | one member offered a quotation, and nobody else did | "one member offered a quotation, and no other member offered one" |
+| `AGREED` | two or more offered quotations, all for this value | "every member that offered a quotation supported this value" |
+| `EVIDENCE` | one of them offered a quotation for another value | "members offering quotations disagreed, and the verified one settled it" |
+| `ESCALATED` | the council left it contested or unresolved, and the escalation model settled it | "the council left it open, and the escalation model's verified quotation settled it" |
+
+A guess, a decline, an order-sensitive reply and a failed call offer no
+quotation, so none of them counts toward a basis. Beside one quotation and
+nothing else, the record says the value stood alone, not that members agreed. A
+second member's quotation that is not in the advisory still counts: for the same
+value it makes the basis `AGREED`, although only one quotation verified. The
+basis changes what the record says and not the ruling — the value is the one the
+verified evidence supports whichever basis it carries.
+
+**A council that settles only some of the eight still leaves a record.** A
+vector needs all eight metrics, so one unresolved metric with no fallback means
+no vector — and the run is not discarded with it. What ran, and which metrics it
+could not settle, survives into the report: throwing that away told a reader no
+council had run at all, which is a different and false thing, and what went
+unsettled is what escalation is asked about.
+
+The fallback rule above is unchanged; what has changed is that a caller must now
+name the published source to fall back to. The command line names none, because
+preferring `nvd` or `ghsa` to fill a gap would set exactly the precedence this
+design leaves open, arriving through the back door of an error path. So in
+practice today an unresolved metric produces no vector, and the finding's
+published scores stand side by side with no council reading beside them.
+
+**Values are counted towards a ruling; members never are.** Two members
+agreeing and a third dissenting on evidence that does not verify is not a
+contested metric — one value has evidence behind it, so it settles. Counting
+qualifying members instead would escalate on agreement, and would fire on most
+ordinary disagreements, because several members can usually quote an advisory.
+The basis is the one place a member is counted: one quotation with no other
+beside it reads `SOLE`, and that changes what the record admits, never the
+ruling.
+
+**A vector every metric of which rests on one quotation is marked as a whole.**
+Each metric rests on one quotation, not necessarily the same model's, so nothing
+in the vector was cross-checked although two or more members were reached. The
+text and the page say `every metric on one member's quotation, nothing
+cross-checked` beside the vector; a vector from a single assessor keeps its own
+mark instead. The JSON's `nothing_cross_checked` is true for either, false for
+a vector some metric of which was cross-checked, and `null` where no vector
+came out.
+
+A metric rests on one quotation when it reads `SOLE`, or when it was
+`ESCALATED` from unresolved, where the escalation model's quotation is the only
+one. One escalated from a contest counts as cross-checked, because the value it
+settled already had a member's verified quotation behind it.
+
+**Agreement is not evidence.** n members agreeing with nothing verified settles
+nothing: that metric is unresolved and falls back to a published vector. It is
+the failure this file already names — members on one base model share its
+mistakes, and they share them unanimously.
+
+**Never a majority vote, at any n.** Counting members is what makes an even
+roster look like a problem and a large one look authoritative. Counting distinct
+values is not a vote: it asks whether the verified evidence points one way or
+several. Evidence decides.
+
+## Which findings the council is asked about
+
+**By default, only the ones the published sources do not settle.** The council
+reconciles sources, so a finding whose sources already agree is not its work. Of
+the 18 findings on the repository this project audits, 5 carry sources that
+disagree — a default two-member run makes 160 council calls where asking about
+all 18 makes 576, every metric asked in both orders. Either way the explanation
+adds 5, one per disputed finding, and escalation 2 per metric the council leaves
+open. `--council-all-findings` asks about all 18. That 5 in 18 is one
+repository and lower than the two in five measured on the 119-finding corpus
+above; how much scoping saves moves with what is being scanned.
+
+**A finding no source scored is asked about, not skipped.** Its sources do not
+agree either — there are none — and `disputed_metrics()` is empty for it, so
+scoping on disagreement alone would drop exactly the findings where a council
+vector is the only severity the finding will ever carry.
+
+**Nor is a finding carrying a source the calculator could not read.** A vector
+that failed to parse is an opinion nobody checked, so the readable sources
+agreeing says nothing about it — its value may disagree with every one of them.
+No finding on the audited repository carries one, so the 5 in 18 stands.
+
+**Scoping costs something real, and that is why it is a flag rather than a
+removal.** A council that only ever reads contested findings cannot discover that
+two *agreeing* sources are both wrong — and this file says no source is the
+reference the others are measured against. An operator who cares more about that
+than about the calls turns scoping off.
+
+**Three reasons a finding goes unassessed, and they are three different facts.**
+A finding the council was not put to, a finding it assessed and could not settle,
+and a run where nobody was named to ask are not the same thing. A scoped run that
+recorded nothing for what it passed over would report the first as the third, so
+the record keeps them apart and every rendering names the findings under the
+reason:
+
+```
+COUNCIL (1)
+  no escalation model named: a metric the council left open stays open
+  CVE-2021-4279  settled  ·  CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H  ·  CVSS 9.8 Critical
+    8 metrics settled
+      8  every member that offered a quotation supported this value
+  3 findings not asked
+    no published source disagrees, so there is nothing to reconcile
+      CVE-2026-14257, CVE-2026-53550
+    the advisory carries no text for a member to read
+      CVE-2026-99999
+```
+
+That block is constructed to show both reasons at once. Every advisory in the
+audited repository carries text, so a real run there prints only the first — the
+second was a silent drop until scoping landed, folded in with "no council ran".
+
+**The heading counts what was assessed and nothing else.** `COUNCIL (1)` on a run
+that passed over three, because counting the skips into it would claim the
+council did more than it did.
+
+## Escalation: one larger local model, for what the council leaves open
+
+**A metric the order-checked council leaves contested or unresolved goes to one
+more model, and nothing else does** (`src/council/escalation.py`). The model is
+named by `AUDITOR_ESCALATION_MODEL` (`docs/USAGE.md`); unset or empty, there is no
+escalation and an open metric stays open. It is asked each open metric in both
+orders, exactly as a member is, and its two readings become one reply by the
+members' rule. A settled metric is never sent: the model is asked what is open,
+not all eight.
+
+**The chairman decides what the reply is worth** (`chairman.rule_on_escalation`).
+It settles the metric only on an answer that names the same value both ways
+round, with a quotation that is in the text the model read. On a contested
+metric the value must also be one of the contested values, the ones the
+council's verified quotations already support, so escalation can side with
+evidence but never add a reading. A decline, a guess, an order-sensitive pair,
+an unverified quotation, a value nobody contested and a failed call all leave the
+metric as the council left it, and the record keeps what the model said beside
+what the council had left.
+
+**One model, on this machine, and never a member.** The name is a model on the
+local Ollama server, so a hosted one cannot be written: **hosted escalation is
+excluded by the project's rule, not deferred.** A model already on the council
+is refused before any model is asked, because a member escalating to itself
+would read the same prompt again and count twice. So is a value naming two
+models.
+
+**What it costs.** Two calls per open metric, a count known only once the
+council has answered, so the progress stream counts them apart and without a
+total. It runs after each advisory's council, so a model too large to stay
+loaded beside the members is loaded once per advisory; that has not been timed.
+
+**What is not yet known.** It has been tested with stand-in models only. No
+escalation model has run live, and none has been measured on the pilot's
+findings, so nothing yet shows that one settles an open metric correctly rather
+than merely settling it. The evaluation harness replays its passes with no
+escalation model (`PASS_ESCALATION = None` in
+`measurements/council_eval/variants.py`), so no figure in
+`measurements/README.md` includes one.
+
+### A contest needs two members to find it
+
+**The trigger is what members reply, so a contest needs two or more members that
+can contest something between themselves.** A metric is contested only when two
+distinct values *both* verify, so one member can never make one. A council of
+one settles every metric it can quote on its own, escalation never sees those,
+and the run is marked single-assessor; only what that member left unresolved is
+escalated. **One member plus escalation buys a second reading of the gaps, not
+the cross-check.**
+
+It is not a hypothetical. A two-member run on this machine had Qwen and Gemma
+quote the same sentence about `CVE-2021-4279` and give different Attack Vector
+values — a contested metric, found because two members read it. A council of
+one would have recorded that as settled. Both Qwen–Gemma runs in
+`measurements/council_runs/`, `scoped` and `full`, show it at lines 63–67 of
+each report, and the shape is common: 8 of the scoped run's 17 contested
+metrics have it, and 20 of the full run's 61.
+
+It belongs to that roster. With `llama3.2:latest` in Gemma's place the same
+metric settled, and the recorded report cannot say why: it names no member on
+a settled metric and predates the `SOLE` basis, so Llama quoting the same
+value, guessing and declining all read alike there. Where the report does
+show Llama's answer, on the 39 metrics the full run could not settle, it
+guessed 16 times and declined none, and a guess cannot contest anything.
+`measurements/README.md` has the counts.
+
+The argument holds for this trigger, a metric that came out contested or
+unresolved, and not for escalation in general. A trigger on the finding instead
+— the metrics its published sources dispute — would reach the escalation model
+even from a one-member council, because that disagreement exists before any
+member answers. That is a different policy, and it is not built.
+
+## What a hosted member costs
+
+**No hosted member can run today**, because no client exists to reach one: it is
+reported as skipped for want of a client, whether or not `egress` is set. What
+follows is what a hosted member will cost when one can.
+
+**Reproducibility, first and sharpest.** A local member can be pinned: a fixed
+model digest, temperature 0, a seed, and no thinking. Thinking is pinned off
+because the default differs by model: on Ollama 0.34.3 `gemma4:latest` answers
+the one prompt probed without the field exactly as with `think: true`, 554
+prompt tokens against 552 with `think: false` and a different reply, while
+Qwen's and Llama's replies to it are byte for byte the same either way
+(`measurements/thinking_and_load/`). Temperature, seed and thinking are pinned
+in code and are not settings, because a run whose sampling a file can change is
+not comparable with the last. The server, the window and the timeout are the
+operator's (`docs/USAGE.md`), and the record states the ones a run used, because the
+window and the timeout can change a result too. A hosted model takes no seed,
+and the weights behind a name change without notice. **A council holding one
+hosted member is not reproducible run to run**, and every figure downstream
+inherits that — the vector can differ, so the CVSS figure shown beside the risk
+score can differ. `organisation_risk_score` cannot, because it never reads the
+vector.
+
+What survives is narrower, and saying which is the point. The engine stays
+deterministic — the recorded vector re-derives the recorded number exactly. It
+is the *vector* that stops being re-derivable. Only an all-local pinned roster
+may claim a reproducible assessment, and a run records which kind it was.
+
+**Pinning is necessary and, as observed here, not sufficient.** An all-local
+pinned roster reproduced its full-run outcome to the metric — 67 settled, 61
+contested, 16 unresolved of 144 — across two runs two and a half hours and a
+renderer change apart, and two later runs agreed byte for byte on four of the
+five findings they shared. The fifth differed in the one run that shared the
+Ollama server with another council run. The server answers each model one
+request at a time, so the two runs' calls to one model queued rather than
+batched; one run's call to Qwen and the other's to Gemma could still compute at
+the same moment. So the claim carries two preconditions: **reproducible when no
+other client is sending requests to the same Ollama server, and when each model
+meets each request in the same load state as in the run being reproduced.** The
+first rests on one divergence in one contended run, on one corpus and one
+CPU-only server, not a law.
+
+The second was measured on the GPU, under Ollama 0.34.3 at temperature 0 and
+seed 11, with one prompt: Attack Vector on the test advisory. On a freshly
+loaded model, after `ollama stop` and with 0 of 532 prompt tokens cached,
+`qwen2.5:7b-instruct` answered `confidence: medium`; straight after the same
+request, with 531 cached, it answered `high`, with the same value and the same
+quotation. Each state repeated byte for byte, twice cold and three times warm,
+and the thinking probe's one cold and one warm call gave the same two replies.
+`llama3.2:latest` and `gemma4:latest` each gave the same reply cold as warm.
+The envelopes are in `measurements/thinking_and_load/`.
+
+In the recorded GPU runs Qwen and Llama were loaded once per member per
+finding, 36 loads in `gpu-full`'s journal. The scheduler says why in the same
+journal, `resetting model to expire immediately to make room`, 36 times in
+`gpu-full`'s window and 9 times in `gpu-scoped`'s. That journal is Ollama's own
+on this machine and is not kept in the repository. So the two did not stay on
+this card together, and each member's turn on a finding began on a freshly
+loaded model in both runs, which fits their agreeing. **On a card that holds
+both, Qwen's turns would start warm and those runs would not reproduce** —
+inferred from the probe, not measured.
+
+The cold side has since been repeated. The evaluation pilot took three passes
+of each member over the 18 findings, every turn starting from a fresh load,
+and its clean passes, on 2026-09-24 and 2026-09-25, gave 288 of 288 replies
+byte for byte the same (`measurements/README.md`, "The pilot"). That holds the
+load state; it does not vary it.
+
+**The mechanism is untested.** Ollama's own log rules out three: requests
+batched together, a model reloaded between runs, and a model placed on a GPU.
+The candidate left is the server's reuse of a cached prompt prefix, where the
+request that came before decides what is reused, and another client's requests
+change that. The GPU probe above shows the state a request meets can move
+Qwen's reply, which is what that candidate needs; it cannot tell a fresh load
+from an empty cache, since a fresh load has both, and it does not test that
+either caused the CPU divergence. `measurements/README.md` has the runs in
+`council_runs/` and the log evidence beside them.
+
+**What leaves the machine.** A hosted member is sent the prompt and the
+advisory text — public text, by the panel rule, carrying no CVE id and no
+published scores. The organisation's answers never reach any member; the
+council reads advisories, not the environment. What leaks is the pattern:
+*which* advisories you ask about, and when, describes the software you run.
+That is worth more to an observer than any one advisory.
+
+So hosted members are **opt-in per member**, off by default, and the record
+names every member that ran, its provider, and whether it was local or hosted.
+A record that does not say where the text went is not an audit record.
+
+**Money and time.** Calls scale with n × the findings the scope leaves × metrics
+× 2, every metric asked in both orders. An escalation model adds 2 for each
+metric the council leaves open, and the explanation 1 for each finding whose
+sources disagree.
+The runner asks every member in turn, local or hosted, and waits for each
+answer before it makes the next call. Local members are free and share one
+Ollama server, so for them n buys latency instead of money. A hosted member
+would cost both: money per call, and its turn in the same wait, because a
+hosted API could answer calls in parallel but the runner as built does not send
+them that way. The roster is fixed per run, before the scan, because it is a
+budget decision as much as a design one.
+
+## A roster as configuration
+
+**A sketch.** Two roster settings are built: `AUDITOR_COUNCIL_MEMBERS`, the
+local models `audit --council` runs, comma-separated, and
+`AUDITOR_ESCALATION_MODEL`, the one local model it escalates to (`docs/USAGE.md`).
+The roster below, with families, hosted members and `egress`, has no committed
+format: it shows what a reader would be editing rather than a schema to write
+against. The model names are examples; check the provider's catalogue for
+current ids.
+
+```yaml
+council:
+  members:
+    - name: small-local
+      provider: ollama
+      model: qwen2.5:7b
+      family: qwen
+      options: {temperature: 0, seed: 11}
+    - name: other-local
+      provider: ollama
+      model: gemma4:latest
+      family: gemma
+      options: {temperature: 0, seed: 11}
+    - name: hosted-other-family
+      provider: openrouter
+      model: anthropic/claude-sonnet-5
+      family: claude
+      egress: allow        # absent or false: skipped, and the skip is reported
+  escalation:              # built, as AUDITOR_ESCALATION_MODEL
+    model: qwen2.5:14b     # local only, and never one of the members
+    on: [contested, unresolved]
+```
+
+Adding a member is a list entry; removing one is deleting it. `egress` is the
+opt-in, and it fails closed: a hosted member without it does not run, and the
+report says it did not. The escalation block names a local model and no
+provider, because hosted escalation is excluded rather than deferred.
+
+**There is no `chairman` key, because there is no chairman model.**
+`src/council/chairman.py` makes no model call at all: it keeps the answers whose
+quotation is in the advisory, then asks whether those point at one value or
+several. Every rule this file gives the chairman is mechanical, so code can
+apply all of them.
+
+That is a decision and not a gap waiting on a client. A model in the seat would
+replace an auditable fact — *these two answers verified and agree* — with a
+sentence nobody can re-derive, and asked to reconcile n answers it would reach
+for the count of members, which is the one thing this design forbids at any n.
+The chairman is also the last step before the engine, so a model there would put
+one back inside the path a vector takes to a number.
+
+## What is kept
+
+Per assessment: each member's answer and evidence, the model, provider, family
+and both prompt versions behind it, in order and reversed, whether that member
+ran local or hosted, the roster as configured, the chairman's reasoning, the
+escalation model's reply on each metric the council left open, beside what the
+council had left it as, the final vector, and the computed score. Per finding
+whose sources disagree: the explanation's kept items, every item it dropped
+with the reason, the model that wrote it, and its prompt version,
+`sources-differ-1`. A score nobody can re-derive is not a score, and a roster
+nobody can reconstruct is not a council.
+
+## What is built, and what is not
+
+**The council is `src/council/`, with tests beside every module.** The roster
+and its `egress` gate, the redaction, the prompt and the wire contract, the
+provider registry and the local Ollama client in it, the HTTP seam under that,
+the reply parser, the quotation check, the chairman, and the runner that puts
+one advisory to every reachable member, one member at a time: a member answers
+all eight metrics, each in both orders, before the next is asked, and the order
+check reconciles its two replies. Then escalation puts what the council left
+open to the escalation model, where one is named. The explainer's prompt, its
+reply parser and the step that keeps only quoted items are there too
+(`src/council/explanation*.py`). `src/cvss` is the engine it hands a vector to.
+
+**The scope is built too, and it is not in that package.** `src/cli/council_run.py`
+chooses which findings a run is put to, records each one it passes over with the
+reason, and counts the calls the scope leaves for the progress stream.
+
+**The provider layer is a seam, not a helper.** Which providers this machine can
+reach, and the client that speaks to each, sit apart from the dispatch that puts
+a metric to every member — separated by what makes each of them change. A hosted
+client and a member's own temperature and seed are provider-layer changes and
+touch nothing else; what is asked after the members, and any change to the shape
+of the run record, are dispatch changes. Escalation is the second kind: it runs
+after the runner, in `src/council/escalation.py`, and asks the escalation model
+through the runner's own `ask_one_member`, as it asks a member.
+
+**A member with no client is reported, never stubbed.** A stub would answer, and
+its answer would be fiction recorded as an assessment. So the two reasons a
+member goes unasked stay distinguishable in the record: not configured, and
+refused by policy.
+
+Four things described above are not built, each deferred rather than forgotten:
+
+- **No hosted provider client.** OpenRouter or another API is a sketch, so a
+  hosted member is skipped for want of one — a second reason on top of
+  `egress`, and the one that outlasts opting in. Adding one is an adapter and
+  an entry in the provider registry; no other module moves.
+- **The answering model is not recorded.** A reply says which member was asked,
+  not which weights answered. That costs nothing while every member is a pinned
+  local one, and becomes the reproducibility hole described above on the day a
+  hosted member runs. What *is* pinned now is the other half: a test holds the
+  member's own model to the client it is asked through. Before the provider
+  layer was separated that line had no test, being the one line that opens a
+  socket, and every local member could have run the server's default model with
+  nothing to say so — which would have made every recorded member identity a
+  claim about a run that did not happen.
+- **No per-member options.** A member carries no temperature and no seed, so
+  local members run on pinned defaults rather than the per-member `options` the
+  sketch above shows.
+- **The prose score is not reported.** Removing it will never scale — the
+  general form of the leak is a Base metric value written in words, and no
+  pattern bounds that without eating the advisory's reasoning. Detecting it
+  does: a pattern on the severity word beside the number, the `(5.9, medium)`
+  shape, fires once in 1,187 and eats nothing, and could record on the round
+  that this advisory states a published score in prose. The text stays whole and
+  the guarantee stays honest. A hole that is reported is not the same thing as a
+  hole that is hidden.
+
+Hosted escalation is not on this list, because it is not deferred: escalation
+stays on this machine by rule.
+
+**`src/cli/` orchestrates all of it**, and that is where to look for the wiring.
+`src/cli/council_run.py` chooses the findings and runs the council over them,
+escalation included, `src/cli/council_outcome.py` says what a run comes to, a
+vector or the metrics still open, `src/cli/council_detail.py` turns a run into
+the record the report holds, `src/cli/explanation_run.py` asks why each
+disputed finding's sources differ once the council is done, and
+`src/cli/organisation_run.py` weighs the risk score from the published sources
+without reading the council. The package itself stays a component:
+`src/council/` imports `src/cvss` and nothing else of this project's, and only
+`src/cli/` imports `src/council/`.

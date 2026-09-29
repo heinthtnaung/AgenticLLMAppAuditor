@@ -1,0 +1,345 @@
+Audit of fetched/vulnscout
+  syft 1.52.0  ·  trivy 0.74.0  ·  advisory database built 2026-09-22T02:00:05.774028462Z
+
+18 findings across 60 components. 5 carry sources that disagree.
+
+SOURCES DISAGREE (5)
+  CVE-2025-13465  lodash-es 4.17.21
+    2.9 apart  ·  High and Medium  ·  differ on A
+    ghsa 6.5  ·  nvd 5.3  ·  redhat 8.2
+  CVE-2021-4279   fast-json-patch 2.2.1
+    2.5 apart  ·  Critical and High  ·  differ on C, I, A
+    ghsa 7.3  ·  nvd 9.8
+  CVE-2026-13149  brace-expansion 1.1.14
+    2.2 apart  ·  High and Medium  ·  differ on A
+    ghsa 5.3  ·  redhat 7.5
+  CVE-2026-4800   lodash-es 4.17.21
+    1.7 apart  ·  Critical and High  ·  differ on AC
+    ghsa 8.1  ·  nvd 9.8  ·  redhat 8.1
+  CVE-2026-2950   lodash-es 4.17.21
+    1.2 apart  ·  Medium  ·  differ on PR, I, A
+    ghsa 6.5  ·  nvd 5.3  ·  redhat 6.5
+
+SOURCES AGREE (13)
+  CVE-2026-14257       brace-expansion 1.1.14          7.5  High      2 sources
+  CVE-2026-69152       brace-expansion 1.1.14          7.5  High      2 sources
+  CVE-2026-13676       fast-uri 3.1.0                  7.5  High      2 sources
+  CVE-2026-16221       fast-uri 3.1.0                  7.5  High      2 sources
+  CVE-2026-18446       fast-uri 3.1.0                  7.5  High      2 sources
+  CVE-2026-6321        fast-uri 3.1.0                  7.5  High      2 sources
+  CVE-2026-6322        fast-uri 3.1.0                  7.5  High      2 sources
+  CVE-2026-75975       fast-uri 3.1.0                  7.5  High      2 sources
+  CVE-2026-76172       fast-uri 3.1.0                  7.5  High      2 sources
+  CVE-2026-53550       js-yaml 3.14.2                  5.3  Medium    2 sources
+  CVE-2026-59869       js-yaml 3.14.2                  7.5  High      2 sources
+  CVE-2026-84375       js-yaml 3.14.2                  7.5  High      2 sources
+  GHSA-5p4m-2wfm-xmqj  js-yaml 3.14.2                  7.5  High      1 source
+
+ORGANISATION RISK (18)  ·  the source changes the band on 1
+  weighted Technical severity 0.3, Exposure and reachability 0.25, Business impact 0.25, Threat and exploitation 0.2
+  CVE-2021-4279        ghsa 21.9 to nvd 29.4       Medium and Low
+  CVE-2025-13465       nvd 15.9 to redhat 24.6     Low
+  CVE-2026-13149       ghsa 15.9 to redhat 22.5    Low
+  CVE-2026-13676       22.5                        Low
+  CVE-2026-14257       22.5                        Low
+  CVE-2026-59869       22.5                        Low
+  CVE-2026-6321        22.5                        Low
+  CVE-2026-6322        22.5                        Low
+  CVE-2026-69152       22.5                        Low
+  CVE-2026-75975       22.5                        Low
+  CVE-2026-76172       22.5                        Low
+  CVE-2026-84375       22.5                        Low
+  GHSA-5p4m-2wfm-xmqj  22.5                        Low
+  CVE-2026-16221       21.6                        Low
+  CVE-2026-4800        21.6                        Low
+  CVE-2026-53550       21.6                        Low
+  CVE-2026-2950        nvd 15.9 to redhat 19.5     Low
+  CVE-2026-18446       15.0                        Low
+
+COUNCIL (18)
+  CVE-2021-4279  no vector  ·  could not settle AC, PR, UI, S, C, A
+    2 metrics settled
+      2  every member that offered a quotation supported this value
+    AC  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  declined
+      llama3.2:latest (llama3.2)  guessed H with nothing quoted
+    PR  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  declined
+      llama3.2:latest (llama3.2)  guessed N with nothing quoted
+    UI  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  declined
+      llama3.2:latest (llama3.2)  guessed R with nothing quoted
+    S  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  declined
+      llama3.2:latest (llama3.2)  guessed C with nothing quoted
+    C  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  guessed N with nothing quoted
+      llama3.2:latest (llama3.2)  guessed H with nothing quoted
+    A  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  guessed N with nothing quoted
+      llama3.2:latest (llama3.2)  guessed H with nothing quoted
+  CVE-2025-13465  no vector  ·  could not settle S
+    7 metrics settled
+      7  every member that offered a quotation supported this value
+    S  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  U  ·  medium confidence  ·  quotation found in the advisory
+        “An attacker can pass crafted paths which cause Lodash to delete methods from global
+        prototypes.”
+      llama3.2:latest (llama3.2)  C  ·  high confidence  ·  quotation found in the advisory
+        “An attacker can pass crafted paths which cause Lodash to delete methods from global
+        prototypes.”
+  CVE-2026-13149  no vector  ·  could not settle I, A
+    6 metrics settled
+      6  every member that offered a quotation supported this value
+    I  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  H  ·  high confidence  ·  quotation found in the advisory
+        “An attacker who passes a crafted string to expand(), directly or transitively, can
+        cause significant CPU consumption and event-loop blocking.”
+      llama3.2:latest (llama3.2)  L  ·  low confidence  ·  quotation found in the advisory
+        “An attacker who passes a crafted string to expand(), directly or transitively, can
+        cause significant CPU consumption and event-loop blocking.”
+    A  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  H  ·  high confidence  ·  quotation found in the advisory
+        “An attacker who passes a crafted string to expand(), directly or transitively, can
+        cause significant CPU consumption and event-loop blocking.”
+      llama3.2:latest (llama3.2)  L  ·  medium confidence  ·  quotation found in the advisory
+        “The max option does not mitigate this, as it bounds the output size rather than the
+        recursion work.”
+  CVE-2026-13676  no vector  ·  could not settle AV, I
+    6 metrics settled
+      6  every member that offered a quotation supported this value
+    AV  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  declined
+      llama3.2:latest (llama3.2)  guessed L with nothing quoted
+    I  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  H  ·  high confidence  ·  quotation found in the advisory
+        “Applications that use fast-uri to enforce host-based policy (denylists, loopback
+        filtering, redirect validation, outbound proxy routing) before passing the same URL to
+        Node's URL or fetch can be bypassed when the two implementations resolve the same input
+        to different hosts.”
+      llama3.2:latest (llama3.2)  L  ·  low confidence  ·  quotation found in the advisory
+        “silently leaving the host in its original Unicode form”
+  CVE-2026-14257  no vector  ·  could not settle PR, S
+    6 metrics settled
+      6  every member that offered a quotation supported this value
+    PR  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  L  ·  medium confidence  ·  quotation found in the advisory
+        “By chaining multiple brace groups, an attacker keeps the result count under the limit
+        while making each result progressively longer, so total memory scales with both count
+        and string length until the process hits a fatal, uncatchable out-of-memory error.”
+      llama3.2:latest (llama3.2)  H  ·  high confidence  ·  quotation found in the advisory
+        “Any application that passes attacker-influenced strings to brace-expansion.expand() -
+        directly or transitively via minimatch / glob brace patterns - can be crashed by a small
+        request.”
+    S  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  U  ·  high confidence  ·  quotation found in the advisory
+        “By chaining multiple brace groups, an attacker keeps the result count under the limit
+        while making each result progressively longer, so total memory scales with both count
+        and string length until the process hits a fatal, uncatchable out-of-memory error.”
+      llama3.2:latest (llama3.2)  C  ·  high confidence  ·  quotation found in the advisory
+        “By chaining multiple brace groups, an attacker keeps the result count under the limit
+        while making each result progressively longer, so total memory scales with both count
+        and string length until the process hits a fatal, uncatchable out-of-memory error.”
+  CVE-2026-16221  settled  ·  CVSS:3.1/AV:L/AC:H/PR:H/UI:R/S:C/C:H/I:H/A:L
+    8 metrics settled
+      8  every member that offered a quotation supported this value
+  CVE-2026-18446  settled  ·  CVSS:3.1/AV:L/AC:H/PR:L/UI:R/S:C/C:L/I:L/A:L
+    8 metrics settled
+      8  every member that offered a quotation supported this value
+  CVE-2026-2950  no vector  ·  could not settle AC, UI
+    6 metrics settled
+      2  every member that offered a quotation supported this value
+      4  members offering quotations disagreed, and the verified one settled it
+    AC  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  H  ·  medium confidence  ·  quotation not found in the advisory
+        “Success depends on conditions the attacker does not control: the target must be
+        prepared or measured first, a protection such as address space randomisation must be
+        defeated, a race must be won, or the attacker must already sit between two parties. The
+        attack cannot be mounted at will.”
+      llama3.2:latest (llama3.2)  H  ·  high confidence  ·  quotation not found in the advisory
+        “This allows deletion of prototype properties but does not allow overwriting their
+        original behavior.”
+    UI  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  N  ·  medium confidence  ·  quotation found in the advisory
+        “The issue permits deletion of prototype properties but does not allow overwriting their
+        original behavior.”
+      llama3.2:latest (llama3.2)  R  ·  high confidence  ·  quotation found in the advisory
+        “This issue is patched in 4.18.0.”
+  CVE-2026-4800  settled  ·  CVSS:3.1/AV:L/AC:H/PR:H/UI:R/S:C/C:H/I:H/A:H
+    8 metrics settled
+      8  every member that offered a quotation supported this value
+  CVE-2026-53550  settled  ·  CVSS:3.1/AV:L/AC:H/PR:H/UI:R/S:C/C:H/I:H/A:H
+    8 metrics settled
+      8  every member that offered a quotation supported this value
+  CVE-2026-59869  no vector  ·  could not settle AV, PR, A
+    5 metrics settled
+      4  every member that offered a quotation supported this value
+      1  members offering quotations disagreed, and the verified one settled it
+    AV  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  declined
+      llama3.2:latest (llama3.2)  guessed L with nothing quoted
+    PR  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  declined
+      llama3.2:latest (llama3.2)  guessed N with nothing quoted
+    A  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  guessed N with nothing quoted
+      llama3.2:latest (llama3.2)  L  ·  medium confidence  ·  quotation not found in the advisory
+        “performance drops or service is interrupted, but even repeated exploitation does not
+        deny service completely.”
+  CVE-2026-6321  no vector  ·  could not settle C
+    7 metrics settled
+      7  every member that offered a quotation supported this value
+    C  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  L  ·  medium confidence  ·  quotation found in the advisory
+        “Applications that normalize or compare attacker-controlled URLs to enforce path-based
+        policy can be bypassed, with a path that appears confined under an allowed prefix
+        normalizing to a different location.”
+      llama3.2:latest (llama3.2)  H  ·  high confidence  ·  quotation found in the advisory
+        “Encoded path data was treated like real slashes and parent-directory references”
+  CVE-2026-6322  no vector  ·  could not settle AV, PR
+    6 metrics settled
+      6  every member that offered a quotation supported this value
+    AV  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  declined
+      llama3.2:latest (llama3.2)  guessed L with nothing quoted
+    PR  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  declined
+      llama3.2:latest (llama3.2)  guessed N with nothing quoted
+  CVE-2026-69152  no vector  ·  could not settle AV, PR, UI, C
+    4 metrics settled
+      3  every member that offered a quotation supported this value
+      1  members offering quotations disagreed, and the verified one settled it
+    AV  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  declined
+      llama3.2:latest (llama3.2)  guessed L with nothing quoted
+    PR  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  declined
+      llama3.2:latest (llama3.2)  guessed N with nothing quoted
+    UI  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  declined
+      llama3.2:latest (llama3.2)  R  ·  high confidence  ·  quotation not found in the advisory
+        “Another user must do something first, such as open a file, follow a link, or install an
+        update, before the vulnerability can be exploited.”
+    C  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  guessed N with nothing quoted
+      llama3.2:latest (llama3.2)  guessed H with nothing quoted
+  CVE-2026-75975  no vector  ·  could not settle AC, PR, C
+    5 metrics settled
+      5  every member that offered a quotation supported this value
+    AC  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  H  ·  medium confidence  ·  quotation not found in the advisory
+        “Success depends on conditions the attacker does not control: the target must be
+        prepared or measured first, a protection such as address space randomisation must be
+        defeated, a race must be won, or the attacker must already sit between two parties. The
+        attack cannot be mounted at will.”
+      llama3.2:latest (llama3.2)  H  ·  high confidence  ·  quotation not found in the advisory
+        “An attacker can expect repeatable success against the vulnerable component.”
+    PR  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  L  ·  medium confidence  ·  quotation found in the advisory
+        “For example, a bracketed literal with invalid trailing characters is normalized to the
+        unspecified address, which a Node HTTP client then connects to a local service over
+        loopback, and other malformed literals collapse to private-range addresses.”
+      llama3.2:latest (llama3.2)  H  ·  high confidence  ·  quotation found in the advisory
+        “An application that normalizes untrusted URLs before outbound requests, redirects,
+        proxy routing, or address-policy enforcement can be redirected to a local or private
+        IPv6 target”
+    C  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  L  ·  medium confidence  ·  quotation found in the advisory
+        “For example, a bracketed literal with invalid trailing characters is normalized to the
+        unspecified address, which a Node HTTP client then connects to a local service over
+        loopback, and other malformed literals collapse to private-range addresses.”
+      llama3.2:latest (llama3.2)  H  ·  high confidence  ·  quotation found in the advisory
+        “a bracketed literal with invalid trailing characters is normalized to the unspecified
+        address”
+  CVE-2026-76172  no vector  ·  could not settle AV
+    7 metrics settled
+      7  every member that offered a quotation supported this value
+    AV  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  L  ·  medium confidence  ·  quotation found in the advisory
+        “An application that allowlists on the parsed host, or treats a reference with no
+        authority as safe to resolve against its base, gets the opposite of what it checked,
+        giving an off-site redirect, server-side request forgery, or address-policy bypass.”
+      llama3.2:latest (llama3.2)  N  ·  medium confidence  ·  quotation found in the advisory
+        “During parsing it runs a legacy decoding pass over the scheme component and never re-
+        escapes the result, and serialization writes the scheme back out verbatim, unlike the
+        host component which is re-escaped.”
+  CVE-2026-84375  no vector  ·  could not settle PR, UI, S, I
+    4 metrics settled
+      4  every member that offered a quotation supported this value
+    PR  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  declined
+      llama3.2:latest (llama3.2)  guessed N with nothing quoted
+    UI  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  declined
+      llama3.2:latest (llama3.2)  R  ·  medium confidence  ·  quotation not found in the advisory
+        “Another user must do something first, such as open a file, follow a link, or install an
+        update, before the vulnerability can be exploited.”
+    S  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  U  ·  medium confidence  ·  quotation found in the advisory
+        “An attacker can alias a large sequence of empty mappings into many merge targets,
+        causing O(N * K) processing while totalMergeKeys remains unchanged and the configured
+        resource limit is never reached.”
+      llama3.2:latest (llama3.2)  C  ·  high confidence  ·  quotation found in the advisory
+        “An attacker can alias a large sequence of empty mappings into many merge targets,”
+    I  ·  contested  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  H  ·  high confidence  ·  quotation found in the advisory
+        “An attacker can alias a large sequence of empty mappings into many merge targets,
+        causing O(N * K) processing while totalMergeKeys remains unchanged and the configured
+        resource limit is never reached.”
+      llama3.2:latest (llama3.2)  L  ·  medium confidence  ·  quotation found in the advisory
+        “An attacker can alias a large sequence of empty mappings into many merge targets,
+        causing O(N * K) processing while totalMergeKeys remains unchanged and the configured
+        resource limit is never reached.”
+  GHSA-5p4m-2wfm-xmqj  no vector  ·  could not settle AV, AC, UI, C, I, A
+    2 metrics settled
+      2  every member that offered a quotation supported this value
+    AV  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  declined
+      llama3.2:latest (llama3.2)  guessed N with nothing quoted
+    AC  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  H  ·  high confidence  ·  quotation not found in the advisory
+        “Success depends on conditions the attacker does not control: the target must be
+        prepared or measured first, a protection such as address space randomisation must be
+        defeated, a race must be won, or the attacker must already sit between two parties. The
+        attack cannot be mounted at will.”
+      llama3.2:latest (llama3.2)  H  ·  high confidence  ·  quotation not found in the advisory
+        “Success depends on conditions the attacker does not control: the target must be
+        prepared or measured first, a protection such as address space randomisation must be
+        defeated, a race must be won, or the attacker must already sit between two parties. The
+        attack cannot be mounted at will.”
+    UI  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  guessed N with nothing quoted
+      llama3.2:latest (llama3.2)  R  ·  high confidence  ·  quotation not found in the advisory
+        “Another user must do something first, such as open a file, follow a link, or install an
+        update, before the vulnerability can be exploited.”
+    C  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  H  ·  high confidence  ·  quotation not found in the advisory
+        “Total loss, or the disclosure of something whose loss is serious on its own, such as
+        credentials, private keys or the whole contents of a store.”
+      llama3.2:latest (llama3.2)  H  ·  high confidence  ·  quotation not found in the advisory
+        “Resolving an `n`-entry `!! omap` performs roughly `1 + 2 + … + n` comparisons —
+        quadratic in `n`.”
+    I  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  H  ·  high confidence  ·  quotation not found in the advisory
+        “The advisory states: "Any service that parses attacker-influenced YAML with js-yaml 3.x
+        or 4.x can be stalled with a small input. Because the loop is synchronous, a single
+        request blocks the Node.js event loop and stalls every other request in the process — so
+        the amplification is per-process, not just per-request."”
+      llama3.2:latest (llama3.2)  H  ·  high confidence  ·  quotation not found in the advisory
+        “Resolving an `n`-entry `!! omap` performs roughly `1 + 2 + … + n` comparisons —
+        quadratic in `n`.”
+    A  ·  unresolved  ·  2 members
+      qwen2.5:7b-instruct (qwen2.5)  H  ·  high confidence  ·  quotation not found in the advisory
+        “Access is fully denied, or denied for as long as the attacker keeps attacking, or
+        denied until somebody intervenes.”
+      llama3.2:latest (llama3.2)  L  ·  high confidence  ·  quotation not found in the advisory
+        “The work happens synchronously inside yaml.load(), blocking the event loop for its
+        whole duration.”
+
+MATCHED NOTHING
+  55 components carry no advisory
+  0 advisories matched no component
+
+NOT ASSESSED
+  Approval record
+    the answer file carries no approval

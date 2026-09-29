@@ -1,0 +1,30 @@
+# run1 against run2
+qwen2.5:7b-instruct: 144 calls, 144 with the same request, 144 byte-identical replies, 0 unanswered in either
+  differing: none
+  reloaded after an item's first call, first pass: none
+  reloaded after an item's first call, second pass: none
+# run1 against run3
+qwen2.5:7b-instruct: 144 calls, 144 with the same request, 144 byte-identical replies, 0 unanswered in either
+  differing: none
+  reloaded after an item's first call, first pass: none
+  reloaded after an item's first call, second pass: none
+# run2 against run3
+qwen2.5:7b-instruct: 144 calls, 144 with the same request, 144 byte-identical replies, 0 unanswered in either
+  differing: none
+  reloaded after an item's first call, first pass: none
+  reloaded after an item's first call, second pass: none
+# run1 against run2
+llama3.2:latest: 144 calls, 144 with the same request, 144 byte-identical replies, 0 unanswered in either
+  differing: none
+  reloaded after an item's first call, first pass: CVE-2026-13676 AC, CVE-2026-13676 PR, CVE-2026-13676 S, CVE-2026-13676 UI
+  reloaded after an item's first call, second pass: none
+# run1 against run3
+llama3.2:latest: 144 calls, 144 with the same request, 144 byte-identical replies, 0 unanswered in either
+  differing: none
+  reloaded after an item's first call, first pass: CVE-2026-13676 AC, CVE-2026-13676 PR, CVE-2026-13676 S, CVE-2026-13676 UI
+  reloaded after an item's first call, second pass: none
+# run2 against run3
+llama3.2:latest: 144 calls, 144 with the same request, 144 byte-identical replies, 0 unanswered in either
+  differing: none
+  reloaded after an item's first call, first pass: none
+  reloaded after an item's first call, second pass: none

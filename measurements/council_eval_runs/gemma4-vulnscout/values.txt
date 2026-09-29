@@ -1,0 +1,9 @@
+member         metric  listed last  named it  values named
+gemma4:latest  AV      P            0/18      N:11 declined:4 L:3
+gemma4:latest  AC      H            0/18      L:16 declined:2
+gemma4:latest  PR      H            0/18      N:18
+gemma4:latest  UI      R            0/18      N:18
+gemma4:latest  S       C            9/18      C:9 U:7 declined:2
+gemma4:latest  C       N            11/18     N:11 H:6 declined:1
+gemma4:latest  I       N            8/18      H:10 N:8
+gemma4:latest  A       N            11/18     N:11 H:4 L:2 declined:1

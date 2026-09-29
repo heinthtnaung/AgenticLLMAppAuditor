@@ -1,0 +1,25 @@
+# Declares what `src/` already holds, so the tool installs as a command rather
+# than running under `PYTHONPATH=src`. The runtime is standard library only, so
+# `dependencies` is empty; pytest is a development extra, pinned as in
+# requirements.txt.
+
+[build-system]
+# 64 is the first setuptools with PEP 660 editable installs.
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agentic-llm-app-auditor"
+version = "0.1.0"
+description = "An SBOM-based vulnerability auditor."
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest==9.1.1"]
+
+[project.scripts]
+audit = "cli.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
