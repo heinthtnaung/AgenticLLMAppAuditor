@@ -1,0 +1,41 @@
+pass qwen2.5:7b-instruct
+  model: qwen2.5:7b-instruct
+  digest: 845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e
+  ollama: 0.34.3
+  prompt_version: member-base-metric-3+reversed-1
+  temperature: 0
+  seed: 11
+  num_ctx: 8192
+  think: False
+  turn_start: cold: the model is unloaded before each item
+  dataset_sha256: 2575a98327867c3bbc98860cb6d57bdb972a10f26eeaf7ba0b2e74e91bbe0d66
+  commit: a4e536525fe53e7c60fb4f02cde58d2b596af9f6
+  started: 2026-09-25T10:27:48+08:00
+  uncommitted at launch: 37 paths
+pass llama3.2:latest
+  model: llama3.2:latest
+  digest: a80c4f17acd55265feec403c7aef86be0c25983ab279d83f3bcd3abbcb5b8b72
+  ollama: 0.34.3
+  prompt_version: member-base-metric-3+reversed-1
+  temperature: 0
+  seed: 11
+  num_ctx: 8192
+  think: False
+  turn_start: cold: the model is unloaded before each item
+  dataset_sha256: 2575a98327867c3bbc98860cb6d57bdb972a10f26eeaf7ba0b2e74e91bbe0d66
+  commit: a4e536525fe53e7c60fb4f02cde58d2b596af9f6
+  started: 2026-09-25T10:31:05+08:00
+  uncommitted at launch: 37 paths
+
+ROSTER qwen2.5:7b-instruct  (18 items)
+0 vectors; 0 with a full R1: 0 exact, 0 adjacent, 0 major; 0 without a full R1, not graded
+finding  council band  R1 band  bands apart  grade
+
+ROSTER llama3.2:latest  (18 items)
+0 vectors; 0 with a full R1: 0 exact, 0 adjacent, 0 major; 0 without a full R1, not graded
+finding  council band  R1 band  bands apart  grade
+
+ROSTER qwen2.5:7b-instruct + llama3.2:latest  (18 items)
+1 vector; 1 with a full R1: 1 exact, 0 adjacent, 0 major; 0 without a full R1, not graded
+finding        council band  R1 band  bands apart  grade
+CVE-2026-4800  High          High     0            exact

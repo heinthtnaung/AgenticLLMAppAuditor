@@ -5,7 +5,7 @@ Four outcomes, because a pipeline has to tell them apart:
 | Code | Meaning |
 |---|---|
 | 0 | the audit ran, catalogued components, found nothing, and read every manifest |
-| 1 | the audit ran and found something |
+| 1 | the audit ran and found something: a vulnerability or a secret |
 | 2 | the audit could not run |
 | 3 | the audit ran and found nothing, but could not read a manifest or catalogued nothing |
 
@@ -26,6 +26,10 @@ no component in had nothing checked against an advisory, and `0` there would
 pass a pipeline on a scan of nothing. It is `3` and not `2`: the run did all it
 was asked and wrote its reports, and, as with an unread manifest, what it found
 says nothing about what it could not see.
+
+**A secret is something found.** It carries no CVSS and is never scored, but a
+credential in the tree stops a build as surely as a CVE does, so a run that
+found one exits `1` whatever else it found or could not read.
 """
 
 import os
@@ -101,8 +105,8 @@ def main(
 
 
 def outcome(report: Report) -> int:
-    """Give the code for a run that ran: findings, nothing, or nothing over what went unchecked."""
-    if report.findings:
+    """Give the code for a run that ran: something found, nothing, or nothing but unchecked."""
+    if report.findings or report.secrets:
         return FOUND_SOMETHING
     unchecked = bool(report.coverage.unread_manifests) or report.component_count == 0
     return FOUND_NOTHING_BUT_UNCHECKED if unchecked else FOUND_NOTHING

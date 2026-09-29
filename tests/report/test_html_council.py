@@ -21,7 +21,7 @@ from council_runs import (
 )
 from report.council_record import CouncilNotAsked
 from cvss.metrics import METRIC_ORDER
-from report.html_council import council_section
+from report.html_council import NO_COUNCIL, council_panel
 from report.record import build_report
 from report_samples import PROVENANCE, catalogue, component, finding
 
@@ -33,7 +33,7 @@ COUNCIL_NAME = re.compile(r'<p class="council-name">.*?</p>')
 def rendered(*outcomes) -> str:
     """Render the council section of a report carrying these outcomes."""
     raised = tuple(finding(DJANGO, advisory_id=one.advisory_id) for one in outcomes)
-    return council_section(build_report(PROVENANCE, catalogue(DJANGO), raised, {}, outcomes))
+    return council_panel(build_report(PROVENANCE, catalogue(DJANGO), raised, {}, outcomes))
 
 
 def contested_page() -> str:
@@ -41,9 +41,13 @@ def contested_page() -> str:
     return rendered(council_ran(**DISSENTING))
 
 
-def test_a_run_with_no_council_shows_no_section():
+def test_a_run_with_no_council_names_the_absence_in_its_panel():
+    # The council is a tab now, so an empty run says so in the panel rather than
+    # dropping the section; `Not assessed` on the overview says why.
     report = build_report(PROVENANCE, catalogue(DJANGO), (finding(DJANGO),), {})
-    assert council_section(report) == ""
+    page = council_panel(report)
+    assert NO_COUNCIL in page
+    assert "Council (" not in page
 
 
 def test_every_member_that_spoke_is_named_on_the_page():
@@ -114,7 +118,8 @@ def test_a_single_assessor_run_says_so_and_a_council_is_not_marked_one():
 def test_a_council_that_settled_a_vector_hands_it_over_on_the_page():
     page = rendered(council_ran())
     assert "settled" in page
-    assert "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H" in page
+    # The vector is shown metric by metric; its visible text is what was settled.
+    assert "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H" in re.sub(r"<[^>]+>", "", page)
 
 
 def test_an_open_metric_is_its_own_disclosure_and_a_settled_one_is_only_counted():

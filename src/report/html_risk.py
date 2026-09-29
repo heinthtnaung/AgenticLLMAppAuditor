@@ -8,31 +8,30 @@ is written on every badge and the shape differs from a CVSS chip's.
 
 A finding is scored **once per published source**, because choosing one source
 would be the precedence the design leaves open. Every one of those scores is
-shown with the source behind it rather than collapsed into a range, so the
-reader's next question -- which source sits at which end -- is already answered.
+shown with the source behind it, and the findings whose band depends on the
+source come first: that is the question this tab can newly answer.
 
-The findings whose band depends on the source come first: that is the question
-this section can newly answer, and it has both answers.
-
-A severity floor that raised a band is named beside the score it raised, with
-the band before and after: the chip carries the band the floors left, which
-the number on it alone would no longer explain.
-
-A vector a council settled is shown under the scores on its own CVSS chip,
-saying the risk score does not use it: beside the scores, never one of them.
+A severity floor that raised a band is named beside the score it raised. A vector
+a council settled is shown under the scores on its own CVSS chip, saying the risk
+score does not use it: beside the scores, never one of them.
 """
 
 from organisation.risk import FindingRisk
 from report.council_beside import COUNCIL_SOURCE, NOT_IN_THE_SCORE, CouncilFigure, council_figure
 from report.html_answers import derivation
-from report.html_layout import figure_chip, listing, number, scored_chip, section, tag, text
+from report.html_layout import (
+    empty_note, figure_chip, listing, number, panel_head, scored_chip, tag, text,
+)
+from report.html_vector import vector_markup
 from report.record import Report
 from report.risk_order import bands_contested_first
 
 RISK_SCALE = "org"
+NO_SOURCE = "no source scored this"
 PROVISIONAL = "provisional"
 BAND_MOVES = "the source changes the band"
 FLOORED_BY = "floored by"
+NO_RISK = "No finding was scored: this run recorded no organisation answers."
 
 RISK_LEDE = (
     "0 to 100, computed by this system from the answers this organisation gave. It is not "
@@ -41,13 +40,15 @@ RISK_LEDE = (
 )
 
 
-def risk_section(report: Report) -> str:
-    """Score every finding this environment was asked about, the contested bands first."""
+def risk_panel(report: Report) -> str:
+    """Give the Org risk tab: every finding this environment was asked about, contested first."""
     if not report.risk:
-        return ""
+        return panel_head("Organisation risk", RISK_LEDE) + empty_note(NO_RISK)
     weighed = bands_contested_first(report.risk.values())
+    head = panel_head(f"Organisation risk ({len(weighed)})", RISK_LEDE)
     entries = "".join(risk_entry(one, council_figure(report, one.advisory_id)) for one in weighed)
-    return section(f"Organisation risk ({len(weighed)})", RISK_LEDE, headline(report) + entries)
+    return head + headline(report) + tag("div", entries, "cards")
+
 
 
 def headline(report: Report) -> str:
@@ -60,10 +61,11 @@ def headline(report: Report) -> str:
 
 def risk_entry(weighed: FindingRisk, figure: CouncilFigure | None) -> str:
     """Give one finding's scores, one per source, the council's figure, and what is behind them."""
-    named = tag("span", text(weighed.advisory_id), "advisory") + flags(weighed)
-    scores = risk_scores(weighed) + council_row(figure)
-    body = tag("h3", named, "finding-name") + scores + derivation(weighed)
-    return tag("article", body, "risk-entry")
+    named = tag("span", text(weighed.advisory_id), "adv") + flags(weighed)
+    head = tag("header", tag("div", named, "title"), "card-head")
+    body = head + risk_scores(weighed) + council_row(figure) + derivation(weighed)
+    ident = text(weighed.advisory_id)
+    return f'<article class="card risk-entry" id="risk-{ident}">{body}</article>'
 
 
 def council_row(figure: CouncilFigure | None) -> str:
@@ -73,7 +75,7 @@ def council_row(figure: CouncilFigure | None) -> str:
     said = (
         tag("span", text(COUNCIL_SOURCE), "source-name")
         + figure_chip(figure)
-        + tag("code", text(figure.vector), "vector")
+        + vector_markup(figure.vector)
         + tag("span", text(NOT_IN_THE_SCORE), "not-scored")
     )
     return listing([said], "sources")
@@ -81,8 +83,6 @@ def council_row(figure: CouncilFigure | None) -> str:
 
 def flags(weighed: FindingRisk) -> str:
     """Mark a finding the source moves a band on, and one an Unknown answer left provisional."""
-    # A flag a reader can miss is the same as no flag, so both sit on the heading
-    # rather than in a footnote.
     marked = []
     if weighed.band_depends_on_the_source:
         marked.append(BAND_MOVES)
@@ -116,9 +116,7 @@ def floors_note(scored) -> str:
 
 def source_of(scored) -> str:
     """Name the source behind one score, or say plainly that nobody published one."""
-    # Absent on an unknown technical severity, which is a finding nobody scored
-    # rather than one scored zero, so the row says which it is.
-    return getattr(scored.technical, "source", "") or "no source scored this"
+    return getattr(scored.technical, "source", "") or NO_SOURCE
 
 
 def unknown_answers(scored) -> str:

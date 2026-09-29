@@ -1,7 +1,7 @@
 # Working on the auditor
 
-What is built, how the tests run, who works on what, and where everything is.
-[The README](../README.md) is for running it; `CLAUDE.md` is the binding rules.
+What is built, how the tests run, and where everything is.
+[The README](../README.md) is for running it.
 
 ## Status
 
@@ -16,14 +16,14 @@ catalogued nothing.
 
 | Part | State | What it is |
 |---|---|---|
-| `src/deps/` | built | Syft and Trivy: the components a directory declares, the advisories published against them, and the database's own build date; and which manifests have no lock file Syft reads |
+| `src/deps/` | built | Syft and Trivy: the components a directory declares, the advisories published against them, the secrets Trivy's built-in rules match, and the database's own build date; and which manifests have no lock file Syft reads |
 | `src/cvss/` | built | a CVSS v3 vector parsed and validated, Temporal metrics included, and its Base score by the published equations |
 | `src/findings/` | built | the join — a CVE affecting an installed component, with every source's score kept apart and attributed |
 | `src/scoring/` | built | the approved question library, per-question weights, categories clamped then weighted, the band, the two severity floors that can raise it, and the version naming those rules |
 | `src/council/` | built | the roster and its `egress` gate, redaction, the prompt, a provider registry holding one local Ollama client, the quotation check, the order check, the chairman, the runner, escalation of what the council leaves open to one larger local model, and the explainer that says why a finding's sources differ |
 | `src/organisation/` | built | the answer file, the approval record, the rule for which findings need approval, and one risk score per published source |
-| `src/report/` | built | the record every run produces, and its three renderings: a terminal report, the JSON audit artefact, and one self-contained HTML page |
-| `src/cli/` | built | the arguments, the preflight refusals, the order the packages run in, which findings the council is put to, the progress it prints to stderr, the three report files in `reports/`, and the exit code |
+| `src/report/` | built | the record every run produces, and its three renderings: a terminal report, the JSON audit artefact, and one self-contained, tabbed HTML page with its stylesheet and script inlined |
+| `src/cli/` | built | the arguments, the preflight refusals, the order the packages run in, which findings the council is put to, the server version and model digests a council run records, the progress it prints to stderr, the three report files in `reports/`, and the exit code |
 | question selector | design | every approved question is asked, rather than the few a CVE's prerequisites call for |
 | answer validation | design | no model reads the answers back for gaps or contradictions |
 | hosted provider client | design | the local client works; nothing reaches OpenRouter or another API, so a hosted member is skipped for want of one. An adapter and a registry entry, and no other module moves |
@@ -80,36 +80,23 @@ root, the tests that provoke a permission refusal skip too.
 
 ## Working on it
 
-`CLAUDE.md` is binding. Work that breaks one of its rules is not done. Read it
-before writing anything; it is short.
-
-Six agents are defined in `.claude/agents/`:
-
-| Agent | For |
-|---|---|
-| `python-developer` | the deterministic half — parsers, data models, CLI, the scoring engine |
-| `ai-engineer` | prompts, the Ollama client, parsing model replies, measuring whether a model is any good |
-| `frontend-developer` | the browser-facing JavaScript — components, state, styling, the build |
-| `tester` | writes tests, runs the suite, reproduces bugs |
-| `technical-writer` | the README, `docs/*.md`, docstrings, design records |
-| `judge` | reviews finished work against `CLAUDE.md`; read-only, and it never edits |
-
-Where an agent's instructions disagree with `docs/SCORING_MODEL.md`, the
-design document wins.
+The working rules and agent definitions this project is developed with stay on
+the development machine, and the design brief `docs/SCORING_MODEL.md` was read
+from is kept outside this repository. `CLAUDE.md`, `.claude/` and
+`docs/sources/`, the report's source documents, are in `.gitignore`, so a clone
+has none of them. Where any other instruction disagrees with
+`docs/SCORING_MODEL.md`, the design document wins.
 
 ## Repository layout
 
 ```text
 .
-├── CLAUDE.md                 the binding rules
 ├── README.md                 the short guide
 ├── LICENSE                   MIT
 ├── .gitignore
 ├── pytest.ini                src on the path, tests under tests/
 ├── pyproject.toml            the package, and the `audit` command
 ├── requirements.txt          pytest; the runtime is standard library
-├── .claude/
-│   └── agents/               six agent definitions
 ├── measurements/             the corpus and council runs behind cited figures
 ├── docs/
 │   ├── USAGE.md              the full guide: every flag, output and setting
@@ -117,13 +104,12 @@ design document wins.
 │   ├── DEVELOPMENT.md        this file
 │   ├── SCORING_MODEL.md      the Organisation Risk Score
 │   ├── COUNCIL.md            the assessor council
-│   ├── diagrams.md           every flow, as diagrams
-│   └── sources/              the two documents the design was read from
+│   └── diagrams.md           every flow, as diagrams
 ├── src/
 │   ├── cli/                  arguments, preflight, the audit order, the council scope, the report files, the exit code
 │   ├── council/              the roster, redaction, the providers, the chairman
 │   ├── cvss/                 vector parser, metric vocabulary, Base score
-│   ├── deps/                 the Syft and Trivy runners, the database's build date, unread manifests
+│   ├── deps/                 the Syft and Trivy runners, the secrets, the database's build date, unread manifests
 │   ├── findings/             the join, and every source's score kept apart
 │   ├── organisation/         the answer file, the approval and what needs it, one score per source
 │   ├── report/               the record, and the text, JSON and HTML renderings

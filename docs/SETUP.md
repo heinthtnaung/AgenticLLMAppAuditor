@@ -102,6 +102,23 @@ Vulnerability DB:
   DownloadedAt: 2026-09-24 06:03:45.881932713 +0000 UTC
 ```
 
+## What `audit` asks Trivy
+
+One offline run finds both the advisories and the secrets. For
+`audit fetched/vulnscout`, it is:
+
+```bash
+trivy fs --format json --scanners vuln,secret --secret-config= --skip-db-update --offline-scan --disable-telemetry --skip-version-check --cache-dir ~/.cache/trivy fetched/vulnscout
+```
+
+`--scanners vuln,secret` asks for both scanners in one pass: the secret rules
+are built into Trivy and read no database, so they add no download and no
+network. `--secret-config=`, an empty path, is Trivy's way of saying built-in
+rules only. Left to its default, Trivy reads a `trivy-secret.yaml` from wherever
+`audit` is run, and one there that disables a rule makes the same tree report
+fewer secrets with nothing said; that was measured on 0.74.0. The cache is the
+one the preflight dated, as above.
+
 ## Fetching and scanning pull in opposite directions
 
 The repository is an argument because fetching it needs the corporate proxy
@@ -132,7 +149,7 @@ export NO_PROXY=localhost,127.0.0.1 no_proxy=localhost,127.0.0.1
 
 Without it, `urllib` sends loopback requests to the proxy, which answers 502.
 The failure reads as the local service being down, which sends you looking in
-the wrong place. `CLAUDE.md` carries the same note.
+the wrong place.
 
 **This project and Ollama's own command line need none of it.** `audit`, the
 live test and the measurement scripts reach Ollama through

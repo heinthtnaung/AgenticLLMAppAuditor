@@ -6,7 +6,7 @@ through `escalation_runs`. Which metrics a reader is shown is
 """
 
 from escalation_runs import ANOTHER_VALUE, SETTLING, by_metric, escalated, split_on_av
-from report.html_council import council_entry
+from report.html_council import council_card
 from report.html_metric import metric_details
 
 
@@ -36,6 +36,6 @@ def test_a_metric_the_council_settled_carries_no_escalation_row():
 
 
 def test_an_escalated_metric_is_opened_rather_than_counted_with_the_settled_rest():
-    entry = council_entry(escalated(SETTLING))
+    entry = council_card(escalated(SETTLING))
     assert entry.count("<details") == 2
     assert "6 metrics settled" in entry

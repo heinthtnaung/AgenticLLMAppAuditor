@@ -17,6 +17,7 @@ from `scoring.version`, and it is the default because no run scores by any other
 
 from dataclasses import dataclass
 
+from report.model_identity import ModelIdentity, ServerVersion
 from scoring.version import SCORING_RULES_VERSION
 
 # How both pages name the version, so the two cannot drift.
@@ -57,6 +58,8 @@ class LocalModels:
     reversed, a value counting only where both gave it. `escalation_model` names
     the local model the metrics the council left open were sent to, and is None
     where `AUDITOR_ESCALATION_MODEL` named none, so nothing was escalated.
+    `ollama_version` and `models` say which server and which weights answered
+    (`report.model_identity`): a tag names weights only until it is re-pointed.
     """
 
     server: str
@@ -67,6 +70,8 @@ class LocalModels:
     think: bool
     order_check: bool
     escalation_model: str | None
+    ollama_version: ServerVersion
+    models: tuple[ModelIdentity, ...]
 
 
 @dataclass(frozen=True)

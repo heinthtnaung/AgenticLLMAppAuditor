@@ -21,6 +21,7 @@ from council_eval.compose import pass_models, replay_roster, rosters
 from council_eval.contests import contest_measures
 from council_eval.dataset import Item, read_dataset, vulnscout_items, write_dataset
 from council_eval.gate import differences, recorded_findings, replayed_findings
+from council_eval.grades_step import add_grades
 from council_eval.inspections import add_inspections
 from council_eval.order_checked_step import add_order_checked
 from council_eval.measures import member_measures, metric_measures
@@ -73,6 +74,7 @@ def parser() -> argparse.ArgumentParser:
     score.set_defaults(run=run_score)
     add_inspections(commands)
     add_order_checked(commands)
+    add_grades(commands)
     return top
 
 

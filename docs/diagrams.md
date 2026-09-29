@@ -10,9 +10,9 @@ operator answers the approved questions. What is optional is named as absent in
 the record rather than left out or printed as a zero. Each diagram states its
 own boundary, and diagram 5 is about nothing else.
 
-`CLAUDE.md` rule 19 binds this file: after any change to how the system works —
-a new component, a changed flow, a deleted one — **the diagrams are updated in
-the same change**. A stale diagram is worse than none, because it is
+The project binds this file to one rule: after any change to how the system
+works — a new component, a changed flow, a deleted one — **the diagrams are
+updated in the same change**. A stale diagram is worse than none, because it is
 confidently wrong. A change that touches no flow says so rather than skipping in
 silence.
 
@@ -47,7 +47,7 @@ flowchart TD
         rdir --> walk["Manifest walk<br/>each package.json, composer.json or Gemfile<br/>with no lock file Syft reads beside it<br/>a directory it cannot list = could not run"]
         walk --> syft["Syft scans the directory<br/>lockfiles and manifests, one pass"]
         syft --> comp[("Components<br/>name, version, purl, where found")]
-        trivy["Trivy reads the database<br/>--cache-dir: the cache the preflight dated<br/>advisories per purl, a published<br/>vector for each source that wrote one,<br/>and the advisory's own page, if named"]
+        trivy["Trivy reads the database<br/>--cache-dir: the cache the preflight dated<br/>advisories per purl, a published<br/>vector for each source that wrote one,<br/>and the advisory's own page, if named;<br/>in the same run, its built-in secret rules"]
         comp --> join["Join on the versioned purl"]
         trivy --> join
         join --> asm["Score each source's vector<br/>src/cvss, published equations"]
@@ -58,17 +58,20 @@ flowchart TD
     adb --> trivy
     comp -->|"no component catalogued,<br/>named first under not assessed"| rec
     walk -->|"the manifests read from nothing,<br/>named next under not assessed"| rec
+    trivy -->|"each secret by file, line and rule,<br/>never the secret; a secret exits 1"| rec
 
     fin --> cou["Council, only if members were named,<br/>by --council-member, or by AUDITOR_COUNCIL_MEMBERS<br/>under --council, and only for the findings<br/>their sources do not settle — diagram 4"]
     fin --> ctx["Organisation context<br/>scored once per source<br/>diagram 3"]
     ans["Answer file<br/>--answers: the approved questions<br/>answered by id, and who approved"] --> ctx
-    fin --> rec["Report record<br/>and what was not assessed"]
+    fin --> rec["Report record: the findings,<br/>the secrets, and what was not assessed"]
     cou --> rec
     cou --> expl["Why the sources differ, beside a council<br/>one model, once per disputed finding,<br/>after the council and escalation;<br/>only its quotation is checked"]
     expl --> rec
     expl -. "one line per call" .-> err
     ctx --> rec
     asked["What was asked for<br/>an answer file, council members<br/>kept even when nothing was found"] --> rec
+    asked --> ident["If a council was named, before the scan:<br/>two reads of the model server, /api/tags then /api/version<br/>the version and each model's digest, into the record<br/>a run naming no member reads nothing"]
+    ident --> rec
     rec --> rnd["Rendered as text, as JSON,<br/>and as one HTML page"]
     rec --> apr["Which findings need approval<br/>src/organisation/approval_rule, read off the record:<br/>any source's risk band High or Critical,<br/>or published sources that disagree"]
     apr -->|"marked on each finding,<br/>counted in the summary"| rnd
@@ -115,6 +118,20 @@ not go green on it. A run that finds something exits `1` whatever it could not
 read, and `not_assessed` in the JSON is where both are named. What counts as
 read was measured against Syft 1.52, and `docs/USAGE.md` names the four ways
 the walk falls short.
+
+**Secrets come out of the same Trivy run.** Its built-in rules read no
+database, so they add nothing for the preflight to check, and only those rules
+are used. Each match reaches the record as a file, a line range and a rule,
+never the text it matched. A secret is something found, so a run with one exits
+`1` whatever else it found or could not read; it has no CVSS, so no score, no
+band and no council ever touches it.
+
+**A council run reads the model server before the scan.** Once members are
+named, and only then, it asks the server for its version and each model's
+digest, so the record names the weights the server held under each tag when the
+run began, even if the server is later gone (`docs/USAGE.md`). A run naming no
+member makes neither read. They come before the scan and wait a 30 s timeout,
+not the generation one, so a hung server does not hold the audit.
 
 Syft is one box because it is one call: it finds the manifests and catalogues
 them in the same pass; the walk before it feeds it nothing. The
@@ -400,7 +417,7 @@ flowchart TD
     red --> shown["The text a member sees<br/>no id, no published vector,<br/>no other member's answer"]
 
     subgraph ROSTER["The roster: n members, added and removed by the operator<br/>named by --council-member, or by AUDITOR_COUNCIL_MEMBERS<br/>for --council; that setting alone starts nothing"]
-        subgraph LOCALM["Local: Ollama on this machine<br/>server, window and timeout from AUDITOR_* settings<br/>temperature, seed and think pinned in code"]
+        subgraph LOCALM["Local: Ollama on this machine<br/>server, window and timeout from AUDITOR_* settings<br/>temperature, seed and think pinned in code<br/>the server's version and each model's digest<br/>read once per run, into the record"]
             m1["Member 1, local"]
             m2["Member 2, local"]
             mdot["... to member n"]
@@ -455,7 +472,7 @@ flowchart TD
     vec --> eng
     num --> hmn["Human approves or overrides"]
 
-    rec["Record: every member and its provider,<br/>every member skipped and why, every finding<br/>not asked and why, every guess and<br/>order-sensitive pair, what the<br/>chairman decided from, the escalation<br/>model named or that none was, what it said,<br/>and the vector or the metrics that stopped one"]
+    rec["Record: every member and its provider,<br/>every member skipped and why, every finding<br/>not asked and why, every guess and<br/>order-sensitive pair, what the<br/>chairman decided from, the escalation<br/>model named or that none was, what it said,<br/>each model's digest and the server's version,<br/>read once when the run began,<br/>and the vector or the metrics that stopped one"]
     chr -.-> rec
     eask -.-> rec
     skip -.-> rec
@@ -579,14 +596,14 @@ flowchart LR
     subgraph BUILT["Built: source with tests beside it"]
         b0["src/deps/scanner<br/>run an external tool, read its JSON"]
         b1["src/deps/syft_runner, syft_report<br/>run Syft, and read what it wrote"]
-        b2["src/deps/trivy_runner, trivy_report<br/>run Trivy, and read what it wrote"]
+        b2["src/deps/trivy_runner, trivy_report,<br/>trivy_secrets<br/>run Trivy, and read its advisories<br/>and its secrets"]
         b3["src/deps/trivy_database<br/>which Trivy cache, and its<br/>database's own build date"]
         b11["src/deps/manifests<br/>the manifests no lock file<br/>Syft reads is beside"]
         b4["src/cvss<br/>vector parser, metric vocabulary,<br/>Base score equations"]
         b5["src/findings<br/>the join, every source's score apart"]
         b7["src/council<br/>roster and the egress gate, redaction,<br/>prompt, provider registry, chairman,<br/>the local server's settings,<br/>the members --council runs,<br/>the order check, escalation<br/>to one local model, and the explainer"]
-        b8["src/report<br/>the record, and three renderings of it:<br/>text, JSON, one self-contained HTML page"]
-        b9["src/cli<br/>arguments, preflight, the audit order,<br/>the council's scope and its record, the<br/>stderr progress stream, the report files<br/>in reports/, and the exit code a<br/>pipeline reads"]
+        b8["src/report<br/>the record, and three renderings of it:<br/>text, JSON, one self-contained tabbed HTML<br/>page, its stylesheet and script inlined"]
+        b9["src/cli<br/>arguments, preflight, the audit order,<br/>the council's scope and its record,<br/>the two reads of the model server it makes,<br/>the stderr progress stream, the report files<br/>in reports/, and the exit code a<br/>pipeline reads"]
         b6["src/scoring<br/>the approved question library, categories<br/>clamped then weighted, the band,<br/>the severity floors on it<br/>and the version naming those rules"]
         b10["src/organisation<br/>the answer file, the approval record,<br/>the rule for what needs approval,<br/>one score per source"]
         b0 --> b1
@@ -629,9 +646,8 @@ flowchart LR
     b10 --> d12
 
     subgraph REAL["Real today, but not this project's code"]
-        x1["CLAUDE.md, the binding rules"]
+        x1["The working rules and agent definitions,<br/>on the development machine, and the design<br/>brief, kept outside the repository"]
         x2["README.md, the short guide, and docs/:<br/>the full guide, setup, development,<br/>the scoring model, the council, this page"]
-        x3["Six agent definitions in .claude/agents/"]
         x4["Syft, Trivy, Ollama and a downloaded advisory DB"]
     end
 ```
@@ -679,18 +695,19 @@ to guard does not exist. That is why the hosted provider client keeps a box of
 its own with an edge back into the registry it would be registered in.
 
 **The web page left the middle column.** The `src/report/html_*.py` modules
-render the record as one HTML file with the stylesheet inlined, no script and
-no font, because the page is produced behind a proxy and opened from disk, so
-it fetches nothing. The one address on it is each advisory's own page, as a
+render the record as one tabbed HTML file with the stylesheet and script inlined
+and no font, because the page is produced behind a proxy and opened from disk,
+so it fetches nothing. The one address on it is each advisory's own page, as a
 link a reader follows or does not. What that is not is a web application:
-nothing is served, nothing is interactive, and there is no build step and no
-JavaScript — which is the whole of `frontend-developer`'s remit, and none of it
-is written. The box is gone because a reader can open the report in a browser
-today, not because that remit is met.
+nothing is served, there is no build step, and the one inline script ships as it
+is written, not bundled, with the page still readable when it does not run. The
+box is gone because a reader can open the report in a browser today, not because
+a web application exists.
 
 The third column is there so the page is not read as claiming the rest is
-absent: the rules, the design documents and the agent definitions are written,
-and the third-party tools are installed. None of that is code this project
+absent: the documents are written, the third-party tools are installed, and the
+working rules and agent definitions exist on the development machine, with the
+design brief kept outside the repository. None of that is code this project
 wrote.
 
 What this does not show: an order of work for the middle column, because no such
@@ -701,7 +718,8 @@ note there on where an approval's time comes from.
 
 ## Keeping this page true
 
-The check is rule 19, and it is cheap to run against a change:
+The check is the rule this page opens with, and it is cheap to run against a
+change:
 
 | The change | This page |
 |---|---|

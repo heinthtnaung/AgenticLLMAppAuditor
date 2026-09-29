@@ -11,6 +11,7 @@ path and imports by basename, so a second `samples.py` would be shadowed by
 
 from deps.syft_report import Catalogue, Component, UnidentifiedArtifact
 from deps.trivy_report import Advisory
+from deps.trivy_secrets import SecretFinding
 from findings.finding import build_finding
 from report.provenance import AdvisoryDatabase, RunProvenance
 
@@ -106,3 +107,17 @@ def catalogue(*components: Component, unidentified: tuple = ()) -> Catalogue:
 def unidentified(name: str = "./local-action", ecosystem: str = "github-action"):
     """Build one artifact nothing could ever be joined to."""
     return UnidentifiedArtifact(name=name, ecosystem=ecosystem, locations=("/.github/",))
+
+
+def secret(target: str = "config/settings.py", start_line: int = 2, **overrides) -> SecretFinding:
+    """Build one secret a Trivy rule matched, on one line unless a test gives the last."""
+    fields = {
+        "target": target,
+        "start_line": start_line,
+        "end_line": start_line,
+        "rule_id": "github-pat",
+        "category": "GitHub",
+        "severity": "CRITICAL",
+        "title": "GitHub Personal Access Token",
+    }
+    return SecretFinding(**{**fields, **overrides})

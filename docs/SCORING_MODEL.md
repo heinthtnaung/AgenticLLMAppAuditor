@@ -1,7 +1,8 @@
 # The Organisation Risk Score
 
-Captured from `docs/sources/brainstorming.pdf`. This is the design every agent
-works to. Where an agent's instructions and this file disagree, this file wins.
+Captured from the project's design brief, a brainstorming document kept outside
+this repository. This is the design the code is built to. Where any other
+instruction and this file disagree, this file wins.
 
 ## Published scores, never merged
 
@@ -157,10 +158,10 @@ floor to see why, which is why every floor is on the record.
 row above is corrected to the published v3.1 qualitative scale, which is what
 `src/cvss/score.py` returns.
 
-That is the second place `docs/sources/brainstorming.pdf` departs from the
-standard it describes — the category weights are the other, and that one moved
-every number the tool produces. One is a transcription slip; two is a pattern.
-Check the PDF against the published specification rather than trusting it,
+That is the second place the source document departs from the standard it
+describes — the category weights are the other, and that one moved every number
+the tool produces. One is a transcription slip; two is a pattern. Check the
+document against the published specification rather than trusting it,
 including in the parts nobody has implemented yet.
 
 ### Turning answers into a category score

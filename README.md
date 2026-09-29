@@ -2,10 +2,12 @@
 
 An SBOM-based vulnerability auditor. It lists a repository's components with
 Syft, matches them to advisories in an offline Trivy database, and scores every
-published CVSS v3.1 vector, one source at a time. Answer twelve questions about
-your environment and it adds an **Organisation Risk Score**. Name local models
-and a **council** reads each disputed advisory, quoting the text behind every
-value it gives. Every number comes from a deterministic engine, never a model.
+published CVSS v3.1 vector, one source at a time. The same Trivy run reports
+where its built-in rules match a credential, without ever showing the secret.
+Answer twelve questions about your environment and it adds an **Organisation
+Risk Score**. Name local models and a **council** reads each disputed advisory,
+quoting the text behind every value it gives. Every number comes from a
+deterministic engine, never a model.
 
 This page is the short version. [docs/USAGE.md](docs/USAGE.md) is the full
 guide.
@@ -16,7 +18,7 @@ guide.
 |---|---|---|---|
 | Python | everything | 3.11.11 | 3.10 |
 | [Syft](https://github.com/anchore/syft) | listing the components | 1.52.0 | none set |
-| [Trivy](https://trivy.dev) and its advisory database | matching advisories, offline | 0.74.0 | none set |
+| [Trivy](https://trivy.dev) and its advisory database | matching advisories and finding secrets, offline | 0.74.0 | none set |
 | [Ollama](https://ollama.com) and a pulled model | the council (optional) | 0.34.3 | none set |
 
 The runtime is the standard library alone; pytest is the only development
@@ -79,6 +81,7 @@ Audit of fetched/vulnscout
 18 findings across 60 components. 5 carry sources that disagree.
 Approval is needed for 5 of 18: sources that disagree. With no organisation answers, none was
 checked for a High or Critical Organisation Risk Score. No approval is recorded for this audit.
+0 secrets matched the secret rules built into Trivy.
 
 SOURCES DISAGREE (5)
   CVE-2025-13465  lodash-es 4.17.21
@@ -87,6 +90,9 @@ SOURCES DISAGREE (5)
 
 SOURCES AGREE (13)
   CVE-2026-14257       brace-expansion 1.1.14          7.5  High      2 sources
+
+SECRETS (0)
+  Trivy's built-in secret rules matched nothing in this tree.
 
 NOT ASSESSED
   Organisation Risk Score
@@ -111,7 +117,8 @@ audit fetched/vulnscout --format json
 ```
 
 Prints the JSON record on stdout (`--format html` prints the page). All three
-files are saved either way.
+files are saved either way. The HTML is one self-contained, tabbed page — its
+stylesheet and script inlined — that opens in a browser offline.
 
 ### Score it against your environment
 
@@ -227,7 +234,7 @@ them only on a council run.
 | Code | Meaning |
 |---|---|
 | `0` | ran, catalogued components, found nothing, and read every manifest |
-| `1` | ran and found something |
+| `1` | ran and found something: a vulnerability or a secret |
 | `2` | could not run, or could not save its reports |
 | `3` | ran and found nothing, but could not read a manifest or catalogued no component |
 
@@ -250,7 +257,7 @@ flags.
 |---|---|
 | [docs/USAGE.md](docs/USAGE.md) | the full guide: every flag, output, setting and council behaviour |
 | [docs/SETUP.md](docs/SETUP.md) | prerequisites in depth, the advisory database, the proxy |
-| [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | build status, the tests and their flags, the agents, the layout |
+| [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | build status, the tests and their flags, the layout |
 | [docs/SCORING_MODEL.md](docs/SCORING_MODEL.md) | how the Organisation Risk Score is computed |
 | [docs/COUNCIL.md](docs/COUNCIL.md) | how the council works, and why |
 | [docs/diagrams.md](docs/diagrams.md) | every flow, as diagrams |

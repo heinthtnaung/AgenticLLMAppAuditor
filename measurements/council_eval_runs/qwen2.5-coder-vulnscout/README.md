@@ -35,6 +35,7 @@ and 18 turns of 8 calls. The other two requests are the header's. Clean.
 | `ollama-journal.run1.tsv` | 14 KB | the server's requests and loads for the window |
 | `turns.txt` | 1 KB | the excerpt, counted |
 | `qwen2.5-coder.score.txt` | 12 KB | Qwen alone, the coder alone, and the pair, against R1 and the baseline |
+| `qwen2.5-coder.grades.txt` | 2 KB | each roster's vectors by band distance from R1: exact, adjacent or major |
 | `values.txt` | 1 KB | every value the coder named, beside the option listed last |
 | `quoting.txt` | 1 KB | the pair's lone settlements and unverified quotations |
 
@@ -44,6 +45,7 @@ and 18 turns of 8 calls. The other two requests are the header's. Clean.
 R=measurements/council_eval_runs/qwen2.5-coder-vulnscout; P=measurements/council_eval_runs/pilot-vulnscout
 D=$P/vulnscout.dataset.json; C=$R/qwen2.5-coder-7b-instruct.run1.replies.jsonl; Q=$P/qwen2.5-7b-instruct.run1.replies.jsonl
 python measurements/council_eval score --dataset $D --replies $Q $C
+python measurements/council_eval grades --dataset $D --replies $Q $C
 python measurements/council_eval values --dataset $D --replies $C
 python measurements/council_eval quoting --dataset $D --replies $Q $C
 python measurements/council_eval turns --excerpt $R/ollama-journal.run1.tsv

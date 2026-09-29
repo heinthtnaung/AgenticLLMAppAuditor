@@ -20,7 +20,9 @@ from organisation.approval import Approval
 from report.provenance import SCORING_RULES_LABEL, AdvisoryDatabase
 from report.absences import NOTHING_ABSENT
 from report.record import Report
-from report.summary_words import approval_count, counts, inventory_pointer, unread_pointer
+from report.summary_words import (
+    approval_count, counts, inventory_pointer, secrets_count, unread_pointer,
+)
 from report.text_approval import approval_needed_block
 from report.text_council import council_block
 from report.text_explanation import explanation_block
@@ -32,6 +34,7 @@ from report.text_findings import (
 )
 from report.text_layout import INDENT, SOURCE_SEPARATOR, section, wrapped
 from report.text_risk import risk_block
+from report.text_secrets import secrets_block
 
 # Wide enough for a path, which is what an unidentifiable artifact is named by.
 ARTIFACT_NAME_WIDTH = 42
@@ -48,6 +51,7 @@ def as_text(report: Report) -> str:
         unscored_block(report),
         risk_block(report),
         council_block(report),
+        secrets_block(report),
         unmatched_block(report),
         unidentified_block(report),
         approval_needed_block(report),
@@ -88,6 +92,7 @@ def summary(report: Report) -> str:
         inventory_pointer(report),
         unread_pointer(report),
         *wrapped(approval_count(report), 0),
+        secrets_count(report),
     ]
     return "\n".join(line for line in lines if line)
 

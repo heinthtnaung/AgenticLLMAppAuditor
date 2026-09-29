@@ -1,54 +1,39 @@
-"""How one finding goes on the page, in the four shapes a reader needs.
+"""The findings on the page: the contested ones on their own tab, the rest on another.
 
-**Every source is a row of its own, and no source has a column.** On the
-repository under test NVD published a vector for 4 findings of 18, so a table
-headed `nvd` is empty on 14 rows and looks right until a real repository is on
-screen. What is rendered is the list the finding carries, in name order, which
-is not a ranking.
+The Disagreements tab leads with the findings whose sources read a metric
+differently, most consequential first, each card carrying why the sources differ
+where a model explained it. The Agreements tab holds the rest in three groups a
+reader must tell apart: sources that were all read and match, a match beside a
+vector this calculator refused (agreement nobody could check), and findings
+nobody published a readable vector for (which is not a score of 0.0).
 
-A contested finding gets its spread, the bands it crosses and the metrics its
-sources read differently; an agreeing one gets the same rows without them; one
-whose readable sources match beside a refused vector gets those rows in a group
-of its own, because a vector nobody could read is not agreement; one nobody
-scored says so rather than showing a zero. A refused vector is kept on
-whichever card it belongs to, marked not scored.
-
-A finding `organisation.approval_rule` marks as needing approval carries the
-mark on its heading, naming the halves of the rule it meets, whichever group
-its card is in.
+What a card is built from is `report.html_finding_card`; this file decides which
+cards a reader sees and in what order, so the two change for different reasons.
 """
 
-from cvss.score import severity_band
-from organisation.approval_rule import ApprovalReason
-from report.approval_needed import NEEDS_APPROVAL, reasons_for
 from report.disagreement import (
-    agreement_unchecked,
-    bands_crossed,
-    most_contested_first,
-    score_spread,
-    sources_agree,
+    agreement_unchecked, bands_crossed, most_contested_first, score_spread, sources_agree,
     sources_disagree,
 )
-from report.html_layout import (
-    CVSS_SCALE, link, listing, number, scored_chip, section, separated, tag, text,
+from report.explanation_words import LEDE as EXPLANATION_LEDE
+from report.html_explanation import why_block
+from report.html_finding_card import (
+    article, card_head, card_links, nothing_published, source_table, unreadable_table,
 )
+from report.html_layout import empty_note, group, number, panel_head, tag, text
 from report.record import Report
 
-NOTHING_PUBLISHED = "No source published a readable v3 vector."
+NO_DISAGREEMENT = "No finding here has sources that read a metric differently."
+NO_AGREEMENT = "No agreeing, refused, or unscored finding here."
 
 CONTESTED_LEDE = (
-    "Read these first. Published CVSS base scores, 0.0 to 10.0, one row per source that "
-    "published a vector, in source-name order, which is not a ranking. Ordered by whether "
-    "the disagreement crosses a severity band, because that is what moves the response time."
+    "Read these first. Ordered by whether the disagreement crosses a severity band, because "
+    "that is what moves the response time. Each source is a row, in name order, not a ranking."
 )
+AGREEING_LEDE = "Every source was read, and the vectors match metric for metric."
 REFUSED_LEDE = (
-    "The vectors this calculator could read match metric for metric, and another source "
-    "published one it refused. Whether that source agrees is not known, so these are not "
-    "counted as agreeing."
-)
-AGREEING_LEDE = (
-    "Every source was read, and the vectors match metric for metric. Each source is still "
-    "shown on its own."
+    "The vectors this calculator could read match, and another source published one it "
+    "refused. Whether that source agrees is not known, so these are not counted as agreeing."
 )
 UNSCORED_LEDE = (
     "Nobody published a vector this calculator could read. That is not a score of 0.0: "
@@ -56,117 +41,83 @@ UNSCORED_LEDE = (
 )
 
 
-def contested_section(report: Report) -> str:
-    """List the findings whose sources disagree, the ones worth reading first."""
+def disagreements_panel(report: Report) -> str:
+    """Give the Disagreements tab: the contested findings, most consequential first."""
     contested = [one for one in report.findings if sources_disagree(one)]
+    head = panel_head(f"Sources disagree ({len(contested)})", CONTESTED_LEDE)
     if not contested:
+        return head + empty_note(NO_DISAGREEMENT)
+    cards = "".join(contested_card(report, one) for one in most_contested_first(tuple(contested)))
+    return head + explanation_disclosure(report, contested) + cards_wrap(cards)
+
+
+def explanation_disclosure(report: Report, contested: list) -> str:
+    """State once, above the cards, what a model's explanation is and is not, where one exists."""
+    if not any(one.advisory.advisory_id in report.explanations for one in contested):
         return ""
-    cards = [contested_card(report, one) for one in most_contested_first(tuple(contested))]
-    return section(f"Sources disagree ({len(contested)})", CONTESTED_LEDE, "".join(cards))
+    return tag("p", text(EXPLANATION_LEDE), "note")
 
 
-def unchecked_section(report: Report) -> str:
-    """List the findings whose readable sources match beside a vector that was refused."""
-    unchecked = [one for one in report.findings if agreement_unchecked(one)]
-    if not unchecked:
-        return ""
-    cards = [finding_card(report, one, source_list(one)) for one in unchecked]
-    return section(f"A source was refused ({len(unchecked)})", REFUSED_LEDE, "".join(cards))
-
-
-def agreeing_section(report: Report) -> str:
-    """List the findings whose sources were all read and say the same thing about every metric."""
+def agreements_panel(report: Report) -> str:
+    """Give the Agreements tab: the sources that agree, then the refused, then the unscored."""
     agreed = [one for one in report.findings if sources_agree(one)]
-    if not agreed:
-        return ""
-    cards = [finding_card(report, one, source_list(one)) for one in agreed]
-    return section(f"Sources agree ({len(agreed)})", AGREEING_LEDE, "".join(cards))
-
-
-def unscored_section(report: Report) -> str:
-    """List the findings nobody published a readable vector for, which is not a zero."""
+    refused = [one for one in report.findings if agreement_unchecked(one)]
     unscored = [one for one in report.findings if not one.is_scored]
-    if not unscored:
-        return ""
-    cards = [unscored_card(report, one) for one in unscored]
-    return section(f"Not scored ({len(unscored)})", UNSCORED_LEDE, "".join(cards))
+    body = (
+        group(f"Sources agree ({len(agreed)})", AGREEING_LEDE, cards_of(report, agreed, plain_card))
+        + group(f"A source was refused ({len(refused)})", REFUSED_LEDE,
+                cards_of(report, refused, plain_card))
+        + group(f"Not scored ({len(unscored)})", UNSCORED_LEDE,
+                cards_of(report, unscored, unscored_card))
+    )
+    return panel_head("Agreements and the rest") + (body or empty_note(NO_AGREEMENT))
 
 
-def finding_card(report: Report, finding, body: str) -> str:
-    """Put one finding on a card: what it is, then what its group shows about it."""
-    named = finding_name(finding, reasons_for(report, finding))
-    return tag("article", named + body + unreadable_list(finding), "finding")
+def cards_wrap(cards: str) -> str:
+    """Wrap already-rendered cards in the column the stylesheet lays them out in."""
+    return tag("div", cards, "cards")
+
+
+def cards_of(report: Report, findings: list, build) -> str:
+    """Give a column of cards built by `build`, or nothing where there are no findings."""
+    return cards_wrap("".join(build(report, one) for one in findings)) if findings else ""
 
 
 def contested_card(report: Report, finding) -> str:
-    """Give one contested finding: how far apart its sources are, then every one of them."""
-    return finding_card(report, finding, spread_line(finding) + source_list(finding))
+    """Give one contested finding: spread, sources, any refused one, and why they differ."""
+    body = card_head(report, finding) + facts(finding) + source_table(finding)
+    body += refused_note(finding) + why_block(report, finding) + card_links(report, finding)
+    return article(finding, "disagree", body)
+
+
+def plain_card(report: Report, finding) -> str:
+    """Give one agreeing or refused finding: its sources, any refused one, and its other views."""
+    body = card_head(report, finding) + source_table(finding) + refused_note(finding)
+    return article(finding, "agree", body + card_links(report, finding))
+
+
+def refused_note(finding) -> str:
+    """Keep any refused source on the card, marked not scored, whichever group the card is in."""
+    return unreadable_table(finding) if finding.unreadable else ""
 
 
 def unscored_card(report: Report, finding) -> str:
-    """Give one unscored finding, saying whether anything was published at all."""
-    if finding.unreadable:
-        return finding_card(report, finding, "")
-    return finding_card(report, finding, tag("p", text(NOTHING_PUBLISHED), "spread"))
+    """Give one unscored finding, its refused vectors where it has them, else that none was read."""
+    inner = unreadable_table(finding) if finding.unreadable else nothing_published()
+    body = card_head(report, finding) + inner + card_links(report, finding)
+    return article(finding, "agree", body)
 
 
-def finding_name(finding, reasons: tuple[ApprovalReason, ...] = ()) -> str:
-    """Name the advisory, linked to its page when it has one, the component, and any approval."""
-    named = tag("span", advisory_name(finding.advisory), "advisory")
-    installed = f"{finding.component.name} {finding.component.version}"
-    component = tag("span", text(installed), "component")
-    return tag("h3", named + component + approval_flag(reasons), "finding-name")
+def facts(finding) -> str:
+    """Give the spread, the bands it crosses, and which metrics its sources read apart."""
+    pairs = [
+        ("Spread", f"{number(score_spread(finding))} apart"),
+        ("Bands", " and ".join(bands_crossed(finding))),
+        ("Differ on", ", ".join(finding.disputed_metrics())),
+    ]
+    return tag("dl", "".join(fact(name, value) for name, value in pairs), "facts")
 
 
-def approval_flag(reasons: tuple[ApprovalReason, ...]) -> str:
-    """Mark a finding needing approval on its heading, naming the halves of the rule it meets."""
-    if not reasons:
-        return ""
-    said = " and ".join(reason.value for reason in reasons)
-    return tag("span", text(f"{NEEDS_APPROVAL}: {said}"), "flag")
-
-
-def advisory_name(advisory) -> str:
-    """Give the advisory's id, as a link to its page, or as plain text where none is published."""
-    if advisory.url is None:
-        return text(advisory.advisory_id)
-    return link(advisory.url, text(advisory.advisory_id))
-
-
-def spread_line(finding) -> str:
-    """Say how far apart the sources are, which bands that crosses, and what they read apart."""
-    bands = " and ".join(bands_crossed(finding))
-    metrics = ", ".join(finding.disputed_metrics())
-    said = [f"{number(score_spread(finding))} apart", bands, f"differ on {metrics}"]
-    return tag("p", separated([text(one) for one in said]), "spread")
-
-
-def source_list(finding) -> str:
-    """Put every source's own score side by side, in name order, which is not a ranking."""
-    return listing([source_row(one) for one in finding.scores], "sources")
-
-
-def source_row(score) -> str:
-    """Give one source: its name, the score its vector comes to, and the vector itself."""
-    return (
-        tag("span", text(score.source), "source-name")
-        + scored_chip(CVSS_SCALE, number(score.base_score), severity_band(score.base_score), "cvss")
-        + tag("code", text(score.vector), "vector")
-    )
-
-
-def unreadable_list(finding) -> str:
-    """Name every source this calculator refused, kept as not scored and never as 0.0."""
-    if not finding.unreadable:
-        return ""
-    return listing([unreadable_row(one) for one in finding.unreadable], "sources")
-
-
-def unreadable_row(source) -> str:
-    """Give one refused source: what it published, and why the calculator would not read it."""
-    return (
-        tag("span", text(source.source), "source-name")
-        + tag("span", "not scored", "not-scored")
-        + tag("code", text(source.vector), "vector")
-        + tag("span", text(source.refusal), "refusal")
-    )
+def fact(name: str, value: str) -> str:
+    """Give one term/value pair of a card's facts."""
+    return tag("div", tag("dt", text(name)) + tag("dd", text(value)))

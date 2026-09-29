@@ -47,6 +47,7 @@ from report.council_words import (
     counted,
     escalation_named,
     metrics_settled,
+    models_named,
     uncross_checked,
 )
 from report.record import Report
@@ -62,8 +63,9 @@ def council_block(report: Report) -> str:
     assessed = [one for one in outcomes if was_assessed(one)]
     entries = chain.from_iterable(advisory_lines(one) for one in assessed)
     passed = [one for one in outcomes if not was_assessed(one)]
-    escalated = escalation_named(report.provenance.local_models)
-    named = [indented(ADVISORY_DEPTH, one) for one in escalated]
+    local = report.provenance.local_models
+    said = [*escalation_named(local), *models_named(local)]
+    named = [indented(ADVISORY_DEPTH, one) for one in said]
     return section(f"COUNCIL ({len(assessed)})", [*named, *entries, *passed_over_lines(passed)])
 
 

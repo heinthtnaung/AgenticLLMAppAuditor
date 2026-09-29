@@ -8,6 +8,7 @@ from cli import audit as audit_module
 from cli.arguments import Options, TEXT_FORMAT
 from cli.audit import run_audit
 from cli.council_run import assess_one
+from deps.trivy_runner import TrivyScan
 from report.council_record import CouncilAssessment
 from scoring.library import APPROVED_QUESTIONS
 from cli_samples import (
@@ -66,7 +67,7 @@ def test_the_scan_reads_the_cache_the_preflight_dated(tmp_path, monkeypatch):
     def scanning(path, cache):
         """Record the cache the scan was handed, and answer as Trivy would."""
         handed.append(cache)
-        return {ADVISORY.purl: (ADVISORY,)}
+        return TrivyScan(advisories={ADVISORY.purl: (ADVISORY,)}, secrets=())
 
     monkeypatch.setattr(audit_module.trivy_runner, "scan_directory", scanning)
     run_audit(options_for(tmp_path), DATED)

@@ -43,6 +43,17 @@ of that format is byte for byte what was printed. After the report, one line on
 stderr says where the three went:
 `reports written to reports/vulnscout.txt, reports/vulnscout.json, reports/vulnscout.html`.
 
+**The page is tabbed: Overview, Disagreements, Agreements, Org risk, Council,
+Secrets and Inventory.** Overview opens with summary tiles, a callout naming the
+two scores apart, cards for the approval and what was not assessed, and an "All
+findings" table filtered by All, Needs approval, Disagree, Agree or Council
+settled, with a search box. Each disagreement card carries why the sources
+differ; refused and unscored findings are their own groups under Agreements, and
+the components that matched nothing and the unidentified artifacts (a GitHub
+action, say) are under Inventory. With scripts off the page still reads whole —
+every tab stacks and shows, and the filter bar does not appear. With the script,
+printing opens every collapsed section.
+
 **No time goes in a name**, because `src/` reads no clock. A second run of the
 same repository overwrites its three files, so copy out of `reports/` any run you
 mean to keep. Two repositories with the same directory name, `a/app` and
@@ -62,16 +73,17 @@ Rerun once the fault is fixed.
 
 All three render the same record and none of them works a number out, so a
 figure cannot differ between them. The HTML page fetches nothing — the
-stylesheet is inlined and there is no script, no font and no image — because a
-scan runs behind the corporate proxy and the report is opened from disk. A page
-that fetched its stylesheet would arrive unreadable in the environment it was
-made for.
+stylesheet and the script are both inlined, and there is no font and no image —
+because a scan runs behind the corporate proxy and the report is opened from
+disk. A page that fetched its stylesheet would arrive unreadable in the
+environment it was made for.
 
 **Each advisory links to its own page, where Trivy names one.** The address is
 Trivy's `PrimaryURL`. On the page a finding's advisory id is a link, which a
-reader follows or does not; nothing opens it for them. It carries
-`rel="noreferrer"`, so a report served from an internal host does not hand its
-own address to the advisory's site. The JSON's `advisory` carries it as `url`,
+reader follows or does not; nothing opens it for them. It opens in a new tab,
+marked with a small inline SVG icon, and carries `rel="noreferrer"`, so a report
+served from an internal host does not hand its own address to the advisory's
+site. The JSON's `advisory` carries it as `url`,
 always present and `null` where Trivy names none. On this repository all 18
 findings carry one.
 
@@ -86,10 +98,11 @@ What HTML costs is comparison. Text and JSON both read line by line, so two runs
 diff; a styling change rewrites an HTML file the whole way down, which is why
 `json` stays the format to keep.
 
-**It is a page, not an application.** Nothing is served and nothing is
-interactive; there is no JavaScript and no build step. The browser-facing half
-`frontend-developer` exists for is unwritten, and it has no box in diagram 5
-because nothing has designed it either.
+**It is one page, not an application.** Nothing is served and nothing is
+fetched. There is one inline script and no build step — no framework and no
+bundler — and the page reads with scripts off. A served, browser-facing
+application is unwritten, and it has no box in diagram 5 because nothing has
+designed it either.
 
 ## A manifest with no lock file is named, not counted
 
@@ -149,6 +162,34 @@ A directory the walk cannot list stops the run before the scan, with exit `2`
 and nothing on stdout, because passing over it would pass over every manifest
 inside. The error stream says
 `audit: cannot list <path> to look for manifests: Permission denied`.
+
+## A secret is reported by where it is, never by what it is
+
+**The same Trivy run that finds the advisories finds secrets.** Trivy's
+built-in secret rules match text shaped like a credential, a token or a private
+key; they read no database, so they run offline beside the vulnerability scan.
+Only Trivy's built-in rules are used ([SETUP.md](SETUP.md) says how). Each match
+is reported by the file, the line or lines, the rule that matched, its title,
+its category and its severity. The summary counts them, on this repository as
+`0 secrets matched the secret rules built into Trivy.`, and the text report
+lists them under `SECRETS (n)`. From a scratch tree holding a made-up GitHub
+token, the entry is `settings.py:4`, then
+`CRITICAL  ·  GitHub Personal Access Token  ·  GitHub  ·  rule github-pat`.
+
+With none, the block still appears, and says
+`Trivy's built-in secret rules matched nothing in this tree.` It names the
+rules because they are all that looked: no match is not the same as no secret.
+The page has a Secrets tab in the same terms, under a lede saying the
+secret is not on the page and not in the record behind it.
+
+**The secret itself is never read.** Trivy masks it in the match and in the
+lines of code it quotes, but a mask is Trivy's promise and not this tool's, and
+the rest of a quoted line can hold a second secret no rule matched. So neither
+field is read, the record has nowhere to carry a secret, and nothing downstream
+can print one by accident. In the JSON, `secrets` is a list of `file`,
+`start_line`, `end_line`, `rule_id`, `category`, `severity` and `title`, and
+`run.secret_count` counts them. A secret is not a finding: it has no CVSS, so it
+is never scored, weighed or put to the council.
 
 ## Scoring a finding against your environment
 
@@ -346,7 +387,7 @@ run exits `1` already.
 | Code | Meaning |
 |---|---|
 | `0` | the audit ran, catalogued components, found nothing, and read every manifest |
-| `1` | the audit ran and found something |
+| `1` | the audit ran and found something: a vulnerability or a secret |
 | `2` | the audit could not run, or could not save its reports |
 | `3` | the audit ran and found nothing, but could not read a manifest or catalogued no component |
 
@@ -357,6 +398,11 @@ command line and a directory the manifest walk cannot list exit with, so every
 "could not run" leaves by the same door. A run whose reports could not be
 written exits `2` even with the record on stdout, because it did not do
 everything it was asked to.
+
+**A secret is something found.** It carries no CVSS and is never scored, but a
+credential in the tree stops a build as surely as a CVE does, so a run that
+found one exits `1` whatever else it found or could not read, an empty
+inventory included.
 
 **`3` keeps nothing found over something unchecked apart from `0`.** A
 `package.json` with no lock file yields no package, so `0` there would put a
@@ -457,6 +503,19 @@ server, window and timeout a council run used, beside those three,
 `"order_check": true`, every metric asked in both orders, and
 `escalation_model`, the model named or `null`. It is `null` itself for a run
 with no member.
+
+**It also names the server, and the weights it held under each tag when the run
+began.** A tag such as `gemma4:latest` names whatever weights the server holds
+under it, and pulling again changes them without changing a word of the record.
+So a council run reads the server twice before any model is asked, `/api/tags`
+and `/api/version`, through the same no-proxy client every call uses, at the
+settings' server, which `council.settings` holds to loopback. Each read waits
+`READ_TIMEOUT_SECONDS`, 30 s, not the generation timeout, since both come before
+the scan. It records `ollama_version` once and, under `models`, each model it
+asks with its `role`, `member` or `escalation`, and its `digest`. The explainer
+is always one of those. What the server does not say is recorded as not said:
+`"known": false` and the `reason`, never a guessed value, and the audit carries
+on.
 
 **Only `AUDITOR_*` lines of `.env` are read**, so the file can hold other keys:
 every other line is passed over unparsed and never quoted. A misspelt
@@ -587,13 +646,16 @@ record says why. Nothing
 checks the `why`, and nothing reads an explanation back: no score, band or
 council vector comes from it.
 
-The text puts a `WHY THE SOURCES DIFFER (n)` block after `SOURCES DISAGREE`, and
-the page a section after "Sources disagree", each under a lede saying only the
-quotation is checked. From a run with stand-in models, one finding reads
+The text puts a `WHY THE SOURCES DIFFER (n)` block after `SOURCES DISAGREE`; on
+the page the same explanation is a block inside each disagreement card, under a
+"Why the sources differ" heading, with the lede that only the quotation is
+checked shown once above the cards. In the terminal, from a run with stand-in
+models, one finding reads
 `CVE-2021-23337  explained by small:1b  ·  4 items not kept`, then its metric,
 `C  ghsa H  ·  nvd L`, the model's words,
 `model-written, not checked: It says commands run, not what they can read.`,
 and `“A remote attacker can inject commands”  ·  quotation found in the advisory`.
+The page carries the same, without the `·` separators or the colon.
 
 In the JSON, every finding carries `llm_explanation`:
 `{"assessed": true, "model", "prompt_version": "sources-differ-1", "items", "dropped"}`,
@@ -660,12 +722,23 @@ run that named members and found nothing is a fourth, and reads `council members
 were named, but there was no finding to put to them`.
 
 **The section opens by saying whether anything could be escalated.** The first
-line under the `COUNCIL (n)` heading in text, and the first after the section's
-lede on the page, is
+line under the `COUNCIL (n)` heading in text, and the first line after the lede
+and the toolbar in the Council tab, is
 `escalation model big:27b: asked each metric the council left open`, naming the
 model, or `no escalation model named: a metric the council left open stays open`.
 It is left out only for a record that says nothing of how local models were
 asked, so every council run carries one or the other.
+
+Every model the run asks is named too, with the first 12 characters of its
+digest and the server's version. In the text report this is the line after the
+escalation one, under the `COUNCIL` heading; on the page it is in the masthead,
+under the tool and database lines, not in the Council tab. From a run with
+stand-in models and a stand-in server listing the two members and not the
+escalation model:
+`models: qwen2.5:7b-instruct 845dbda0ea48, llama3.2:latest a80c4f17acd5, qwen2.5:14b (escalation) digest unknown; Ollama 0.34.3`.
+Where the server gives no digest or no version, it reads `digest unknown` or
+`Ollama version unknown`, and the reason it gave none is in the JSON record
+alone, under `run.local_models`. The record keeps each digest whole.
 
 **A finding the council settled shows what its vector scores, answers or no.**
 Its heading line reads `settled`, the vector, and that vector's own CVSS base

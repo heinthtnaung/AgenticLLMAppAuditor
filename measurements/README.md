@@ -25,7 +25,7 @@ reader can disagree with a number by producing a different one.
 | `run_directory.py` | where a recorded audit runs, so the project's `reports/` is never written, and the copying out of its three renderings |
 | `council_runs/` | audits of `fetched/vulnscout` with a two-member council: what each run printed or wrote, and when |
 | `thinking_and_load/` | a probe of the `think` field and of load state on three models: the script, its 22 envelopes, and what they do and do not show |
-| `council_eval/` | the evaluation harness, `python measurements/council_eval <step>`: the steps `dataset`, `collect`, `gate`, `score` and `order-checked`, and the checks `compare`, `quoting`, `values`, `server-log` and `turns` |
+| `council_eval/` | the evaluation harness, `python measurements/council_eval <step>`: the steps `dataset`, `collect`, `gate`, `score`, `order-checked` and `grades`, and the checks `compare`, `quoting`, `values`, `server-log` and `turns` |
 | `council_eval_runs/` | one folder per evaluation: what it ran, every call it saved, an excerpt of the server's journal for each run window, and what each step printed |
 | `council_eval_runs/library-vulnscout/`, `reversed-vulnscout/`, `library-reversed-vulnscout/` | the 2 × 2's three variant cells, one pass per model each; `council_eval_runs/README.md` holds the design, fixed before any variant pass, and the results |
 | `council_eval_runs/gemma4-vulnscout/`, `qwen2.5-coder-vulnscout/` | one pass each of `gemma4:latest` and `qwen2.5-coder:7b-instruct` over the pilot's findings, scored alone and beside the pilot's Qwen |
@@ -154,8 +154,8 @@ modification time, the recorder's included.
 
 | When | What | Whose record |
 |---|---|---|
-| 19:47:51 | the last edit to the recorder's docstrings, during `gpu-scoped` (launched 19:46:18) and before `gpu-full` launched at 19:48:13 | `python-developer`'s own report of the edit |
-| 19:56:50 | the recorder's last write, after `gpu-full` ended at 19:55:16 | its modification time, read by the judge before the commits |
+| 19:47:51 | the last edit to the recorder's docstrings, during `gpu-scoped` (launched 19:46:18) and before `gpu-full` launched at 19:48:13 | the developing agent's own report of the edit |
+| 19:56:50 | the recorder's last write, after `gpu-full` ended at 19:55:16 | its modification time, read by the reviewing agent before the commits |
 | — | that write changed the usage example from `gemma4:latest` to `llama3.2:latest`, held back until the recording was done | the session's record, not a file time |
 
 **The tool did not time any run:** `src/` reads no clock. The start and end are
@@ -195,10 +195,10 @@ first three are the files `gpu-full` launched with beyond `gpu-scoped`'s, so
 `gpu-scoped` ran them as `4111b95` holds them; neither provenance file names
 the last two, so both runs did. In each case that is `061361f`'s code.
 
-Everything else depends on the judge's reading of modification times before
-the commits, which cannot be repeated: every `src/` file changed after the 19:46:18
-launch matched `061361f` once docstrings were removed, and every other modified
-file was last written before the launch.
+Everything else depends on the reviewing agent's reading of modification times
+before the commits, which cannot be repeated: every `src/` file changed after
+the 19:46:18 launch matched `061361f` once docstrings were removed, and every
+other modified file was last written before the launch.
 
 **The GPU baseline is faster, and no single change is why.** A full run took
 7 min 3 s against 71 min 39 s, and a scoped one 1 min 54 s against 20 min 57 s,
@@ -592,6 +592,7 @@ says now, so a saved score re-derives the same under any setting.
 | `gate` | replays the passes' models as one roster and compares it with a recorded text report; exits 1 on any difference but three it allows for by name: whitespace in quotations, the basis wording before `SOLE`, and a settled heading recorded before it showed the CVSS figure | the files |
 | `score` | every roster the passes can build, each model alone up to all together: each metric against R1 and the baseline, each vector beside R1 and the published scores | the files |
 | `order-checked` | every roster the product-order passes build, a member's value counting only where its reversed pass names the same one: a different value or a decline in either order counts as a decline. It prints what `score` prints, and each member's stable, order-sensitive, declined and failed counts | the files |
+| `grades` | every roster's reached vectors counted by how far each lands from R1 in CVSS severity bands: **exact** (the same band), **adjacent** (one apart) or **major** (two or more). A vector with no full R1 to compare with is counted apart, not graded. Takes `--replies` as `score` does, or `--forward` with `--reversed` as `order-checked` does | the files |
 | `compare` | two passes of one model, call by call: the same request, a byte-identical reply, a reload part way through an item | the files |
 | `quoting` | whose quotation each value settled on one quotation rests on, and which unverified quotations are the prompt's own | the files |
 | `values` | each model's replies on each metric: every value it named, its declines and failures, and how many named the option the prompt lists last | the files |
@@ -725,6 +726,15 @@ assessor, which `gpu-full`'s report could not say.
 
 R1 has a value on all eight metrics of all four findings, so each has an R1
 band.
+
+**In severity bands, the pair's four vectors grade 2 exact and 2 adjacent, none
+major** (`pilot.grades.txt`, from the `grades` step). It counts each reached
+vector by how far its band lands from R1's — exact is the same band, adjacent
+one apart, major two or more — so `CVE-2026-18446` lands one band off R1 though
+it departs on all eight metrics. The reading is coarser than the metric
+agreement above and hides how far each metric moved; a vector R1 cannot band
+would be counted apart, not graded, but all four have a full R1. Each run
+folder's `.grades.txt` holds the same for every roster it can build.
 
 **What the tool did with it: a council's vector no longer feeds the
 Organisation Risk Score.** Every finding is weighed from its published sources,

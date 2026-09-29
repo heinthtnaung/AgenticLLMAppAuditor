@@ -1,9 +1,14 @@
-"""Trivy: the advisories published against a directory's components, indexed by purl.
+"""Trivy: the advisories published against a directory's components, and its secrets.
 
 A thin wrapper, offline by construction. It runs the tool and hands the JSON to
-`deps.trivy_report`, which knows Trivy's own field names; this file knows only
-how to reach the tool. The two change for different reasons -- a flag, a
-subcommand or a version string here, a field Trivy renamed there.
+`deps.trivy_report` and `deps.trivy_secrets`, which know Trivy's own field
+names; this file knows only how to reach the tool. The two change for different
+reasons -- a flag, a subcommand or a version string here, a field Trivy renamed
+there.
+
+**One run finds both.** The secret scanner's rules are built into Trivy and read
+no database, so it rides on the same offline run as the vulnerability scanner,
+and the advisories and the secrets come out of one document.
 
 A scan must never reach the network, so every flag that guarantees it lives in
 one tuple and no call site can assemble a command without them. The other half
@@ -13,7 +18,9 @@ handed the cache directory that was dated, so the two cannot be different ones.
 """
 
 import shutil
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Mapping
 
 from deps.scanner import (
     ScannerFailed,
@@ -23,11 +30,17 @@ from deps.scanner import (
     run_scanner,
 )
 from deps.trivy_report import Advisory, read_advisories
+from deps.trivy_secrets import SecretFinding, read_secrets
 
 TRIVY_EXECUTABLE = "trivy"
 FILESYSTEM_SUBCOMMAND = "fs"
 JSON_FORMAT = ("--format", "json")
-VULNERABILITIES_ONLY = ("--scanners", "vuln")
+VULNERABILITIES_AND_SECRETS = ("--scanners", "vuln,secret")
+# Trivy's built-in secret rules and no others. Left to its default it reads a
+# `trivy-secret.yaml` from wherever `audit` is run, and one there that disables a
+# rule makes the same tree report fewer secrets with nothing said; measured on
+# 0.74.0. An empty path is Trivy's own way of saying built-in rules only.
+BUILT_IN_SECRET_RULES = ("--secret-config=",)
 VERSION_FLAG = "--version"
 CACHE_FLAG = "--cache-dir"
 
@@ -60,11 +73,20 @@ def installed_version() -> str:
     raise ScannerFailed(f"{TRIVY_EXECUTABLE} did not say which version it is: {said.strip()!r}")
 
 
-def scan_directory(directory: str | Path, cache: Path) -> dict[str, tuple[Advisory, ...]]:
-    """Run Trivy over a directory against one cache, and give its advisories by versioned purl."""
+@dataclass(frozen=True)
+class TrivyScan:
+    """What one Trivy run found: advisories by the purl they were raised against, and secrets."""
+
+    advisories: Mapping[str, tuple[Advisory, ...]]
+    secrets: tuple[SecretFinding, ...]
+
+
+def scan_directory(directory: str | Path, cache: Path) -> TrivyScan:
+    """Run Trivy over a directory against one cache, and give its advisories and its secrets."""
     scanned = as_directory(directory)
     refuse_missing_directory(scanned)
-    return read_advisories(run_json_scanner(build_command(scanned, cache)))
+    report = run_json_scanner(build_command(scanned, cache))
+    return TrivyScan(advisories=read_advisories(report), secrets=read_secrets(report))
 
 
 def build_command(directory: Path, cache: Path) -> list[str]:
@@ -73,7 +95,8 @@ def build_command(directory: Path, cache: Path) -> list[str]:
         TRIVY_EXECUTABLE,
         FILESYSTEM_SUBCOMMAND,
         *JSON_FORMAT,
-        *VULNERABILITIES_ONLY,
+        *VULNERABILITIES_AND_SECRETS,
+        *BUILT_IN_SECRET_RULES,
         *REQUIRED_OFFLINE_FLAGS,
         CACHE_FLAG,
         str(cache),

@@ -20,6 +20,7 @@ from typing import Iterable, Mapping
 
 from deps.syft_report import Catalogue, UnidentifiedArtifact
 from deps.trivy_report import Advisory
+from deps.trivy_secrets import SecretFinding
 from findings.finding import Finding, unmatched_purls
 from organisation.approval import ApprovalOutcome, NotApproved
 from organisation.risk import FindingRisk
@@ -58,6 +59,9 @@ class Report:
     risk: Mapping[str, FindingRisk] = field(default_factory=dict)
     approval: ApprovalOutcome = field(default_factory=lambda: NotApproved(NO_APPROVAL_GIVEN))
     coverage: Coverage = Coverage()
+    # Where a secret-scanning rule matched. No CVSS, so never a finding, never
+    # weighed and never put to the council; and never the secret itself.
+    secrets: tuple[SecretFinding, ...] = ()
 
 
 def build_report(
@@ -66,11 +70,11 @@ def build_report(
     council: Iterable[CouncilOutcome] = (), risk: Iterable[FindingRisk] = (),
     approval: ApprovalOutcome | None = None, overridden: Iterable[str] = (),
     coverage: Coverage = Coverage(), explanations: Iterable[ExplanationRecord] = (),
+    secrets: Iterable[SecretFinding] = (),
 ) -> Report:
     """Gather one run into the record both renderings read."""
-    raised = tuple(findings)
+    raised, decided = tuple(findings), approval or NotApproved(NO_APPROVAL_GIVEN)
     settled, weighed, explained = by_advisory(council), by_advisory(risk), by_advisory(explanations)
-    decided = approval or NotApproved(NO_APPROVAL_GIVEN)
     return Report(
         provenance=provenance,
         findings=raised,
@@ -87,6 +91,7 @@ def build_report(
         risk=weighed,
         approval=decided,
         coverage=coverage,
+        secrets=tuple(secrets),
     )
 
 

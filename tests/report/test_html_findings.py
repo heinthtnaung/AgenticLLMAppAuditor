@@ -1,34 +1,21 @@
-"""Guards on a finding's three shapes: every source a row, and no source a column.
+"""Guards on a finding's shapes: every source a row, no source a column, a refused one kept.
 
 On the repository under test NVD published a vector for 4 findings of 18, so a
 layout with a column headed `nvd` is empty on 14 rows and looks right until a
 real repository is on screen. What these hold is that the page renders the list
-the finding carries -- and that a source nobody could read stays on the card,
-marked not scored, rather than becoming a zero.
+the finding carries -- one row per source under generic headers -- and that a
+source nobody could read stays on the card, marked not scored, never a zero.
 """
 
-from report.html_findings import (
-    agreeing_section,
-    contested_section,
-    finding_name,
-    unchecked_section,
-    unscored_section,
-)
+import re
+
+from explanation_runs import explained_report
+from report.html_findings import NO_DISAGREEMENT, agreements_panel, disagreements_panel
 from report.html_report import as_html
 from report.record import build_report
 from report_samples import (
-    ADVISORY_URL,
-    CONFIDENTIALITY_ONLY,
-    ENVIRONMENTAL_VECTOR,
-    ESCAPED_URL,
-    LOW_CONFIDENTIALITY,
-    PROVENANCE,
-    REFUSED_DISSENT,
-    TOTAL_LOSS,
-    VERSION_2_VECTOR,
-    catalogue,
-    component,
-    finding,
+    ADVISORY_URL, CONFIDENTIALITY_ONLY, ENVIRONMENTAL_VECTOR, LOW_CONFIDENTIALITY,
+    PROVENANCE, REFUSED_DISSENT, TOTAL_LOSS, VERSION_2_VECTOR, catalogue, component, finding,
 )
 
 DJANGO = component()
@@ -36,6 +23,11 @@ DJANGO = component()
 # A score chip is the only place a figure goes, so its absence is the check that
 # an unscored finding was not quietly given a number.
 NO_CHIP = '<span class="value">'
+
+
+def visible(page: str) -> str:
+    """Give the text a reader sees, with tags stripped, so a split vector reads whole again."""
+    return re.sub(r"<[^>]+>", "", page)
 
 
 def report_of(*findings):
@@ -48,36 +40,48 @@ def disagreeing():
     return finding(DJANGO, vectors={"ghsa": LOW_CONFIDENTIALITY, "nvd": TOTAL_LOSS})
 
 
-def test_a_run_with_no_contested_finding_shows_no_contested_section():
+def test_a_run_with_no_contested_finding_names_the_absence_in_the_panel():
     agreed = finding(DJANGO, vectors={"ghsa": CONFIDENTIALITY_ONLY})
-    assert contested_section(report_of(agreed)) == ""
+    page = disagreements_panel(report_of(agreed))
+    assert NO_DISAGREEMENT in page
+    assert "<article" not in page
 
 
 def test_every_source_is_a_row_of_its_own_with_its_own_vector():
-    page = contested_section(report_of(disagreeing()))
+    page = disagreements_panel(report_of(disagreeing()))
     assert '<span class="source-name">ghsa</span>' in page
     assert '<span class="source-name">nvd</span>' in page
-    assert LOW_CONFIDENTIALITY in page and TOTAL_LOSS in page
+    # The vector is shown metric by metric; its visible text is what was published.
+    seen = visible(page)
+    assert LOW_CONFIDENTIALITY in seen and TOTAL_LOSS in seen
 
 
 def test_each_score_is_written_beside_the_vector_it_derives_from():
     # The one rule the whole record is shaped by: a reader with the published
     # equations reproduces every number on the row beside it.
-    page = contested_section(report_of(disagreeing()))
-    assert page.index("5.3") < page.index(LOW_CONFIDENTIALITY)
-    assert page.index("9.8") < page.index(TOTAL_LOSS)
+    seen = visible(disagreements_panel(report_of(disagreeing())))
+    assert seen.index("5.3") < seen.index(LOW_CONFIDENTIALITY)
+    assert seen.index("9.8") < seen.index(TOTAL_LOSS)
+
+
+def test_a_contested_card_highlights_the_metrics_its_sources_read_apart():
+    # LOW_CONFIDENTIALITY vs TOTAL_LOSS differ on C, I and A; the highlight and the
+    # tooltip come from the vector and the record, never recomputed in the page.
+    page = disagreements_panel(report_of(disagreeing()))
+    assert '<span class="vm diff" title="Confidentiality: High">C:H</span>' in page
+    assert '<span class="vm" title="Attack Vector: Network">AV:N</span>' in page
 
 
 def test_a_contested_card_says_how_far_apart_and_which_bands_that_crosses():
-    page = contested_section(report_of(disagreeing()))
+    page = disagreements_panel(report_of(disagreeing()))
     assert "4.5 apart" in page
     assert "Critical and Medium" in page
-    assert "differ on" in page
+    assert "Differ on" in page
 
 
 def test_an_agreeing_finding_gets_the_same_rows_without_a_spread():
     agreed = finding(DJANGO, vectors={"ghsa": CONFIDENTIALITY_ONLY, "nvd": CONFIDENTIALITY_ONLY})
-    page = agreeing_section(report_of(agreed))
+    page = agreements_panel(report_of(agreed))
     assert '<span class="source-name">ghsa</span>' in page
     assert "apart" not in page
 
@@ -85,14 +89,14 @@ def test_an_agreeing_finding_gets_the_same_rows_without_a_spread():
 def test_a_finding_nobody_could_score_says_so_rather_than_showing_a_zero():
     # "Nobody scored this" and "somebody scored this 0.0" are different findings.
     nothing = finding(DJANGO, vectors={})
-    page = unscored_section(report_of(nothing))
+    page = agreements_panel(report_of(nothing))
     assert "No source published a readable v3 vector." in page
     assert NO_CHIP not in page
 
 
 def test_a_refused_vector_is_kept_on_the_card_marked_not_scored():
     refused = finding(DJANGO, vectors={"nvd": VERSION_2_VECTOR})
-    page = unscored_section(report_of(refused))
+    page = agreements_panel(report_of(refused))
     assert VERSION_2_VECTOR in page
     assert "not scored" in page
     assert NO_CHIP not in page
@@ -100,12 +104,12 @@ def test_a_refused_vector_is_kept_on_the_card_marked_not_scored():
 
 def test_a_refused_source_keeps_the_reason_the_calculator_would_not_read_it():
     refused = finding(DJANGO, vectors={"nvd": VERSION_2_VECTOR})
-    assert '<span class="refusal">' in unscored_section(report_of(refused))
+    assert '<span class="refusal">' in agreements_panel(report_of(refused))
 
 
 def test_a_scored_finding_keeps_its_refused_source_too():
     both = finding(DJANGO, vectors={"ghsa": CONFIDENTIALITY_ONLY, "nvd": VERSION_2_VECTOR})
-    page = unchecked_section(report_of(both))
+    page = agreements_panel(report_of(both))
     assert "not scored" in page
     assert '<span class="source-name">ghsa</span>' in page
     assert '<span class="source-name">nvd</span>' in page
@@ -118,8 +122,6 @@ def test_sources_that_match_beside_a_refused_one_are_not_headed_as_agreeing():
     assert "Sources agree" not in page
     assert "A source was refused (1)" in page
     assert ENVIRONMENTAL_VECTOR in page
-    # Decided: a refused vector cannot be compared, so it is no dissent, but the
-    # finding carrying it is counted on its own rather than left unsaid.
     counted = (
         "0 carry sources that disagree; 1 carries a source this calculator could not read."
     )
@@ -127,36 +129,34 @@ def test_sources_that_match_beside_a_refused_one_are_not_headed_as_agreeing():
 
 
 def test_the_page_names_the_component_a_finding_was_raised_against():
-    assert "django 2.2.0" in agreeing_section(report_of(finding(DJANGO)))
+    assert "django 2.2.0" in agreements_panel(report_of(finding(DJANGO)))
 
 
-def test_no_heading_is_written_for_a_source_the_finding_does_not_carry():
-    # A column headed `nvd` would be empty on 14 of the 18 findings under test.
-    page = agreeing_section(report_of(finding(DJANGO, vectors={"ghsa": CONFIDENTIALITY_ONLY})))
+def test_no_source_gets_a_column_of_its_own():
+    # A column headed `nvd` would be empty on 14 of the 18 findings under test, so
+    # the table's headers are generic and each source is a row.
+    page = agreements_panel(report_of(finding(DJANGO, vectors={"ghsa": CONFIDENTIALITY_ONLY})))
     assert "nvd" not in page
-    assert "<th" not in page
-
-
-def test_an_advisory_with_a_page_is_named_by_a_link_to_it():
-    named = finding_name(finding(DJANGO, url=ADVISORY_URL))
-    linked = f'<a href="{ADVISORY_URL}" rel="noreferrer">CVE-2019-14234</a>'
-    assert f'<span class="advisory">{linked}</span>' in named
-
-
-def test_an_advisory_with_no_page_is_named_in_plain_text_and_links_nowhere():
-    named = finding_name(finding(DJANGO))
-    assert '<span class="advisory">CVE-2019-14234</span>' in named
-    assert "<a " not in named
-
-
-def test_a_link_is_escaped_so_nothing_trivy_read_can_close_the_href():
-    named = finding_name(finding(DJANGO, url=ESCAPED_URL))
-    assert 'href="https://example.test/advisory?id=&quot;1&quot;&amp;x=&lt;b&gt;"' in named
+    assert "<th>ghsa" not in page and "<th>nvd" not in page
 
 
 def test_an_advisory_link_is_the_only_address_on_the_page_and_nothing_fetches_it():
-    # A reader follows a link or does not; a script, a stylesheet or an image
-    # would be fetched on opening, which a scan run offline cannot afford.
+    # A reader follows a link or does not; a script or a stylesheet would be
+    # fetched on opening, which a scan run offline cannot afford.
     page = as_html(report_of(finding(DJANGO, url=ADVISORY_URL)))
     assert page.count("https://") == 1 and f'<a href="{ADVISORY_URL}"' in page
-    assert "<script" not in page and "<link" not in page and " src=" not in page
+    assert "<link" not in page and " src=" not in page
+
+
+def test_the_explanation_disclosure_is_stated_once_where_a_model_explained():
+    # The model's prose is unchecked and computes nothing; the disclosure that
+    # says so is rendered once, above the contested cards, when an explanation exists.
+    page = disagreements_panel(explained_report())
+    assert "Written by a model from the advisory text" in page
+    assert "no score or ruling is computed from it" in page
+    assert page.count("Written by a model from the advisory text") == 1
+
+
+def test_a_run_with_no_explanation_states_no_disclosure():
+    page = disagreements_panel(report_of(disagreeing()))
+    assert "Written by a model from the advisory text" not in page

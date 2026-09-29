@@ -9,13 +9,26 @@ is the same failure from the other end and is held the same way.
 
 import re
 
-from report.html_style import BAND_CLASSES, BANDS, STYLESHEET, band_class
+from report.html_assets import stylesheet
+from report.html_style import BAND_CLASSES, BANDS, band_class
+
+# The joined stylesheet the page inlines, read the way the page reads it.
+STYLESHEET = stylesheet()
 
 LIGHT = re.compile(r"^:root \{(.*?)^\}", re.DOTALL | re.MULTILINE)
 DARK = re.compile(r"prefers-color-scheme: dark\).*?:root \{(.*?)\n  \}", re.DOTALL)
 DEFINED = re.compile(r"(--[a-z0-9-]+):")
 USED = re.compile(r"var\((--[a-z0-9-]+)\)")
 HEX = re.compile(r"#[0-9a-f]{3,8}\b")
+
+# The only selectors allowed to hide anything: the hidden attribute, the tab bar
+# and toolbars with no script, the responsive table head, and the print rule.
+# A rule that hides a panel by any other selector would break no-JS readability.
+HIDING = re.compile(r"([^{}]+)\{[^{}]*(display:\s*none|visibility:\s*hidden)[^{}]*\}")
+HIDE_ALLOWED = frozenset((
+    "[hidden]", "html:not(.js) .tabbar", "html:not(.js) .toolbar",
+    "table.data.rt thead", ".tabbar, .toolbar",
+))
 
 # Set per band class rather than in a theme block, so they are defined by the
 # rule that colours a band and not by either `:root`.
@@ -81,7 +94,7 @@ def test_a_band_the_palette_cannot_reach_is_refused_rather_than_rendered_unstyle
 def test_the_page_is_laid_out_for_a_phone_as_well_as_a_desktop():
     # A fixed track that overflows is the commonest layout bug and no test here
     # can see one. What can be checked is that the narrow rules exist at all.
-    assert "@media (max-width: 30rem)" in STYLESHEET
+    assert "@media (max-width: 34rem)" in STYLESHEET
 
 
 def test_every_colour_is_named_in_a_theme_block_and_nowhere_else():
@@ -89,3 +102,12 @@ def test_every_colour_is_named_in_a_theme_block_and_nowhere_else():
     # is the same bug as a missing token arriving from the other direction.
     named = len(HEX.findall(light_block())) + len(HEX.findall(dark_block()))
     assert len(HEX.findall(STYLESHEET)) == named
+
+
+def test_nothing_is_hidden_except_by_a_selector_on_the_allowlist():
+    # A rule like `.panel { display: none }` or `html:not(.js) main { visibility:
+    # hidden }` would hide content a no-JS reader needs, and no rendering test
+    # here can see it. Every hiding rule's selector is held to the allowlist.
+    hiding = {selector.strip() for selector, _ in HIDING.findall(STYLESHEET)}
+    assert hiding, "the sheet hides nothing at all, so this guard checked nothing"
+    assert hiding <= HIDE_ALLOWED, f"unexpected hiding selectors: {hiding - HIDE_ALLOWED}"
