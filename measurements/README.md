@@ -3,7 +3,7 @@
 The corpus behind the numbers in `src/council/redaction.py`,
 `src/council/ollama.py`, `src/council/definitions.py` and `docs/COUNCIL.md`,
 and the council runs behind the counts in `src/cli/`, `src/council/runner.py`,
-`README.md`, `docs/COUNCIL.md` and `docs/diagrams.md`, and behind the one
+`docs/USAGE.md`, `docs/COUNCIL.md` and `docs/diagrams.md`, and behind the one
 timing the code gives, in `src/cli/progress.py`. It also holds a harness that
 scores the council against published vectors, and what its first run found.
 
@@ -58,7 +58,7 @@ each model it names pulled, or the one `AUDITOR_MODEL` names when it names none,
 here: every call to the model server goes through `src/council/transport.py`,
 which never uses a proxy. The recorder sets `NO_PROXY` itself for what it runs,
 and a plain `ollama ps` answered with the proxy set and `NO_PROXY` unset
-(`README.md`).
+(`docs/SETUP.md`).
 
 ## The numbers, and what they support
 
@@ -502,11 +502,11 @@ run, against the failure the prompt names.
 | 61 of 144 metrics came out contested with two members | `src/council/runner.py`, `docs/COUNCIL.md` | `full.report.txt`, Qwen and Gemma; the GPU baseline contests 13 |
 | reproducible when no other client shares the Ollama server, and each model meets each request in the same load state | `docs/COUNCIL.md` | the CPU baseline's subsections above, the GPU runs agreeing on the five findings they share, and Qwen cold and warm in `thinking_and_load/probe_state.jsonl` |
 | with every turn starting from a fresh load, a member's replies repeat byte for byte | `docs/COUNCIL.md` | `council_eval_runs/pilot-vulnscout/compare.txt`: 288 of 288 across the clean passes, 144 per model |
-| 288 calls over 18 findings, 80 after scoping, each metric asked once | `README.md`'s recorded progress, for the 80; `src/cli/council_run.py`, comments in `tests/cli/test_council_run.py`, `tests/cli/test_progress.py` and `tests/council/test_runner_order.py` | the last `council` line of each progress file: `288/288` in `full` and `gpu-full`, `80/80` in `scoped` and `gpu-scoped` |
-| 576 and 160, every metric asked in both orders | `README.md`, `docs/COUNCIL.md`, `docs/diagrams.md`, `src/cli/progress.py` | no run: no order-checked audit is recorded here. It is twice the row above, and `tests/cli/test_progress.py` asserts 576 for 18 findings and two members |
-| 13 of 18 findings undisputed, so 5 put to the council | `README.md`, `docs/COUNCIL.md`, `docs/diagrams.md`, `src/cli/council_run.py`, `tests/cli/test_council_run.py` | `scoped.report.txt` lines 218–222 |
+| 288 calls over 18 findings, 80 after scoping, each metric asked once | `docs/USAGE.md`'s recorded progress, for the 80; `src/cli/council_run.py`, comments in `tests/cli/test_council_run.py`, `tests/cli/test_progress.py` and `tests/council/test_runner_order.py` | the last `council` line of each progress file: `288/288` in `full` and `gpu-full`, `80/80` in `scoped` and `gpu-scoped` |
+| 576 and 160 council calls, every metric asked in both orders | `README.md`, `docs/USAGE.md`, `docs/COUNCIL.md`, `docs/diagrams.md`, `src/cli/progress.py` | no run: no order-checked audit is recorded here. It is twice the row above, and `tests/cli/test_progress.py` asserts 576 for 18 findings and two members |
+| 13 of 18 findings undisputed, so 5 put to the council | `docs/USAGE.md`, `docs/COUNCIL.md`, `docs/diagrams.md`, `src/cli/council_run.py`, `tests/cli/test_council_run.py` | `scoped.report.txt` lines 218–222 |
 | 208 of the 288 calls went to those 13 | `src/cli/council_run.py`, `tests/cli/test_council_run.py` | the lines of `full.progress.txt` and of `gpu-full.progress.txt` naming them |
-| one member answers every metric of a finding before the next member is asked | `src/council/runner.py`, `README.md`, `docs/COUNCIL.md` | `gpu-*.progress.txt`: 10 and 36 runs of 8 calls to one member; `scoped` and `full` change member on every call |
+| one member answers every metric of a finding before the next member is asked | `src/council/runner.py`, `docs/USAGE.md`, `docs/COUNCIL.md` | `gpu-*.progress.txt`: 10 and 36 runs of 8 calls to one member; `scoped` and `full` change member on every call |
 | the CPU baseline ran on the CPU | `docs/COUNCIL.md`, `src/cli/progress.py` | Ollama's journal and `ollama ps`, above: nothing in this folder records it |
 | the recorded full run took about an hour with the models on the CPU | `src/cli/progress.py` | `full.provenance.txt`, 71 min 39 s, and the lost earlier full run, 58 min 4 s: both whole commands on a shared CPU, so neither is a benchmark |
 | `llama3.2:latest` guesses rather than declines | `docs/COUNCIL.md` | 0 declines and 16 guesses on the 39 unsettled metrics of `gpu-full.report.txt`, the only ones where a report shows its answer; over all 144 in the pilot's passes, 0 declines and 43 guesses |
@@ -587,7 +587,7 @@ says now, so a saved score re-derives the same under any setting.
 
 | Step | What it does | What it needs |
 |---|---|---|
-| `dataset` | freezes a repository's findings in the audit's own join and order, with the Syft and Trivy versions and when the database was built | Syft, Trivy, and the database in the cache `audit` finds (`README.md`) |
+| `dataset` | freezes a repository's findings in the audit's own join and order, with the Syft and Trivy versions and when the database was built | Syft, Trivy, and the database in the cache `audit` finds (`docs/SETUP.md`) |
 | `collect` | one pass: every item put to one model, the model unloaded before each item, every call saved an item at a time; `--variant` asks in a variant's words (`council_eval/variants.py`) | Ollama with the model pulled |
 | `gate` | replays the passes' models as one roster and compares it with a recorded text report; exits 1 on any difference but three it allows for by name: whitespace in quotations, the basis wording before `SOLE`, and a settled heading recorded before it showed the CVSS figure | the files |
 | `score` | every roster the passes can build, each model alone up to all together: each metric against R1 and the baseline, each vector beside R1 and the published scores | the files |

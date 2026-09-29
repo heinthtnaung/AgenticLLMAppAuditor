@@ -17,11 +17,12 @@ fails rather than asking the operator's Ollama for real. A test's own server,
 on a port of its own, is still reached, whether it is asked with a request or a
 plain URL.
 
-**The guard covers this process and nothing it starts.** A subprocess -- the
-README live check running `audit`, say -- has its own opener and is not
-guarded. No documented run names a council, and in `tests/docs/test_readme_runs.py`,
-`test_no_documented_run_asks_for_a_council_so_none_reads_the_operator_s_settings`
-fails the day one does.
+**The guard covers this process and nothing it starts.** A subprocess -- a
+docs live check running `audit`, say -- has its own opener and is not guarded.
+No documented run names a council, and
+`test_no_documented_run_asks_for_a_council_so_none_reads_the_operator_s_settings`,
+in `tests/docs/test_readme_runs.py` and `tests/docs/test_usage_runs.py`, fails
+the day one does.
 """
 
 import os

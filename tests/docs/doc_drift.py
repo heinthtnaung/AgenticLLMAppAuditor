@@ -1,14 +1,14 @@
-"""Two ways of asking whether a README block still reproduces, and the report when it does not.
+"""Two ways of asking whether a documented block still reproduces, and the report when it does not.
 
 **A block printed whole is compared whole.** Every line, in place, against the
 same run of the tool's output -- so a row whose number changed catches even if
-another row moved to cover for it. `technical-writer-1` regenerates those blocks
-from a run and pastes them entire rather than hand-editing a column, which is
-what makes the strict comparison safe to apply.
+another row moved to cover for it. The writer regenerates those blocks from a
+run and pastes them entire rather than hand-editing a column, which is what
+makes the strict comparison safe to apply.
 
 **A block marked `(elided)` gets the weaker check**, because it has to: the
-README's first output block drops three of five disagreements and eleven of
-thirteen agreements, which is right for a reader and cannot be compared entire.
+README's first output block is a selection of the report, which is right for a
+reader and cannot be compared entire.
 Its lines are asked to appear, in the order it prints them, and nothing more.
 **So that block cannot catch a line the tool has newly inserted between two it
 prints, nor one appended after the last.** Only the marker decides which check
@@ -17,7 +17,7 @@ downgrades a block on the very day it drifts.
 
 One line is deliberately not compared to the end. The provenance line carries
 the advisory database's build date, which changes on a routine refresh without
-the README being wrong, so everything up to `built ` is compared and the date is
+the page being wrong, so everything up to `built ` is compared and the date is
 not -- which still fails a Syft or Trivy version bump, as it should.
 """
 
@@ -39,20 +39,20 @@ OUT_OF_ORDER = "(still printed, but no longer in this position)"
 
 @dataclass(frozen=True)
 class Drift:
-    """One README line and whatever the tool prints where that line used to be."""
+    """One line of a page and whatever the tool prints where that line used to be."""
 
     printed: str
     current: str
 
 
 def stable(line: str) -> str:
-    """Drop the tail of a line that moves without the README being wrong."""
+    """Drop the tail of a line that moves without the page being wrong."""
     dated = PROVENANCE.match(line)
     return dated.group(0) if dated else line
 
 
 def drift_of(printed: tuple[str, ...], printed_now: list[str], elided: bool) -> list[Drift]:
-    """Compare one README block against the output it claims to be, as strictly as it allows."""
+    """Compare one printed block against the output it claims to be, as strictly as it allows."""
     if elided:
         return elided_drift([line for line in printed if line.strip()], printed_now)
     return whole_block_drift(list(printed), printed_now)
@@ -119,7 +119,7 @@ def placed(wanted: str, comparable: list[str], at: int) -> int:
 
 
 def alike(line: str, printed_now: list[str], at: int) -> int:
-    """Give the one later line starting the way a README line does, or -1 where there is no one."""
+    """Give the one later line starting the way a page's line does, or -1 where there is no one."""
     # Only a sole candidate is offered. An advisory id appears in several
     # sections, so naming the wrong one reads as a correction and is worse
     # than admitting the pairing could not be made.
@@ -129,7 +129,7 @@ def alike(line: str, printed_now: list[str], at: int) -> int:
 
 
 def standing_at(line: str, comparable: list[str], printed_now: list[str], where: int) -> str:
-    """Say what the tool prints in place of a README line, or why nothing could be paired to it."""
+    """Say what the tool prints in place of a page's line, or why nothing could be paired to it."""
     if where >= 0:
         return printed_now[where]
     if stable(line) in comparable:

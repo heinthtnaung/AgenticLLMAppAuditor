@@ -7,7 +7,8 @@ try:
     import tomllib
 except ModuleNotFoundError:
     # Python 3.10 has no tomllib, and pytest depends on tomli there: the same
-    # parser under its older name, so the suite keeps the README's 3.10 claim.
+    # parser under its older name, so the suite keeps the 3.10 minimum that
+    # `README.md` and `docs/SETUP.md` state.
     import tomli as tomllib
 
 from cli.arguments import PROGRAM

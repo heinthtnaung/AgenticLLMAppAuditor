@@ -1,4 +1,4 @@
-"""Which fences on the page print this tool's output, read off the page and the tool's command line.
+"""Which fences on a page print this tool's output, read off the page and the tool's command line.
 
 A fence with no language is printed output, and the command it follows is the
 nearest `bash` fence above it. When a line of that command starts the tool,
@@ -12,27 +12,28 @@ import shlex
 
 from cli.arguments import PROGRAM, Options, parse_arguments
 
-from readme_markers import FENCE, found_blocks, line_of
+from doc_markers import FENCE, found_blocks, line_of
+from doc_pages import Page
 
 SHELL_LANGUAGE = "bash"
 LINE_CONTINUATION = "\\\n"
 
 
-def unmarked_tool_output(page: str) -> list[tuple[Options, ...]]:
+def unmarked_tool_output(page: Page) -> list[tuple[Options, ...]]:
     """Give the runs above each fence of this tool's output that carries no marker."""
     marked = {line for _, _, line in found_blocks(page)}
     return [
         runs_of(command)
         for command, output in outputs_with_commands(page)
-        if runs_of(command) and line_of(page, output.start()) - 1 not in marked
+        if runs_of(command) and line_of(page.text, output.start()) - 1 not in marked
     ]
 
 
-def outputs_with_commands(page: str) -> list[tuple[str, re.Match]]:
+def outputs_with_commands(page: Page) -> list[tuple[str, re.Match]]:
     """Pair each fence of printed output with the body of the nearest shell fence above it."""
     pairs: list[tuple[str, re.Match]] = []
     command = ""
-    for fence in FENCE.finditer(page):
+    for fence in FENCE.finditer(page.text):
         language = fence.group("language").strip()
         if language == SHELL_LANGUAGE:
             command = fence.group("body")

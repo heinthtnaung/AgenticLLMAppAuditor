@@ -1,7 +1,7 @@
-"""The README's table of gated tests, the files that declare a flag, and ways to damage a row.
+"""The table of gated tests, the files that declare a flag, and ways to damage one row.
 
-`README.md` under "Running the tests" names each file that skips unless a flag is
-set, the flag, and how many tests the file holds. This reads that table.
+`docs/DEVELOPMENT.md` names each file that skips unless a flag is set, the flag,
+and how many tests the file holds. This reads that table.
 
 **The rows are held to the files, not to themselves.** Every gated file declares
 its flag as a module constant, the line `LIVE = "<FLAG>"`, and `live_flags` finds
@@ -11,13 +11,16 @@ a flag misspelt all show up as a difference -- which reading only the rows the
 pattern can find would miss. Discovery keys on that one convention; a file
 gated some other way is not found.
 
-The damage helpers derive each broken page from the parsed one, never from a
-quoted string, so rewording the page cannot turn a guard's own test into a no-op.
+Two files can share a flag, so each damage helper changes the one row it is
+given and no other line, and derives the broken page from the parsed one, never
+from a quoted string, so rewording the page cannot turn a guard's own test into
+a no-op.
 """
 
 import re
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Callable
 
 GATED_ROW = re.compile(
     r"^\| `(?P<flag>[A-Z_]+)=1` \| `(?P<path>tests/[^`]+\.py)`[^|]*\| (?P<count>\d+) \|",
@@ -25,6 +28,7 @@ GATED_ROW = re.compile(
 )
 LIVE_DECLARATION = re.compile(r'^LIVE = "(?P<flag>[A-Z_]+)"$', re.MULTILINE)
 TESTS_FOLDER = "tests"
+LINE_BREAK = "\n"
 
 
 @dataclass(frozen=True)
@@ -69,25 +73,42 @@ def names_flag(reason: str, flag: str) -> bool:
     return re.search(rf"(?<![A-Z_]){re.escape(switched_on(flag))}\b", reason) is not None
 
 
+def holds(line: str, row: GatedRow) -> bool:
+    """Say whether one line of the page is this row."""
+    read = GATED_ROW.match(line)
+    return read is not None and row_of(read) == row
+
+
+def on_row(page: str, row: GatedRow, change: Callable[[str], str]) -> str:
+    """Apply one change to the line holding this row, and to no other line."""
+    lines = page.split(LINE_BREAK)
+    return LINE_BREAK.join(change(line) if holds(line, row) else line for line in lines)
+
+
 def without_row(page: str, row: GatedRow) -> str:
     """Take one row off the page."""
-    opening = f"| `{switched_on(row.flag)}`"
-    return "\n".join(line for line in page.split("\n") if not line.startswith(opening))
+    return LINE_BREAK.join(line for line in page.split(LINE_BREAK) if not holds(line, row))
 
 
 def unquoted(page: str, row: GatedRow) -> str:
     """Drop the backticks from one row's flag, so the row pattern cannot read it."""
-    return page.replace(f"`{switched_on(row.flag)}`", switched_on(row.flag))
+    return renamed(page, row, switched_on(row.flag))
 
 
 def misnamed(page: str, row: GatedRow) -> str:
     """Name one row's flag by its first words only, which the right flag still contains."""
-    return page.replace(f"`{switched_on(row.flag)}`", f"`{switched_on(shortened(row.flag))}`")
+    return renamed(page, row, f"`{switched_on(shortened(row.flag))}`")
 
 
 def suffixed(page: str, row: GatedRow) -> str:
     """Name one row's flag by its last words only, which the right flag still contains."""
-    return page.replace(f"`{switched_on(row.flag)}`", f"`{switched_on(trailing(row.flag))}`")
+    return renamed(page, row, f"`{switched_on(trailing(row.flag))}`")
+
+
+def renamed(page: str, row: GatedRow, written: str) -> str:
+    """Write one row's quoted flag some other way, on that row alone."""
+    quoted = f"`{switched_on(row.flag)}`"
+    return on_row(page, row, lambda line: line.replace(quoted, written, 1))
 
 
 def shortened(flag: str) -> str:

@@ -113,8 +113,8 @@ is called. A run that finds nothing exits `3` rather than `0` while a manifest
 is unread or nothing was catalogued, so a pipeline reading only the code does
 not go green on it. A run that finds something exits `1` whatever it could not
 read, and `not_assessed` in the JSON is where both are named. What counts as
-read was measured against Syft 1.52, and `README.md` names the four ways the
-walk falls short.
+read was measured against Syft 1.52, and `docs/USAGE.md` names the four ways
+the walk falls short.
 
 Syft is one box because it is one call: it finds the manifests and catalogues
 them in the same pass; the walk before it feeds it nothing. The
@@ -465,9 +465,9 @@ flowchart TD
 
 **The council is scoped before it is a council.** It reconciles sources, so a
 finding whose sources already agree is not its work. On the audited repository
-13 of 18 findings are undisputed, so a two-member run makes 160 calls where
-`--council-all-findings` makes 576, every metric asked in both orders; runs of
-both kinds, from before the order check, are kept in
+13 of 18 findings are undisputed, so a two-member run makes 160 council calls
+where `--council-all-findings` makes 576, every metric asked in both orders;
+runs of both kinds, from before the order check, are kept in
 `measurements/council_runs/`. A finding **no** source scored takes the other
 branch, and so does one carrying a source the calculator could not read: in
 neither case has anyone checked that the sources agree, and for the first a
@@ -630,7 +630,7 @@ flowchart LR
 
     subgraph REAL["Real today, but not this project's code"]
         x1["CLAUDE.md, the binding rules"]
-        x2["docs/: the scoring model, the council, the README, this page"]
+        x2["README.md, the short guide, and docs/:<br/>the full guide, setup, development,<br/>the scoring model, the council, this page"]
         x3["Six agent definitions in .claude/agents/"]
         x4["Syft, Trivy, Ollama and a downloaded advisory DB"]
     end

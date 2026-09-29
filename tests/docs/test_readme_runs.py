@@ -1,57 +1,19 @@
-"""What a marker's change tokens may say, and the refusal when one cannot be read.
+"""No run the README documents asks for a council, so its live check reads no operator settings.
 
-Everything after `run` in a marker is the command line, so a token that is
-neither `--answers`, `(elided)` nor a `QUESTION=Answer` change is a typo in the
-marker itself. Reading it as an argument the CLI happens not to know would put
-this check's own mistake in front of a reader as a README defect, and send them
-to correct a page that is right.
+`test_readme_live.py` runs each marked block in a child process, and `cli.audit`
+reads the operator's `.env` for a run asking for a council. `tests/conftest.py`
+keeps those settings out of this process only, so a council run marked here
+would carry them into the check. The usage guide holds its own runs to the same
+in `test_usage_runs.py`.
 
 Page parsing only -- no corpus, no scanners, no network -- so it runs in the
-ordinary suite. Like the rest of `tests/docs`, it tests the guard and not the
-page: green here says a mistyped change is refused, not that the README is true.
+ordinary suite.
 """
 
-from pathlib import Path
-
-import pytest
-
-from cli.arguments import Options, parse_arguments
-
-from docs_samples import marker_changed, run_changing_an_answer
-from readme_markers import read_readme
-from readme_runs import arguments_of, printed_runs
-
-UNREADABLE = "!"
-NOT_A_CHANGE = "not a QUESTION=Answer change"
-# Only parsed, never opened: the CLI's parser does not look for the file.
-ANSWER_FILE = Path("answers.json")
-
-
-def test_a_change_token_that_cannot_be_read_is_refused():
-    """A mistyped change would otherwise reach the CLI as an argument and be blamed on the page."""
-    page = read_readme()
-    run = run_changing_an_answer(page)
-    question, answer = next(iter(run.edits.items()))
-    written = f"{question}={answer}"
-    damaged = marker_changed(page, run, written, f"{written}{UNREADABLE}")
-    with pytest.raises(ValueError, match=NOT_A_CHANGE):
-        printed_runs(damaged)
-
-
-def asks_for_a_council(options: Options) -> bool:
-    """Say whether a run asks for a council, by naming members or by `--council`."""
-    return bool(options.council_models) or options.council_from_settings
+from doc_pages import README, read
+from doc_runs import councils_asked_for
 
 
 def test_no_documented_run_asks_for_a_council_so_none_reads_the_operator_s_settings():
     """The live check runs each block in a child process, which reads `.env` for a council run."""
-    # `tests/conftest.py` keeps the operator's settings out of this process only,
-    # and `cli.audit` reads them for a run asking for a council either way. The
-    # arguments are the ones the live check runs, read by the CLI's own parser.
-    runs = printed_runs(read_readme())
-    council = [
-        run.directive
-        for run in runs
-        if asks_for_a_council(parse_arguments(arguments_of(run, ANSWER_FILE)))
-    ]
-    assert council == []
+    assert councils_asked_for(read(README)) == []

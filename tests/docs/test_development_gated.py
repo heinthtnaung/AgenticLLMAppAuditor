@@ -1,10 +1,10 @@
-"""The README's table of tests that skip unless asked for, held to the files and to pytest.
+"""The development guide's table of tests that skip unless asked for, held to the files and pytest.
 
 A plain run counts the gated tests as skipped, and a reader of the total asks
-what they are, so the page names each gated file, its flag and how many tests it
-holds. A count nobody checks is wrong the day a live test is added. `readme_gated`
-reads the table and finds the files that declare a flag; this holds one to the
-other, and then asks pytest.
+what they are, so `docs/DEVELOPMENT.md` names each gated file, its flag and how
+many tests it holds. A count nobody checks is wrong the day a live test is
+added. `doc_gated` reads the table and finds the files that declare a flag;
+this holds one to the other, and then asks pytest.
 
 The gated files are run once with every flag taken out of the environment, so
 each test is collected and skips before its body runs: nothing live runs, and
@@ -22,7 +22,7 @@ from dataclasses import dataclass
 
 import pytest
 
-from readme_gated import (
+from doc_gated import (
     TESTS_FOLDER,
     live_flags,
     misnamed,
@@ -35,7 +35,7 @@ from readme_gated import (
     unquoted,
     without_row,
 )
-from readme_markers import PROJECT_ROOT, read_readme
+from doc_pages import DEVELOPMENT, PROJECT_ROOT, read
 
 SKIP_LINE = re.compile(r"^SKIPPED \[(?P<count>\d+)\] (?P<path>[^:]+):\d+: (?P<reason>.+)$")
 ONLY_SKIPS = re.compile(r"^(?P<count>\d+) skipped in [\d.]+s$")
@@ -48,8 +48,10 @@ DAMAGE = {
 }
 REASON = "set SYFT_LIVE_SCAN=1 to run Syft over each case for real"
 # Read at collection, so that each row is its own test.
-PAGE = read_readme()
+PAGE = read(DEVELOPMENT).text
 ROWS = rows_on(PAGE)
+# By file, because two files can share a flag.
+ROW_IDS = [row.path for row in ROWS]
 DECLARED = live_flags(PROJECT_ROOT)
 
 
@@ -99,7 +101,7 @@ def test_the_table_names_every_gated_file_with_the_flag_that_file_declares():
 
 
 @pytest.mark.parametrize("damage", DAMAGE.values(), ids=DAMAGE)
-@pytest.mark.parametrize("row", ROWS, ids=[row.flag for row in ROWS])
+@pytest.mark.parametrize("row", ROWS, ids=ROW_IDS)
 def test_a_damaged_row_no_longer_matches_the_declared_flags(row, damage):
     damaged = damage(PAGE, row)
     assert damaged != PAGE
@@ -132,12 +134,12 @@ def test_with_every_flag_off_every_test_in_the_gated_files_skips_and_none_runs(p
     assert int(total["count"]) == sum(row.count for row in ROWS)
 
 
-@pytest.mark.parametrize("row", ROWS, ids=[row.flag for row in ROWS])
+@pytest.mark.parametrize("row", ROWS, ids=ROW_IDS)
 def test_each_row_counts_the_tests_its_file_holds(skips, row):
     assert sum(one.count for one in skips if one.path == row.path) == row.count
 
 
-@pytest.mark.parametrize("row", ROWS, ids=[row.flag for row in ROWS])
+@pytest.mark.parametrize("row", ROWS, ids=ROW_IDS)
 def test_each_files_skip_reason_names_the_flag_its_row_gives_exactly(skips, row):
     reasons = {one.reason for one in skips if one.path == row.path}
     assert reasons and all(names_flag(reason, row.flag) for reason in reasons)

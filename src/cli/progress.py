@@ -15,9 +15,9 @@ accepting it.** A line is printed *before* the call it describes, so a slow
 member is a line that sits there -- which is how a reader sees which member is
 slow, with their own perception supplying the elapsed time a clock would. There
 is no clock anywhere in `src/`; it is what keeps the record byte-identical
-between runs, it is asserted in `README.md`, `docs/diagrams.md` and
-`docs/SCORING_MODEL.md`, and it is not worth narrowing all three to print a
-number a reader already has.
+between runs, it is asserted in `docs/USAGE.md`, `docs/SETUP.md`,
+`docs/DEVELOPMENT.md`, `docs/diagrams.md` and `docs/SCORING_MODEL.md`, and it
+is not worth narrowing all five to print a number a reader already has.
 """
 
 from dataclasses import dataclass, field

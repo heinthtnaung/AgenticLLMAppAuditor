@@ -149,8 +149,9 @@ def test_nothing_anywhere_in_src_reads_a_clock():
     # first one: elapsed timings on a 288-call run are the obvious
     # thing to want. A line printed before its call is liveness, and a reader
     # watching a terminal supplies the elapsed time themselves, so counts are
-    # enough -- and `README.md`, `docs/diagrams.md` and `docs/SCORING_MODEL.md`
-    # all still say there is no clock anywhere in `src/`.
+    # enough -- and `docs/USAGE.md`, `docs/SETUP.md`, `docs/DEVELOPMENT.md`,
+    # `docs/diagrams.md` and `docs/SCORING_MODEL.md` all still say there is no
+    # clock anywhere in `src/`.
     source = pathlib.Path(__file__).resolve().parents[2] / "src"
     reading = list(chain.from_iterable(map(clock_reads, sorted(source.rglob("*.py")))))
     assert reading == []

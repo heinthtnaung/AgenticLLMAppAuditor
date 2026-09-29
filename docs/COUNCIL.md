@@ -113,7 +113,7 @@ freely.
 
 **Any model pulled into the local Ollama can be a local member**, by the name
 Ollama gives it, named with `--council-member` or in `AUDITOR_COUNCIL_MEMBERS`
-for `audit --council` (`README.md`). What this project has measured of
+for `audit --council` (`docs/USAGE.md`). What this project has measured of
 members' readings is of `qwen2.5:7b-instruct` and `llama3.2:latest` as a pair,
 and of `gemma4:latest` and `qwen2.5-coder:7b-instruct` one pass each. It says
 nothing of another model: a model you add needs its own evaluation before its
@@ -215,7 +215,7 @@ member's family, so a reader can judge what a roster's agreement was worth.
 **A member's whole input fits in its context, so there is nothing to retrieve.**
 A prompt carries one metric's definitions and one advisory — never all eight
 metrics — and a local member pins its window, 8,192 tokens by default
-(`AUDITOR_CONTEXT_TOKENS`, `README.md`), rather than taking whatever maximum the
+(`AUDITOR_CONTEXT_TOKENS`, `docs/USAGE.md`), rather than taking whatever maximum the
 model offers; the record states the window a run used. Measured against the
 prompt that runs, with the tokens counted by `qwen2.5:7b-instruct`:
 
@@ -415,11 +415,12 @@ several. Evidence decides.
 **By default, only the ones the published sources do not settle.** The council
 reconciles sources, so a finding whose sources already agree is not its work. Of
 the 18 findings on the repository this project audits, 5 carry sources that
-disagree — a default two-member run makes 160 calls where asking about all 18
-makes 576, every metric asked in both orders. `--council-all-findings` asks
-about all 18. That 5 in 18 is one repository and lower than the two in five
-measured on the 119-finding corpus above; how much scoping saves moves with what
-is being scanned.
+disagree — a default two-member run makes 160 council calls where asking about
+all 18 makes 576, every metric asked in both orders. Either way the explanation
+adds 5, one per disputed finding, and escalation 2 per metric the council leaves
+open. `--council-all-findings` asks about all 18. That 5 in 18 is one
+repository and lower than the two in five measured on the 119-finding corpus
+above; how much scoping saves moves with what is being scanned.
 
 **A finding no source scored is asked about, not skipped.** Its sources do not
 agree either — there are none — and `disputed_metrics()` is empty for it, so
@@ -469,7 +470,7 @@ council did more than it did.
 
 **A metric the order-checked council leaves contested or unresolved goes to one
 more model, and nothing else does** (`src/council/escalation.py`). The model is
-named by `AUDITOR_ESCALATION_MODEL` (`README.md`); unset or empty, there is no
+named by `AUDITOR_ESCALATION_MODEL` (`docs/USAGE.md`); unset or empty, there is no
 escalation and an open metric stays open. It is asked each open metric in both
 orders, exactly as a member is, and its two readings become one reply by the
 members' rule. A settled metric is never sent: the model is asked what is open,
@@ -552,7 +553,7 @@ Qwen's and Llama's replies to it are byte for byte the same either way
 (`measurements/thinking_and_load/`). Temperature, seed and thinking are pinned
 in code and are not settings, because a run whose sampling a file can change is
 not comparable with the last. The server, the window and the timeout are the
-operator's (`README.md`), and the record states the ones a run used, because the
+operator's (`docs/USAGE.md`), and the record states the ones a run used, because the
 window and the timeout can change a result too. A hosted model takes no seed,
 and the weights behind a name change without notice. **A council holding one
 hosted member is not reproducible run to run**, and every figure downstream
@@ -627,8 +628,9 @@ names every member that ran, its provider, and whether it was local or hosted.
 A record that does not say where the text went is not an audit record.
 
 **Money and time.** Calls scale with n × the findings the scope leaves × metrics
-× 2, every metric asked in both orders, and an escalation model adds 2 for each
-metric the council leaves open.
+× 2, every metric asked in both orders. An escalation model adds 2 for each
+metric the council leaves open, and the explanation 1 for each finding whose
+sources disagree.
 The runner asks every member in turn, local or hosted, and waits for each
 answer before it makes the next call. Local members are free and share one
 Ollama server, so for them n buys latency instead of money. A hosted member
@@ -641,7 +643,7 @@ budget decision as much as a design one.
 
 **A sketch.** Two roster settings are built: `AUDITOR_COUNCIL_MEMBERS`, the
 local models `audit --council` runs, comma-separated, and
-`AUDITOR_ESCALATION_MODEL`, the one local model it escalates to (`README.md`).
+`AUDITOR_ESCALATION_MODEL`, the one local model it escalates to (`docs/USAGE.md`).
 The roster below, with families, hosted members and `egress`, has no committed
 format: it shows what a reader would be editing rather than a schema to write
 against. The model names are examples; check the provider's catalogue for
