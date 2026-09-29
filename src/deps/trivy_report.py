@@ -62,19 +62,29 @@ def read_advisories(report: Any) -> dict[str, tuple[Advisory, ...]]:
 
 def advisory_records(report: Any) -> list:
     """Flatten the per-target results into one list of advisory records."""
+    return list(chain.from_iterable(target_records(result) for result in report_results(report)))
+
+
+def report_results(report: Any) -> list[Mapping[str, Any]]:
+    """Give a report's per-target results, refusing a document of another shape."""
     if not isinstance(report, Mapping):
         raise ScannerFailed("A Trivy report must be a JSON object")
     # A report with nothing to say omits the key entirely rather than emptying it.
     results = report.get(RESULTS) or []
     if not isinstance(results, list):
         raise ScannerFailed(f"A Trivy report's {RESULTS!r} must be a list of targets")
-    return list(chain.from_iterable(target_records(result) for result in results))
+    return [target_result(result) for result in results]
 
 
-def target_records(result: Any) -> list:
-    """Give one target's advisory records, which Trivy omits when it found none."""
+def target_result(result: Any) -> Mapping[str, Any]:
+    """Give one target's result, refusing an entry that is not an object."""
     if not isinstance(result, Mapping):
         raise ScannerFailed(f"Each entry of a Trivy report's {RESULTS!r} must be an object")
+    return result
+
+
+def target_records(result: Mapping[str, Any]) -> list:
+    """Give one target's advisory records, which Trivy omits when it found none."""
     return result.get(VULNERABILITIES) or []
 
 

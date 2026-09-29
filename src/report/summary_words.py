@@ -18,6 +18,10 @@ still -- nothing was checked at all -- and gets a pointer of its own.
 Without organisation answers there is no risk score, so only disagreement can
 mark one, and a count that did not say so would read as both halves checked.
 Where any finding needs approval and none is recorded, the summary says that too.
+
+**The secrets are counted at none as well.** They are not findings -- no CVSS,
+no score, no council -- so they are a sentence of their own, and the count
+names the rules that looked, because no match is not the same as no secret.
 """
 
 from organisation.approval import NotApproved
@@ -37,6 +41,8 @@ UNWEIGHED = (
     f"With no organisation answers, none was checked for {ApprovalReason.RISK_BAND.value}."
 )
 UNAPPROVED = "No approval is recorded for this audit."
+# No apostrophe: the page escapes one to `&#x27;`, a number to anything reading its figures.
+SECRETS_COUNT = "{} matched the secret rules built into Trivy."
 
 
 def counts(report: Report) -> str:
@@ -84,3 +90,8 @@ def approval_count(report: Report) -> str:
     if needing and isinstance(report.approval, NotApproved):
         said.append(UNAPPROVED)
     return " ".join(said)
+
+
+def secrets_count(report: Report) -> str:
+    """Count the secrets Trivy's built-in rules matched, and say so at none too."""
+    return SECRETS_COUNT.format(counted(len(report.secrets), "secret"))

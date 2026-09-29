@@ -94,15 +94,25 @@ def written_answers(directory: Path) -> Path:
     return answers
 
 
-def scanners_answering(monkeypatch, components=(LODASH,), advisories=None) -> None:
-    """Answer for both scanners, so no test shells out or opens a socket."""
+def scanners_answering(
+    monkeypatch, components=(LODASH,), advisories=None, secrets=(), trivy_report=None
+) -> None:
+    """Answer for both scanners, so no test shells out or opens a socket.
+
+    Given `trivy_report`, Trivy answers with that document and the real parsers
+    read it, as they would Trivy's own; otherwise the parsed scan is answered.
+    """
     from cli import audit
     from deps import syft_runner, trivy_runner
 
     indexed = {ADVISORY.purl: (ADVISORY,)} if advisories is None else advisories
     found = Catalogue(components=tuple(components), unidentified=())
+    scanned = trivy_runner.TrivyScan(advisories=indexed, secrets=tuple(secrets))
     monkeypatch.setattr(audit.syft_runner, "scan_directory", lambda path: found)
-    monkeypatch.setattr(audit.trivy_runner, "scan_directory", lambda path, cache: indexed)
+    if trivy_report is None:
+        monkeypatch.setattr(audit.trivy_runner, "scan_directory", lambda path, cache: scanned)
+    else:
+        monkeypatch.setattr(trivy_runner, "run_json_scanner", lambda command: trivy_report)
     monkeypatch.setattr(audit.syft_runner, "installed_version", lambda: SYFT_VERSION)
     monkeypatch.setattr(audit.trivy_runner, "installed_version", lambda: TRIVY_VERSION)
     monkeypatch.setattr(syft_runner, "is_available", lambda: True)

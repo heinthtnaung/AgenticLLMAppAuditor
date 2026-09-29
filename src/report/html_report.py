@@ -32,10 +32,13 @@ from report.html_findings import (
 )
 from report.html_layout import separated, tag, text
 from report.html_risk import risk_section
+from report.html_secrets import secrets_section
 from report.html_style import STYLESHEET
 from report.provenance import SCORING_RULES_LABEL, AdvisoryDatabase
 from report.record import Report
-from report.summary_words import approval_count, counts, inventory_pointer, unread_pointer
+from report.summary_words import (
+    approval_count, counts, inventory_pointer, secrets_count, unread_pointer,
+)
 
 DOCTYPE = "<!DOCTYPE html>"
 LANGUAGE = "en"
@@ -62,6 +65,7 @@ def as_html(report: Report) -> str:
         unscored_section(report),
         risk_section(report),
         council_section(report),
+        secrets_section(report),
         matched_nothing_section(report),
         unidentified_section(report),
         approval_section(report),
@@ -108,10 +112,11 @@ def database_line(run) -> str:
 
 
 def summary_line(report: Report) -> str:
-    """Say how much there is, with the pointer to what was left out, then what needs approval."""
+    """Say how much there is and what was left out, then what needs approval, then the secrets."""
     pointers = (inventory_pointer(report), unread_pointer(report))
     said = " ".join(part for part in (counts(report), *pointers) if part)
-    return tag("p", text(said), "count") + approval_count_line(report)
+    counted = tag("p", text(said), "count") + approval_count_line(report)
+    return counted + tag("p", text(secrets_count(report)), "count")
 
 
 def approval_count_line(report: Report) -> str:

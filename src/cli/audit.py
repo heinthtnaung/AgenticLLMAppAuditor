@@ -42,8 +42,8 @@ def run_audit(
     # Walked first: a directory nobody can list stops the run before the scan.
     unread = manifests.unread_manifests(options.repository)
     catalogue = syft_runner.scan_directory(options.repository)
-    advisories = trivy_runner.scan_directory(options.repository, database.cache)
-    findings = build_findings(catalogue.components, advisories)
+    scanned = trivy_runner.scan_directory(options.repository, database.cache)
+    findings = build_findings(catalogue.components, scanned.advisories)
     council = council_of(findings, options, progress_to, local)
     # Only once every value the council and escalation produce is in, for every finding.
     explained = explanations_of(findings, options, progress_to, local)
@@ -52,7 +52,8 @@ def run_audit(
         provenance=provenance_of(options.repository, database.built_at, local),
         catalogue=catalogue,
         findings=findings,
-        advisories_by_purl=advisories,
+        advisories_by_purl=scanned.advisories,
+        secrets=scanned.secrets,
         council=council,
         risk=weighed(findings, answers, options),
         approval=approval,

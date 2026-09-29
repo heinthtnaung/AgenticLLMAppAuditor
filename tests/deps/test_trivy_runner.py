@@ -13,7 +13,7 @@ from deps.trivy_runner import (
     is_available,
     scan_directory,
 )
-from samples import DJANGO_PURL, NOT_PATHS, trivy_record, trivy_report_of
+from samples import DJANGO_PURL, NOT_PATHS, PYYAML_PURL, load, trivy_record, trivy_report_of
 
 # Captured from Trivy 0.74.0 over a directory of pinned Python requirements, in
 # the order it emitted them, which is not sorted order. Two records were written
@@ -40,11 +40,19 @@ def test_no_command_can_be_built_without_an_offline_flag(flag, tmp_path):
     assert flag in build_command(tmp_path, CACHE)
 
 
-def test_the_command_scans_the_given_directory_for_vulnerabilities(tmp_path):
+def test_the_command_scans_the_given_directory_for_vulnerabilities_and_secrets(tmp_path):
+    # One run, so the secrets are found offline beside the advisories: their rules
+    # are built into Trivy and read no database.
     command = build_command(tmp_path, CACHE)
     assert command[:2] == ["trivy", "fs"]
     assert command[-1] == str(tmp_path)
-    assert "--scanners" in command and "vuln" in command
+    assert command[command.index("--scanners") + 1] == "vuln,secret"
+
+
+def test_the_command_uses_trivys_built_in_secret_rules_and_no_config_it_happens_upon(tmp_path):
+    # Left to its default, Trivy reads a `trivy-secret.yaml` from wherever it is
+    # run, and one there can disable a rule with nothing said.
+    assert "--secret-config=" in build_command(tmp_path, CACHE)
 
 
 def test_the_command_scans_with_the_cache_it_is_given_and_no_other(tmp_path):
@@ -86,7 +94,7 @@ def test_a_directory_given_as_a_string_scans_what_the_path_scans(monkeypatch, tm
 
     monkeypatch.setattr(trivy_runner, "run_json_scanner", record)
     scanned = scan_directory(f"{tmp_path}/", CACHE)
-    assert list(scanned) == [DJANGO_PURL]
+    assert list(scanned.advisories) == [DJANGO_PURL]
     assert scanned == scan_directory(tmp_path, CACHE)
     assert commands[0] == commands[1]
 
@@ -134,3 +142,19 @@ def test_a_trivy_that_does_not_say_its_version_is_refused(monkeypatch, said):
     monkeypatch.setattr(trivy_runner, "run_scanner", lambda command: said)
     with pytest.raises(ScannerFailed, match="did not say which version it is"):
         installed_version()
+
+
+def test_one_run_gives_both_the_advisories_and_the_secrets(monkeypatch, tmp_path):
+    # The report is a real one, captured with both scanners over one scratch folder.
+    commands = []
+
+    def answer(command):
+        """Stand in for Trivy, keeping the command and answering with the captured report."""
+        commands.append(command)
+        return load("trivy_report_secrets.json")
+
+    monkeypatch.setattr(trivy_runner, "run_json_scanner", answer)
+    scanned = scan_directory(tmp_path, CACHE)
+    assert list(scanned.advisories) == [PYYAML_PURL]
+    assert [one.rule_id for one in scanned.secrets] == ["gitlab-pat", "github-pat"]
+    assert len(commands) == 1

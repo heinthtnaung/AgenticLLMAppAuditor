@@ -47,7 +47,7 @@ flowchart TD
         rdir --> walk["Manifest walk<br/>each package.json, composer.json or Gemfile<br/>with no lock file Syft reads beside it<br/>a directory it cannot list = could not run"]
         walk --> syft["Syft scans the directory<br/>lockfiles and manifests, one pass"]
         syft --> comp[("Components<br/>name, version, purl, where found")]
-        trivy["Trivy reads the database<br/>--cache-dir: the cache the preflight dated<br/>advisories per purl, a published<br/>vector for each source that wrote one,<br/>and the advisory's own page, if named"]
+        trivy["Trivy reads the database<br/>--cache-dir: the cache the preflight dated<br/>advisories per purl, a published<br/>vector for each source that wrote one,<br/>and the advisory's own page, if named;<br/>in the same run, its built-in secret rules"]
         comp --> join["Join on the versioned purl"]
         trivy --> join
         join --> asm["Score each source's vector<br/>src/cvss, published equations"]
@@ -58,11 +58,12 @@ flowchart TD
     adb --> trivy
     comp -->|"no component catalogued,<br/>named first under not assessed"| rec
     walk -->|"the manifests read from nothing,<br/>named next under not assessed"| rec
+    trivy -->|"each secret by file, line and rule,<br/>never the secret; a secret exits 1"| rec
 
     fin --> cou["Council, only if members were named,<br/>by --council-member, or by AUDITOR_COUNCIL_MEMBERS<br/>under --council, and only for the findings<br/>their sources do not settle — diagram 4"]
     fin --> ctx["Organisation context<br/>scored once per source<br/>diagram 3"]
     ans["Answer file<br/>--answers: the approved questions<br/>answered by id, and who approved"] --> ctx
-    fin --> rec["Report record<br/>and what was not assessed"]
+    fin --> rec["Report record: the findings,<br/>the secrets, and what was not assessed"]
     cou --> rec
     cou --> expl["Why the sources differ, beside a council<br/>one model, once per disputed finding,<br/>after the council and escalation;<br/>only its quotation is checked"]
     expl --> rec
@@ -115,6 +116,13 @@ not go green on it. A run that finds something exits `1` whatever it could not
 read, and `not_assessed` in the JSON is where both are named. What counts as
 read was measured against Syft 1.52, and `docs/USAGE.md` names the four ways
 the walk falls short.
+
+**Secrets come out of the same Trivy run.** Its built-in rules read no
+database, so they add nothing for the preflight to check, and only those rules
+are used. Each match reaches the record as a file, a line range and a rule,
+never the text it matched. A secret is something found, so a run with one exits
+`1` whatever else it found or could not read; it has no CVSS, so no score, no
+band and no council ever touches it.
 
 Syft is one box because it is one call: it finds the manifests and catalogues
 them in the same pass; the walk before it feeds it nothing. The
@@ -579,7 +587,7 @@ flowchart LR
     subgraph BUILT["Built: source with tests beside it"]
         b0["src/deps/scanner<br/>run an external tool, read its JSON"]
         b1["src/deps/syft_runner, syft_report<br/>run Syft, and read what it wrote"]
-        b2["src/deps/trivy_runner, trivy_report<br/>run Trivy, and read what it wrote"]
+        b2["src/deps/trivy_runner, trivy_report,<br/>trivy_secrets<br/>run Trivy, and read its advisories<br/>and its secrets"]
         b3["src/deps/trivy_database<br/>which Trivy cache, and its<br/>database's own build date"]
         b11["src/deps/manifests<br/>the manifests no lock file<br/>Syft reads is beside"]
         b4["src/cvss<br/>vector parser, metric vocabulary,<br/>Base score equations"]

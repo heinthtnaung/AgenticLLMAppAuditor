@@ -102,6 +102,23 @@ Vulnerability DB:
   DownloadedAt: 2026-09-24 06:03:45.881932713 +0000 UTC
 ```
 
+## What `audit` asks Trivy
+
+One offline run finds both the advisories and the secrets. For
+`audit fetched/vulnscout`, it is:
+
+```bash
+trivy fs --format json --scanners vuln,secret --secret-config= --skip-db-update --offline-scan --disable-telemetry --skip-version-check --cache-dir ~/.cache/trivy fetched/vulnscout
+```
+
+`--scanners vuln,secret` asks for both scanners in one pass: the secret rules
+are built into Trivy and read no database, so they add no download and no
+network. `--secret-config=`, an empty path, is Trivy's way of saying built-in
+rules only. Left to its default, Trivy reads a `trivy-secret.yaml` from wherever
+`audit` is run, and one there that disables a rule makes the same tree report
+fewer secrets with nothing said; that was measured on 0.74.0. The cache is the
+one the preflight dated, as above.
+
 ## Fetching and scanning pull in opposite directions
 
 The repository is an argument because fetching it needs the corporate proxy

@@ -150,6 +150,34 @@ and nothing on stdout, because passing over it would pass over every manifest
 inside. The error stream says
 `audit: cannot list <path> to look for manifests: Permission denied`.
 
+## A secret is reported by where it is, never by what it is
+
+**The same Trivy run that finds the advisories finds secrets.** Trivy's
+built-in secret rules match text shaped like a credential, a token or a private
+key; they read no database, so they run offline beside the vulnerability scan.
+Only Trivy's built-in rules are used ([SETUP.md](SETUP.md) says how). Each match
+is reported by the file, the line or lines, the rule that matched, its title,
+its category and its severity. The summary counts them, on this repository as
+`0 secrets matched the secret rules built into Trivy.`, and the text report
+lists them under `SECRETS (n)`. From a scratch tree holding a made-up GitHub
+token, the entry is `settings.py:4`, then
+`CRITICAL  ·  GitHub Personal Access Token  ·  GitHub  ·  rule github-pat`.
+
+With none, the block still appears, and says
+`Trivy's built-in secret rules matched nothing in this tree.` It names the
+rules because they are all that looked: no match is not the same as no secret.
+The page has a Secrets section in the same terms, under a lede saying the
+secret is not on the page and not in the record behind it.
+
+**The secret itself is never read.** Trivy masks it in the match and in the
+lines of code it quotes, but a mask is Trivy's promise and not this tool's, and
+the rest of a quoted line can hold a second secret no rule matched. So neither
+field is read, the record has nowhere to carry a secret, and nothing downstream
+can print one by accident. In the JSON, `secrets` is a list of `file`,
+`start_line`, `end_line`, `rule_id`, `category`, `severity` and `title`, and
+`run.secret_count` counts them. A secret is not a finding: it has no CVSS, so it
+is never scored, weighed or put to the council.
+
 ## Scoring a finding against your environment
 
 A scanner cannot tell whether a vulnerable component is exposed, or whether it
@@ -346,7 +374,7 @@ run exits `1` already.
 | Code | Meaning |
 |---|---|
 | `0` | the audit ran, catalogued components, found nothing, and read every manifest |
-| `1` | the audit ran and found something |
+| `1` | the audit ran and found something: a vulnerability or a secret |
 | `2` | the audit could not run, or could not save its reports |
 | `3` | the audit ran and found nothing, but could not read a manifest or catalogued no component |
 
@@ -357,6 +385,11 @@ command line and a directory the manifest walk cannot list exit with, so every
 "could not run" leaves by the same door. A run whose reports could not be
 written exits `2` even with the record on stdout, because it did not do
 everything it was asked to.
+
+**A secret is something found.** It carries no CVSS and is never scored, but a
+credential in the tree stops a build as surely as a CVE does, so a run that
+found one exits `1` whatever else it found or could not read, an empty
+inventory included.
 
 **`3` keeps nothing found over something unchecked apart from `0`.** A
 `package.json` with no lock file yields no package, so `0` there would put a

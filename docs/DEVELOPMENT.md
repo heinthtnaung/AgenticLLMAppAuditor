@@ -16,7 +16,7 @@ catalogued nothing.
 
 | Part | State | What it is |
 |---|---|---|
-| `src/deps/` | built | Syft and Trivy: the components a directory declares, the advisories published against them, and the database's own build date; and which manifests have no lock file Syft reads |
+| `src/deps/` | built | Syft and Trivy: the components a directory declares, the advisories published against them, the secrets Trivy's built-in rules match, and the database's own build date; and which manifests have no lock file Syft reads |
 | `src/cvss/` | built | a CVSS v3 vector parsed and validated, Temporal metrics included, and its Base score by the published equations |
 | `src/findings/` | built | the join — a CVE affecting an installed component, with every source's score kept apart and attributed |
 | `src/scoring/` | built | the approved question library, per-question weights, categories clamped then weighted, the band, the two severity floors that can raise it, and the version naming those rules |
@@ -109,7 +109,7 @@ has none of them. Where any other instruction disagrees with
 │   ├── cli/                  arguments, preflight, the audit order, the council scope, the report files, the exit code
 │   ├── council/              the roster, redaction, the providers, the chairman
 │   ├── cvss/                 vector parser, metric vocabulary, Base score
-│   ├── deps/                 the Syft and Trivy runners, the database's build date, unread manifests
+│   ├── deps/                 the Syft and Trivy runners, the secrets, the database's build date, unread manifests
 │   ├── findings/             the join, and every source's score kept apart
 │   ├── organisation/         the answer file, the approval and what needs it, one score per source
 │   ├── report/               the record, and the text, JSON and HTML renderings
