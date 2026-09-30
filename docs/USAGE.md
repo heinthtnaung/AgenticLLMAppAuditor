@@ -706,9 +706,10 @@ with one of three reasons: no council was asked for, as in the README's sample
 run; no finding's sources disagree; or
 `a model was asked why the sources differ, and no explanation was kept`.
 
-**It costs one call per disputed finding.** It has been tested only with
-stand-in models, and nothing yet measures whether an explanation is right: the
-quotation is in the advisory, and that is all that is known of it.
+**It costs one call per disputed finding.** It has now run live once, over
+vulnscout's 5 disputed findings, in `measurements/explainer_vulnscout/`;
+nothing yet measures whether an explanation is right: the quotation is in the
+advisory, and that is all that is known of it.
 
 ### It is asked only about the findings the sources do not settle
 

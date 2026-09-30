@@ -25,6 +25,7 @@ reader can disagree with a number by producing a different one.
 | `run_directory.py` | where a recorded audit runs, so the project's `reports/` is never written, and the copying out of its three renderings |
 | `council_runs/` | audits of `fetched/vulnscout` with a two-member council: what each run printed or wrote, and when |
 | `thinking_and_load/` | a probe of the `think` field and of load state on three models: the script, its 22 envelopes, and what they do and do not show |
+| `explainer_vulnscout/` | the explainer alone on vulnscout's 5 disputed findings, two models under two seeds: the script, its 20 envelopes, and a summary re-scored from them by the current reading |
 | `council_eval/` | the evaluation harness, `python measurements/council_eval <step>`: the steps `dataset`, `collect`, `gate`, `score`, `order-checked`, `grades`, `chat-prompts` and `chat-replies`, and the checks `compare`, `quoting`, `values`, `server-log` and `turns` |
 | `council_eval_runs/` | one folder per evaluation: what it ran, every call it saved, an excerpt of the server's journal for each run window, and what each step printed |
 | `council_eval_runs/library-vulnscout/`, `reversed-vulnscout/`, `library-reversed-vulnscout/` | the 2 × 2's three variant cells, one pass per model each; `council_eval_runs/README.md` holds the design, fixed before any variant pass, and the results |
