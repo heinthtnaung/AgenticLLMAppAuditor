@@ -9,38 +9,34 @@ variant's, which begins with the product's version it was made from.
 
 The pinning is read from the product's own constants and `LocalModel`, never
 restated here, so a pass cannot claim a seed or a temperature the request did
-not carry.
+not carry. The two reads of the server are the product's too: its list of models
+and its version, as `cli.model_identity` reads them through `council.transport`.
+**What differs is the verdict.** An audit records a digest it could not read as
+unknown and goes on; a pass refuses to start, because a figure scored from
+weights nobody named is not a measurement.
 """
 
 import hashlib
 import subprocess
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable
+from typing import Callable
 
+from cli.model_identity import Listing, Read, listing_of, server_version
 from council.ollama import PINNED_TEMPERATURE, PINNED_THINKING, LocalModel
 from council.settings import current_settings
-from council.transport import NO_PROXY_OPENER, read_json
+from council.transport import get_json
+from report.model_identity import UnknownOllamaVersion
 
 from council_eval.replies import HEADER_KIND, PROMPT_VERSION_FIELD, WINDOW_FIELD
 from council_eval.variants import Variant
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
-TAGS_PATH = "/api/tags"
-VERSION_PATH = "/api/version"
 GIT_COMMIT = ("git", "rev-parse", "HEAD")
 GIT_CHANGES = ("git", "status", "--short", "src/", "measurements/")
-TIMEOUT_SECONDS = 30
 TURN_START = "cold: the model is unloaded before each item"
 
-Get = Callable[[str], Any]
 Run = Callable[[tuple[str, ...]], str]
-
-
-def get_json(url: str) -> Any:
-    """Read one JSON document from the local model server, around the proxy as the product does."""
-    with NO_PROXY_OPENER.open(url, timeout=TIMEOUT_SECONDS) as response:
-        return read_json(url, response.read().decode("utf-8"))
 
 
 def git_output(command: tuple[str, ...]) -> str:
@@ -52,15 +48,15 @@ def git_output(command: tuple[str, ...]) -> str:
 
 
 def pass_header(
-    model: str, dataset: Path, variant: Variant, get: Get = get_json, run: Run = git_output
+    model: str, dataset: Path, variant: Variant, get: Read = get_json, run: Run = git_output
 ) -> dict:
     """Describe a pass before it starts: the weights, the server, the pinning, code and data."""
     pinning = LocalModel(model=model)
     return {
         "kind": HEADER_KIND,
         "model": model,
-        "digest": model_digest(model, get(f"{pinning.host}{TAGS_PATH}")),
-        "ollama": get(f"{pinning.host}{VERSION_PATH}")["version"],
+        "digest": model_digest(model, held_listing(pinning.host, get)),
+        "ollama": held_version(pinning.host, get),
         PROMPT_VERSION_FIELD: variant.prompt_version,
         "temperature": PINNED_TEMPERATURE,
         "seed": pinning.seed,
@@ -76,12 +72,32 @@ def pass_header(
     }
 
 
-def model_digest(model: str, tags: Any) -> str:
-    """Give the digest the server holds for one model, refusing a model it does not have."""
-    digests = {entry["name"]: entry["digest"] for entry in tags.get("models", [])}
-    if model not in digests:
-        raise ValueError(f"the server holds no {model}; it has {', '.join(sorted(digests))}")
-    return digests[model]
+def held_listing(host: str, get: Read) -> Listing:
+    """Read the server's models as an audit does, refusing a list that could not be read."""
+    listing = listing_of(host, get)
+    if listing.unread:
+        raise ValueError(f"a pass must name its weights, and {listing.unread}")
+    return listing
+
+
+def held_version(host: str, get: Read) -> str:
+    """Read the server's version as an audit does, refusing a server that gave none."""
+    version = server_version(host, get)
+    if isinstance(version, UnknownOllamaVersion):
+        raise ValueError(f"a pass must name its server, and {version.reason}")
+    return version.version
+
+
+def model_digest(model: str, listing: Listing) -> str:
+    """Give the digest the server lists under exactly this name, refusing any other."""
+    # The name as given, not `cli.model_identity.tagged`'s reading of it: a pass
+    # is keyed by the name it was asked under, so `llama3.2` is refused where the
+    # server lists `llama3.2:latest`, rather than recorded under a tag it assumed.
+    if model in listing.digests:
+        return listing.digests[model]
+    if model in listing.names:
+        raise ValueError(f"the server lists {model} without a digest, so no pass can name it")
+    raise ValueError(f"the server holds no {model}; it has {', '.join(sorted(listing.names))}")
 
 
 def file_digest(path: Path) -> str:

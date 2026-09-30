@@ -4,15 +4,17 @@ import pytest
 
 import council.ollama
 import eval_samples as samples
+from cli.model_identity import Listing
 from council.settings import Settings
 from council_eval import pass_provenance
 from council_eval.pass_provenance import file_digest, model_digest, pass_header
 from council_eval.variants import BASELINE, LIBRARY_REVERSED, Variant
 
 TAGS = {"models": [{"name": samples.MODEL, "digest": "sha256-abc"}]}
+LISTING = Listing(names=frozenset({samples.MODEL}), digests={samples.MODEL: "sha256-abc"})
 
 
-def serving(url: str):
+def serving(url: str, timeout: float):
     """Answer the two reads a header makes of the model server."""
     return TAGS if url.endswith("/api/tags") else {"version": "0.34.3"}
 
@@ -50,7 +52,7 @@ def test_the_weights_are_named_by_the_digest_the_server_holds(tmp_path):
 
 def test_a_model_the_server_does_not_hold_is_refused():
     with pytest.raises(ValueError, match="the server holds no"):
-        model_digest("missing:1b", TAGS)
+        model_digest("missing:1b", LISTING)
 
 
 def test_the_dataset_is_named_by_its_fingerprint(tmp_path):

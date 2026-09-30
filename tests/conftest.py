@@ -59,7 +59,7 @@ def no_model_server_is_asked(monkeypatch: pytest.MonkeyPatch) -> None:
 
     def refusing(request, *given, **named):
         """Fail a request to the model server; pass any other, such as a test's own server."""
-        # `open` takes a plain URL as well as a request, as `pass_provenance` sends one.
+        # `open` takes a plain URL as well as a request, as `transport.get_json` sends one.
         url = request if isinstance(request, str) else request.full_url
         if urlsplit(url).port == server.port:
             raise AssertionError(f"a test sent a request to {url}; give it a fake client instead")

@@ -20,15 +20,13 @@ token generated.
 
 import sys
 from pathlib import Path
-from typing import Any, Callable
-
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from advisories import advisory_texts  # noqa: E402
+from cli.model_identity import Read  # noqa: E402
 from council_eval.pass_provenance import (  # noqa: E402
-    TAGS_PATH,
-    VERSION_PATH,
-    get_json,
+    held_listing,
+    held_version,
     model_digest,
 )
 from council.ollama import (  # noqa: E402
@@ -40,11 +38,9 @@ from council.ollama import (  # noqa: E402
 )
 from council.prompt import PROMPT_VERSION, MemberPrompt, build_prompt  # noqa: E402
 from council.settings import current_settings  # noqa: E402
-from council.transport import Transport, post_json  # noqa: E402
+from council.transport import Transport, get_json, post_json  # noqa: E402
 
 PROMPT_TOKEN_FIELD = "prompt_eval_count"
-
-Get = Callable[[str], Any]
 
 # The widest definitions of the eight, so a cost measured here is the worst one.
 WIDEST_METRIC = "AC"
@@ -97,18 +93,18 @@ def model_lines(
     ]
 
 
-def main(argv: list[str], post: Transport = post_json, get: Get = get_json) -> int:
+def main(argv: list[str], post: Transport = post_json, get: Read = get_json) -> int:
     """Print what was asked of which weights, then each model's costs and the estimate's error."""
     advisory_id, text = longest_advisory()
     server = current_settings().server
-    tags = get(f"{server}{TAGS_PATH}")
-    ollama = get(f"{server}{VERSION_PATH}")["version"]
+    listing = held_listing(server, get)
+    ollama = held_version(server, get)
     print(f"prompt {PROMPT_VERSION}, Ollama {ollama}")
     print(f"the longest advisory, {advisory_id}: {len(text)} characters")
     fixed = build_prompt(WIDEST_METRIC, ALMOST_NO_ADVISORY)
     worst = build_prompt(WIDEST_METRIC, text)
     for model in tuple(argv) or (current_settings().model,):
-        print(f"{model} {model_digest(model, tags)}")
+        print(f"{model} {model_digest(model, listing)}")
         print("\n".join(model_lines(model, fixed, worst, post)))
     return 0
 
