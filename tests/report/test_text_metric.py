@@ -9,7 +9,9 @@ from escalation_runs import (
     escalated,
     split_on_av,
 )
+from same_evidence_runs import av_of, same_words, unflagged
 from order_runs import one_way, rulings_of
+from report.council_words import SAME_EVIDENCE
 from report.text_council import advisory_lines
 from report.text_metric import ruling_lines
 
@@ -98,3 +100,16 @@ def test_a_quotation_not_found_in_one_order_alone_says_which_order():
         "qwen2.5:7b (qwen2.5)  H  ·  high confidence  ·  quotation found in the advisory  ·  "
         "with the options reversed: quotation not found in the advisory"
     )
+
+
+def test_a_metric_read_two_ways_from_the_same_words_is_flagged_below_its_heading():
+    lines = ruling_lines(av_of(same_words()))
+    assert lines[0].strip() == "AV  ·  contested  ·  2 members"
+    assert lines[1] == f"      {SAME_EVIDENCE}"
+
+
+def test_the_flag_is_the_one_line_a_metric_gains():
+    flagged = ruling_lines(av_of(same_words()))
+    plain = ruling_lines(av_of(unflagged(same_words())))
+    assert [one for one in flagged if one.strip() != SAME_EVIDENCE] == plain
+    assert len(flagged) == len(plain) + 1

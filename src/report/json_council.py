@@ -58,6 +58,7 @@ def ruling_of(ruling: MetricRuling) -> dict[str, Any]:
         "fallback_source": ruling.fallback_source or None,
         "members": [said_of(one) for one in ruling.said],
         "escalation": escalation_of(ruling.escalation),
+        "same_evidence_different_reading": ruling.same_evidence_different_reading,
     }
 
 

@@ -53,6 +53,9 @@ NO_ESCALATION = "no escalation model named: a metric the council left open stays
 SHORT_DIGEST = 12
 UNKNOWN_DIGEST = "digest unknown"
 UNKNOWN_VERSION = "Ollama version unknown"
+SAME_EVIDENCE = (
+    "same evidence, different reading: members quoted the same words and read different values"
+)
 READ_IN = {
     ReadingOrder.IN_ORDER: "with the options in order",
     ReadingOrder.REVERSED: "with the options reversed",
@@ -96,6 +99,11 @@ def declined_one_way(said: MemberSaid) -> list[str]:
     """Name the order a member declined in where the other order did not; both need no naming."""
     ways = [(said.declined_in, SaidKind.DECLINED.value), (said.unverified_in, UNVERIFIED)]
     return [f"{READ_IN[orders[0]]}: {what}" for orders, what in ways if len(orders) == 1]
+
+
+def same_evidence_said(ruling: MetricRuling) -> list[str]:
+    """Flag a metric members read different values from the same verified words, if they did."""
+    return [SAME_EVIDENCE] if ruling.same_evidence_different_reading else []
 
 
 def escalation_named(local: LocalModels | None) -> list[str]:

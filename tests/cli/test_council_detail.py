@@ -152,3 +152,27 @@ def test_a_member_asked_the_options_once_is_recorded_with_no_order_at_all():
     said = by_name(ruled({"ollama": declining_reversed})["UI"])["qwen2.5:7b"]
     assert said.kind is SaidKind.ANSWERED
     assert (said.declined_in, said.unverified_in) == ((), ())
+
+
+# On AV both members quote the advisory and read N and A: from the same words,
+# `QUOTATION` being the start of `SENTENCE`, or from two different sentences.
+SENTENCE = "A remote attacker can inject commands through a template option."
+SAME_WORDS = {"gemma4:latest": {"AV": {"value": "A", "evidence": SENTENCE, "confidence": "high"}}}
+APART = {"gemma4:latest": {"AV": {"value": "A", "evidence": OTHER_QUOTE, "confidence": "high"}}}
+
+
+def decided(ruling) -> tuple:
+    """Give everything the chairman decided about one metric, the flag left out."""
+    return (ruling.outcome, ruling.value, ruling.basis, ruling.confidence, ruling.fallback_source)
+
+
+def test_two_values_read_from_the_same_verified_words_are_flagged_on_that_metric_alone():
+    rulings = ruled(replying(**SAME_WORDS))
+    flagged = [metric for metric, one in rulings.items() if one.same_evidence_different_reading]
+    assert flagged == ["AV"]
+    assert not ruled(replying(**APART))["AV"].same_evidence_different_reading
+
+
+def test_the_flag_changes_no_outcome_value_basis_or_confidence():
+    flagged, twin = ruled(replying(**SAME_WORDS)), ruled(replying(**APART))
+    assert [decided(one) for one in flagged.values()] == [decided(one) for one in twin.values()]

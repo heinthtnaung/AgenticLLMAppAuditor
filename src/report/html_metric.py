@@ -19,7 +19,7 @@ so the two cannot come to word one record differently.
 from report.council_record import MemberSaid, MetricRuling, SaidKind
 from report.council_words import (
     chairman_said, checked, confident, counted, declined_one_way, escalated_who, outcome_said,
-    unanswered, who,
+    same_evidence_said, unanswered, who,
 )
 from report.html_layout import listing, separated, tag, text
 
@@ -39,7 +39,9 @@ def metric_details(ruling: MetricRuling) -> str:
 def metric_summary(ruling: MetricRuling) -> str:
     """Head the disclosure with the metric, its outcome, and how many spoke to it."""
     named = tag("code", text(ruling.metric))
-    return separated([named, text(outcome_said(ruling)), text(counted(len(ruling.said), "member"))])
+    headed = [named, text(outcome_said(ruling)), text(counted(len(ruling.said), "member"))]
+    flags = [tag("span", text(one), "flag") for one in same_evidence_said(ruling)]
+    return separated([*headed, *flags])
 
 
 def chairman_line(ruling: MetricRuling) -> str:

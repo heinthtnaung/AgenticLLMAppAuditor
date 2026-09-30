@@ -104,7 +104,10 @@ class MetricRuling:
     """What the chairman decided about one metric, and what every member said first.
 
     `escalation` is None where the council settled the metric, and on every
-    metric of a run that named no escalation model.
+    metric of a run that named no escalation model. `same_evidence_different_reading`
+    flags two members whose verified quotations are the same words and whose
+    values differ (`council.same_evidence`); it is shown beside the ruling and
+    decides nothing.
     """
 
     metric: str
@@ -115,6 +118,7 @@ class MetricRuling:
     confidence: str = ""
     fallback_source: str = ""
     escalation: MetricEscalation | None = None
+    same_evidence_different_reading: bool = False
 
 
 @dataclass(frozen=True)

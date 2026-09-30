@@ -767,6 +767,25 @@ a CVSS chip on the same line, and the JSON's `council` entry carries the figure
 as `base_score` beside `vector`, `null` where no vector was settled. It is on
 the CVSS scale and never the risk score.
 
+**A contested metric can carry a flag: `same evidence, different reading`.** When
+two members' verified quotations are the same words and they read different values
+from them, the metric's line adds `same evidence, different reading: members
+quoted the same words and read different values`. Two quotations are the same when,
+after the quotation check's own folding of whitespace and typographic quotes, one
+equals the other or sits inside it without cutting into a word: an end of the
+shorter quotation that is a letter, digit or underscore may not touch another word
+character, but a punctuation end needs nothing, so `(PR:N)` is inside
+`privileges(PR:N)` while `network` is not inside `networks`; case is kept
+(`council.same_evidence`). The page shows it as a flag on the metric, and the JSON
+carries `same_evidence_different_reading` on the ruling. **It decides nothing** —
+the council's ruling on a flagged metric is contested, though an escalation may
+still settle it, and the flag remains either way because it is about what the
+members read; only members count, not the escalation model. It tells a reader the
+evidence did not choose between the values. In the pilot replay it fell on 6 of
+the 13 contested metrics
+(`measurements/council_eval_runs/pilot-vulnscout/README.md`): one roster, one
+order and one observation, not a rate.
+
 ### A council run says where it has got to
 
 Local members share one Ollama server, and the council waits for each answer

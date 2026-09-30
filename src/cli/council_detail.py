@@ -22,6 +22,7 @@ from council.answer import (
 from council.evidence import is_quotation_from
 from council.ruling import Basis, ContestedMetric, SettledMetric, UnresolvedMetric
 from council.run import MemberFailure, OrderReadings
+from council.same_evidence import read_differently
 from cli.order_declines import in_both_orders
 from report.council_record import (
     MemberIdentity,
@@ -54,6 +55,7 @@ def ruling_of(round_, advisory_shown: str) -> MetricRuling:
         confidence=confidence_of(round_.ruling),
         fallback_source=fallback_source_of(round_.ruling),
         escalation=escalation_of(round_, advisory_shown),
+        same_evidence_different_reading=read_differently(round_.replies, advisory_shown),
     )
 
 

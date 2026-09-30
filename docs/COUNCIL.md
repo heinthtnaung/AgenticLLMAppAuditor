@@ -340,7 +340,8 @@ quotation is not in the text supports nothing, however many members give it.
 - **The verified answers support one value** → that value, with the confidence
   of the weakest of them, and a record of what it rests on.
 - **They support more than one value** → the metric is contested, and goes to
-  the escalation model where one is named.
+  the escalation model where one is named; where two members read different values
+  from the same verified words, the record flags it, as information only.
 - **There are none** → the metric is unresolved, and goes to the escalation
   model where one is named. Fall back to a published vector, and record both
   that the fallback happened and which source it came from — there is usually
