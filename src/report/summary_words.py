@@ -38,7 +38,7 @@ EMPTY_POINTER = "Not a clean result: Syft catalogued no component, so nothing wa
 APPROVAL_COUNT = "Approval is needed for {} of {}: {}."
 BOTH_HALVES = f"{ApprovalReason.RISK_BAND.value}, or {ApprovalReason.SOURCES_DISAGREE.value}"
 UNWEIGHED = (
-    f"With no organisation answers, none was checked for {ApprovalReason.RISK_BAND.value}."
+    f"With no organisation answers, no finding was checked for {ApprovalReason.RISK_BAND.value}."
 )
 UNAPPROVED = "No approval is recorded for this audit."
 # No apostrophe: the page escapes one to `&#x27;`, a number to anything reading its figures.

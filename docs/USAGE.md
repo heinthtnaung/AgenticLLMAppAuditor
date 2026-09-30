@@ -370,7 +370,7 @@ every time.
 
 **Without `--answers` only disagreement is checked**, because there is no risk
 score to band, and the summary says so, as in the README's sample run:
-`With no organisation answers, none was checked for a High or Critical Organisation Risk Score.`
+`With no organisation answers, no finding was checked for a High or Critical Organisation Risk Score.`
 When a finding needs approval and the answer file records none, the summary
 adds `No approval is recorded for this audit.`
 

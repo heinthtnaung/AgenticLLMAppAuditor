@@ -79,8 +79,9 @@ Audit of fetched/vulnscout
   scoring rules ors-1
 
 18 findings across 60 components. 5 carry sources that disagree.
-Approval is needed for 5 of 18: sources that disagree. With no organisation answers, none was
-checked for a High or Critical Organisation Risk Score. No approval is recorded for this audit.
+Approval is needed for 5 of 18: sources that disagree. With no organisation answers, no finding
+was checked for a High or Critical Organisation Risk Score. No approval is recorded for this
+audit.
 0 secrets matched the secret rules built into Trivy.
 
 SOURCES DISAGREE (5)
