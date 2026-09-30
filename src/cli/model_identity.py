@@ -44,6 +44,9 @@ READ_TIMEOUT_SECONDS = 30.0
 # The tag Ollama assumes when a name carries none, as `llama3.2` for `llama3.2:latest`.
 DEFAULT_TAG = ":latest"
 TAG_SEPARATOR = ":"
+# A tag is only ever in the last part of a path: in `myregistry:5000/model` the
+# ":" is the registry's port, and the name carries no tag.
+PATH_SEPARATOR = "/"
 
 
 class Read(Protocol):
@@ -125,4 +128,5 @@ def identity_of(model: str, role: str, listing: Listing) -> ModelIdentity:
 
 def tagged(model: str) -> str:
     """Name a model as the server lists it, with the tag Ollama assumes where it has none."""
-    return model if TAG_SEPARATOR in model else f"{model}{DEFAULT_TAG}"
+    last_part = model.rsplit(PATH_SEPARATOR, 1)[-1]
+    return model if TAG_SEPARATOR in last_part else f"{model}{DEFAULT_TAG}"

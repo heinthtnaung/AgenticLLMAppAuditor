@@ -4,7 +4,7 @@ import pytest
 
 from council.settings import current_settings
 from council.transport import ModelUnavailable
-from cli.model_identity import READ_TIMEOUT_SECONDS, local_identities
+from cli.model_identity import READ_TIMEOUT_SECONDS, local_identities, tagged
 from report.model_identity import (
     ESCALATION_ROLE,
     MEMBER_ROLE,
@@ -84,6 +84,31 @@ def test_both_reads_wait_their_own_short_timeout_not_the_generation_timeout():
 def test_a_name_without_a_tag_is_found_under_the_tag_ollama_assumes():
     _, (model,) = local_identities(("llama3.2",), None, HOST, serving())
     assert model == ModelDigest("llama3.2", MEMBER_ROLE, LLAMA)
+
+
+@pytest.mark.parametrize(
+    ("name", "listed_as"),
+    [
+        ("llama3.2", "llama3.2:latest"),
+        ("qwen2.5:7b-instruct", "qwen2.5:7b-instruct"),
+        ("myregistry:5000/model", "myregistry:5000/model:latest"),
+        ("myregistry:5000/model:1b", "myregistry:5000/model:1b"),
+        ("library/model", "library/model:latest"),
+        ("myregistry:5000/library/model", "myregistry:5000/library/model:latest"),
+    ],
+    ids=[
+        "plain", "tagged", "registry-with-port", "registry-with-port-and-tag", "namespaced",
+        "registry-with-port-and-namespace",
+    ],
+)
+def test_a_tag_is_read_only_from_the_part_of_the_name_after_the_last_slash(name, listed_as):
+    assert tagged(name) == listed_as
+
+
+def test_a_registry_name_with_a_port_is_found_under_the_tag_ollama_assumes():
+    tags = {"models": [{"name": "myregistry:5000/model:latest", "digest": QWEN}]}
+    _, (model,) = local_identities(("myregistry:5000/model",), None, HOST, serving(tags=tags))
+    assert model == ModelDigest("myregistry:5000/model", MEMBER_ROLE, QWEN)
 
 
 def test_a_model_the_server_does_not_list_is_recorded_as_unknown_and_why():
