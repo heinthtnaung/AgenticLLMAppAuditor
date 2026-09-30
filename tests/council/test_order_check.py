@@ -1,5 +1,7 @@
 """Guards on the order check: one reply from two readings, a value kept only where both give it."""
 
+from dataclasses import replace
+
 import pytest
 
 from council.answer import (
@@ -9,10 +11,11 @@ from council.answer import (
     MemberGuessed,
     MemberOrderSensitive,
 )
+from council.evidence import is_quotation_from
 from council.order_check import reconciled
 from council.prompt import PROMPT_VERSION, REVERSED_PROMPT_VERSION, value_lines
 from council.run import MemberFailure
-from council_samples import QUOTABLE, identity
+from council_samples import ADVISORY, NOT_IN_THE_ADVISORY, QUOTABLE, identity
 
 # The member as each call names it, and as the reconciled reply names it.
 IN_ORDER = identity(prompt_version=PROMPT_VERSION)
@@ -50,6 +53,21 @@ def failure(member=IN_ORDER, reason: str = "timed out") -> MemberFailure:
 def test_the_same_value_both_ways_keeps_the_in_order_reply_quotation_and_all():
     assert reconciled(answer("N"), answer("N", REVERSED)) == answer("N", BOTH)
     assert reconciled(guess("N"), answer("N", REVERSED)) == guess("N", BOTH)
+
+
+def test_a_quotation_found_only_reversed_leaves_the_in_order_reply_unverified_on_purpose():
+    """A gap kept on purpose: the in-order reply stands unverified though the reversed one holds."""
+    # RED HERE MEANS THE RULE HAS CHANGED, not that something broke. Keeping the
+    # reversed reply instead was replayed through the product's order check from
+    # the saved passes in `measurements/council_eval_runs/`: it settled 5 more of
+    # Qwen + Llama's 144 metrics, and the 3 of those with an R1 value all
+    # disagreed with it -- 6 of 17 agreed across the seven rosters replayed --
+    # because a quotation found in the advisory need not bear on the value.
+    unverified = MemberAnswer("AV", "N", NOT_IN_THE_ADVISORY, Confidence.HIGH, IN_ORDER)
+    both_ways = reconciled(unverified, answer("N", REVERSED))
+    assert both_ways == replace(unverified, member=BOTH)
+    assert not is_quotation_from(both_ways.evidence, ADVISORY)
+    assert is_quotation_from(QUOTABLE, ADVISORY)
 
 
 def test_two_different_values_are_kept_both_as_an_order_sensitive_reply():
