@@ -20,6 +20,7 @@ bypass above is right only while every caller is local: the hosted client
 transport rather than this one with the rule relaxed.
 """
 
+import http.client
 import json
 import urllib.error
 import urllib.request
@@ -39,7 +40,8 @@ class ModelUnavailable(RuntimeError):
     """Nothing usable came back from a model server, for any of the reasons there are.
 
     Raised here when the server could not be reached, was too slow for the
-    timeout, or did not return the JSON it promised, and in `council.envelope`
+    timeout, sent a reply that is not well-formed HTTP, or did not return the
+    JSON it promised, and in `council.envelope`
     when a server that was reached refused, cut the model off, or sent no text.
     One exception for all of them because they are one fact to a caller: that
     member has no answer to give, and `council.runner` records the failure and
@@ -77,6 +79,10 @@ def fetch_json(url: str, request: urllib.request.Request | str, timeout: float |
         raise ModelUnavailable(http_failure_message(url, fault)) from fault
     except (urllib.error.URLError, OSError) as fault:
         raise ModelUnavailable(unanswered_message(url, fault, timeout)) from fault
+    # After OSError, so a server that hung up unanswered (RemoteDisconnected, which
+    # is both) is still named as not reached rather than as a broken reply.
+    except http.client.HTTPException as fault:
+        raise ModelUnavailable(f"{url} sent a malformed HTTP reply: {fault!r}") from fault
     return read_json(url, body)
 
 
