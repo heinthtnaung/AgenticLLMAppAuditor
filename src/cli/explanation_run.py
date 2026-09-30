@@ -99,7 +99,10 @@ def record_of(advisory_id: str, said: Explanation) -> ExplanationRecord:
     """Put what the explainer gave into the report's terms, what it did not keep included."""
     dropped = tuple(dropped_of(one) for one in said.dropped)
     if not isinstance(said, Explained):
-        return SourcesNotExplained(advisory_id, f"{said.model}: {said.because}", dropped)
+        because = f"{said.model}: {said.because}"
+        return SourcesNotExplained(
+            advisory_id, because, dropped, model=said.model, prompt_version=said.prompt_version
+        )
     # Verified, every one: `council.explanation` keeps no item whose quotation is not in the text.
     items = tuple(ExplainedMetric(one.metric, one.why, one.quotation, True) for one in said.items)
     return SourcesExplained(advisory_id, said.model, said.prompt_version, items, dropped)

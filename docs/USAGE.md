@@ -675,7 +675,9 @@ The page carries the same, without the `·` separators or the colon.
 In the JSON, every finding carries `llm_explanation`:
 `{"assessed": true, "model", "prompt_version": "sources-differ-1", "items", "dropped"}`,
 each item a `metric`, `why`, `evidence`, `evidence_verified` and
-`"why_checked": false`, or `{"assessed": false, "because"}`. `evidence_verified`
+`"why_checked": false`; or `{"assessed": false, "model", "prompt_version", "because"}`
+where a model was asked and nothing was kept, and `{"assessed": false, "because"}`
+where none was — no council, the sources agree, or no advisory text. `evidence_verified`
 covers the quotation alone; `why_checked` says so, so a machine reader cannot
 take it as covering the prose.
 
@@ -686,6 +688,8 @@ quotation check's own answer: a repeat quotes the advisory as surely as the item
 kept. `dropped_items` is empty where nothing was offered, and where nothing was
 kept it holds what was, beside a `because` such as
 `small:1b: the model offered 1 item, and none was kept (unverified quotation 1)`.
+The model that `because` opens with also stands alone in `model`, and its prompt
+in `prompt_version`, so a reader need not parse the string.
 Where no finding was explained, `NOT ASSESSED` names `Why the sources differ`
 with one of three reasons: no council was asked for, as in the README's sample
 run; no finding's sources disagree; or

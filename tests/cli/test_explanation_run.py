@@ -16,6 +16,7 @@ from cli.explanation_run import (
 from cli_samples import ADVISORY, LEGAL, LODASH, QUOTATION, advisory_like
 from council.explanation_prompt import EXPLANATION_PROMPT_VERSION, ExplanationPrompt
 from council.roster import Member, Roster
+from council.transport import ModelUnavailable
 from findings.finding import build_finding
 from report.explanation_record import DroppedMetric, SourcesExplained, SourcesNotExplained
 
@@ -102,6 +103,19 @@ def test_an_explanation_that_quoted_nothing_says_which_model_and_why():
         ADVISORY.advisory_id,
         "big:27b: the model offered 1 item, and none was kept (unverified quotation 1)",
         (DroppedMetric("C", "x", "not in it", False, "unverified quotation"),),
+        model="big:27b",
+        prompt_version=EXPLANATION_PROMPT_VERSION,
+    )
+
+
+def test_a_call_that_fails_still_names_the_model_and_the_prompt_it_was_asked_with():
+    def timing_out(member, prompt):
+        """Fail as a slow server fails."""
+        raise ModelUnavailable("did not answer within 180 s")
+
+    (record,) = explanations((DISPUTED,), EXPLAINER, {"ollama": timing_out})
+    assert (record.model, record.prompt_version, record.dropped_items) == (
+        "big:27b", EXPLANATION_PROMPT_VERSION, (),
     )
 
 

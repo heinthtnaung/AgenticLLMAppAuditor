@@ -7,6 +7,9 @@ from report.json_explanation import NOT_RECORDED, explanation_of
 from report.record import build_report
 from report_samples import PROVENANCE, catalogue, component, finding
 
+# A record no model was asked for names neither a model nor a prompt version.
+NOBODY_ASKED = ["assessed", "because", "dropped_items"]
+
 
 def test_an_explained_finding_names_the_model_the_version_each_item_and_what_was_dropped():
     assert explanation_of(explained_report(), "CVE-EXPLAINED") == {
@@ -29,6 +32,8 @@ def test_a_finding_not_explained_says_why():
     report = explained_report()
     assert explanation_of(report, "CVE-UNEXPLAINED") == {
         "assessed": False,
+        "model": "big:27b",
+        "prompt_version": EXPLANATION_PROMPT_VERSION,
         "because": "big:27b: the model offered 1 item, and none was kept (unverified quotation 1)",
         "dropped_items": [{
             "metric": "C", "why": "It is bad.", "evidence": "the whole disk",
@@ -49,6 +54,19 @@ def test_a_council_run_holding_no_record_for_a_finding_does_not_claim_nobody_ask
     named = Coverage(council_named=True)
     report = build_report(PROVENANCE, catalogue(component()), (finding(),), {}, coverage=named)
     assert explanation_of(report, "CVE-2019-14234")["because"] == NOT_RECORDED
+
+
+def test_the_model_and_the_prompt_version_are_named_where_a_model_was_asked_and_only_there():
+    report = explained_report()
+    nobody = build_report(PROVENANCE, catalogue(component()), (finding(),), {})
+    assert list(explanation_of(report, "CVE-EXPLAINED")) == [
+        "assessed", "model", "prompt_version", "items", "dropped", "dropped_items",
+    ]
+    assert list(explanation_of(report, "CVE-UNEXPLAINED")) == [
+        "assessed", "model", "prompt_version", "because", "dropped_items",
+    ]
+    assert list(explanation_of(report, "CVE-AGREED")) == NOBODY_ASKED
+    assert list(explanation_of(nobody, "CVE-2019-14234")) == NOBODY_ASKED
 
 
 def test_every_kept_item_says_its_quotation_was_checked_and_its_prose_was_not():

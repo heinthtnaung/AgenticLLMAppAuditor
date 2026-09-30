@@ -2,6 +2,7 @@
 
 from dataclasses import replace
 
+from council.explanation_prompt import EXPLANATION_PROMPT_VERSION
 from explanation_runs import QUOTED, WHY, explained_report
 from full_runs import fully_assessed
 from report.explanation_words import MODEL_WRITTEN
@@ -32,6 +33,11 @@ def test_a_finding_the_model_could_not_explain_says_why():
     text = " ".join(block_lines())
     said = "CVE-UNEXPLAINED  not explained: big:27b: the model offered 1 item, and none was kept"
     assert said in text
+
+
+def test_the_prompt_version_is_in_the_json_alone_explained_or_not():
+    # The terminal names the model; the prompt it was asked with is left to the JSON.
+    assert EXPLANATION_PROMPT_VERSION not in as_text(explained_report())
 
 
 def test_a_finding_whose_sources_agree_has_no_entry():

@@ -6,6 +6,7 @@ marked as unchecked, the quotation is shown whole, a finding nobody explained
 says why, and an agreeing finding carries no block.
 """
 
+from council.explanation_prompt import EXPLANATION_PROMPT_VERSION
 from explanation_runs import QUOTED, WHY, explained_report
 from report.explanation_words import MODEL_WRITTEN
 from report.html_explanation import why_block
@@ -39,6 +40,11 @@ def test_the_models_words_are_marked_as_its_own_and_the_quotation_shown_whole():
 
 def test_a_finding_the_model_could_not_explain_says_why():
     assert "not explained: big:27b: the model offered 1 item" in block_for("CVE-UNEXPLAINED")
+
+
+def test_the_prompt_version_is_in_the_json_alone_explained_or_not():
+    # The page names the model; the prompt it was asked with is left to the JSON.
+    assert EXPLANATION_PROMPT_VERSION not in as_html(explained_report())
 
 
 def test_a_finding_whose_sources_agree_carries_no_why_block():

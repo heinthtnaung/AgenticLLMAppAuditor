@@ -711,8 +711,9 @@ escalation model's reply on each metric the council left open, beside what the
 council had left it as, the final vector, and the computed score. Per run: the
 server's version and the digest of every local model the run asks
 (`run.local_models`). Per finding whose sources disagree: the explanation's
-kept items, every item it dropped with the reason, the model that wrote it, and
-its prompt version, `sources-differ-1`. A score nobody can re-derive is not a
+kept items, every item it dropped with the reason, and the model asked with its
+prompt version, `sources-differ-1`, whether or not anything was kept. A score
+nobody can re-derive is not a
 score, and a roster nobody can reconstruct is not a council.
 
 ## What is built, and what is not
