@@ -54,6 +54,14 @@ def test_a_recorded_value_with_no_quotation_is_read_as_a_guess():
     assert guess == MemberGuessed(metric="A", value="N", member=MEMBER)
 
 
+def test_a_member_naming_its_metric_in_words_is_still_refused_unlike_the_explainer():
+    # The explainer reads "Attack Vector" as AV (`council.explanation_reply`); a
+    # member's unasked metric field is held to the code alone.
+    named = recorded.ANSWERS_ANOTHER_METRIC.replace('"AC"', '"Attack Vector"')
+    with pytest.raises(MalformedReply, match="answers 'Attack Vector', but AV was asked"):
+        read_reply(named, "AV", MEMBER)
+
+
 def test_prose_wrapped_around_the_json_is_read_through():
     answer = read_reply(recorded.PROSE_AROUND_JSON, "AV", MEMBER)
     assert answer.value == "N"

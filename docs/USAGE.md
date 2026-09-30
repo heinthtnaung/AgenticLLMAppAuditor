@@ -661,7 +661,11 @@ disputed metrics alone, with what those values mean, and the redacted advisory:
 never a whole vector, never the CVE id.
 
 **Only the quotation is checked.** Each item the model offers names a disputed
-metric, says why in its own words, and quotes the advisory. The first item on
+metric, says why in its own words, and quotes the advisory. A metric is read as
+its code, or as its CVSS name spelled exactly as the specification spells it,
+alone or bracketed with the code (`Availability`, `A (Availability)`,
+`Availability (A)`). A code and name that disagree, or any other spelling, is
+dropped as `not a disputed metric`. The first item on
 each disputed metric with a `why` that is not empty and a quotation the advisory
 contains is kept. Every other item is dropped, and the record keeps it with the
 first reason that applies, in this order: `not a disputed metric`, `empty why`,

@@ -70,26 +70,40 @@ These are facts of the file, and no change to the code moves them.
 
 `summary.txt` replays every saved reply through `explain` and counts what is kept. Its
 first line names the reading it was scored under: the git blob ids of the two files that
-read a reply and sort its items, which `git log --find-object=ID` resolves to the commits
-holding them. The ids below are those files as of `910778f`. The records test re-derives
-`summary.txt` byte for byte, and `test_explainer_readme.py` holds this block to it.
+read a reply and sort its items, and of the metric table the reading looks a name up in,
+which `git log --find-object=ID` resolves to the commits holding them. The records test
+re-derives `summary.txt` byte for byte, and `test_explainer_readme.py` holds this block to
+it.
+
+**The replies were re-scored by the commit "Read an explainer metric written as its
+name"**, and the ids below are those files as of it. The parser now reads a metric written
+as its name, alone or in brackets beside its code, so each of the six gemma calls recorded
+as dropping its one item now keeps it. Scored as of `910778f`, before that commit, gemma's
+one-metric row was 0 of 6 calls explained and 0 of 6 items kept, with all 6 dropped as not
+a disputed metric; the other three rows were as they are now.
 
 <!-- scored: begin -->
 ```text
-scored by src/council/explanation_reply.py ecd02ca49f3ee2454c5a1d84546130cef7c50aa2, src/council/explanation.py 83dbbe3200a2c346a93c681d963903d770a4a323
-calls 20; scored otherwise than recorded at the time: 0
+scored by src/council/explanation_reply.py 52202351be92d76cbcaad2ec6cc885a9898bc526, src/council/explanation.py 83dbbe3200a2c346a93c681d963903d770a4a323, src/cvss/metrics.py 4f2c0035bc23cc66ed589efef2f04cb118a642e9
+calls 20; scored otherwise than recorded at the time: 6
+gemma4:latest seed 11 CVE-2026-13149
+gemma4:latest seed 11 CVE-2025-13465
+gemma4:latest seed 11 CVE-2026-4800
+gemma4:latest seed 12 CVE-2026-13149
+gemma4:latest seed 12 CVE-2025-13465
+gemma4:latest seed 12 CVE-2026-4800
 
-gemma4:latest  one-metric   calls 6  explained 0  kept 0 of 6  drops {'not a disputed metric': 6}
+gemma4:latest  one-metric   calls 6  explained 6  kept 6 of 6  drops {}
 gemma4:latest  multi-metric calls 4  explained 4  kept 12 of 12  drops {}
 glm-4.7-flash  one-metric   calls 6  explained 6  kept 6 of 6  drops {'repeat': 2}
 glm-4.7-flash  multi-metric calls 4  explained 4  kept 12 of 12  drops {}
 ```
 <!-- scored: end -->
 
-**A change to how a reply is read changes this block, and nothing above it.** Regenerate
-`summary.txt` with the command below, and copy its first and last sections here. The
-outcomes recorded at the time stay in `replies.jsonl`, and the second line counts the
-calls now scored otherwise.
+**A change to how a reply is read changes this block and the paragraph above it that names
+the commit, and nothing else.** Regenerate `summary.txt` with the command below, and copy
+its first and last sections here. The outcomes recorded at the time stay in
+`replies.jsonl`, and the second line counts the calls now scored otherwise.
 
 ## The decision this settled
 
@@ -98,7 +112,8 @@ Two outcomes were planned before the run. If the drops were "not a disputed metr
 were "unverified quotation", the quotations would be classified and no code changed.
 **Neither held as written.** The reason was the first outcome's, but the metric was
 written as its name, and no item was dropped for its quotation. What was decided instead
-is that the explainer's parser reads a metric named in words.
+is that the explainer's parser reads a metric named in words, which it does from the commit
+"Read an explainer metric written as its name".
 
 ## What is inferred, not measured
 

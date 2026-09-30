@@ -5,9 +5,10 @@ against the finding rebuilt from the frozen dataset, and every figure printed co
 that replay: it is what the explainer's current reading makes of the replies. The outcome
 each call recorded when it was made is compared, and a call whose replay differs is named.
 
-The first line names the two files that read and sort a reply by their git blob ids, so the
-summary says which reading produced it; `git log --find-object=ID` finds the commits that
-hold one. The `metric` strings are read from the raw reply, before the parser reads them.
+The first line names the files that read and sort a reply, and the metric table the reading
+looks a metric's name up in, by their git blob ids, so the summary says which reading
+produced it; `git log --find-object=ID` finds the commits that hold one. The `metric`
+strings are read from the raw reply, before the parser reads them.
 
     python measurements/explainer_vulnscout/summary.py \\
         measurements/explainer_vulnscout/replies.jsonl \\
@@ -26,6 +27,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import council.explanation as sorting  # noqa: E402
 import council.explanation_reply as reading  # noqa: E402
+import cvss.metrics as naming  # noqa: E402
 from cli.council_run import advisory_text  # noqa: E402
 from cli.explanation_run import published_on  # noqa: E402
 from council.explanation import explain  # noqa: E402
@@ -36,7 +38,11 @@ from explainer_vulnscout.probe import DATASET, outcome_of  # noqa: E402
 
 Line = dict[str, Any]
 KINDS = {True: "one-metric", False: "multi-metric"}
-SCORING_CODE = {"src/council/explanation_reply.py": reading, "src/council/explanation.py": sorting}
+SCORING_CODE = {
+    "src/council/explanation_reply.py": reading,
+    "src/council/explanation.py": sorting,
+    "src/cvss/metrics.py": naming,
+}
 
 
 def recorded_calls(path: Path) -> tuple[dict[str, Any], list[Line]]:
