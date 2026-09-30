@@ -63,9 +63,10 @@ The project's source notes, kept outside this repository, sketch a ladder: a
 small local model, then a larger one, then a cloud one, each asked whether the
 published scores align. Two rungs of it are built, both on this machine: the
 council, then one larger local model asked only what the council left open
-("Escalation", below). **The cloud rung is excluded, not deferred**: by the
-project's rule escalation stays local, so a hosted model takes part only as an
-ordinary member of the roster, opted in like any other.
+("Escalation", below). **The cloud rung is excluded, not deferred**: the
+escalation model runs as a local member on this machine, held there by the code
+(below), so a hosted model takes part only as an ordinary member of the roster,
+opted in like any other.
 
 ## What the council decides, and what it does not
 
@@ -489,10 +490,13 @@ what the council had left.
 
 **One model, on this machine, and never a member.** The name is a model on the
 local Ollama server, so a hosted one cannot be written: **hosted escalation is
-excluded by the project's rule, not deferred.** A model already on the council
-is refused before any model is asked, because a member escalating to itself
-would read the same prompt again and count twice. So is a value naming two
-models.
+excluded, not deferred.** The escalation model is an ordinary local member, and
+two guards hold every local member to this machine: `council.settings.server_of`
+refuses an `AUDITOR_SERVER_URL` whose host is not loopback, and
+`council.ollama.refuse_remote_host` refuses one again on each call. A model
+already on the council is refused before any model is asked, because a member
+escalating to itself would read the same prompt again and count twice. So is a
+value naming two models.
 
 **What it costs.** Two calls per open metric, a count known only once the
 council has answered, so the progress stream counts them apart and without a
