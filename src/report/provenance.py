@@ -73,6 +73,11 @@ class LocalModels:
     ollama_version: ServerVersion
     models: tuple[ModelIdentity, ...]
 
+    def __post_init__(self) -> None:
+        """Refuse a record of a council that asked no model, which no real run is."""
+        if not self.models:
+            raise ValueError("A council run asks at least one model; models cannot be empty")
+
 
 @dataclass(frozen=True)
 class RunProvenance:

@@ -6,11 +6,21 @@ import pytest
 
 from report.html_report import as_html
 from report.json_report import as_json
-from report.provenance import AdvisoryDatabase, RunProvenance, UnknownAdvisoryDatabase
+from report.model_identity import MEMBER_ROLE, ModelDigest, OllamaVersion
+from report.provenance import AdvisoryDatabase, LocalModels, RunProvenance, UnknownAdvisoryDatabase
 from report.record import build_report
 from report.text_report import as_text
 from report_samples import DATABASE, PROVENANCE, catalogue, component
 from scoring.version import SCORING_RULES_VERSION
+
+
+def local_models(models):
+    """Build a local-model record with the given models, every other setting fixed."""
+    return LocalModels(
+        server="http://127.0.0.1:11434", context_tokens=8192, timeout_seconds=180.0,
+        temperature=0, seed=11, think=False, order_check=True, escalation_model=None,
+        ollama_version=OllamaVersion("0.34.3"), models=models,
+    )
 
 
 @pytest.mark.parametrize("built", ["", "   "], ids=["empty", "blank"])
@@ -43,6 +53,16 @@ def test_provenance_a_reader_could_not_reproduce_the_run_from_is_refused(field):
 def test_provenance_without_a_real_database_is_refused(given):
     with pytest.raises(TypeError, match="needs a database"):
         RunProvenance("r", "s", "t", given)
+
+
+def test_a_record_of_a_council_that_asked_no_model_is_refused():
+    with pytest.raises(ValueError, match="asks at least one model"):
+        local_models(())
+
+
+def test_a_record_of_one_asked_model_stands():
+    asked = local_models((ModelDigest("qwen2.5:7b", MEMBER_ROLE, "845dbda0ea48ed749caafd"),))
+    assert len(asked.models) == 1
 
 
 def test_a_run_records_the_scoring_rules_this_code_scores_by():

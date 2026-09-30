@@ -12,7 +12,7 @@ from report.council_words import (
     why_unsettled,
 )
 from report.html_council import council_panel
-from report.model_identity import OllamaVersion
+from report.model_identity import MEMBER_ROLE, ModelDigest, OllamaVersion
 from report.provenance import LocalModels
 from report.record import build_report
 from report.text_council import council_block
@@ -45,7 +45,8 @@ def asked_locally(escalation_model: str | None) -> LocalModels:
     return LocalModels(
         server="http://127.0.0.1:11434", context_tokens=8192, timeout_seconds=180.0,
         temperature=0, seed=11, think=False, order_check=True, escalation_model=escalation_model,
-        ollama_version=OllamaVersion("0.34.3"), models=(),
+        ollama_version=OllamaVersion("0.34.3"),
+        models=(ModelDigest("qwen2.5:7b", MEMBER_ROLE, "845dbda0ea48ed749caafd"),),
     )
 
 
