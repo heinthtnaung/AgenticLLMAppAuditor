@@ -15,9 +15,11 @@ from dataclasses import replace
 from pathlib import Path
 from typing import TextIO
 
+from council.escalation import refuse_unfit_escalation
 from council.escalation_setting import escalation_model
 from council.member_setting import council_members
 from council.ollama import PINNED_SEED, PINNED_TEMPERATURE, PINNED_THINKING
+from council.providers import PROVIDER_CLIENTS
 from council.settings import current_settings
 from council.transport import get_json
 from deps import manifests, syft_runner, trivy_runner
@@ -101,6 +103,8 @@ def local_models_of(options: Options) -> LocalModels | None:
     if not options.council_models:
         return None
     chosen, escalation = current_settings(), escalation_model()
+    # Before the server is read or the repository scanned: a run that must stop starts nothing.
+    refuse_unfit_escalation(escalation_member(escalation), options.council_models, PROVIDER_CLIENTS)
     # Two reads of the server, and only here: a run naming no member makes neither.
     version, models = local_identities(options.council_models, escalation, chosen.server, get_json)
     return LocalModels(

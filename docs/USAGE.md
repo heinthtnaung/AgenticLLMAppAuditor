@@ -595,8 +595,8 @@ it open, and the escalation model's verified quotation settled it".
 
 **It is local, and it is not a member.** The name is a model on the local
 Ollama server, so a hosted escalation cannot be written: hosted escalation is
-excluded, not deferred. A model already on the council is refused after the
-scan, before any model is asked, and `audit` exits `2` with
+excluded, not deferred. A model already on the council is refused before the
+scan, and before the model server is read, and `audit` exits `2` with
 `audit: big:27b is on the council, so it cannot also be the model the council's open metrics escalate to`.
 
 In the text and the page, a metric that went to the model says what came of it.

@@ -122,3 +122,21 @@ def test_the_setting_is_read_only_for_a_council_and_a_bad_one_stops_it_before_th
     monkeypatch.setattr(audit_module.syft_runner, "scan_directory", scanned)
     with pytest.raises(SettingsError, match="names one model"):
         run_audit(options_for(tmp_path, ("small",)), DATED)
+
+
+def started(*given, **named) -> None:
+    """Fail the test: nothing may be scanned, read or asked once the escalation model is refused."""
+    raise AssertionError(f"the run started something, given {given}")
+
+
+def test_an_escalation_model_on_the_council_is_refused_before_the_server_is_read_or_the_scan(
+    tmp_path, monkeypatch
+):
+    scanners_answering(monkeypatch)
+    monkeypatch.setattr(audit_module.syft_runner, "scan_directory", started)
+    monkeypatch.setattr(audit_module.trivy_runner, "scan_directory", started)
+    monkeypatch.setattr(audit_module, "get_json", started)
+    monkeypatch.setattr(audit_module, "assessments", started)
+    monkeypatch.setenv("AUDITOR_ESCALATION_MODEL", "small")
+    with pytest.raises(ValueError, match="^small is on the council"):
+        run_audit(options_for(tmp_path, ("small", "other")), DATED)

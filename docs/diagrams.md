@@ -70,7 +70,7 @@ flowchart TD
     expl -. "one line per call" .-> err
     ctx --> rec
     asked["What was asked for<br/>an answer file, council members<br/>kept even when nothing was found"] --> rec
-    asked --> ident["If a council was named, before the scan:<br/>two reads of the model server, /api/tags then /api/version<br/>the version and each model's digest, into the record<br/>a run naming no member reads nothing"]
+    asked --> ident["If a council was named, before the scan:<br/>an escalation model already on the council stops the run here<br/>two reads of the model server, /api/tags then /api/version<br/>the version and each model's digest, into the record<br/>a run naming no member reads nothing"]
     ident --> rec
     rec --> rnd["Rendered as text, as JSON,<br/>and as one HTML page"]
     rec --> apr["Which findings need approval<br/>src/organisation/approval_rule, read off the record:<br/>any source's risk band High or Critical,<br/>or published sources that disagree"]

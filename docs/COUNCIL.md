@@ -494,9 +494,9 @@ excluded, not deferred.** The escalation model is an ordinary local member, and
 two guards hold every local member to this machine: `council.settings.server_of`
 refuses an `AUDITOR_SERVER_URL` whose host is not loopback, and
 `council.ollama.refuse_remote_host` refuses one again on each call. A model
-already on the council is refused before any model is asked, because a member
-escalating to itself would read the same prompt again and count twice. So is a
-value naming two models.
+already on the council is refused before the scan and before any model is asked,
+because a member escalating to itself would read the same prompt again and count
+twice. So is a value naming two models.
 
 **What it costs.** Two calls per open metric, a count known only once the
 council has answered, so the progress stream counts them apart and without a
