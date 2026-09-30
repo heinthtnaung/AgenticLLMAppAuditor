@@ -55,6 +55,14 @@ def test_a_local_member_needs_no_egress():
     assert member().may_run()
 
 
+def test_only_a_member_neither_here_nor_on_an_ollama_server_is_hosted():
+    # An Ollama member on another machine is on the settings' server, beside the rest.
+    elsewhere = member(runs_local=False, egress=True)
+    assert [one.is_hosted() for one in (member(), elsewhere, hosted(egress=True))] == [
+        False, False, True,
+    ]
+
+
 def test_a_roster_nobody_can_be_asked_from_is_refused():
     with pytest.raises(ValueError, match="can ask nobody"):
         members_to_ask(Roster((hosted("one"), hosted("two"))))

@@ -11,8 +11,9 @@ escalation, over every finding first, and only then asks for explanations
 fixed, and the explainer, one model, is loaded once rather than per finding.
 
 **The explainer is the escalation model where one is named, otherwise the
-council's first local member.** No setting chooses it, and the record names it.
-A roster with no local member has nobody to explain with, and is refused.
+council's first member that is not hosted** -- on this machine, or on the Ollama
+server the members share. No setting chooses it, and the record names it. A
+roster of hosted members only has nobody to explain with, and is refused.
 
 **Nothing reads an explanation back.** It is carried beside the published
 scores; the council's vector and the Organisation Risk Score never see it. And
@@ -38,19 +39,19 @@ from report.explanation_record import (
 
 NOT_DISPUTED = "no two of its readable sources disagree, so there is nothing to explain"
 NO_LOCAL_EXPLAINER = (
-    "no local member to explain with: the explainer runs on this machine, and no escalation "
-    "model is named"
+    "no member to explain with that is not hosted: the explainer runs on the members' "
+    "Ollama server, and no escalation model is named"
 )
 
 
 def explainer_of(roster: Roster, escalation: Member | None) -> Member:
-    """Give the model that explains: the escalation model if named, else the first local member."""
+    """Give the model that explains: the escalation model if named, else the first not hosted."""
     if escalation is not None:
         return escalation
-    local = [one for one in members_to_ask(roster) if one.runs_local]
-    if not local:
+    unhosted = [one for one in members_to_ask(roster) if not one.is_hosted()]
+    if not unhosted:
         raise ValueError(NO_LOCAL_EXPLAINER)
-    return local[0]
+    return unhosted[0]
 
 
 def explanations(

@@ -25,7 +25,7 @@ from council.escalation_setting import escalation_model
 from council.member_setting import council_members
 from council.ollama import PINNED_SEED, PINNED_TEMPERATURE, PINNED_THINKING
 from council.providers import PROVIDER_CLIENTS
-from council.settings import current_settings
+from council.settings import current_settings, remote_host
 from council.transport import get_json
 from deps import manifests, syft_runner, trivy_runner
 from deps.syft_report import Catalogue
@@ -131,6 +131,7 @@ def local_models_of(options: Options) -> LocalModels | None:
         escalation_model=escalation,
         ollama_version=version,
         models=models,
+        remote_host=remote_host(chosen.server),
     )
 
 

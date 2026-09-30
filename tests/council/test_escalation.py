@@ -122,3 +122,15 @@ def test_an_unfit_escalation_model_is_refused_before_it_is_asked(escalation, sai
     with pytest.raises(ValueError, match=said):
         escalate(council, RAW_ADVISORY, escalation, clients)
     assert asked == []
+
+
+def test_an_escalation_model_on_the_members_server_elsewhere_is_asked_like_a_local_one():
+    # The members' own server, opted in to with AUDITOR_REMOTE_SERVER=yes, and so not hosted.
+    elsewhere = member("big-elsewhere", model="big:27b", runs_local=False, egress=True)
+    asked = []
+    clients = {"ollama": answering(asked, {**CONTESTING_AV, ("big-elsewhere", "AV"): "L"})}
+    council = assess(RAW_ADVISORY, COUNCIL, FALLBACKS, clients, order_check=True)
+    asked.clear()
+    done = escalate(council, RAW_ADVISORY, elsewhere, clients)
+    assert [who for who, *_ in asked] == ["big-elsewhere", "big-elsewhere"]
+    assert done.rounds[0].escalation.reply.member.ran_local is False

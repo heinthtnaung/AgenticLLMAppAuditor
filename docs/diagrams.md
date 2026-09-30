@@ -172,7 +172,8 @@ reaches the score.
 **The explanation feeds the record too, and nothing else.** Beside a council,
 once the council and any escalation are done with every finding, one model is
 asked why each disputed finding's sources differ: the escalation model where one
-is named, otherwise the council's first local member. It sees each source's
+is named, otherwise the council's first member that is not hosted, on the
+members' Ollama server. It sees each source's
 value on the disputed metrics and the redacted advisory, and an item survives
 only where its quotation is in the advisory. Its prose is labelled as the
 model's and never checked, and no score, band or vector is computed from it.
@@ -399,12 +400,12 @@ and why 30/25/25/20 is the one to use.
 ## 4. The assessor council
 
 **Built, except the hosted client.** `src/council/` is the roster and its gate,
-the redaction, the prompt, the local Ollama client, the quotation check, the
+the redaction, the prompt, the Ollama client, the quotation check, the
 order check, the chairman, the runner and escalation; `src/cvss` is the engine
 below. Nothing reaches a hosted member. A metric the council leaves contested or
-unresolved goes to one larger local model where `AUDITOR_ESCALATION_MODEL` names
-one, and never to a hosted model: that is excluded, not deferred. Escalation has
-been run with stand-in models only.
+unresolved goes to one larger model on the members' server where
+`AUDITOR_ESCALATION_MODEL` names one, and never to a hosted model: that is
+excluded, not deferred. Escalation has been run with stand-in models only.
 
 ```mermaid
 flowchart TD
@@ -417,9 +418,9 @@ flowchart TD
     red --> shown["The text a member sees<br/>no id, no published vector,<br/>no other member's answer"]
 
     subgraph ROSTER["The roster: n members, added and removed by the operator<br/>named by --council-member, or by AUDITOR_COUNCIL_MEMBERS<br/>for --council; that setting alone starts nothing"]
-        subgraph LOCALM["Local: Ollama on this machine<br/>server, window and timeout from AUDITOR_* settings<br/>temperature, seed and think pinned in code<br/>the server's version and each model's digest<br/>read once per run, into the record"]
-            m1["Member 1, local"]
-            m2["Member 2, local"]
+        subgraph LOCALM["Ollama server the members share<br/>this machine, or the one AUDITOR_REMOTE_SERVER=yes names<br/>server, window and timeout from AUDITOR_* settings<br/>temperature, seed and think pinned in code<br/>the server's version and each model's digest<br/>read once per run, into the record"]
+            m1["Member 1"]
+            m2["Member 2"]
             mdot["... to member n"]
         end
         subgraph HOSTM["Hosted: opt in per member, off by default"]
@@ -430,6 +431,7 @@ flowchart TD
     shown --> m1
     shown --> m2
     shown --> mdot
+    shown -. "AUDITOR_REMOTE_SERVER=yes: this text, the definitions,<br/>and each source's value on the disputed metrics to the<br/>explainer, leave over the address's scheme (plain http<br/>unless https); opt in per run, not per member" .-> away["Ollama on one other machine,<br/>meant to be the operator's own network<br/>each member answer and escalation reply: ran_local false<br/>remote_host says where the explainer ran"]
     h1 --> skip["Skipped, with the reason:<br/>egress not opted in,<br/>or no client exists to reach it"]
 
     m1 --> twice["Each metric asked twice:<br/>options in order, then reversed"]
@@ -451,9 +453,9 @@ flowchart TD
     st -->|"one value"| settled["Settled"]
     st -->|"more than one value"| pol["Contested"]
     st -->|"nothing verified"| unr["Unresolved<br/>the command line names no<br/>published source to fall back to"]
-    pol --> esc{"AUDITOR_ESCALATION_MODEL<br/>names a local model?"}
+    pol --> esc{"AUDITOR_ESCALATION_MODEL<br/>names a model?"}
     unr --> esc
-    esc -->|"yes"| eask["The escalation model reads the metric<br/>in both orders, as a member does<br/>local only, never a member"]
+    esc -->|"yes"| eask["The escalation model reads the metric<br/>in both orders, as a member does<br/>on the members' server, never a member"]
     eask --> eok{"The same value both ways,<br/>its quotation verified, and on<br/>a contest one of the contested values?"}
     eok -->|"yes"| escd["Settled, basis ESCALATED"]
     eok -->|"no"| stays["Left as the council left it<br/>what the model said recorded"]
@@ -506,8 +508,9 @@ Gemma's place, 1 of 5 and 4 of 18 did, and `measurements/README.md` says why
 that is not better reading. None of those runs had an escalation model.
 
 **Escalation is a second reading of what is open, not a second council.** A
-metric left contested or unresolved goes to one more local model, asked in both
-orders like a member, and settles only on a reply the chairman would take from a
+metric left contested or unresolved goes to one more model on the members'
+server, asked in both orders like a member, and settles only on a reply the
+chairman would take from a
 member: the same value both ways round, with a quotation the advisory contains.
 On a contest the value must also be one the council's verified quotations already
 support, so the model can side with evidence and never add a reading. Anything
@@ -540,6 +543,17 @@ when they do. The gate is built and tested; what it guards is not. The day an
 OpenRouter client lands, one of those two reasons disappears and `egress`
 becomes the only thing between an advisory and the network — which is worth
 knowing before that day, not after.
+
+**One edge does leave the machine, when the operator opts in.** The dotted path
+above is `AUDITOR_REMOTE_SERVER=yes`: the members' Ollama server is then one other
+machine, meant to be on the operator's own network, and the redacted advisory
+text, the metric definitions, and — to the explainer — each source's value on the
+disputed metrics go to it over the address's own scheme, plain unencrypted http
+unless it is `https://`; never the organisation's answers, the repository's
+contents or a secret. It is opt-in per run, not per member: every member, the
+escalation model and the explainer run there; each member answer and escalation
+reply is marked `ran_local: false`, and the run's `remote_host` says where the
+explainer ran (`docs/USAGE.md`).
 
 Redaction is a step, not a request. The ids and vector strings are taken out of
 the text before any member sees it, because a sentence in a prompt cannot make a
@@ -606,7 +620,7 @@ flowchart LR
         b11["src/deps/manifests<br/>the manifests no lock file<br/>Syft reads is beside"]
         b4["src/cvss<br/>vector parser, metric vocabulary,<br/>Base score equations"]
         b5["src/findings<br/>the join, every source's score apart"]
-        b7["src/council<br/>roster and the egress gate, redaction,<br/>prompt, provider registry, chairman,<br/>the local server's settings,<br/>the members --council runs,<br/>the order check, escalation<br/>to one local model, and the explainer"]
+        b7["src/council<br/>roster and the egress gate, redaction,<br/>prompt, provider registry, chairman,<br/>the model server's settings,<br/>the members --council runs,<br/>the order check, escalation<br/>to one model on that server, and the explainer"]
         b8["src/report<br/>the record, and three renderings of it:<br/>text, JSON, one self-contained tabbed HTML<br/>page, its stylesheet and script inlined"]
         b9["src/cli<br/>arguments, preflight, the audit order,<br/>the council's scope and its record,<br/>the two reads of the model server it makes,<br/>the stderr progress stream, the report files<br/>in reports/, and the exit code a<br/>pipeline reads"]
         b6["src/scoring<br/>the approved question library, categories<br/>clamped then weighted, the band,<br/>the severity floors on it<br/>and the version naming those rules"]

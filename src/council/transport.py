@@ -21,10 +21,13 @@ here as any other refusal does, saying where it pointed.
 the URL they are handed, and only there. The guarantee lives one layer up:
 `council.ollama.refuse_remote_host` for a member's call, and
 `council.settings.server_of` for the two reads, whose host is always the
-settings' server. The distinction is worth keeping straight because the proxy
-bypass above is right only while every caller is local: the hosted client
-`docs/COUNCIL.md` describes would need the proxy back, so it wants its own
-transport rather than this one with the rule relaxed.
+settings' server -- this machine, or the one other machine
+`AUDITOR_REMOTE_SERVER=yes` lets it name. The distinction is worth keeping
+straight because the proxy bypass above is right only while every caller is
+this machine or a server on the operator's own network, which is what the
+opt-in is for: a server reachable only through the proxy is not reached here,
+and the hosted client `docs/COUNCIL.md` describes would need the proxy back, so
+it wants its own transport rather than this one with the rule relaxed.
 """
 
 import http.client

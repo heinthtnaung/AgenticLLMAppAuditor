@@ -12,6 +12,12 @@ an assessment. So a member nothing can reach is named as skipped with the
 reason, beside the ones `egress` stopped, and the two reasons stay
 distinguishable -- "not configured" and "refused by policy" are different facts
 about a run.
+
+**An Ollama member is recorded where its server is.** Every one is asked of the
+one server the settings name, so `ollama_member` reads its place off that
+server's host: this machine, or another the operator opted in to with
+`AUDITOR_REMOTE_SERVER=yes`, which is the member's egress. `ask_local_model`
+refuses a member whose record says otherwise, before anything is sent.
 """
 
 from typing import Callable, Mapping
@@ -26,16 +32,48 @@ from council.roster import (
     members_skipped,
     members_to_ask,
 )
+from council.settings import current_settings, on_this_machine
 
 # Ask one member one question and give back what it said, verbatim.
 AskMember = Callable[[Member, Question], str]
 
 NO_CLIENT_FOR_PROVIDER = "no client for provider {provider!r} exists on this machine"
+FAMILY_SEPARATOR = ":"
+
+
+def ollama_member(model: str) -> Member:
+    """Describe one model on the settings' Ollama server as a council member, wherever it is."""
+    # The family is guessed from the tag, which is what a roster file would carry
+    # properly. It is only read to judge how much a roster's agreement is worth,
+    # never by the chairman, so a wrong guess costs a reader and not a number.
+    here = on_this_machine(current_settings().server)
+    return Member(
+        name=model,
+        provider=OLLAMA_PROVIDER,
+        model=model,
+        family=model.split(FAMILY_SEPARATOR)[0],
+        runs_local=here,
+        # Elsewhere only with `AUDITOR_REMOTE_SERVER=yes`: that opt-in is this member's egress.
+        egress=not here,
+    )
 
 
 def ask_local_model(member: Member, prompt: Question) -> str:
-    """Put a prompt to a member running on the local Ollama server."""
-    return ask(prompt, LocalModel(model=member.model)).text
+    """Put a prompt to a member on the settings' Ollama server, here or elsewhere."""
+    pinning = LocalModel(model=member.model)
+    refuse_mislabelled(member, pinning.host)
+    return ask(prompt, pinning).text
+
+
+def refuse_mislabelled(member: Member, host: str) -> None:
+    """Refuse a member whose record would say it ran local and its server is not, or the reverse."""
+    if member.runs_local == on_this_machine(host):
+        return
+    said = "this machine" if member.runs_local else "another machine"
+    raise ValueError(
+        f"{member.name} would be recorded as run on {said}, but its server is {host}; it is "
+        "not asked, so the record cannot misstate where the advisory text went"
+    )
 
 
 # Ollama and nothing else, which is why a hosted member is reported rather than

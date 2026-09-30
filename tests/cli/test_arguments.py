@@ -2,7 +2,14 @@
 
 import pytest
 
-from cli.arguments import BOTH_COUNCILS, JSON_FORMAT, TEXT_FORMAT, parse_arguments
+from cli.arguments import (
+    BOTH_COUNCILS,
+    COUNCIL_HELP,
+    JSON_FORMAT,
+    MEMBER_HELP,
+    TEXT_FORMAT,
+    parse_arguments,
+)
 from cli.main import COULD_NOT_RUN
 
 
@@ -90,3 +97,10 @@ def test_the_council_flag_beside_a_named_member_is_refused_rather_than_one_winni
         parse_arguments(["repo", "--council", "--council-member", "small"])
     assert leaving.value.code == COULD_NOT_RUN
     assert BOTH_COUNCILS in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("said", [MEMBER_HELP, COUNCIL_HELP], ids=["council-member", "council"])
+def test_the_council_flags_name_the_settings_server_and_never_call_its_models_local(said):
+    # With AUDITOR_REMOTE_SERVER=yes that server is another machine.
+    assert "the Ollama server AUDITOR_SERVER_URL names" in said
+    assert "local" not in said

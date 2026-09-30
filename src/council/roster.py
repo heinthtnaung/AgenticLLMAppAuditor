@@ -49,6 +49,12 @@ class Member:
         """Say whether this run may ask this member, which a hosted one must opt into."""
         return self.runs_local or self.egress
 
+    def is_hosted(self) -> bool:
+        """Say whether this is a hosted service's model: neither here nor on an Ollama server."""
+        # An Ollama member on another machine is not hosted: it is on the server the
+        # settings name, which `AUDITOR_REMOTE_SERVER=yes` opted in to, beside the rest.
+        return not self.runs_local and self.provider != OLLAMA_PROVIDER
+
     def identify(self, prompt_version: str) -> MemberIdentity:
         """Name this member on an answer, recording the prompt it was asked with."""
         return MemberIdentity(

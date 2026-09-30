@@ -199,7 +199,7 @@ AUDITOR_ESCALATION_MODEL=qwen2.5:14b audit fetched/vulnscout --council
 ```
 
 Sends each metric the council leaves contested or unresolved to one larger
-local model.
+model on the members' server.
 
 ### Ask the council about every finding
 
@@ -217,15 +217,16 @@ visible. The report stays on stdout.
 
 ## Settings
 
-Six `AUDITOR_*` keys, read from the environment, then from `.env` at the project
+Seven `AUDITOR_*` keys, read from the environment, then from `.env` at the project
 root, then the default. Copy `.env.example` to `.env` to start. `audit` reads
 them only on a council run.
 
 | Key | Default | Sets |
 |---|---|---|
 | `AUDITOR_COUNCIL_MEMBERS` | unset | the models `--council` runs, comma-separated |
-| `AUDITOR_ESCALATION_MODEL` | unset | one local model for what the council leaves open |
-| `AUDITOR_SERVER_URL` | `http://127.0.0.1:11434` | the Ollama server, which must be this machine |
+| `AUDITOR_ESCALATION_MODEL` | unset | one model on the members' server for what the council leaves open |
+| `AUDITOR_SERVER_URL` | `http://127.0.0.1:11434` | the Ollama server; this machine unless `AUDITOR_REMOTE_SERVER` opts in |
+| `AUDITOR_REMOTE_SERVER` | unset | `yes` lets the server be another machine; every advisory text is then sent there |
 | `AUDITOR_TIMEOUT_SECONDS` | `180` | how long one model call may wait |
 | `AUDITOR_CONTEXT_TOKENS` | `8192` | the context window every model is pinned to |
 | `AUDITOR_MODEL` | `qwen2.5:7b-instruct` | the model a measurement script asks; never the audit's |

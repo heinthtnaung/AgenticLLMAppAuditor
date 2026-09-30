@@ -5,7 +5,8 @@ from pathlib import Path
 import pytest
 
 import eval_samples as samples
-from cli.council_run import OLLAMA_PROVIDER, assess_one, build_roster
+from cli.council_run import assess_one, build_roster
+from council.roster import OLLAMA_PROVIDER
 from council.ruling import Basis
 from council_eval.commands import main
 from council_eval.gate import differences, recorded_findings, replayed_findings

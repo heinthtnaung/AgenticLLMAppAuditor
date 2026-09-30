@@ -60,6 +60,9 @@ class LocalModels:
     where `AUDITOR_ESCALATION_MODEL` named none, so nothing was escalated.
     `ollama_version` and `models` say which server and which weights answered
     (`report.model_identity`): a tag names weights only until it is re-pointed.
+    `remote_host` names the server's host where it is another machine, which
+    every member, the escalation model and the explainer were asked on, and is
+    empty where the server is this one.
     """
 
     server: str
@@ -72,6 +75,7 @@ class LocalModels:
     escalation_model: str | None
     ollama_version: ServerVersion
     models: tuple[ModelIdentity, ...]
+    remote_host: str = ""
 
     def __post_init__(self) -> None:
         """Refuse a record of a council that asked no model, which no real run is."""

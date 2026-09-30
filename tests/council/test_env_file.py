@@ -8,6 +8,7 @@ from council.env_file import (
     ESCALATION_MODEL,
     FROM_ENVIRONMENT,
     NAMES,
+    REMOTE_SERVER,
     SettingsError,
     auditor_lines,
     refuse_unknown_names,
@@ -66,3 +67,11 @@ def test_the_escalation_model_is_a_setting_and_a_misspelling_of_it_is_not():
     refuse_unknown_names({ESCALATION_MODEL: "qwen3.8:27b"}, FROM_ENVIRONMENT)
     with pytest.raises(SettingsError, match="the settings are .*AUDITOR_ESCALATION_MODEL"):
         refuse_unknown_names({"AUDITOR_ESCALATE_MODEL": "qwen3.8:27b"}, FROM_ENVIRONMENT)
+
+
+def test_the_remote_opt_in_is_a_setting_and_a_misspelling_of_it_is_not():
+    # The user's first try: before the key existed, this was refused as a misspelling.
+    assert REMOTE_SERVER == "AUDITOR_REMOTE_SERVER" and REMOTE_SERVER in NAMES
+    refuse_unknown_names({REMOTE_SERVER: "yes"}, FROM_ENVIRONMENT)
+    with pytest.raises(SettingsError, match="the settings are .*AUDITOR_REMOTE_SERVER"):
+        refuse_unknown_names({"AUDITOR_REMOTE_SERVERS": "yes"}, FROM_ENVIRONMENT)

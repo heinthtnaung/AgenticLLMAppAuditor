@@ -5,9 +5,9 @@ import json
 import pytest
 
 import eval_samples as samples
-from cli.council_run import OLLAMA_PROVIDER, assess_one, build_roster
+from cli.council_run import assess_one, build_roster
 from council.prompt import build_prompt
-from council.roster import Member
+from council.roster import OLLAMA_PROVIDER, Member
 from council.transport import ModelUnavailable
 from council_eval.recording import CallRecord, RecordingClient
 from council_eval.replies import (

@@ -436,7 +436,9 @@ audit fetched/vulnscout \
 
 No `NO_PROXY` export is needed for a council run. Every call a member makes to
 Ollama goes through `src/council/transport.py`, which never uses a proxy, so a
-corporate proxy set on the machine cannot answer for the model server. Run on
+corporate proxy set on the machine cannot answer for the model server. A server
+`AUDITOR_REMOTE_SERVER=yes` names is reached the same way, directly and never
+through the proxy, though it is on the network rather than loopback. Run on
 2026-09-25, before the order check, with the proxy set and `NO_PROXY` unset,
 the command above with `qwen2.5:7b-instruct` alone made all 40 of its calls, and
 no member failed.
@@ -448,7 +450,7 @@ readings is about that pair, not the tool, so a model you switch to needs its
 own evaluation on the same findings before its readings are trusted, and
 `measurements/README.md` says how.
 
-Each `--council-member` names one local Ollama model. With none named, and no
+Each `--council-member` names one Ollama model. With none named, and no
 `--council`, there is no council, which is the default: the published scores
 stand side by side, and a council, when one runs, adds its own reading beside
 them without choosing among them.
@@ -475,17 +477,19 @@ server's reason, as a `--council-member` name does. `--council` beside a
 
 ### The models, server, window and timeout are settings; the sampling is not
 
-Six `AUDITOR_*` keys: one names the members `--council` runs, one the model a
-council escalates to, and four set how local models are asked. Each is read
-from the environment first, then from `.env` at the project root, then its
-default. `.env.example` holds all six, the members and the escalation model left
-empty: copy it to `.env`, which git ignores, and change what you need.
+Seven `AUDITOR_*` keys: one names the members `--council` runs, one the model a
+council escalates to, one opts in to a server on another machine, and four set
+how the models are asked. Each is read from the environment first, then from
+`.env` at the project root, then its default. `.env.example` holds all seven, the
+members and the escalation model left empty: copy it to `.env`, which git
+ignores, and change what you need.
 
 | Key | Default | What it sets |
 |---|---|---|
 | `AUDITOR_COUNCIL_MEMBERS` | unset: no members | the models `audit --council` runs, comma-separated, in the order they are asked. Nothing else uses it, and `--council` with it unset or empty is refused |
-| `AUDITOR_ESCALATION_MODEL` | unset: no escalation | one local model, as `ollama list` names it, that a metric the council leaves contested or unresolved is sent to. An empty environment variable turns it off over a `.env` that names one; two names are refused |
-| `AUDITOR_SERVER_URL` | `http://127.0.0.1:11434` | the Ollama server. It must be this machine, `127.0.0.1`, `localhost` or `::1`, or it is refused; an address ending `/api/generate`, the older form, is read without it |
+| `AUDITOR_ESCALATION_MODEL` | unset: no escalation | one model on the members' server, as `ollama list` names it, that a metric the council leaves contested or unresolved is sent to. An empty environment variable turns it off over a `.env` that names one; two names are refused |
+| `AUDITOR_SERVER_URL` | `http://127.0.0.1:11434` | the Ollama server. It must be this machine — `127.0.0.1`, `localhost` or `::1` — unless `AUDITOR_REMOTE_SERVER` is `yes`, or it is refused; an address ending `/api/generate`, the older form, is read without it |
+| `AUDITOR_REMOTE_SERVER` | unset: this machine | `yes`, and nothing else, lets `AUDITOR_SERVER_URL` name another machine; every advisory text a council reads is then sent there over the address's own scheme: plain, unencrypted http unless it is `https://`. `yes` beside a loopback address is allowed and the run is recorded as local. Unset or empty, a server elsewhere is refused |
 | `AUDITOR_TIMEOUT_SECONDS` | `180` | how long one call may wait; a call that waits longer fails as `did not answer within N s` |
 | `AUDITOR_CONTEXT_TOKENS` | `8192` | the window every member is pinned to, which the context guard scales with |
 | `AUDITOR_MODEL` | `qwen2.5:7b-instruct` | the model a measurement, such as `prompt_tokens.py`, asks when it names none. It is not the audit's model and never starts a council |
@@ -499,7 +503,8 @@ Temperature 0, seed 11 and `think: false` are not settings. They are what makes
 a local member reproducible, and a run whose sampling a file can change is not
 comparable with the last one (`docs/COUNCIL.md`). The window and the timeout
 can change a result too, so the JSON record's `run.local_models` states the
-server, window and timeout a council run used, beside those three,
+server, its `remote_host` where that server is another machine, the window and
+timeout a council run used, beside those three,
 `"order_check": true`, every metric asked in both orders, and
 `escalation_model`, the model named or `null`. It is `null` itself for a run
 with no member.
@@ -509,7 +514,8 @@ began.** A tag such as `gemma4:latest` names whatever weights the server holds
 under it, and pulling again changes them without changing a word of the record.
 So a council run reads the server twice before any model is asked, `/api/tags`
 and `/api/version`, through the same no-proxy client every call uses, at the
-settings' server, which `council.settings` holds to loopback. Each read waits
+settings' server, which `council.settings` holds to loopback unless
+`AUDITOR_REMOTE_SERVER=yes` lets it name another machine. Each read waits
 `READ_TIMEOUT_SECONDS`, 30 s, not the generation timeout, since both come before
 the scan. It records `ollama_version` once and, under `models`, each model it
 asks with its `role`, `member` or `escalation`, and its `digest`. The explainer
@@ -587,7 +593,7 @@ not found in the advisory`; a member that declined both ways reads `declined`, a
 before. The chairman still rules on the one reconciled reply: which order declined
 is recorded, not weighed.
 
-### A metric the council leaves open can go to one larger local model
+### A metric the council leaves open can go to one larger model on the members' server
 
 **Name one in `AUDITOR_ESCALATION_MODEL`, and every metric the order-checked
 council leaves contested or unresolved is put to it**, in both orders like a
@@ -603,9 +609,11 @@ Anything else leaves the metric as the council left it, with what the model said
 recorded. A metric it settles carries the basis `ESCALATED`, "the council left
 it open, and the escalation model's verified quotation settled it".
 
-**It is local, and it is not a member.** The name is a model on the local
-Ollama server, so a hosted escalation cannot be written: hosted escalation is
-excluded, not deferred. A model already on the council is refused before the
+**It runs on the members' server, and it is not a member.** The name is a model
+on the Ollama server the members share — this machine, or the one
+`AUDITOR_REMOTE_SERVER=yes` let the settings name — so a hosted escalation cannot
+be written: hosted escalation is excluded, not deferred. A model already on the
+council is refused before the
 scan, and before the model server is read, and `audit` exits `2` with
 `audit: big:27b is on the council, so it cannot also be the model the council's open metrics escalate to`.
 
@@ -641,11 +649,14 @@ none (`PASS_ESCALATION = None` in `measurements/council_eval/variants.py`).
 It is made only when a council was asked for, and only after the council and any
 escalation have finished with every finding, so the one model asked is loaded
 once. That model is the escalation model where one is named, otherwise the
-council's first local member, and the record names it: the explainer runs on this
-machine. A roster with neither is refused once its council has run, with
-`audit: no local member to explain with: the explainer runs on this machine, and no escalation model is named`,
-and `audit` exits `2`. Every `--council-member` is local, so the command line
-cannot build such a roster today. The model is shown each source's value on the
+council's first member that is not hosted, and the record names it: the explainer
+runs on the members' Ollama server, this machine or the one
+`AUDITOR_REMOTE_SERVER=yes` names. A roster with neither is refused once its
+council has run, with
+`audit: no member to explain with that is not hosted: the explainer runs on the members' Ollama server, and no escalation model is named`,
+and `audit` exits `2`. Every `--council-member` is an Ollama model, which is never
+hosted, so the command line cannot build such a roster today. The model is shown
+each source's value on the
 disputed metrics alone, with what those values mean, and the redacted advisory:
 never a whole vector, never the CVE id.
 
@@ -748,7 +759,7 @@ model, or `no escalation model named: a metric the council left open stays open`
 It is part of the section, which shows whenever the run has a finding to account
 for, assessed or passed over, under `COUNCIL (0)` when every one was passed over.
 A run that named members but found no finding drops the section and the line with
-it, and a run that named no members never asked a local model at all.
+it, and a run that named no members never asked a model at all.
 
 Every model the run asks is named too, with the first 12 characters of its
 digest and the server's version. In the text report this is the line after the
@@ -760,6 +771,10 @@ assessed anything. From a run with
 stand-in models and a stand-in server listing the two members and not the
 escalation model:
 `models: qwen2.5:7b-instruct 845dbda0ea48, llama3.2:latest a80c4f17acd5, qwen2.5:14b (escalation) digest unknown; Ollama 0.34.3`.
+On a run `AUDITOR_REMOTE_SERVER=yes` sent to another machine, the same line ends
+with that server's host, as
+`models: …; Ollama 0.34.3 on 10.205.4.15, not this machine`; on this machine it
+ends at the version, as above.
 Where the server gives no digest or no version, it reads `digest unknown` or
 `Ollama version unknown`, and the reason it gave none is in the JSON record
 alone, under `run.local_models`. The record keeps each digest whole.

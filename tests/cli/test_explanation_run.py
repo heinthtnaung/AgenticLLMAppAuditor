@@ -54,9 +54,16 @@ def test_a_hosted_member_is_passed_over_for_the_first_local_one():
     assert explainer_of(Roster((hosted, near)), None) == near
 
 
+def test_a_member_on_the_server_elsewhere_explains_as_a_local_one_would(remote_server):
+    # Every member is on the opted-in server, so the first of them explains there.
+    elsewhere = build_roster(("small", "other"))
+    assert explainer_of(elsewhere, None) == elsewhere.members[0]
+    assert explainer_of(elsewhere, None).runs_local is False
+
+
 def test_a_roster_with_no_local_member_and_no_escalation_model_is_refused_saying_why():
     hosted = Member("far", "openrouter", "far/model", "far", runs_local=False, egress=True)
-    with pytest.raises(ValueError, match="no local member to explain with") as refused:
+    with pytest.raises(ValueError, match="no member to explain with that is not hosted") as refused:
         explainer_of(Roster((hosted,)), None)
     assert str(refused.value) == NO_LOCAL_EXPLAINER
 

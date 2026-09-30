@@ -63,3 +63,11 @@ def test_the_dataset_is_named_by_its_fingerprint(tmp_path):
 def test_a_pass_asked_in_a_variant_s_words_records_the_variant_s_version(tmp_path):
     written = header(tmp_path, LIBRARY_REVERSED)
     assert written["prompt_version"] == "member-base-metric-3+library-1+reversed-1"
+
+
+def test_a_pass_on_a_server_elsewhere_is_headed_with_its_host(tmp_path, remote_server):
+    assert header(tmp_path)["remote_host"] == "192.0.2.15"
+
+
+def test_a_pass_on_this_machine_carries_no_host_as_no_pass_before_it_did(tmp_path):
+    assert "remote_host" not in header(tmp_path)

@@ -5,7 +5,9 @@ Every figure scored from a pass carries this beside it: which weights answered
 product actually sends, the prompt version, the dataset's fingerprint, and the
 code -- the commit and whatever in `src/` and `measurements/` was not committed.
 A figure nobody can re-derive is not a measurement. The prompt version is the
-variant's, which begins with the product's version it was made from.
+variant's, which begins with the product's version it was made from. A pass on
+a server elsewhere (`AUDITOR_REMOTE_SERVER=yes`) is headed with its host as
+`remote_host`; a pass on this machine carries no such field, as none before did.
 
 The pinning is read from the product's own constants and `LocalModel`, never
 restated here, so a pass cannot claim a seed or a temperature the request did
@@ -24,7 +26,7 @@ from typing import Callable
 
 from cli.model_identity import Listing, Read, listing_of, server_version
 from council.ollama import PINNED_TEMPERATURE, PINNED_THINKING, LocalModel
-from council.settings import current_settings
+from council.settings import current_settings, remote_host
 from council.transport import get_json
 from council_eval.replies import HEADER_KIND, PROMPT_VERSION_FIELD, WINDOW_FIELD
 from council_eval.variants import Variant
@@ -34,6 +36,7 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 GIT_COMMIT = ("git", "rev-parse", "HEAD")
 GIT_CHANGES = ("git", "status", "--short", "src/", "measurements/")
 TURN_START = "cold: the model is unloaded before each item"
+REMOTE_HOST_FIELD = "remote_host"
 
 Run = Callable[[tuple[str, ...]], str]
 
@@ -68,7 +71,16 @@ def pass_header(
         "commit": run(GIT_COMMIT).strip(),
         "changes": run(GIT_CHANGES).splitlines(),
         "started": now(),
+        **server_elsewhere(pinning.host),
     }
+
+
+def server_elsewhere(host: str) -> dict[str, str]:
+    """Name the server's host where it is another machine, and add nothing where it is this one."""
+    elsewhere = remote_host(host)
+    if not elsewhere:
+        return {}
+    return {REMOTE_HOST_FIELD: elsewhere}
 
 
 def held_listing(host: str, get: Read) -> Listing:

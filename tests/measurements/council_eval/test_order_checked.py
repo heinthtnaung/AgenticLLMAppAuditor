@@ -4,8 +4,8 @@ import pytest
 
 import chat_samples
 import eval_samples as samples
-from cli.council_run import local_member
 from council.prompt import PROMPT_VERSION, build_prompt
+from council.providers import ollama_member
 from council.reply import read_reply
 from council.transport import ModelUnavailable
 from council_eval import order_checked as order_checked_module
@@ -27,7 +27,7 @@ from report.council_record import Outcome
 
 # Reversed, the member reads AV otherwise and declines A: AV turns order-sensitive, A declined.
 REVERSED_ANSWERS = samples.ANSWERS | {"AV": samples.reply("L"), "A": samples.DECLINED}
-MEMBER = local_member(samples.MODEL)
+MEMBER = ollama_member(samples.MODEL)
 WHO = MEMBER.identify(PROMPT_VERSION)
 
 

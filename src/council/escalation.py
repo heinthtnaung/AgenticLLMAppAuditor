@@ -1,4 +1,4 @@
-"""Sending the metrics a council left open to one larger local model, in both orders.
+"""Sending the metrics a council left open to one larger Ollama model, in both orders.
 
 **The trigger is what the order-checked council could not settle**: a metric
 still contested or unresolved once every member has read it both ways. Nothing
@@ -11,9 +11,10 @@ open metric with the options in order and reversed, and its two readings become
 one reply by the members' own rule (`council.order_check`), so a positional
 answer settles nothing here either.
 
-**One model, on this machine, and not a member.** The model is named by
-`AUDITOR_ESCALATION_MODEL` and runs on the local Ollama server; a hosted one, or
-one already on the council, is refused before anything is asked. A council
+**One model, on the members' server, and not a member.** The model is named by
+`AUDITOR_ESCALATION_MODEL` and runs on the Ollama server the members do -- this
+machine's, or the one `AUDITOR_REMOTE_SERVER=yes` let the settings name; a hosted
+one, or one already on the council, is refused before anything is asked. A council
 member escalating to itself would read the same prompt again and count twice.
 
 **The trigger has a precondition for a contest: two or more members that can
@@ -85,8 +86,10 @@ def refuse_unfit_escalation(
     """Refuse an escalation model that is hosted, sits on the council, or has no client here."""
     if escalation is None:
         return
-    if not escalation.runs_local:
-        raise ValueError(f"{escalation.name} is hosted; the escalation model runs on this machine")
+    if escalation.is_hosted():
+        raise ValueError(
+            f"{escalation.name} is hosted; the escalation model runs on the members' Ollama server"
+        )
     if escalation.name in council:
         raise ValueError(
             f"{escalation.name} is on the council, so it cannot also be the model "

@@ -15,7 +15,8 @@ import sys
 from pathlib import Path
 from typing import Any, Callable, Mapping, TextIO
 
-from cli.council_run import OLLAMA_PROVIDER, assess_one, build_roster
+from cli.council_run import assess_one, build_roster
+from council.roster import OLLAMA_PROVIDER
 from council.transport import post_json
 from council_eval.dataset import Item
 from council_eval.pass_provenance import now

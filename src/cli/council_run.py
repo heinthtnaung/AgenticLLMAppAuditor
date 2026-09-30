@@ -47,6 +47,7 @@ from cli.council_outcome import outcome_of
 from cli.progress import NO_PROGRESS, CouncilProgress, orders_asked
 from council.escalation import escalate, refuse_unfit_escalation
 from council.prompt import build_prompt
+from council.providers import ollama_member
 from council.roster import Member, Roster, members_to_ask
 from council.ruling import NoFallbackPublished
 from council.run import CouncilRun
@@ -55,8 +56,6 @@ from cvss.metrics import METRIC_ORDER
 from findings.finding import Finding
 from report.council_record import CouncilNotAsked, CouncilOutcome
 
-OLLAMA_PROVIDER = "ollama"
-FAMILY_SEPARATOR = ":"
 # Every audit asks each metric in both orders (`council.order_check`); only the
 # evaluation harness, which records and replays passes in one order, turns it off.
 ORDER_CHECK = True
@@ -71,29 +70,15 @@ FALLBACKS = {metric: NO_FALLBACK for metric in METRIC_ORDER}
 
 
 def build_roster(models: tuple[str, ...]) -> Roster:
-    """Turn the models an operator named into a roster of local members."""
-    return Roster(tuple(local_member(model) for model in models))
-
-
-def local_member(model: str) -> Member:
-    """Describe one model running on this machine's Ollama as a council member."""
-    # The family is guessed from the tag, which is what a roster file would carry
-    # properly. It is only read to judge how much a roster's agreement is worth,
-    # never by the chairman, so a wrong guess costs a reader and not a number.
-    return Member(
-        name=model,
-        provider=OLLAMA_PROVIDER,
-        model=model,
-        family=model.split(FAMILY_SEPARATOR)[0],
-        runs_local=True,
-    )
+    """Turn the models an operator named into a roster of members on the settings' server."""
+    return Roster(tuple(ollama_member(model) for model in models))
 
 
 def escalation_member(model: str | None) -> Member | None:
-    """Describe the escalation model as a local member, or give None where none is named."""
+    """Describe the escalation model as a member on the settings' server, or None where unnamed."""
     if model is None:
         return None
-    return local_member(model)
+    return ollama_member(model)
 
 
 def assessments(

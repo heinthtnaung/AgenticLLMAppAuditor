@@ -7,8 +7,9 @@ import pytest
 
 import council.ollama
 import eval_samples as samples
-from cli.council_run import OLLAMA_PROVIDER, assess_one, build_roster
+from cli.council_run import assess_one, build_roster
 from council.prompt import PROMPT_VERSION, REVERSED_PROMPT_VERSION
+from council.roster import OLLAMA_PROVIDER
 from council.settings import Settings
 from council_eval import compose as compose_module
 from council_eval.collect import ask_item
@@ -160,3 +161,15 @@ def test_a_replay_names_no_escalation_model_rather_than_leaving_it_to_a_default(
     )
     replay_roster((samples.item(),), (samples.MODEL, samples.OTHER_MODEL), recorded)
     assert options == [{"order_check": False, "escalation": None}]
+
+
+def test_a_pass_taken_on_a_server_elsewhere_replays_its_members_as_local():
+    # A known gap, asserted so that closing it turns this red. A replay builds its
+    # roster from this machine's settings, not from the passes' headers, so a pass
+    # headed with a host elsewhere rebuilds as run local. No measure reads `ran_local`.
+    taken = passes()
+    elsewhere = tuple({**one, "remote_host": "192.0.2.15"} for one in taken.headers)
+    replayed = Replies(headers=elsewhere, calls=taken.calls)
+    (outcome,) = replay_roster((samples.item(),), (samples.MODEL,), replayed)
+    everyone = chain.from_iterable(ruling.said for ruling in outcome.rulings)
+    assert {said.member.ran_local for said in everyone} == {True}

@@ -3,7 +3,8 @@
 Two requests, once per run and only when a council is asked for: the server's
 models with their digests (`/api/tags`) and its version (`/api/version`),
 through the same no-proxy client every call uses (`council.transport.get_json`),
-at the settings' server, which `council.settings` holds to loopback. Every
+at the settings' server, which `council.settings` holds to loopback unless
+`AUDITOR_REMOTE_SERVER=yes` let it name another machine. Every
 model the run asks is looked up -- the members, and the escalation model where
 one is named; the explainer is always one of those.
 

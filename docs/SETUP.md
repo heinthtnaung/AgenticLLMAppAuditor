@@ -14,7 +14,7 @@ development machine; no minimum is set for any tool but Python.
 | Python | the CLI, the engine and the tests | 3.11.11 | 3.10, the `requires-python` in `pyproject.toml` |
 | [Syft](https://github.com/anchore/syft) | building the SBOM | 1.52.0 | none set; the lock-file table in [USAGE.md](USAGE.md) was measured on 1.52 |
 | [Trivy](https://trivy.dev) | the advisory database and the CVE join | 0.74.0 | none set; how the cache is found was measured on 0.74 |
-| [Ollama](https://ollama.com) | the local models: the council, escalation and the explanation (optional) | 0.34.3 | none set |
+| [Ollama](https://ollama.com) | the models: the council, escalation and the explanation, on this machine or a server `AUDITOR_REMOTE_SERVER=yes` names (optional) | 0.34.3 | none set |
 | git | cloning a repository to audit (optional) | 2.43.0 | none set |
 | npm | writing a missing `package-lock.json` (optional) | not recorded | none set |
 | pytest | the tests (development only) | 9.1.1, pinned in `pyproject.toml` and `requirements.txt` | pinned |
@@ -156,5 +156,8 @@ live test and the measurement scripts reach Ollama through
 `src/council/transport.py`, which opens every request with no proxy. With the
 proxy set and `NO_PROXY` unset, a council run made all 40 of its calls and
 `ollama ps` answered normally, so the `ollama` command does not send 127.0.0.1
-to the proxy either. Other tools pointed at a local service, such as `curl` or
-Python's `urllib` outside this project's transport, may still need the export.
+to the proxy either. A server `AUDITOR_REMOTE_SERVER=yes` names is reached the
+same way, directly and never through the proxy, though it sits on the network
+rather than loopback (`docs/USAGE.md`). Other tools pointed at a local service,
+such as `curl` or Python's `urllib` outside this project's transport, may still
+need the export.
