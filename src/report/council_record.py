@@ -32,6 +32,13 @@ class SaidKind(Enum):
     ORDER_SENSITIVE = "order-sensitive"
 
 
+class ReadingOrder(Enum):
+    """Which order a member read a metric's options in, asked them both ways."""
+
+    IN_ORDER = "in_order"
+    REVERSED = "reversed"
+
+
 class Outcome(Enum):
     """What the chairman made of one metric."""
 
@@ -63,6 +70,9 @@ class MemberSaid:
     one that failed said nothing at all. `kind` says which, on every row.
     `order_values` is set for an order-sensitive member alone: the value it gave
     with the options in order, then the one it gave with them reversed.
+    `declined_in` names the orders a member asked both ways said NO_EVIDENCE in,
+    and `unverified_in` those whose quotation was not found in the advisory; both
+    are empty where it was asked once.
     """
 
     member: MemberIdentity
@@ -73,6 +83,8 @@ class MemberSaid:
     verified: bool = False
     reason: str = ""
     order_values: tuple[str, ...] = ()
+    declined_in: tuple[ReadingOrder, ...] = ()
+    unverified_in: tuple[ReadingOrder, ...] = ()
 
 
 @dataclass(frozen=True)

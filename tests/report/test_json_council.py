@@ -14,6 +14,7 @@ from council_runs import (
 )
 from report.council_record import CouncilNotAsked
 from report.council_record import MemberIdentity, MemberSaid, SaidKind
+from order_runs import one_way
 from report.json_council import council_of, said_of
 from report.record import build_report
 from report_samples import PROVENANCE, catalogue, component, finding
@@ -148,3 +149,30 @@ def test_an_order_sensitive_member_records_both_values_and_every_other_member_nu
 def test_a_member_asked_the_options_once_names_no_reversed_prompt():
     who = MemberIdentity("small-local", "ollama", "small:1b", "small", True, PROMPT_VERSION)
     assert said_of(MemberSaid(who, SaidKind.DECLINED))["reversed_prompt_version"] is None
+
+
+def members_of(metric: str) -> dict:
+    """Give one metric's members from a council whose members read UI and AC apart by order."""
+    members = metric_of(one_way(), metric)["members"]
+    return {one["member"]: one for one in members}
+
+
+def test_a_decline_in_one_order_records_that_order_and_one_both_ways_records_both():
+    members = members_of("UI")
+    assert (members["qwen2.5:7b"]["said"], members["qwen2.5:7b"]["declined_in"]) == (
+        "declined", ["reversed"],
+    )
+    assert members["gemma4:latest"]["declined_in"] == ["in_order", "reversed"]
+    assert members["qwen2.5:7b"]["unverified_in"] == []
+
+
+def test_a_quotation_not_found_in_one_order_records_that_order():
+    qwen = members_of("AC")["qwen2.5:7b"]
+    assert (qwen["evidence_verified"], qwen["unverified_in"]) == (True, ["reversed"])
+    assert qwen["declined_in"] == []
+
+
+def test_a_member_asked_the_options_once_records_no_order_at_all():
+    who = MemberIdentity("small-local", "ollama", "small:1b", "small", True, PROMPT_VERSION)
+    once = said_of(MemberSaid(who, SaidKind.DECLINED))
+    assert (once["declined_in"], once["unverified_in"]) == (None, None)

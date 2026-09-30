@@ -577,6 +577,16 @@ other row. Every member row names both prompts it was asked,
 fills both; the second is `null` only for a member asked in one order, as the
 measurement harness replays them.
 
+**A member asked both ways records which order it declined in.** Its JSON row
+carries `declined_in`, the orders it answered `NO_EVIDENCE` in, and
+`unverified_in`, those whose quotation the advisory does not contain — each a
+list of `in_order`, `reversed`, both or neither, and `null` for a member asked
+once. Where only one order declined, the text and the page end the member's row
+`with the options reversed: declined` or `with the options in order: quotation
+not found in the advisory`; a member that declined both ways reads `declined`, as
+before. The chairman still rules on the one reconciled reply: which order declined
+is recorded, not weighed.
+
 ### A metric the council leaves open can go to one larger local model
 
 **Name one in `AUDITOR_ESCALATION_MODEL`, and every metric the order-checked

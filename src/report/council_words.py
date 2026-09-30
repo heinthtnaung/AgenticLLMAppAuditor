@@ -23,6 +23,7 @@ from report.council_record import (
     MemberSaid,
     MetricRuling,
     Outcome,
+    ReadingOrder,
     SaidKind,
 )
 from report.model_identity import (
@@ -52,6 +53,10 @@ NO_ESCALATION = "no escalation model named: a metric the council left open stays
 SHORT_DIGEST = 12
 UNKNOWN_DIGEST = "digest unknown"
 UNKNOWN_VERSION = "Ollama version unknown"
+READ_IN = {
+    ReadingOrder.IN_ORDER: "with the options in order",
+    ReadingOrder.REVERSED: "with the options reversed",
+}
 
 
 def who(member: MemberIdentity) -> str:
@@ -85,6 +90,12 @@ def unanswered(said: MemberSaid) -> str:
     if said.reason:
         return f"{said.kind.value}: {said.reason}"
     return said.kind.value
+
+
+def declined_one_way(said: MemberSaid) -> list[str]:
+    """Name the order a member declined in where the other order did not; both need no naming."""
+    ways = [(said.declined_in, SaidKind.DECLINED.value), (said.unverified_in, UNVERIFIED)]
+    return [f"{READ_IN[orders[0]]}: {what}" for orders, what in ways if len(orders) == 1]
 
 
 def escalation_named(local: LocalModels | None) -> list[str]:

@@ -18,7 +18,8 @@ so the two cannot come to word one record differently.
 
 from report.council_record import MemberSaid, MetricRuling, SaidKind
 from report.council_words import (
-    chairman_said, checked, confident, counted, escalated_who, outcome_said, unanswered, who,
+    chairman_said, checked, confident, counted, declined_one_way, escalated_who, outcome_said,
+    unanswered, who,
 )
 from report.html_layout import listing, separated, tag, text
 
@@ -70,13 +71,19 @@ def said_row(name: str, said: MemberSaid) -> str:
     """Give one model's answer under the name it is listed by, and its quotation in full."""
     named = tag("span", text(name), "member-name")
     if said.kind is not SaidKind.ANSWERED:
-        return named + tag("span", text(unanswered(said)), "refusal")
+        return named + separated([tag("span", text(unanswered(said)), "refusal"), *one_way(said)])
     answered = [
         tag("span", text(said.value), "member-value"),
         text(confident(said.confidence)),
         checked_mark(said.verified),
+        *one_way(said),
     ]
     return named + separated(answered) + evidence(said.evidence)
+
+
+def one_way(said: MemberSaid) -> list[str]:
+    """Mark the order a member declined in, where the other order did not."""
+    return [tag("span", text(one), "refusal") for one in declined_one_way(said)]
 
 
 def checked_mark(verified: bool) -> str:

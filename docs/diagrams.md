@@ -472,7 +472,7 @@ flowchart TD
     vec --> eng
     num --> hmn["Human approves or overrides"]
 
-    rec["Record: every member and its provider,<br/>every member skipped and why, every finding<br/>not asked and why, every guess and<br/>order-sensitive pair, what the<br/>chairman decided from, the escalation<br/>model named or that none was, what it said,<br/>each model's digest and the server's version,<br/>read once when the run began,<br/>and the vector or the metrics that stopped one"]
+    rec["Record: every member and its provider,<br/>every member skipped and why, every finding<br/>not asked and why, every guess and<br/>order-sensitive pair, which order each decline came from,<br/>what the<br/>chairman decided from, the escalation<br/>model named or that none was, what it said,<br/>each model's digest and the server's version,<br/>read once when the run began,<br/>and the vector or the metrics that stopped one"]
     chr -.-> rec
     eask -.-> rec
     skip -.-> rec

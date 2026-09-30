@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from council.answer import MemberAnswer, MemberOrderSensitive
+from council.answer import MemberAnswer, MemberFoundNoEvidence, MemberOrderSensitive
 from council.escalation import escalate
 from council.prompt import PROMPT_VERSION, REVERSED_PROMPT_VERSION
 from council.roster import Roster
@@ -73,6 +73,14 @@ def test_a_stable_verified_contested_value_settles_it_and_the_council_s_ruling_i
     assert isinstance(round_.escalation.reply, MemberAnswer)
     assert round_.escalation.reply.member.reversed_prompt_version == REVERSED_PROMPT_VERSION
     assert round_.replies == council.rounds[0].replies
+
+
+def test_the_escalation_keeps_both_its_readings_beside_the_one_reply_made_of_them():
+    declined = {("big-local", "AV", REVERSED_PROMPT_VERSION): "NO_EVIDENCE"}
+    escalation = escalated_run(declined)[0].rounds[0].escalation
+    assert isinstance(escalation.readings.in_order, MemberAnswer)
+    assert isinstance(escalation.readings.reversed_order, MemberFoundNoEvidence)
+    assert isinstance(escalation.reply, MemberFoundNoEvidence)
 
 
 def test_a_value_the_orders_disagree_on_leaves_the_metric_contested_and_is_recorded():

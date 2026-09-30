@@ -9,6 +9,7 @@ from escalation_runs import (
     escalated,
     split_on_av,
 )
+from order_runs import one_way, rulings_of
 from report.text_council import advisory_lines
 from report.text_metric import ruling_lines
 
@@ -77,3 +78,23 @@ def test_an_escalated_metric_is_shown_rather_than_counted_with_the_settled_rest(
     lines = [one.strip() for one in advisory_lines(escalated(SETTLING))]
     assert "6 metrics settled" in lines
     assert sum("→ escalated to" in one for one in lines) == 2
+
+
+def member_line(ruling, name: str) -> str:
+    """Give the line one member is listed on under a metric, without its indent."""
+    return next(one.strip() for one in ruling_lines(ruling) if one.strip().startswith(name))
+
+
+def test_a_member_that_declined_in_one_order_says_which_and_one_declining_both_ways_does_not():
+    ui = rulings_of(one_way())["UI"]
+    assert member_line(ui, "qwen2.5:7b") == (
+        "qwen2.5:7b (qwen2.5)  declined  ·  with the options reversed: declined"
+    )
+    assert member_line(ui, "gemma4:latest") == "gemma4:latest (gemma4)  declined"
+
+
+def test_a_quotation_not_found_in_one_order_alone_says_which_order():
+    assert member_line(rulings_of(one_way())["AC"], "qwen2.5:7b") == (
+        "qwen2.5:7b (qwen2.5)  H  ·  high confidence  ·  quotation found in the advisory  ·  "
+        "with the options reversed: quotation not found in the advisory"
+    )

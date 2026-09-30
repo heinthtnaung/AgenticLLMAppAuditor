@@ -314,9 +314,10 @@ become one (`src/council/order_check.py`). The same value both ways stands as
 the in-order reply, quotation, confidence and kind included. Two different
 values make the member **order-sensitive**, recorded with both, which like a
 decline weighs nothing. A failure in either order is a failure, a reversed one
-saying so; otherwise a decline in either is a decline. A lean to the middle
-option survives it, because the middle stays in the middle when the list is
-reversed.
+saying so; otherwise a decline in either is a decline. The run keeps both
+readings, so the record names which order it declined in, though the chairman
+reads only the one reply. A lean to the middle option survives it, because the
+middle stays in the middle when the list is reversed.
 
 **Expect guesses, and expect the fallback.** Asked about a metric its text is
 silent on, a model tends to answer regardless: `qwen2.5:7b-instruct` returned

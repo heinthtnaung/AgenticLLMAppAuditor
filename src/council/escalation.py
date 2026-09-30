@@ -43,7 +43,7 @@ from council.prompt import build_prompt
 from council.providers import AskMember
 from council.roster import Member
 from council.ruling import SettledMetric
-from council.run import CouncilRun, MetricEscalation, MetricRound
+from council.run import CouncilRun, MetricEscalation, MetricRound, OrderReadings
 from council.runner import ask_one_member, nobody_asking
 
 
@@ -68,13 +68,15 @@ def escalated(
         return round_
     in_order = build_prompt(round_.metric, advisory_text)
     reversed_order = build_prompt(round_.metric, advisory_text, reversed_options=True)
-    reply = reconciled(
+    readings = OrderReadings(
         ask_one_member(escalation, in_order, clients, asking),
         ask_one_member(escalation, reversed_order, clients, asking, reversed_options=True),
     )
+    reply = reconciled(readings.in_order, readings.reversed_order)
     # The redacted text, which is what the model read and so what its quotation must be in.
     ruling = rule_on_escalation(round_.ruling, reply, in_order.advisory_shown)
-    return replace(round_, ruling=ruling, escalation=MetricEscalation(round_.ruling, reply))
+    asked = MetricEscalation(round_.ruling, reply, readings)
+    return replace(round_, ruling=ruling, escalation=asked)
 
 
 def refuse_unfit_escalation(

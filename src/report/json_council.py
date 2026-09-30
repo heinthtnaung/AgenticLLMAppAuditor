@@ -20,6 +20,7 @@ from report.council_record import (
     MemberSaid,
     MetricEscalation,
     MetricRuling,
+    ReadingOrder,
 )
 
 
@@ -86,6 +87,8 @@ def said_of(said: MemberSaid) -> dict[str, Any]:
         "evidence_verified": said.verified,
         "reason": said.reason or None,
         "orders": orders_of(said),
+        "declined_in": orders_named(said, said.declined_in),
+        "unverified_in": orders_named(said, said.unverified_in),
     }
 
 
@@ -95,3 +98,10 @@ def orders_of(said: MemberSaid) -> dict[str, str] | None:
         return None
     in_order, reversed_order = said.order_values
     return {"in_order": in_order, "reversed": reversed_order}
+
+
+def orders_named(said: MemberSaid, orders: tuple[ReadingOrder, ...]) -> list[str] | None:
+    """Name the orders a member did something in, or null where it was asked the options once."""
+    if not said.member.reversed_prompt_version:
+        return None
+    return [one.value for one in orders]

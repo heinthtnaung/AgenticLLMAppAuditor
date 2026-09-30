@@ -11,6 +11,8 @@ It sits in `src/cli/` because it is the only place that may see both sides:
 conversion.
 """
 
+from typing import Mapping
+
 from council.answer import (
     MemberAnswer,
     MemberFoundNoEvidence,
@@ -19,7 +21,8 @@ from council.answer import (
 )
 from council.evidence import is_quotation_from
 from council.ruling import Basis, ContestedMetric, SettledMetric, UnresolvedMetric
-from council.run import MemberFailure
+from council.run import MemberFailure, OrderReadings
+from cli.order_declines import in_both_orders
 from report.council_record import (
     MemberIdentity,
     MemberSaid,
@@ -37,8 +40,10 @@ def rulings_of(run, advisory_shown: str) -> tuple[MetricRuling, ...]:
 
 def ruling_of(round_, advisory_shown: str) -> MetricRuling:
     """Record one metric: the chairman's decision, and every member behind it."""
+    readings = {one.in_order.member.name: one for one in round_.readings}
     said = tuple(
-        said_by(reply, advisory_shown) for reply in (*round_.replies, *round_.failures)
+        member_said(reply, readings, advisory_shown)
+        for reply in (*round_.replies, *round_.failures)
     )
     return MetricRuling(
         metric=round_.metric,
@@ -56,10 +61,20 @@ def escalation_of(round_, advisory_shown: str) -> MetricEscalation | None:
     """Record what the escalation model said of a metric the council left open, if asked."""
     if round_.escalation is None:
         return None
+    escalation = round_.escalation
+    said = said_by(escalation.reply, advisory_shown)
     return MetricEscalation(
-        prior=outcome_of(round_.escalation.prior),
-        said=said_by(round_.escalation.reply, advisory_shown),
+        prior=outcome_of(escalation.prior),
+        said=in_both_orders(said, escalation.readings, advisory_shown),
     )
+
+
+def member_said(reply, readings: Mapping[str, OrderReadings], advisory_shown: str) -> MemberSaid:
+    """Record what one member said, and which order it declined in where it read both."""
+    said = said_by(reply, advisory_shown)
+    if reply.member.name not in readings:
+        return said
+    return in_both_orders(said, readings[reply.member.name], advisory_shown)
 
 
 def said_by(reply, advisory_shown: str) -> MemberSaid:
