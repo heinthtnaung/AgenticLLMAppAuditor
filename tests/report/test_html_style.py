@@ -9,6 +9,7 @@ is the same failure from the other end and is held the same way.
 
 import re
 
+from cvss.score import SEVERITY_BAND_NAMES
 from report.html_assets import stylesheet
 from report.html_style import BAND_CLASSES, BANDS, band_class
 
@@ -68,6 +69,12 @@ def test_every_token_a_rule_reaches_for_is_defined():
     reached = set(USED.findall(STYLESHEET)) - PER_BAND
     assert reached <= tokens(light_block())
     assert reached <= tokens(dark_block())
+
+
+def test_the_palette_colours_the_bands_named_once_and_does_not_restate_them():
+    # The CVSS band names cover the organisation ones, so the sheet imports them
+    # rather than listing a second copy that could drift from the calculator's.
+    assert BANDS is SEVERITY_BAND_NAMES
 
 
 def test_every_band_has_a_colour_in_both_themes():
