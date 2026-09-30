@@ -23,7 +23,9 @@ from council.providers import PROVIDER_CLIENTS
 from council.settings import current_settings
 from council.transport import get_json
 from deps import manifests, syft_runner, trivy_runner
+from deps.syft_report import Catalogue
 from deps.trivy_database import DatedDatabase
+from deps.trivy_runner import TrivyScan
 from findings.finding import build_findings
 from report.absences import Coverage
 from report.provenance import AdvisoryDatabase, LocalModels, RunProvenance
@@ -43,10 +45,7 @@ def run_audit(
     # Read first, like the walk below: a bad setting stops the run before the scan.
     options = members_asked_for(options)
     local = local_models_of(options)
-    # Walked first: a directory nobody can list stops the run before the scan.
-    unread = manifests.unread_manifests(options.repository)
-    catalogue = syft_runner.scan_directory(options.repository)
-    scanned = trivy_runner.scan_directory(options.repository, database.cache)
+    unread, catalogue, scanned = scan_repository(options.repository, database.cache)
     findings = build_findings(catalogue.components, scanned.advisories)
     council = council_of(findings, options, progress_to, local)
     # Only once every value the council and escalation produce is in, for every finding.
@@ -65,6 +64,21 @@ def run_audit(
         coverage=coverage_of(options, unread),
         explanations=explained,
     )
+
+
+def scan_repository(
+    repository: Path, cache: Path
+) -> tuple[tuple[str, ...], Catalogue, TrivyScan]:
+    """Walk and scan the repository's real directory: manifests, components and advisories."""
+    # Resolved once so both scanners descend the same real directory. Syft follows a
+    # symlinked root but `trivy fs` does not, so a linked root would catalogue in Syft
+    # and match nothing in Trivy -- a "could not run" reading as "found nothing".
+    # Absolute changes no path either tool reports; the record still names it as given.
+    # Walked first: a directory nobody can list stops the run before the scan.
+    root = repository.resolve()
+    unread = manifests.unread_manifests(root)
+    catalogue = syft_runner.scan_directory(root)
+    return unread, catalogue, trivy_runner.scan_directory(root, cache)
 
 
 def coverage_of(options: Options, unread: tuple[str, ...]) -> Coverage:
