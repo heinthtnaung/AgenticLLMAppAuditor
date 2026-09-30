@@ -94,9 +94,11 @@ has none of them. Where any other instruction disagrees with
 ├── README.md                 the short guide
 ├── LICENSE                   MIT
 ├── .gitignore
+├── .env.example              the six AUDITOR_* settings, copied to `.env`
 ├── pytest.ini                src on the path, tests under tests/
 ├── pyproject.toml            the package, and the `audit` command
 ├── requirements.txt          pytest; the runtime is standard library
+├── answers.example.json      a skeleton answer file, every answer No
 ├── measurements/             the corpus and council runs behind cited figures
 ├── docs/
 │   ├── USAGE.md              the full guide: every flag, output and setting
