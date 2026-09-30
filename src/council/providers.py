@@ -22,6 +22,7 @@ refuses a member whose record says otherwise, before anything is sent.
 
 from typing import Callable, Mapping
 
+from council.model_name import family_of
 from council.ollama import LocalModel, ask
 from council.question import Question
 from council.roster import (
@@ -38,20 +39,19 @@ from council.settings import current_settings, on_this_machine
 AskMember = Callable[[Member, Question], str]
 
 NO_CLIENT_FOR_PROVIDER = "no client for provider {provider!r} exists on this machine"
-FAMILY_SEPARATOR = ":"
 
 
 def ollama_member(model: str) -> Member:
     """Describe one model on the settings' Ollama server as a council member, wherever it is."""
-    # The family is guessed from the tag, which is what a roster file would carry
-    # properly. It is only read to judge how much a roster's agreement is worth,
-    # never by the chairman, so a wrong guess costs a reader and not a number.
+    # The family is guessed from the model's own name, which is what a roster file
+    # would carry properly. It is only read to judge how much a roster's agreement
+    # is worth, never by the chairman, so a wrong guess costs a reader and not a number.
     here = on_this_machine(current_settings().server)
     return Member(
         name=model,
         provider=OLLAMA_PROVIDER,
         model=model,
-        family=model.split(FAMILY_SEPARATOR)[0],
+        family=family_of(model),
         runs_local=here,
         # Elsewhere only with `AUDITOR_REMOTE_SERVER=yes`: that opt-in is this member's egress.
         egress=not here,

@@ -9,6 +9,7 @@ from council.providers import (
     PROVIDER_CLIENTS,
     ask_local_model,
     no_client_reason,
+    ollama_member,
     reachable_members,
     unreachable_members,
 )
@@ -79,3 +80,17 @@ def test_nobody_is_reported_skipped_when_everybody_can_be_asked():
 
 def test_the_reason_names_the_provider_that_has_no_client():
     assert "openrouter" in no_client_reason(hosted())
+
+
+@pytest.mark.parametrize(
+    ("model", "family"),
+    [
+        ("llama3.2", "llama3.2"),
+        ("qwen2.5:7b-instruct", "qwen2.5"),
+        ("library/qwen2.5:7b", "qwen2.5"),
+        ("myregistry:5000/model", "model"),
+    ],
+    ids=["plain", "tagged", "namespaced", "registry-with-port"],
+)
+def test_a_member_s_family_is_guessed_from_the_model_s_own_name(model, family):
+    assert ollama_member(model).family == family
