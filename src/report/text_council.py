@@ -30,6 +30,7 @@ from collections import Counter
 from itertools import chain
 
 from report.council_beside import banded, figure_of
+from report.council_passed_over import PassedOver, grouped_by_reason
 from report.council_record import (
     CouncilAssessment,
     CouncilNotAsked,
@@ -38,10 +39,9 @@ from report.council_record import (
     council_left_open,
     was_assessed,
 )
-from report.council_passed_over import PassedOver, grouped_by_reason
 from report.council_words import (
-    NOT_ASKED,
     NO_VECTOR,
+    NOT_ASKED,
     SETTLED,
     could_not_settle,
     counted,

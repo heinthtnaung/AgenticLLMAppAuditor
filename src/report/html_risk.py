@@ -20,7 +20,14 @@ from organisation.risk import FindingRisk
 from report.council_beside import COUNCIL_SOURCE, NOT_IN_THE_SCORE, CouncilFigure, council_figure
 from report.html_answers import derivation
 from report.html_layout import (
-    empty_note, figure_chip, listing, number, panel_head, scored_chip, tag, text,
+    empty_note,
+    figure_chip,
+    listing,
+    number,
+    panel_head,
+    scored_chip,
+    tag,
+    text,
 )
 from report.html_vector import vector_markup
 from report.record import Report

@@ -27,8 +27,6 @@ from council.envelope import RESPONSE_FIELD
 from council.evidence import is_quotation_from
 from council.order_check import reconciled
 from council.reply import read_reply
-from cvss.metrics import METRIC_ORDER
-
 from council_eval.chat_pass_lines import call_of
 from council_eval.chat_passes import AnsweredPrompt
 from council_eval.chat_prompt import FORWARD, REVERSED
@@ -36,6 +34,7 @@ from council_eval.chat_replay import chat_member
 from council_eval.order_checked import DECLINED, ORDER_SENSITIVE, STABLE
 from council_eval.quoting import is_prompt_text
 from council_eval.variants import CHAT, chat_variant
+from cvss.metrics import METRIC_ORDER
 
 GUESSED = "guessed"
 QUOTED = "quoted"

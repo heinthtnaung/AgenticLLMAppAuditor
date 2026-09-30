@@ -16,8 +16,17 @@ from report.model_identity import MEMBER_ROLE, ModelDigest, OllamaVersion
 from report.provenance import LocalModels, RunProvenance
 from report.record import Report, build_report
 from report_samples import (
-    CONFIDENTIALITY_ONLY, LOW_CONFIDENTIALITY, PROVENANCE, TOTAL_LOSS, VERSION_2_VECTOR,
-    advisory, catalogue, component, finding, secret, unidentified,
+    CONFIDENTIALITY_ONLY,
+    LOW_CONFIDENTIALITY,
+    PROVENANCE,
+    TOTAL_LOSS,
+    VERSION_2_VECTOR,
+    advisory,
+    catalogue,
+    component,
+    finding,
+    secret,
+    unidentified,
 )
 from scoring.library import APPROVED_QUESTIONS
 from scoring.question import Answer

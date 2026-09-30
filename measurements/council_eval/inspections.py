@@ -11,8 +11,6 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
-from report.council_record import CouncilOutcome
-
 from council_eval.compose import pass_models, pass_variant, replay_roster
 from council_eval.dataset import read_dataset
 from council_eval.named_values import NamedValues, counted, named_values
@@ -28,6 +26,7 @@ from council_eval.server_log import (
     turn_count,
 )
 from council_eval.tables import table
+from report.council_record import CouncilOutcome
 
 NONE = "none"
 METRICS_PER_TURN = 8

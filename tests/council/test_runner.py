@@ -8,11 +8,11 @@ import json
 
 import pytest
 
+from council.answer import MemberAnswer, MemberFoundNoEvidence, MemberGuessed
 from council.chairman import agreed_vector
 from council.prompt import PROMPT_VERSION
 from council.roster import Roster
 from council.ruling import Basis, SettledMetric, UnresolvedMetric
-from council.answer import MemberAnswer, MemberFoundNoEvidence, MemberGuessed
 from council.run import CouncilRun, MemberFailure
 from council.runner import assess
 from council.transport import ModelUnavailable

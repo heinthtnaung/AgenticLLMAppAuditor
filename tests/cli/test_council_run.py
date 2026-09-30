@@ -10,9 +10,6 @@ where nobody was named to ask are different facts.
 
 import io
 
-from council.roster import Member, Roster
-from council.ruling import NoFallbackPublished
-from report.council_record import CouncilAssessment, CouncilNotAsked, CouncilWithoutVector
 from cli.council_run import (
     FALLBACKS,
     NO_TEXT_TO_READ,
@@ -21,9 +18,12 @@ from cli.council_run import (
     build_roster,
     watching,
 )
+from cli_samples import ADVISORY, LODASH, TOTAL_LOSS, advisory_like, answering
+from council.roster import Member, Roster
+from council.ruling import NoFallbackPublished
 from cvss.metrics import METRIC_ORDER
 from findings.finding import build_finding
-from cli_samples import ADVISORY, LODASH, TOTAL_LOSS, advisory_like, answering
+from report.council_record import CouncilAssessment, CouncilNotAsked, CouncilWithoutVector
 
 FINDING = build_finding(LODASH, ADVISORY)
 UNDISPUTED = build_finding(LODASH, advisory_like("CVE-AGREED"))

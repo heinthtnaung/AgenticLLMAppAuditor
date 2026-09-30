@@ -20,15 +20,11 @@ token generated.
 
 import sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from advisories import advisory_texts  # noqa: E402
 from cli.model_identity import Read  # noqa: E402
-from council_eval.pass_provenance import (  # noqa: E402
-    held_listing,
-    held_version,
-    model_digest,
-)
 from council.ollama import (  # noqa: E402
     USABLE_CONTEXT_FRACTION,
     LocalModel,
@@ -39,6 +35,7 @@ from council.ollama import (  # noqa: E402
 from council.prompt import PROMPT_VERSION, MemberPrompt, build_prompt  # noqa: E402
 from council.settings import current_settings  # noqa: E402
 from council.transport import Transport, get_json, post_json  # noqa: E402
+from council_eval.pass_provenance import held_listing, held_version, model_digest  # noqa: E402
 
 PROMPT_TOKEN_FIELD = "prompt_eval_count"
 

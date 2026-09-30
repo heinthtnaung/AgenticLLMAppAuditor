@@ -3,7 +3,6 @@
 import pytest
 
 from council.redaction import redact
-
 from redaction_samples import CVE_ID, GHSA_ID, PUBLISHED
 
 PLAIN = "A remote attacker can send a crafted request and read arbitrary files."

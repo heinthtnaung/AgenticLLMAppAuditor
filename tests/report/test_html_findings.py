@@ -14,8 +14,17 @@ from report.html_findings import NO_DISAGREEMENT, agreements_panel, disagreement
 from report.html_report import as_html
 from report.record import build_report
 from report_samples import (
-    ADVISORY_URL, CONFIDENTIALITY_ONLY, ENVIRONMENTAL_VECTOR, LOW_CONFIDENTIALITY,
-    PROVENANCE, REFUSED_DISSENT, TOTAL_LOSS, VERSION_2_VECTOR, catalogue, component, finding,
+    ADVISORY_URL,
+    CONFIDENTIALITY_ONLY,
+    ENVIRONMENTAL_VECTOR,
+    LOW_CONFIDENTIALITY,
+    PROVENANCE,
+    REFUSED_DISSENT,
+    TOTAL_LOSS,
+    VERSION_2_VECTOR,
+    catalogue,
+    component,
+    finding,
 )
 
 DJANGO = component()

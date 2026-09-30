@@ -6,10 +6,10 @@ import pytest
 
 from cli.council_detail import rulings_of
 from cli.council_run import FALLBACKS, build_roster
+from cli_samples import ADVISORY, LEGAL, QUOTATION
 from council.prompt import REVERSED_PROMPT_VERSION, build_prompt
 from council.runner import assess
 from report.council_record import Outcome, ReadingOrder, SaidKind
-from cli_samples import ADVISORY, LEGAL, QUOTATION
 
 # `ADVISORY.details` first, so `QUOTATION` is verbatim in it.
 TEXT = f"{ADVISORY.details} Exploiting it requires a specially crafted payload."

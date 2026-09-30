@@ -12,7 +12,6 @@ from itertools import product
 
 from cli.council_run import advisory_text
 from council.redaction import redact
-
 from council_eval.chat_prompt import (
     REVERSED,
     chat_prompt_body,

@@ -12,8 +12,6 @@ from collections import Counter
 from pathlib import Path
 from typing import Any, Mapping
 
-from cvss.metrics import METRIC_ORDER
-
 from council_eval.chat_outputs import refuse_unwritable
 from council_eval.chat_pass_lines import (
     BROWSING_UNCHECKED,
@@ -37,6 +35,7 @@ from council_eval.dataset import read_dataset
 from council_eval.pass_provenance import file_digest, git_output
 from council_eval.tables import table
 from council_eval.variants import CHAT, CHAT_REVERSED
+from cvss.metrics import METRIC_ORDER
 
 REPLY_SUFFIX = ".txt"
 TEXT_ENCODING = "utf-8"

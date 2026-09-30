@@ -14,14 +14,13 @@ from typing import Any, Mapping
 
 from council.envelope import RESPONSE_FIELD
 from council.prompt import PROMPT_VERSION
-from cvss.metrics import METRIC_ORDER
-
 from council_eval.chat_passes import AnsweredPrompt
 from council_eval.collect import END_KIND
 from council_eval.pass_provenance import GIT_CHANGES, GIT_COMMIT, Run, git_output
 from council_eval.recording import CallRecord
 from council_eval.replies import HEADER_KIND, PROMPT_VERSION_FIELD, WINDOW_FIELD, call_line
 from council_eval.variants import Variant
+from cvss.metrics import METRIC_ORDER
 
 PASTED_KIND = "pasted"
 # What a local pass pins and a chat does not say.

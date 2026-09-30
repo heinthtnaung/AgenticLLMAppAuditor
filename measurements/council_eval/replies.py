@@ -23,7 +23,6 @@ from council.ollama import LocalModel, build_request, read_answer
 from council.prompt import MemberPrompt
 from council.roster import Member
 from council.transport import ModelUnavailable
-
 from council_eval.recording import CallRecord, request_digest
 from council_eval.variants import Variant, variant_prompt
 

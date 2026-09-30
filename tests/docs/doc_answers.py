@@ -16,11 +16,10 @@ missing", which points at the wrong document.
 
 import json
 
-from organisation.answers import ANSWERS_FIELD
-
 from doc_markers import ANSWERS_DIRECTIVE, marked_blocks
 from doc_pages import Page
 from doc_runs import PrintedRun
+from organisation.answers import ANSWERS_FIELD
 
 
 def answer_file(page: Page) -> dict:

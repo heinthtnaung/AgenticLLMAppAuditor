@@ -2,8 +2,8 @@
 
 import pytest
 
-from scoring.technical import from_cvss_base_score
 from risk_score_samples import NO_BUSINESS_IMPACT, NO_THREAT, NOTHING_EXPOSED, scored
+from scoring.technical import from_cvss_base_score
 
 
 @pytest.mark.parametrize(

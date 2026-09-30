@@ -7,13 +7,13 @@ import re
 import pytest
 
 import eval_samples as samples
-from council_eval import collect as collect_module
 from cli.council_run import OLLAMA_PROVIDER, assess_one, build_roster
 from council.prompt import REVERSED_PROMPT_VERSION
-from cvss.metrics import METRIC_ORDER
+from council_eval import collect as collect_module
 from council_eval.collect import ask_item, collect, first_load_seconds, progress_line
 from council_eval.recording import CallRecord, RecordingClient
 from council_eval.variants import LIBRARY_GUIDANCE, LIBRARY_REVERSED, VariantMismatch
+from cvss.metrics import METRIC_ORDER
 
 HEADER = samples.header()
 

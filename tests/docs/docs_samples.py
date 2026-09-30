@@ -10,7 +10,6 @@ that failure.
 """
 
 from cli.arguments import PROGRAM
-
 from doc_markers import MARKER_NAME, RUN_DIRECTIVE, found_blocks
 from doc_pages import Page, rewritten
 from doc_runs import REPOSITORY, PrintedRun, printed_runs

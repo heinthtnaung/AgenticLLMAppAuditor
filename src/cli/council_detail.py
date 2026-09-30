@@ -13,17 +13,12 @@ conversion.
 
 from typing import Mapping
 
-from council.answer import (
-    MemberAnswer,
-    MemberFoundNoEvidence,
-    MemberGuessed,
-    MemberOrderSensitive,
-)
+from cli.order_declines import in_both_orders
+from council.answer import MemberAnswer, MemberFoundNoEvidence, MemberGuessed, MemberOrderSensitive
 from council.evidence import is_quotation_from
 from council.ruling import Basis, ContestedMetric, SettledMetric, UnresolvedMetric
 from council.run import MemberFailure, OrderReadings
 from council.same_evidence import read_differently
-from cli.order_declines import in_both_orders
 from report.council_record import (
     MemberIdentity,
     MemberSaid,

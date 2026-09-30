@@ -8,10 +8,6 @@ import json
 
 from cli.arguments import TEXT_FORMAT, Options
 from cli.audit import run_audit
-from council import providers
-from council.explanation_prompt import ExplanationPrompt
-from report.absences import EXPLANATION, NO_EXPLAINER_ASKED
-from report.explanation_record import SourcesExplained
 from cli_samples import (
     ADVISORY,
     DATED,
@@ -22,6 +18,10 @@ from cli_samples import (
     scanners_answering,
     written_answers,
 )
+from council import providers
+from council.explanation_prompt import ExplanationPrompt
+from report.absences import EXPLANATION, NO_EXPLAINER_ASKED
+from report.explanation_record import SourcesExplained
 
 BIG = "big:27b"
 MEMBERS = ("small", "other")

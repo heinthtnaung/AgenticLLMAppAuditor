@@ -12,7 +12,14 @@ import json
 from cli.council_run import assess_one, build_roster
 from council.prompt import REVERSED_PROMPT_VERSION
 from council_runs import (
-    ADVISORY, BOTH, INVENTED, LONG_QUOTE, OTHER_QUOTE, answering, declining, replying,
+    ADVISORY,
+    BOTH,
+    INVENTED,
+    LONG_QUOTE,
+    OTHER_QUOTE,
+    answering,
+    declining,
+    replying,
 )
 from report_samples import component, finding
 

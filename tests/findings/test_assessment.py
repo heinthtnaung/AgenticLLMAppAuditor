@@ -2,7 +2,6 @@
 
 import pytest
 
-from findings.assessment import SourceScore, UnreadableSource, read_source, read_sources
 from finding_samples import (
     GHSA_SCORE,
     GHSA_VECTOR,
@@ -14,6 +13,7 @@ from finding_samples import (
     VERSION_4_VECTOR,
     advisory,
 )
+from findings.assessment import SourceScore, UnreadableSource, read_source, read_sources
 
 
 def test_a_readable_vector_is_scored_and_attributed():

@@ -12,13 +12,12 @@ Every number is `src/cvss/score.py`'s, from the vector beside it.
 from dataclasses import dataclass
 from typing import Mapping
 
+from council_eval.dataset import Item
+from council_eval.reference import NO_FULL_REFERENCE, full_reference, r1_reference
 from cvss.metrics import METRIC_ORDER
 from cvss.score import base_score, severity_band
 from cvss.vector import parse
 from report.council_record import CouncilAssessment, CouncilOutcome
-
-from council_eval.dataset import Item
-from council_eval.reference import NO_FULL_REFERENCE, full_reference, r1_reference
 
 
 @dataclass(frozen=True)

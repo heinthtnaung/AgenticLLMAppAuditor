@@ -26,10 +26,9 @@ from cli.model_identity import Listing, Read, listing_of, server_version
 from council.ollama import PINNED_TEMPERATURE, PINNED_THINKING, LocalModel
 from council.settings import current_settings
 from council.transport import get_json
-from report.model_identity import UnknownOllamaVersion
-
 from council_eval.replies import HEADER_KIND, PROMPT_VERSION_FIELD, WINDOW_FIELD
 from council_eval.variants import Variant
+from report.model_identity import UnknownOllamaVersion
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 GIT_COMMIT = ("git", "rev-parse", "HEAD")

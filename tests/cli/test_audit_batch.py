@@ -8,16 +8,16 @@ replies in both orders is not something stand-in replies can show.
 
 import io
 
+from batch_samples import ADVISORIES, BIG, answering, one_finding_at_a_time
 from cli import audit as audit_module
 from cli.arguments import TEXT_FORMAT, Options
 from cli.audit import run_audit
 from cli.council_run import assessments
+from cli_samples import DATED, LODASH, explaining_nothing, scanners_answering
 from council.ruling import Basis
 from report.html_report import as_html
 from report.json_report import as_json
 from report.text_report import as_text
-from batch_samples import ADVISORIES, BIG, answering, one_finding_at_a_time
-from cli_samples import DATED, LODASH, explaining_nothing, scanners_answering
 
 RENDERERS = (as_text, as_json, as_html)
 

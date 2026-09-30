@@ -16,7 +16,6 @@ from typing import Mapping
 from council.envelope import RESPONSE_FIELD
 from council.prompt import MemberPrompt
 from council.roster import Member
-
 from council_eval.chat_prompt import chat_prompt_body, text_digest
 from council_eval.recording import CallRecord
 from council_eval.replies import CallKey, ReplayMismatch, recorded_call

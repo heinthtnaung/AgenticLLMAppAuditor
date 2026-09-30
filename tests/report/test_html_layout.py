@@ -7,7 +7,17 @@ there is one place to hold.
 """
 
 from report.html_layout import (
-    badge, cell, group, jump, listing, mini_chip, number, scored_chip, separated, tag, text,
+    badge,
+    cell,
+    group,
+    jump,
+    listing,
+    mini_chip,
+    number,
+    scored_chip,
+    separated,
+    tag,
+    text,
 )
 
 CLOSING_TAG = "</style><script>alert(1)</script>"

@@ -42,17 +42,17 @@ What a run comes to in the record is `cli.council_outcome`; what it may escalate
 and to which model, is `council.escalation`.
 """
 
-from cvss.metrics import METRIC_ORDER
-from council.escalation import escalate, refuse_unfit_escalation
-from council.roster import Member, Roster, members_to_ask
-from council.prompt import build_prompt
-from council.run import CouncilRun
-from council.runner import PROVIDER_CLIENTS, assess
-from council.ruling import NoFallbackPublished
-from findings.finding import Finding
 from cli.council_detail import rulings_of
 from cli.council_outcome import outcome_of
 from cli.progress import NO_PROGRESS, CouncilProgress, orders_asked
+from council.escalation import escalate, refuse_unfit_escalation
+from council.prompt import build_prompt
+from council.roster import Member, Roster, members_to_ask
+from council.ruling import NoFallbackPublished
+from council.run import CouncilRun
+from council.runner import PROVIDER_CLIENTS, assess
+from cvss.metrics import METRIC_ORDER
+from findings.finding import Finding
 from report.council_record import CouncilNotAsked, CouncilOutcome
 
 OLLAMA_PROVIDER = "ollama"

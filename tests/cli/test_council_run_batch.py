@@ -8,10 +8,6 @@ saves on a real GPU has not been measured, and nothing here asks a live model.
 import io
 from pathlib import Path
 
-from cli.council_run import assessments, watching
-from cli.progress import ESCALATION_LINE
-from council.prompt import PROMPT_VERSION, REVERSED_PROMPT_VERSION
-from report.council_record import CouncilAssessment, CouncilNotAsked, CouncilWithoutVector
 from batch_samples import (
     BIG,
     COUNCIL,
@@ -22,6 +18,10 @@ from batch_samples import (
     answering,
     one_finding_at_a_time,
 )
+from cli.council_run import assessments, watching
+from cli.progress import ESCALATION_LINE
+from council.prompt import PROMPT_VERSION, REVERSED_PROMPT_VERSION
+from report.council_record import CouncilAssessment, CouncilNotAsked, CouncilWithoutVector
 
 # The council runs kept with their progress streams, every one of them made live.
 KEPT_RUNS = Path(__file__).resolve().parents[2] / "measurements" / "council_runs"

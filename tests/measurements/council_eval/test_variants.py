@@ -10,7 +10,6 @@ import eval_samples as samples
 from council.definitions import definition_of
 from council.ollama import LocalModel, build_request
 from council.prompt import PROMPT_VERSION, MemberPrompt, build_prompt
-from cvss.metrics import METRIC_ORDER
 from council_eval.recording import request_digest
 from council_eval.variants import (
     BASELINE,
@@ -26,6 +25,7 @@ from council_eval.variants import (
     variant_asked,
     variant_prompt,
 )
+from cvss.metrics import METRIC_ORDER
 
 # The variants' words, fingerprinted as `tests/council/test_prompt.py` does the
 # product's: wording that moves without its version moving fails here.

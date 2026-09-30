@@ -8,9 +8,9 @@ import chat_samples
 import eval_samples as samples
 from council.prompt import PROMPT_VERSION
 from council_eval.chat_replay import PastedReplayClient
+from council_eval.collect import ask_item
 from council_eval.compose import item_client, pass_models, pass_roster, replay_roster, rosters
 from council_eval.replies import Replies
-from council_eval.collect import ask_item
 from council_eval.variants import CHAT
 
 

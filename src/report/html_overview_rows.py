@@ -11,7 +11,15 @@ from report.approval_needed import reasons_for
 from report.council_beside import council_figure
 from report.disagreement import agreement_unchecked, score_spread, sources_agree, sources_disagree
 from report.html_layout import (
-    CVSS_SCALE, badge, cell, jump, mini_chip, number, scored_chip, tag, text,
+    CVSS_SCALE,
+    badge,
+    cell,
+    jump,
+    mini_chip,
+    number,
+    scored_chip,
+    tag,
+    text,
 )
 from report.html_overview_council import council_cell
 from report.html_risk import NO_SOURCE, RISK_SCALE, source_of

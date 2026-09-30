@@ -16,11 +16,11 @@ from report_samples import (
     CONFIDENTIALITY_ONLY,
     HARMLESS,
     LOW_CONFIDENTIALITY,
-    TOP_OF_MEDIUM,
-    WIDE_WITHIN_MEDIUM,
     SAME_SCORE_ONE,
     SAME_SCORE_TWO,
+    TOP_OF_MEDIUM,
     TOTAL_LOSS,
+    WIDE_WITHIN_MEDIUM,
     component,
     finding,
 )

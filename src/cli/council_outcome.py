@@ -9,12 +9,12 @@ vector is discarded; **the fact that a council ran is not**, and neither is what
 it could not settle -- a record without it would say no council had run at all.
 """
 
-from cvss.metrics import METRIC_ORDER
+from cli.council_detail import nothing_cross_checked
 from council.chairman import agreed_vector
 from council.ruling import ContestedMetric, UnresolvedMetric
 from council.run import CouncilRun
+from cvss.metrics import METRIC_ORDER
 from findings.finding import Finding
-from cli.council_detail import nothing_cross_checked
 from report.council_record import (
     CouncilAssessment,
     CouncilOutcome,

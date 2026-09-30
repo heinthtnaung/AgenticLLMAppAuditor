@@ -12,8 +12,14 @@ from report.html_overview import overview_panel, segments
 from report.html_overview_rows import CVSS_PHONE_LABEL, RISK_PHONE_LABEL
 from report.record import build_report
 from report_samples import (
-    CONFIDENTIALITY_ONLY, LOW_CONFIDENTIALITY, PROVENANCE, TOTAL_LOSS, VERSION_2_VECTOR,
-    catalogue, component, finding,
+    CONFIDENTIALITY_ONLY,
+    LOW_CONFIDENTIALITY,
+    PROVENANCE,
+    TOTAL_LOSS,
+    VERSION_2_VECTOR,
+    catalogue,
+    component,
+    finding,
 )
 from scoring.library import APPROVED_QUESTIONS
 from scoring.question import Answer

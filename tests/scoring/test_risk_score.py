@@ -2,12 +2,12 @@
 
 import math
 
+from risk_score_samples import BUSINESS_CRITICAL_ASSET, no_except, scored
 from scoring.category import CategoryScore, score_category
 from scoring.question import Answer, Category, Question
 from scoring.risk_score import CATEGORY_WEIGHTS, RiskScore, organisation_risk_score
 from scoring.technical import TechnicalSeverity, from_cvss_base_score
 from scoring_samples import DISABLED, EXPOSURE_QUESTIONS, SEGMENTED
-from risk_score_samples import BUSINESS_CRITICAL_ASSET, no_except, scored
 
 
 def one_answer(category: Category, weight: float) -> CategoryScore:

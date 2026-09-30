@@ -11,7 +11,11 @@ from council.answer import (
 )
 from council.chairman import rule_on_escalation
 from council.ruling import (
-    Basis, ContestedMetric, NoFallbackPublished, SettledMetric, UnresolvedMetric,
+    Basis,
+    ContestedMetric,
+    NoFallbackPublished,
+    SettledMetric,
+    UnresolvedMetric,
 )
 from council.run import MemberFailure
 from council_samples import ADVISORY, NETWORK_QUOTATION, NOT_IN_THE_ADVISORY, answer, identity

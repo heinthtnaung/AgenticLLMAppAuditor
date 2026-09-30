@@ -7,10 +7,10 @@ import io
 from itertools import chain, product
 
 from cli.council_run import assessments, build_roster, watching
+from cli_samples import ADVISORY, LODASH, answering
 from council.prompt import PROMPT_VERSION, REVERSED_PROMPT_VERSION
 from cvss.metrics import METRIC_ORDER
 from findings.finding import build_finding
-from cli_samples import ADVISORY, LODASH, answering
 
 FINDING = build_finding(LODASH, ADVISORY)
 

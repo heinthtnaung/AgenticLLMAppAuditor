@@ -14,9 +14,6 @@ from functools import partial
 from pathlib import Path
 from typing import Any, Mapping
 
-from deps import syft_runner, trivy_runner
-from deps.trivy_database import database_built_at, metadata_of, trivy_cache_directory
-
 from council_eval.chat_prompts_step import add_chat_prompts
 from council_eval.chat_replies_step import add_chat_replies
 from council_eval.collect import ask_item, collect
@@ -26,8 +23,8 @@ from council_eval.dataset import Item, read_dataset, vulnscout_items, write_data
 from council_eval.gate import differences, recorded_findings, replayed_findings
 from council_eval.grades_step import add_grades
 from council_eval.inspections import add_inspections
-from council_eval.order_checked_step import add_order_checked
 from council_eval.measures import member_measures, metric_measures
+from council_eval.order_checked_step import add_order_checked
 from council_eval.pass_provenance import pass_header
 from council_eval.replies import Replies, read_replies
 from council_eval.tables import (
@@ -40,6 +37,8 @@ from council_eval.tables import (
 )
 from council_eval.variants import BASELINE, VARIANTS
 from council_eval.vectors import vector_measures
+from deps import syft_runner, trivy_runner
+from deps.trivy_database import database_built_at, metadata_of, trivy_cache_directory
 
 GATE_FAILED = 1
 HOME_VARIABLE = "HOME"

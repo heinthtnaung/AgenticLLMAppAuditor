@@ -10,8 +10,8 @@ from council.prompt import PROMPT_VERSION, REVERSED_PROMPT_VERSION, build_prompt
 from council.roster import Roster
 from council.ruling import MetricRuling, SettledMetric, UnresolvedMetric
 from council.runner import assess
-from cvss.metrics import METRIC_ORDER
 from council_samples import FALLBACKS, LEGAL_VALUE, OTHER_VALUE, QUOTABLE, clients_of, member
+from cvss.metrics import METRIC_ORDER
 
 # Reversed, this member reads AV and UI the other way: the list's order decided them.
 FLIPPED = {"AV", "UI"}

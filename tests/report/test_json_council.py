@@ -9,12 +9,18 @@ passed over is built as `cli.council_run.passed_over` builds one.
 from cli.council_run import SOURCES_AGREE
 from council.prompt import PROMPT_VERSION, REVERSED_PROMPT_VERSION
 from council_runs import (
-    AGREED, DECLINED_AND_GUESSED, DECLINED_ON_AV, DISSENTING, LONG_QUOTE, QUOTED_BY_ONE,
-    UNPARSEABLE, council_ran, fell_back,
+    AGREED,
+    DECLINED_AND_GUESSED,
+    DECLINED_ON_AV,
+    DISSENTING,
+    LONG_QUOTE,
+    QUOTED_BY_ONE,
+    UNPARSEABLE,
+    council_ran,
+    fell_back,
 )
-from report.council_record import CouncilNotAsked
-from report.council_record import MemberIdentity, MemberSaid, SaidKind
 from order_runs import one_way
+from report.council_record import CouncilNotAsked, MemberIdentity, MemberSaid, SaidKind
 from report.json_council import council_of, said_of
 from report.record import build_report
 from report_samples import PROVENANCE, catalogue, component, finding

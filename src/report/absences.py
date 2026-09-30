@@ -15,10 +15,10 @@ from; `report.record` carries both.
 from dataclasses import dataclass
 from typing import Mapping
 
+from findings.finding import Finding
 from organisation.approval import ApprovalOutcome, NotApproved
 from organisation.risk import FindingRisk
 from report.council_record import CouncilOutcome, was_assessed
-from findings.finding import Finding
 from report.explanation_record import ExplanationRecord, SourcesExplained
 
 NO_ANSWERS_GIVEN = "no organisation answers were supplied, so no environment was weighed"

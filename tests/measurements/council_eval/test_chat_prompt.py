@@ -11,7 +11,6 @@ import eval_samples as samples
 from council.definitions import definition_of
 from council.prompt import PROMPT_VERSION, REVERSED_PROMPT_VERSION, build_prompt, describe
 from council.reply_format import NO_EVIDENCE_VALUE, REQUIRED_FIELDS
-from cvss.metrics import METRIC_ORDER
 from council_eval.chat_prompt import (
     CHAT_PROMPT_VERSION,
     PROMPT_ID_FIELD,
@@ -21,6 +20,7 @@ from council_eval.chat_prompt import (
     prompt_id,
 )
 from council_eval.variants import CHAT, CHAT_REVERSED
+from cvss.metrics import METRIC_ORDER
 
 # The chat prompt's words, fingerprinted as `tests/council/test_prompt.py` does the
 # council's: wording that moves without its version moving fails here.

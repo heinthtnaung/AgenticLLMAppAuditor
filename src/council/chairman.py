@@ -29,11 +29,8 @@ imports `src/scoring/`, and if it ever needs to, something has gone wrong.
 
 from typing import Mapping, Sequence
 
-from cvss.metrics import METRIC_ORDER
-from cvss.vector import CvssVector
 from council.answer import MemberAnswer, MemberReply, weakest_confidence
 from council.evidence import is_quotation_from
-from council.run import MemberFailure
 from council.ruling import (
     Basis,
     ContestedMetric,
@@ -43,6 +40,9 @@ from council.ruling import (
     SettledMetric,
     UnresolvedMetric,
 )
+from council.run import MemberFailure
+from cvss.metrics import METRIC_ORDER
+from cvss.vector import CvssVector
 
 
 def rule_on_metric(

@@ -14,12 +14,11 @@ that the guide is true.
 
 import pytest
 
-from organisation.answers import ANSWERS_FIELD
-
 from doc_answers import answer_file, answers_for
 from doc_pages import USAGE, read
 from doc_runs import printed_runs
 from docs_samples import marker_changed, run_changing_an_answer
+from organisation.answers import ANSWERS_FIELD
 
 UNANSWERED_QUESTION = "XYZ-9"
 NOT_ANSWERED = "does not answer"

@@ -30,7 +30,6 @@ from dataclasses import dataclass, replace
 
 from council.definitions import definition_of
 from council.prompt import PROMPT_VERSION, MemberPrompt, value_lines
-
 from council_eval.chat_prompt import CHAT_PROMPT_VERSION, definition_texts
 
 # The CVSS v3.1 User Guide, section 3.7, "Scoring Vulnerabilities in Software

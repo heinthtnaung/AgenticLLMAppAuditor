@@ -9,9 +9,9 @@ quotation already supports, so two stand behind it.
 import json
 
 from cli.council_run import assessments, build_roster, escalation_member
+from cli_samples import ADVISORY, LEGAL, LODASH, QUOTATION
 from findings.finding import build_finding
 from report.council_record import CouncilAssessment, Outcome, SaidKind
-from cli_samples import ADVISORY, LEGAL, LODASH, QUOTATION
 
 FINDING = build_finding(LODASH, ADVISORY)
 COUNCIL = build_roster(("small", "other"))

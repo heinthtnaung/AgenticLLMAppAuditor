@@ -10,7 +10,6 @@ names in either place turns this red. Nothing here runs a scan, so it needs no
 from pathlib import Path
 
 from cli.report_files import REPORTS_DIRECTORY, report_paths, where_written
-
 from doc_pages import README, read
 from doc_runs import REPOSITORY
 

@@ -11,8 +11,6 @@ import argparse
 from pathlib import Path
 from typing import Any
 
-from report.council_record import CouncilOutcome
-
 from council_eval.compose import pass_models, replay_roster, rosters
 from council_eval.dataset import Item, read_dataset
 from council_eval.grades import grade_lines
@@ -20,6 +18,7 @@ from council_eval.order_checked import order_checked_roster
 from council_eval.replies import Replies, read_replies
 from council_eval.tables import header_lines
 from council_eval.vectors import vector_measures
+from report.council_record import CouncilOutcome
 
 ORDER_CHECKED = ", order-checked"
 

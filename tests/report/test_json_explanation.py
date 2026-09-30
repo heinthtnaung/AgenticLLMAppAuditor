@@ -1,8 +1,8 @@
 """Guards on why the sources differ in the JSON record: on every finding, and saying why not."""
 
-from explanation_runs import QUOTED, WHY, explained_report
 from council.explanation_prompt import EXPLANATION_PROMPT_VERSION
-from report.absences import Coverage, NO_EXPLAINER_ASKED
+from explanation_runs import QUOTED, WHY, explained_report
+from report.absences import NO_EXPLAINER_ASKED, Coverage
 from report.json_explanation import NOT_RECORDED, explanation_of
 from report.record import build_report
 from report_samples import PROVENANCE, catalogue, component, finding

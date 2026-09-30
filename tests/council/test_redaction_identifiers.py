@@ -3,7 +3,6 @@
 import pytest
 
 from council.redaction import IDENTIFIER_MARKER, redact
-
 from redaction_samples import CVE_ID, GHSA_ID
 
 

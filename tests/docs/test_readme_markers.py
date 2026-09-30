@@ -23,7 +23,7 @@ import pytest
 
 from doc_answers import answer_file
 from doc_markers import ANSWERS_DIRECTIVE, MARKER_NAME, RUN_DIRECTIVE, unmarked_note
-from doc_pages import README, Page, rewritten, read
+from doc_pages import README, Page, read, rewritten
 from doc_runs import printed_runs
 from doc_tool_output import unmarked_tool_output
 from docs_samples import (

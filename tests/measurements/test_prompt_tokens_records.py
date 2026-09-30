@@ -23,10 +23,9 @@ from council.ollama import (  # noqa: E402
     estimated_tokens,
 )
 from council.prompt import build_prompt  # noqa: E402
-from council_eval.dataset import read_dataset  # noqa: E402
-from council_eval.replies import read_replies  # noqa: E402
-from council_eval.dataset import Item  # noqa: E402
+from council_eval.dataset import Item, read_dataset  # noqa: E402
 from council_eval.recording import CallRecord  # noqa: E402
+from council_eval.replies import read_replies  # noqa: E402
 from council_eval.variants import Variant, variant_asked, variant_prompt  # noqa: E402
 
 RECORD = ROOT / "measurements" / "prompt_tokens.2026-09-25.txt"

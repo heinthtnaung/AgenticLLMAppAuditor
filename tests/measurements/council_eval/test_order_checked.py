@@ -4,11 +4,11 @@ import pytest
 
 import chat_samples
 import eval_samples as samples
-from council_eval import order_checked as order_checked_module
 from cli.council_run import local_member
 from council.prompt import PROMPT_VERSION, build_prompt
 from council.reply import read_reply
 from council.transport import ModelUnavailable
+from council_eval import order_checked as order_checked_module
 from council_eval.collect import ask_item
 from council_eval.order_checked import (
     DECLINED,

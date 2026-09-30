@@ -2,13 +2,11 @@
 
 import json
 
-from escalation_runs import escalated
 from council_runs import LONG_QUOTE, QUOTED, answering
+from escalation_runs import escalated
 from report.json_council import council_of
 from report.json_report import as_json
-from same_evidence_runs import (
-    APART, SAME_WORDS, apart, av_of, report_of, same_words, unflagged,
-)
+from same_evidence_runs import APART, SAME_WORDS, apart, av_of, report_of, same_words, unflagged
 
 FLAG = "same_evidence_different_reading"
 

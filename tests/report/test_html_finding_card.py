@@ -8,8 +8,14 @@ reaches off it, and a refused source stays on the card marked not scored.
 from report.html_finding_card import advisory_name, card_head, source_table, unreadable_table
 from report.record import build_report
 from report_samples import (
-    ADVISORY_URL, CONFIDENTIALITY_ONLY, ESCAPED_URL, PROVENANCE, VERSION_2_VECTOR,
-    catalogue, component, finding,
+    ADVISORY_URL,
+    CONFIDENTIALITY_ONLY,
+    ESCAPED_URL,
+    PROVENANCE,
+    VERSION_2_VECTOR,
+    catalogue,
+    component,
+    finding,
 )
 
 DJANGO = component()

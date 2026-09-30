@@ -18,8 +18,16 @@ so the two cannot come to word one record differently.
 
 from report.council_record import MemberSaid, MetricRuling, SaidKind
 from report.council_words import (
-    chairman_said, checked, confident, counted, declined_one_way, escalated_who, outcome_said,
-    same_evidence_said, unanswered, who,
+    chairman_said,
+    checked,
+    confident,
+    counted,
+    declined_one_way,
+    escalated_who,
+    outcome_said,
+    same_evidence_said,
+    unanswered,
+    who,
 )
 from report.html_layout import listing, separated, tag, text
 

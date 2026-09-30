@@ -20,13 +20,23 @@ them.
 from collections import Counter
 
 from report.council_beside import figure_of
+from report.council_passed_over import PassedOver, grouped_by_reason
 from report.council_record import (
-    CouncilAssessment, CouncilNotAsked, CouncilWithoutVector, MetricRuling, council_left_open,
+    CouncilAssessment,
+    CouncilNotAsked,
+    CouncilWithoutVector,
+    MetricRuling,
+    council_left_open,
     was_assessed,
 )
-from report.council_passed_over import PassedOver, grouped_by_reason
 from report.council_words import (
-    NOT_ASKED, NO_VECTOR, SETTLED, could_not_settle, counted, escalation_named, metrics_settled,
+    NO_VECTOR,
+    NOT_ASKED,
+    SETTLED,
+    could_not_settle,
+    counted,
+    escalation_named,
+    metrics_settled,
     uncross_checked,
 )
 from report.html_filters import empty_line, search_box, toggle_all_button, toolbar

@@ -6,8 +6,8 @@ that and hands the parsed document over.
 """
 
 from collections import defaultdict
-from itertools import chain
 from dataclasses import dataclass
+from itertools import chain
 from types import MappingProxyType
 from typing import Any, Mapping
 

@@ -1,12 +1,16 @@
 """Guards on a score resting on an unknown: carried and flagged provisional, never read as No."""
 
+from risk_score_samples import BUSINESS_CRITICAL_ASSET, no_except, scored
 from scoring.category import score_category
 from scoring.question import Answer, Category
 from scoring.technical import UnknownTechnicalSeverity, from_cvss_base_score
 from scoring_samples import (
-    EXPLOITED, EXPOSURE_QUESTIONS, INTERNET_FACING, THREAT_QUESTIONS, all_answered,
+    EXPLOITED,
+    EXPOSURE_QUESTIONS,
+    INTERNET_FACING,
+    THREAT_QUESTIONS,
+    all_answered,
 )
-from risk_score_samples import BUSINESS_CRITICAL_ASSET, no_except, scored
 
 
 def test_an_unknown_answer_makes_the_whole_score_provisional():

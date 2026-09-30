@@ -10,8 +10,8 @@ import json
 
 from cli.council_run import assess_one, build_roster, escalation_member, passed_over, to_assess
 from cli.progress import NO_PROGRESS
-from findings.finding import build_finding
 from cli_samples import LEGAL, LODASH, LOW_CONFIDENTIALITY, TOTAL_LOSS, advisory_like
+from findings.finding import build_finding
 
 BIG = "big:27b"
 COUNCIL = build_roster(("small", "other"))

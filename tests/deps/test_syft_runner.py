@@ -7,6 +7,7 @@ from deps.scanner import ScannerUnavailable
 from deps.syft_runner import build_command, installed_version, is_available, scan_directory
 from samples import NOT_PATHS, syft_artifact, syft_report_of
 
+
 def test_the_command_scans_the_directory_as_a_directory(tmp_path):
     command = build_command(tmp_path)
     assert command[0] == "syft"

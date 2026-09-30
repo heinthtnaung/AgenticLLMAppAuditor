@@ -24,6 +24,38 @@ audit = "cli.main:main"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.ruff]
+# The code is written to 100 columns; matching keeps isort from wrapping a
+# one-line import that already fits.
+line-length = 100
+# pytest puts each test directory on sys.path, and the measurement scripts and
+# their tests add `measurements/`, so a module imported by its bare name from a
+# sibling is first-party. List those roots, and `src/`, so ruff groups them with
+# `cli`, `report` and the rest, not third-party.
+src = [
+    "src",
+    "tests/cli",
+    "tests/council",
+    "tests/deps",
+    "tests/docs",
+    "tests/findings",
+    "tests/measurements",
+    "tests/measurements/council_eval",
+    "tests/organisation",
+    "tests/report",
+    "tests/scoring",
+    "measurements",
+]
+
+[tool.ruff.lint]
+# On top of ruff's defaults, enforce import order (isort). Nothing else changes.
+extend-select = ["I"]
+
+[tool.ruff.lint.isort]
+# A trailing comma is not a request to explode the import: keep names on one line
+# while they fit 100 columns, so sorting does not push files past 200 lines.
+split-on-trailing-comma = false
+
 # The HTML report inlines its stylesheet and script, read at render time from
 # this folder (`report.html_assets`). Ship them so an installed copy renders the
 # same self-contained page a source checkout does.

@@ -5,7 +5,6 @@ import json
 import chat_samples
 import eval_samples as samples
 from council.prompt import PROMPT_VERSION
-from cvss.metrics import METRIC_ORDER
 from council_eval.chat_pass_lines import pass_lines
 from council_eval.chat_passes import answered_prompts
 from council_eval.chat_reply import ChatReply
@@ -13,6 +12,7 @@ from council_eval.chat_reply_file import SavedReply, read_saved_reply
 from council_eval.collect import write_line
 from council_eval.replies import read_replies
 from council_eval.variants import CHAT, CHAT_REVERSED
+from cvss.metrics import METRIC_ORDER
 
 
 def dated_reply(prompt_id: str, date: str) -> ChatReply:

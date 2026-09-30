@@ -12,6 +12,7 @@ from organisation.approval import Approval, NotApproved
 from scoring.library import APPROVED_QUESTIONS
 from scoring.question import Answer
 
+
 def all_answers(overrides=None) -> dict:
     """Answer every approved question No, except the ones a test names."""
     return {**{asked.question_id: Answer.NO for asked in APPROVED_QUESTIONS}, **(overrides or {})}

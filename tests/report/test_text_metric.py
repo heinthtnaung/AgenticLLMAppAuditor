@@ -9,11 +9,11 @@ from escalation_runs import (
     escalated,
     split_on_av,
 )
-from same_evidence_runs import av_of, same_words, unflagged
 from order_runs import one_way, rulings_of
 from report.council_words import SAME_EVIDENCE
 from report.text_council import advisory_lines
 from report.text_metric import ruling_lines
+from same_evidence_runs import av_of, same_words, unflagged
 
 
 def headline(ruling) -> str:

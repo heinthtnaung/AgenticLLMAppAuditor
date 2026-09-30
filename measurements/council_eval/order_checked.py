@@ -26,16 +26,9 @@ from cli.council_run import assess_one
 from council.answer import MemberFoundNoEvidence, MemberReply
 from council.prompt import MemberPrompt
 from council.reply import read_reply
-from council.reply_format import (
-    CONFIDENCE_FIELD,
-    EVIDENCE_FIELD,
-    NO_EVIDENCE_VALUE,
-    VALUE_FIELD,
-)
+from council.reply_format import CONFIDENCE_FIELD, EVIDENCE_FIELD, NO_EVIDENCE_VALUE, VALUE_FIELD
 from council.roster import Member
 from council.transport import ModelUnavailable
-from report.council_record import CouncilOutcome
-
 from council_eval.compose import (
     ItemClient,
     clients_for,
@@ -47,6 +40,7 @@ from council_eval.compose import (
 from council_eval.dataset import Item
 from council_eval.replies import Replies
 from council_eval.variants import PASS_ESCALATION, PASS_ORDER_CHECK
+from report.council_record import CouncilOutcome
 
 STABLE = "stable"
 ORDER_SENSITIVE = "order-sensitive"

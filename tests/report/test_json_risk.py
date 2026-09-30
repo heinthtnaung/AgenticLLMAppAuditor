@@ -10,8 +10,7 @@ from report.council_beside import COUNCIL_SOURCE
 from report.json_risk import approval_of, risk_of
 from report.record import build_report
 from report_samples import PROVENANCE, TOTAL_LOSS, catalogue, component, finding
-from scoring.library import question
-from scoring.library import APPROVED_QUESTIONS
+from scoring.library import APPROVED_QUESTIONS, question
 from scoring.question import Answer
 
 DJANGO = component()

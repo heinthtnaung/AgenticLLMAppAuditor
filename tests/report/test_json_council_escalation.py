@@ -1,14 +1,8 @@
 """Guards on an escalation in the JSON record: what the council left, what the model said, whole."""
 
-from escalation_runs import (
-    SETTLING,
-    TIMED_OUT,
-    UNSTABLE_AND_INVENTED,
-    by_metric,
-    escalated,
-)
 from council.prompt import PROMPT_VERSION, REVERSED_PROMPT_VERSION
 from council_runs import QUOTED, answering, declining
+from escalation_runs import SETTLING, TIMED_OUT, UNSTABLE_AND_INVENTED, by_metric, escalated
 from report.json_council import ruling_of
 
 

@@ -4,6 +4,7 @@ from cli import audit as audit_module
 from cli.arguments import TEXT_FORMAT, Options
 from cli.audit import run_audit
 from cli.model_identity import READ_TIMEOUT_SECONDS
+from cli_samples import DATED, explaining_nothing, scanners_answering
 from council.settings import current_settings
 from council.transport import ModelUnavailable
 from report.model_identity import (
@@ -13,7 +14,6 @@ from report.model_identity import (
     OllamaVersion,
     UnknownOllamaVersion,
 )
-from cli_samples import DATED, explaining_nothing, scanners_answering
 
 SMALL = "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e"
 OTHER = "a80c4f17acd55265feec403c7aef86be0c25983ab279d83f3bcd3abbcb5b8b72"

@@ -10,7 +10,6 @@ the guide's markers are intact, not that the output they print reproduces.
 import pytest
 
 from cli.arguments import Options
-
 from doc_answers import answer_file
 from doc_markers import RUN_DIRECTIVE, unmarked_note
 from doc_pages import USAGE, read

@@ -13,7 +13,16 @@ on the card, marked not scored and never as 0.0.
 from cvss.score import severity_band
 from report.approval_needed import NEEDS_APPROVAL, reasons_for
 from report.html_layout import (
-    CVSS_SCALE, badge, cell, external_link, jump, listing, number, scored_chip, tag, text,
+    CVSS_SCALE,
+    badge,
+    cell,
+    external_link,
+    jump,
+    listing,
+    number,
+    scored_chip,
+    tag,
+    text,
 )
 from report.html_vector import vector_markup
 from report.record import Report

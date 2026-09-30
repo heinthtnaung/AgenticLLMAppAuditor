@@ -46,22 +46,17 @@ through `ask_one_member` here, as a member is.
 
 from typing import Callable, Mapping
 
-from cvss.metrics import METRIC_ORDER
 from council.answer import MemberReply
 from council.chairman import rule_on_metric
 from council.order_check import reconciled
 from council.prompt import MemberPrompt, build_prompt
-from council.providers import (
-    PROVIDER_CLIENTS,
-    AskMember,
-    reachable_members,
-    unreachable_members,
-)
+from council.providers import PROVIDER_CLIENTS, AskMember, reachable_members, unreachable_members
 from council.reply import read_reply
 from council.roster import Member, Roster, members_to_ask
 from council.ruling import Fallback
 from council.run import CouncilRun, MemberFailure, MetricRound, OrderReadings
 from council.transport import ModelUnavailable
+from cvss.metrics import METRIC_ORDER
 
 # What one call to one member gave back.
 CallOutcome = MemberReply | MemberFailure

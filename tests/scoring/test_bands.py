@@ -8,12 +8,7 @@ from scoring.category import score_category
 from scoring.question import Answer, Category
 from scoring.risk_score import organisation_risk_score
 from scoring.technical import from_cvss_base_score
-from scoring_samples import (
-    BUSINESS_QUESTIONS,
-    EXPOSURE_QUESTIONS,
-    THREAT_QUESTIONS,
-    all_answered,
-)
+from scoring_samples import BUSINESS_QUESTIONS, EXPOSURE_QUESTIONS, THREAT_QUESTIONS, all_answered
 
 
 def nothing_answered(questions, category):

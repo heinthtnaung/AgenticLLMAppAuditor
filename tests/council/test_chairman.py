@@ -5,12 +5,21 @@ import pytest
 from council.answer import Confidence
 from council.chairman import agreed_vector, rule_on_metric
 from council.ruling import (
-    Basis, ContestedMetric, NoFallbackPublished, PublishedFallback, SettledMetric,
+    Basis,
+    ContestedMetric,
+    NoFallbackPublished,
+    PublishedFallback,
+    SettledMetric,
     UnresolvedMetric,
 )
 from council_samples import (
-    ACROSS_A_LINE_BREAK, ADVISORY, NETWORK_QUOTATION, NOT_IN_THE_ADVISORY, answer,
-    found_nothing, guessed,
+    ACROSS_A_LINE_BREAK,
+    ADVISORY,
+    NETWORK_QUOTATION,
+    NOT_IN_THE_ADVISORY,
+    answer,
+    found_nothing,
+    guessed,
 )
 
 FALLBACK = PublishedFallback(value="L", source="nvd")

@@ -15,15 +15,19 @@ settled, and searches by text; with no script it is the full table, unfiltered.
 from report.approval_needed import needing_approval
 from report.council_beside import council_figure
 from report.disagreement import sources_agree, sources_disagree
+from report.html_absences import approval_card, not_assessed_card
 from report.html_filters import Segment, empty_line, search_box, segmented, toolbar
 from report.html_layout import tag, text
 from report.html_overview_rows import finding_row
 from report.html_overview_tiles import stat_tiles, two_scales
 from report.record import Report
 from report.summary_words import (
-    approval_count, counts, inventory_pointer, secrets_count, unread_pointer,
+    approval_count,
+    counts,
+    inventory_pointer,
+    secrets_count,
+    unread_pointer,
 )
-from report.html_absences import approval_card, not_assessed_card
 
 FINDINGS_TABLE = "findings-table"
 COLUMNS = ("Advisory", "Sources", "CVSS", "Org risk", "Council", "Approval")

@@ -12,13 +12,22 @@ cards a reader sees and in what order, so the two change for different reasons.
 """
 
 from report.disagreement import (
-    agreement_unchecked, bands_crossed, most_contested_first, score_spread, sources_agree,
+    agreement_unchecked,
+    bands_crossed,
+    most_contested_first,
+    score_spread,
+    sources_agree,
     sources_disagree,
 )
 from report.explanation_words import LEDE as EXPLANATION_LEDE
 from report.html_explanation import why_block
 from report.html_finding_card import (
-    article, card_head, card_links, nothing_published, source_table, unreadable_table,
+    article,
+    card_head,
+    card_links,
+    nothing_published,
+    source_table,
+    unreadable_table,
 )
 from report.html_layout import empty_note, group, number, panel_head, tag, text
 from report.record import Report

@@ -24,12 +24,11 @@ from itertools import chain, combinations
 from cli.council_run import assess_one, build_roster
 from council.providers import AskMember
 from council.roster import Roster
-from report.council_record import CouncilOutcome
-
 from council_eval.chat_replay import PastedReplayClient, chat_member
 from council_eval.dataset import Item
 from council_eval.replies import PROMPT_VERSION_FIELD, WINDOW_FIELD, ReplayClient, Replies
 from council_eval.variants import PASS_ESCALATION, PASS_ORDER_CHECK, Variant, variant_asked
+from report.council_record import CouncilOutcome
 
 # What answers one item's calls: a local pass's recorded requests, or a pasted pass's replies.
 ItemClient = ReplayClient | PastedReplayClient

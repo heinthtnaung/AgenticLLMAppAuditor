@@ -15,6 +15,11 @@ from dataclasses import replace
 from pathlib import Path
 from typing import TextIO
 
+from cli.arguments import Options
+from cli.council_run import ORDER_CHECK, assessments, build_roster, escalation_member, watching
+from cli.explanation_run import explainer_of, explaining, explanations
+from cli.model_identity import local_identities
+from cli.organisation_run import organisation_of, weigh_findings
 from council.escalation import refuse_unfit_escalation
 from council.escalation_setting import escalation_model
 from council.member_setting import council_members
@@ -30,12 +35,6 @@ from findings.finding import build_findings
 from report.absences import Coverage
 from report.provenance import AdvisoryDatabase, LocalModels, RunProvenance
 from report.record import Report, build_report
-
-from cli.arguments import Options
-from cli.council_run import ORDER_CHECK, assessments, build_roster, escalation_member, watching
-from cli.explanation_run import explainer_of, explaining, explanations
-from cli.model_identity import local_identities
-from cli.organisation_run import organisation_of, weigh_findings
 
 
 def run_audit(

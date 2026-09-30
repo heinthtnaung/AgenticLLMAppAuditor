@@ -12,9 +12,6 @@ from cli import audit as audit_module
 from cli.arguments import TEXT_FORMAT, Options
 from cli.audit import run_audit
 from cli.council_run import assess_one, escalation_member
-from council.env_file import SettingsError
-from council.ruling import Basis
-from report.council_record import CouncilAssessment
 from cli_samples import (
     ADVISORY,
     DATED,
@@ -24,6 +21,9 @@ from cli_samples import (
     scanners_answering,
     written_answers,
 )
+from council.env_file import SettingsError
+from council.ruling import Basis
+from report.council_record import CouncilAssessment
 
 BIG = "big:27b"
 # A reading far below both published ones, 9.8 and 5.3, and the council declines

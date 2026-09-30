@@ -3,13 +3,7 @@
 import pytest
 
 from council.answer import MemberIdentity
-from council.roster import (
-    Member,
-    Roster,
-    is_single_assessor,
-    members_skipped,
-    members_to_ask,
-)
+from council.roster import Member, Roster, is_single_assessor, members_skipped, members_to_ask
 from council_samples import SAMPLE_PROMPT_VERSION, hosted, member
 
 

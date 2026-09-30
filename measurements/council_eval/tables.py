@@ -7,8 +7,6 @@ count it came from, and a rate over nothing is printed as `NO_RATE`, not as 0.
 from itertools import chain
 from typing import Any, Iterable, Mapping, Sequence
 
-from report.council_record import CouncilAssessment, CouncilOutcome
-
 from council_eval.chat_pass_lines import PASTED_HEADER_FIELDS
 from council_eval.contests import ContestMeasure
 from council_eval.measures import (
@@ -20,6 +18,7 @@ from council_eval.measures import (
     wilson,
 )
 from council_eval.vectors import VectorMeasure, reference_band
+from report.council_record import CouncilAssessment, CouncilOutcome
 
 NO_RATE = "-"
 GAP = "  "

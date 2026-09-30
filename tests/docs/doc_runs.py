@@ -19,7 +19,6 @@ from pathlib import Path
 from typing import Mapping
 
 from cli.arguments import Options, parse_arguments
-
 from doc_markers import RUN_DIRECTIVE, marked_blocks, refuse_stray_markers, refuse_wrong_count
 from doc_pages import Page
 

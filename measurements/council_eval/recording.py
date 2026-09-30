@@ -27,7 +27,6 @@ from council.ollama import LocalModel, ask, generate_url
 from council.prompt import MemberPrompt
 from council.roster import Member
 from council.transport import post_json
-
 from council_eval.variants import BASELINE, Variant, variant_prompt
 
 # The token ids of the prompt and reply. Long, and nothing downstream reads them.

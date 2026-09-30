@@ -7,12 +7,7 @@ from council.ollama import LocalModel, build_request
 from council.prompt import build_prompt
 from council.roster import Member
 from council.transport import ModelUnavailable
-from council_eval.recording import (
-    NO_REQUEST,
-    RecordingClient,
-    request_digest,
-    unload_model,
-)
+from council_eval.recording import NO_REQUEST, RecordingClient, request_digest, unload_model
 from council_eval.variants import REVERSED, variant_prompt
 
 MEMBER = Member(samples.MODEL, "ollama", samples.MODEL, "small", runs_local=True)

@@ -2,9 +2,9 @@
 
 import pytest
 
+from cli.model_identity import READ_TIMEOUT_SECONDS, local_identities, tagged
 from council.settings import current_settings
 from council.transport import ModelUnavailable
-from cli.model_identity import READ_TIMEOUT_SECONDS, local_identities, tagged
 from report.model_identity import (
     ESCALATION_ROLE,
     MEMBER_ROLE,

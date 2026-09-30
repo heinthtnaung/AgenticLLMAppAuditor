@@ -1,7 +1,7 @@
 """Guards on a finding whose sources differ only in metrics the Base score does not read."""
 
-from findings.finding import build_finding
 from finding_samples import GHSA_VECTOR, advisory, component
+from findings.finding import build_finding
 
 # The same Base assessment as `GHSA_VECTOR`, but for Attack Complexity.
 HARDER = GHSA_VECTOR.replace("AC:L", "AC:H")

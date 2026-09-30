@@ -17,8 +17,18 @@ is built as `cli.council_run.passed_over` builds one, from its own reasons.
 
 from cli.council_run import NO_TEXT_TO_READ, SOURCES_AGREE
 from council_runs import (
-    AGREED, ALONE, DECLINED_AND_GUESSED, DISSENTING, EVIDENCE, INVENTED, UNPARSEABLE, UNTAGGED,
-    answering, council_ran, declining, fell_back,
+    AGREED,
+    ALONE,
+    DECLINED_AND_GUESSED,
+    DISSENTING,
+    EVIDENCE,
+    INVENTED,
+    UNPARSEABLE,
+    UNTAGGED,
+    answering,
+    council_ran,
+    declining,
+    fell_back,
 )
 from report.council_record import CouncilNotAsked
 from report.council_words import SINGLE_ASSESSOR

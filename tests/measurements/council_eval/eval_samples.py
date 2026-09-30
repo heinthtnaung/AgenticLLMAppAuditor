@@ -13,15 +13,14 @@ from typing import Any, Mapping
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "measurements"))
 
 from council.reply_format import NO_EVIDENCE_VALUE  # noqa: E402
+from council_eval.collect import ask_item  # noqa: E402
+from council_eval.dataset import Item  # noqa: E402
+from council_eval.recording import CallRecord  # noqa: E402
+from council_eval.variants import BASELINE, Variant  # noqa: E402
 from cvss.metrics import METRIC_ORDER  # noqa: E402
 from deps.syft_report import Component  # noqa: E402
 from deps.trivy_report import Advisory  # noqa: E402
 from findings.finding import Finding, build_finding  # noqa: E402
-
-from council_eval.collect import ask_item  # noqa: E402
-from council_eval.recording import CallRecord  # noqa: E402
-from council_eval.dataset import Item  # noqa: E402
-from council_eval.variants import BASELINE, Variant  # noqa: E402
 
 KEY = "CVE-2026-0001"
 MODEL = "small:1b"

@@ -7,8 +7,8 @@ import pytest
 
 from council.definitions import definition_of
 from council.prompt import PROMPT_VERSION, REVERSED_PROMPT_VERSION, build_prompt
-from cvss.metrics import METRIC_ORDER
 from council_samples import ADVISORY
+from cvss.metrics import METRIC_ORDER
 
 # The reversed wording, fingerprinted as `test_prompt.py` fingerprints the other.
 REVERSED_FINGERPRINT = "524ed7810f0dde0d744e4db05d868fba863457caec8ee4afd8bfcfeb50db23c0"

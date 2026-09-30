@@ -13,11 +13,11 @@ from cli.explanation_run import (
     explaining,
     explanations,
 )
+from cli_samples import ADVISORY, LEGAL, LODASH, QUOTATION, advisory_like
 from council.explanation_prompt import EXPLANATION_PROMPT_VERSION, ExplanationPrompt
 from council.roster import Member, Roster
 from findings.finding import build_finding
 from report.explanation_record import DroppedMetric, SourcesExplained, SourcesNotExplained
-from cli_samples import ADVISORY, LEGAL, LODASH, QUOTATION, advisory_like
 
 DISPUTED = build_finding(LODASH, ADVISORY)
 AGREEING = build_finding(LODASH, advisory_like("CVE-AGREED"))

@@ -6,13 +6,7 @@ from hashlib import sha256
 import pytest
 
 from council.definitions import definition_of
-from council.prompt import (
-    PROMPT_VERSION,
-    build_prompt,
-    reply_schema,
-    system_prompt,
-    user_prompt,
-)
+from council.prompt import PROMPT_VERSION, build_prompt, reply_schema, system_prompt, user_prompt
 from council.reply_format import NO_EVIDENCE_VALUE, REQUIRED_FIELDS
 from council_samples import ADVISORY
 from cvss.metrics import METRIC_ORDER

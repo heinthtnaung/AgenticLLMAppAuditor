@@ -9,12 +9,7 @@ the day `VALUE_NAMES` parts from CVSS v3.1 or from the metric tables beside it.
 
 import pytest
 
-from cvss.metrics import (
-    BASE_METRICS,
-    READABLE_METRICS,
-    TEMPORAL_METRICS,
-    VALUE_NAMES,
-)
+from cvss.metrics import BASE_METRICS, READABLE_METRICS, TEMPORAL_METRICS, VALUE_NAMES
 
 # CVSS v3.1 specification, sections 2 and 3: the name in words of every value of
 # every metric a published vector may carry, each inner mapping in the order the

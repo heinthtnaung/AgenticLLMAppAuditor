@@ -22,12 +22,12 @@ asks for one, so every saved pass re-derives without it.
 
 from typing import Mapping
 
-from council.explanation import DroppedItem, Explanation, Explained, explain
+from cli.council_run import NO_TEXT_TO_READ, advisory_text
+from cli.progress import NO_EXPLANATION_PROGRESS, ExplanationProgress
+from council.explanation import DroppedItem, Explained, Explanation, explain
 from council.providers import PROVIDER_CLIENTS, AskMember
 from council.roster import Member, Roster, members_to_ask
 from findings.finding import Finding
-from cli.council_run import NO_TEXT_TO_READ, advisory_text
-from cli.progress import NO_EXPLANATION_PROGRESS, ExplanationProgress
 from report.explanation_record import (
     DroppedMetric,
     ExplainedMetric,

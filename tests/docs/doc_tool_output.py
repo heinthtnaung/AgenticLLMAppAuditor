@@ -11,7 +11,6 @@ import re
 import shlex
 
 from cli.arguments import PROGRAM, Options, parse_arguments
-
 from doc_markers import FENCE, found_blocks, line_of
 from doc_pages import Page
 

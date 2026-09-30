@@ -2,16 +2,16 @@
 
 import pytest
 
+from scoring.category import score_category
 from scoring.library import (
-    QUESTIONS_BY_ID,
     APPROVED_QUESTIONS,
     BUSINESS_QUESTIONS,
     EXPOSURE_QUESTIONS,
+    QUESTIONS_BY_ID,
     answers_for,
     question,
     questions_of,
 )
-from scoring.category import score_category
 from scoring.question import Answer, Category, Question
 
 # docs/SCORING_MODEL.md, "Turning answers into a category score", quoted.

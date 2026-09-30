@@ -13,8 +13,8 @@ council is that a reader can tell.
 from dataclasses import dataclass
 from enum import Enum
 
-from cvss.metrics import METRIC_ORDER, refuse_illegal_pair
 from council.answer import Confidence, MemberAnswer
+from cvss.metrics import METRIC_ORDER, refuse_illegal_pair
 
 
 class Basis(Enum):

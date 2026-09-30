@@ -13,9 +13,9 @@ from pathlib import Path
 from cli import audit as audit_module
 from cli.arguments import TEXT_FORMAT, Options
 from cli.audit import run_audit
+from cli_samples import ADVISORY, DATED, LODASH, scanners_answering
 from deps.syft_report import Catalogue
 from deps.trivy_runner import TrivyScan
-from cli_samples import ADVISORY, DATED, LODASH, scanners_answering
 
 
 def options_for(path: Path) -> Options:

@@ -17,10 +17,17 @@ import re
 
 from cli.council_run import NO_TEXT_TO_READ, SOURCES_AGREE
 from council_runs import (
-    AGREED, ALONE, DISSENTING, EVIDENCE, INVENTED, answering, council_ran, declining,
+    AGREED,
+    ALONE,
+    DISSENTING,
+    EVIDENCE,
+    INVENTED,
+    answering,
+    council_ran,
+    declining,
 )
-from report.council_record import CouncilNotAsked
 from cvss.metrics import METRIC_ORDER
+from report.council_record import CouncilNotAsked
 from report.html_council import NO_COUNCIL, council_panel
 from report.record import build_report
 from report_samples import PROVENANCE, catalogue, component, finding

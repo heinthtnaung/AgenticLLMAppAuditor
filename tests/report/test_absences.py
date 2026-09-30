@@ -9,8 +9,8 @@ from organisation.risk import assess, per_source
 from report.absences import (
     COMPONENT_INVENTORY,
     NO_COUNCIL_RUN,
-    NOTHING_CATALOGUED,
     NOTHING_ABSENT,
+    NOTHING_CATALOGUED,
     NOTHING_TO_PUT,
     NOTHING_TO_WEIGH,
     NOTHING_WAS_PUT_TO_IT,

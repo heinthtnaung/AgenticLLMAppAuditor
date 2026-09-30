@@ -26,10 +26,9 @@ from council.reply_format import (
     NO_EVIDENCE_VALUE,
     REQUIRED_FIELDS,
 )
-from cvss.metrics import METRIC_ORDER, refuse_illegal_pair
-
 from council_eval.chat_prompt import PROMPT_ID_FIELD
 from council_eval.chat_reply_file import RefusedReply, SavedReply
+from cvss.metrics import METRIC_ORDER, refuse_illegal_pair
 
 # A fence opens on a line of three backticks, with or without a language, and
 # closes on a line of three backticks alone.

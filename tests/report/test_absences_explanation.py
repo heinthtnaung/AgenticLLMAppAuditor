@@ -2,8 +2,9 @@
 
 import pytest
 
-from explanation_runs import EXPLAINER, disputed, explained_report, replying, INVENTED
 from cli.explanation_run import explanations
+from council.transport import ModelUnavailable
+from explanation_runs import EXPLAINER, INVENTED, disputed, explained_report, replying
 from report.absences import (
     EXPLANATION,
     NO_EXPLAINER_ASKED,
@@ -11,7 +12,6 @@ from report.absences import (
     NOTHING_TO_EXPLAIN,
     Coverage,
 )
-from council.transport import ModelUnavailable
 from report.record import build_report
 from report_samples import PROVENANCE, catalogue, component, finding
 

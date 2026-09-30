@@ -10,8 +10,8 @@ different sentences, so only the flag tells the two apart.
 from dataclasses import replace
 
 from council_runs import LONG_QUOTE, OTHER_QUOTE, QUOTED, answering, council_ran
-from report.council_record import CouncilWithoutVector
 from organisation.risk import assess, per_source
+from report.council_record import CouncilWithoutVector
 from report.record import Report, build_report
 from report_pages import ANSWERS, APPROVAL
 from report_samples import PROVENANCE, catalogue, component, finding
