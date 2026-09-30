@@ -25,12 +25,11 @@ from report.html_layout import (
 from report.html_vector import vector_markup
 from report.record import Report
 from report.risk_order import bands_contested_first
+from report.risk_words import FLOORED_BY, PROVISIONAL
 
 RISK_SCALE = "org"
 NO_SOURCE = "no source scored this"
-PROVISIONAL = "provisional"
 BAND_MOVES = "the source changes the band"
-FLOORED_BY = "floored by"
 NO_RISK = "No finding was scored: this run recorded no organisation answers."
 
 RISK_LEDE = (

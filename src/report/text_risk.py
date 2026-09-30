@@ -27,12 +27,11 @@ from organisation.risk import FindingRisk
 from report.council_beside import NOT_IN_THE_SCORE, CouncilFigure, council_figure, figure_label
 from report.record import Report
 from report.risk_order import bands_contested_first
+from report.risk_words import FLOORED_BY, PROVISIONAL
 from report.text_layout import INDENT, SOURCE_SEPARATOR, section
 from scoring.risk_score import RiskScore
 
-PROVISIONAL = "provisional"
 WEIGHTING_LABEL = "weighted"
-FLOORED_BY = "floored by"
 COLUMN_GAP = "  "
 
 
