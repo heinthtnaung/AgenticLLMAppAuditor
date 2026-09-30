@@ -45,13 +45,14 @@ class CallRecord:
 
     `envelope` is None only when nothing came back -- the prompt was refused
     before sending, or the server could not be reached -- and then
-    `request_sha256` says which: `NO_REQUEST` for the first.
+    `request_sha256` says which: `NO_REQUEST` for the first. `seconds` is None
+    only where nobody timed the call: a reply a person pasted back from a chat.
     """
 
     metric: str
     request_sha256: str
     envelope: Mapping[str, Any] | None
-    seconds: float
+    seconds: float | None
 
 
 def request_digest(payload: Mapping[str, Any]) -> str:

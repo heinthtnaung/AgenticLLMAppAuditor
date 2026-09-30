@@ -25,7 +25,7 @@ reader can disagree with a number by producing a different one.
 | `run_directory.py` | where a recorded audit runs, so the project's `reports/` is never written, and the copying out of its three renderings |
 | `council_runs/` | audits of `fetched/vulnscout` with a two-member council: what each run printed or wrote, and when |
 | `thinking_and_load/` | a probe of the `think` field and of load state on three models: the script, its 22 envelopes, and what they do and do not show |
-| `council_eval/` | the evaluation harness, `python measurements/council_eval <step>`: the steps `dataset`, `collect`, `gate`, `score`, `order-checked` and `grades`, and the checks `compare`, `quoting`, `values`, `server-log` and `turns` |
+| `council_eval/` | the evaluation harness, `python measurements/council_eval <step>`: the steps `dataset`, `collect`, `gate`, `score`, `order-checked`, `grades`, `chat-prompts` and `chat-replies`, and the checks `compare`, `quoting`, `values`, `server-log` and `turns` |
 | `council_eval_runs/` | one folder per evaluation: what it ran, every call it saved, an excerpt of the server's journal for each run window, and what each step printed |
 | `council_eval_runs/library-vulnscout/`, `reversed-vulnscout/`, `library-reversed-vulnscout/` | the 2 × 2's three variant cells, one pass per model each; `council_eval_runs/README.md` holds the design, fixed before any variant pass, and the results |
 | `council_eval_runs/gemma4-vulnscout/`, `qwen2.5-coder-vulnscout/` | one pass each of `gemma4:latest` and `qwen2.5-coder:7b-instruct` over the pilot's findings, scored alone and beside the pilot's Qwen |
@@ -593,13 +593,16 @@ says now, so a saved score re-derives the same under any setting.
 | `score` | every roster the passes can build, each model alone up to all together: each metric against R1 and the baseline, each vector beside R1 and the published scores | the files |
 | `order-checked` | every roster the product-order passes build, a member's value counting only where its reversed pass names the same one: a different value or a decline in either order counts as a decline. It prints what `score` prints, and each member's stable, order-sensitive, declined and failed counts | the files |
 | `grades` | every roster's reached vectors counted by how far each lands from R1 in CVSS severity bands: **exact** (the same band), **adjacent** (one apart) or **major** (two or more). A vector with no full R1 to compare with is counted apart, not graded. Takes `--replies` as `score` does, or `--forward` with `--reversed` as `order-checked` does | the files |
+| `chat-prompts` | writes each advisory's prompt, forward and reversed, into a new folder of prompts only, each file named by its PROMPT-ID, and a manifest kept apart that names each file's advisory, order, PROMPT-ID and size; the same dataset gives the same bytes | the dataset |
+| `chat-replies` | reads a folder of replies pasted back from one model through one interface, checks each against the prompt it names, and writes a forward and a reversed pass that `score`, `order-checked` and `grades` read unchanged; prints the quotations offered, verified, unverified and of a definition, and each metric's order verdicts | the dataset, and the folder of replies |
 | `compare` | two passes of one model, call by call: the same request, a byte-identical reply, a reload part way through an item | the files |
 | `quoting` | whose quotation each value settled on one quotation rests on, and which unverified quotations are the prompt's own | the files |
 | `values` | each model's replies on each metric: every value it named, its declines and failures, and how many named the option the prompt lists last | the files |
 | `server-log` | cuts a journal to its request and load lines | the output of `journalctl -u ollama -o short-iso` |
 | `turns` | counts an excerpt's requests and loads, and names every turn not of eight calls | an excerpt |
 
-`dataset`, `collect` and `server-log` refuse to write over a file.
+`dataset`, `collect`, `server-log`, `chat-prompts` and `chat-replies` refuse to
+write over a file.
 
 **R1 is the reference: a metric's value where Red Hat's vector and NVD's or
 GHSA's read it alike** (`council_eval/reference.py`). Where they do not, R1 has
@@ -995,3 +998,90 @@ are one repository.
 `collect --variant reversed`, scored by `order-checked` instead of `score`,
 measures the rule an audit applies; the commands are in
 `council_eval_runs/order-checked-vulnscout/README.md`.
+
+### A frontier model through its chat interface
+
+**A model you can reach only through a chat window is put to the pilot's findings
+by hand, and scored through the same harness.** `chat-prompts` writes each
+advisory's prompt to a file; a person pastes each into a fresh chat and saves the
+reply; `chat-replies` reads the saved replies back as a forward and a reversed
+pass, which `score`, `order-checked` and `grades` then read as they read any
+pass. Nothing on this machine reaches the model, and nothing it says is observed
+here beyond the text pasted back.
+
+The prompt is not the local council's. It puts all eight metrics in one message,
+with the definitions beside the advisory, so it is a prompt version of its own,
+`chat-all-base-metrics-1`: a chat gives a person no system turn, and eight pastes
+an advisory would be eight times the work (`council_eval/chat_prompt.py`).
+
+**The prompts folder is safe to paste; the manifest is not.** Each prompt file is
+named by its PROMPT-ID — `chat-prompt-346d6cdcbbc7bda8.txt` — and holds only the
+redacted advisory, so anything in the folder can go into a chat. The manifest,
+which names every advisory by its CVE id, is written apart and `chat-prompts`
+refuses a `--manifest` path anywhere inside `--out`.
+
+```bash
+source .venv/bin/activate
+P=measurements/council_eval_runs/pilot-vulnscout; D=$P/vulnscout.dataset.json
+R=measurements/council_eval_runs/frontier-vulnscout && mkdir "$R"
+M=frontier                        # a stub for the file names; each reply's header names the model
+# 1. Write the 36 prompts to paste, and the manifest that is never pasted
+python measurements/council_eval chat-prompts --dataset $D \
+    --out $R/prompts --manifest $R/prompts.manifest.json
+# 2. Paste each prompt into a fresh chat and save the reply into $R/replies, by the procedure below
+# 3. Read the replies back as a forward and a reversed pass
+python measurements/council_eval chat-replies --dataset $D --replies $R/replies \
+    --forward-out $R/$M.forward.replies.jsonl --reversed-out $R/$M.reversed.replies.jsonl
+# 4. Score, order-check and grade the two passes as any other
+python measurements/council_eval score --dataset $D \
+    --replies $R/$M.forward.replies.jsonl > $R/score.txt
+python measurements/council_eval order-checked --dataset $D \
+    --forward $R/$M.forward.replies.jsonl --reversed $R/$M.reversed.replies.jsonl > $R/order-checked.txt
+python measurements/council_eval grades --dataset $D \
+    --forward $R/$M.forward.replies.jsonl --reversed $R/$M.reversed.replies.jsonl > $R/grades.txt
+```
+
+`chat-prompts` prints `36 prompts for 18 advisories, … bytes in all, written to
+…`. `chat-replies` prints the model and interface it read, the two passes it
+wrote — 144 calls each — and two tables: the quotations each order offered,
+verified, left unverified and took from a definition, and each metric's order
+verdict.
+
+**How to paste.** The header a reply carries is the person's word, not an
+observation, so the procedure is what the measurement rests on.
+
+- **One replies folder per model and per interface.** `chat-replies` refuses a
+  folder whose replies name more than one of either.
+- **A fresh chat for each prompt file**, with no project or custom instructions,
+  memory off or a temporary chat, and web search off. The prompt asks for none
+  of these, and whether the chat obeyed cannot be read from what it returns.
+- **Paste the text, do not attach the file**, and include the last line, the
+  prompt's `PROMPT-ID`. The reply must repeat it, and that is how `chat-replies`
+  matches a reply to its prompt; an attached file would also hand the chat the
+  file's name.
+- **Copy the reply with the chat's own copy button**, which keeps the ` ``` `
+  fence around the JSON block. `chat-replies` reads the one fenced block and
+  refuses a reply with none or two.
+- **Save it as a `.txt` named after its prompt**, with a three-line header —
+  `model:`, `date: YYYY-MM-DD`, `interface:` — and a line of `---` above the
+  reply.
+- **Never edit a reply.** It is kept byte for byte, and its fingerprint
+  re-derives from the file. If one is refused — a missing metric, an illegal
+  value, a reworded quotation — ask again in a fresh chat and replace the file.
+- **Never paste the manifest.** It names the advisories by their CVE ids, which
+  the prompts themselves have redacted out.
+
+**What it cannot show.** A chat pass is a weaker instrument than a local one;
+these are the gaps, not a ranking against `collect`.
+
+| Limit | Why |
+|---|---|
+| the weights, temperature and seed are unknown | a chat interface names none of them, so the pass records `unknown`, not a number |
+| browsing and memory are unchecked | nothing in a pasted reply shows whether the chat searched the web or drew on memory |
+| a different prompt version | one message, not the local council's two turns, so `chat-all-base-metrics-1` is not the product's `member-base-metric-3` |
+| the model may know the vulnerability | redaction takes out the vectors and identifiers, but the package name and version stay in the advisory |
+| it cannot share a roster with a local pass | a roster's passes must be one prompt version, so `score` refuses a chat pass beside a `collect` one |
+| repeatability is one check | paste a second time and run `compare` on the two chat passes; there is no cold-start control as `collect` has |
+
+**Scale.** 36 pastes for the vulnscout corpus — 18 findings, each forward and
+reversed — and 36 replies saved back.

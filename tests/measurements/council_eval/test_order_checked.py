@@ -2,6 +2,7 @@
 
 import pytest
 
+import chat_samples
 import eval_samples as samples
 from council_eval import order_checked as order_checked_module
 from cli.council_run import local_member
@@ -132,3 +133,23 @@ def test_an_order_checked_replay_names_no_escalation_model(monkeypatch):
     )
     order_checked_roster((samples.item(),), (samples.MODEL,), forward, reversed_)
     assert options == [{"order_check": False, "escalation": None}]
+
+
+def test_two_pasted_passes_are_paired_with_no_window_to_compare():
+    forward, reversed_ = chat_samples.fixture_passes()
+    (outcome,), verdicts = order_checked_roster(
+        (samples.item(),), (chat_samples.FIXTURE_MODEL,), forward, reversed_
+    )
+    assert (samples.KEY, chat_samples.FIXTURE_MODEL, "AV", ORDER_SENSITIVE) in verdicts
+    assert (samples.KEY, chat_samples.FIXTURE_MODEL, "UI", STABLE) in verdicts
+
+
+@pytest.mark.parametrize("pasted_side", ("forward", "reversed"))
+def test_a_pasted_pass_is_never_paired_with_a_local_one(pasted_side):
+    forward, reversed_ = chat_samples.fixture_passes()
+    if pasted_side == "forward":
+        pair = (forward, one_pass(REVERSED_ANSWERS, REVERSED))
+    else:
+        pair = (one_pass(samples.ANSWERS, BASELINE), reversed_)
+    with pytest.raises(ValueError, match="pairs a pass in the product's order with one reversed"):
+        checked(*pair)

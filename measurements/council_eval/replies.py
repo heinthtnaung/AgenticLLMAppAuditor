@@ -114,7 +114,14 @@ class ReplayClient:
 
     def recorded(self, model: str, metric: str) -> CallRecord:
         """Find the call recorded for one model and metric of this item."""
-        found = self.calls.get((self.key, model, metric))
-        if found is None:
-            raise ReplayMismatch(f"no call of {model} on {self.key} {metric} was recorded")
-        return found
+        return recorded_call(self.calls, self.key, model, metric)
+
+
+def recorded_call(
+    calls: Mapping[CallKey, CallRecord], key: str, model: str, metric: str
+) -> CallRecord:
+    """Find the call recorded for one item, model and metric, refusing one never recorded."""
+    found = calls.get((key, model, metric))
+    if found is None:
+        raise ReplayMismatch(f"no call of {model} on {key} {metric} was recorded")
+    return found

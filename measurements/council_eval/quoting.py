@@ -69,8 +69,13 @@ def unverified_in(ruling: MetricRuling) -> list[tuple[str, MemberSaid]]:
 
 
 def quotes_prompt(metric: str, said: MemberSaid, added: tuple[str, ...]) -> bool:
+    """Say whether a member's quotation is the metric's definition, or text a variant added."""
+    return is_prompt_text(metric, said.evidence, added)
+
+
+def is_prompt_text(metric: str, evidence: str, added: tuple[str, ...]) -> bool:
     """Say whether a quotation is the metric's definition, or reference text a variant added."""
-    folded = normalise(said.evidence)
+    folded = normalise(evidence)
     definition = definition_of(metric)
     texts = [definition.measures, *definition.value_meanings.values(), *added]
     return bool(folded) and any(folded in normalise(text) for text in texts)

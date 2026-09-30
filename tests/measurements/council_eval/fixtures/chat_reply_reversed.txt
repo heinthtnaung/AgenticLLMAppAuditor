@@ -1,0 +1,17 @@
+model: fixture-model (hand-written, not a measurement)
+date: 2026-10-02
+interface: fixture chat
+---
+```json
+{
+  "prompt_id": "c0c9fe3c1bfa4aab",
+  "AV": {"value": "L", "evidence": "A remote attacker can send a crafted request to the parser", "confidence": "medium"},
+  "AC": {"value": "L", "evidence": "No specialised conditions are needed.", "confidence": "medium"},
+  "PR": {"value": "N", "evidence": "A remote attacker can send a crafted request to the parser", "confidence": "medium"},
+  "UI": {"value": "N", "evidence": "No user interaction is required.", "confidence": "high"},
+  "S": {"value": "U", "evidence": "the scope does not change", "confidence": "low"},
+  "C": {"value": "NO_EVIDENCE", "evidence": "", "confidence": "low"},
+  "I": {"value": "N", "evidence": "", "confidence": "low"},
+  "A": {"value": "H", "evidence": "crash the service", "confidence": "high"}
+}
+```

@@ -9,6 +9,7 @@ from typing import Any, Iterable, Mapping, Sequence
 
 from report.council_record import CouncilAssessment, CouncilOutcome
 
+from council_eval.chat_pass_lines import PASTED_HEADER_FIELDS
 from council_eval.contests import ContestMeasure
 from council_eval.measures import (
     NOT_IN_ADVISORY,
@@ -70,10 +71,12 @@ def header_lines(headers: Iterable[Mapping[str, Any]]) -> list[str]:
 
 
 def pass_lines(header: Mapping[str, Any]) -> list[str]:
-    """Say what produced one pass."""
+    """Say what produced one pass, and what a pasted one cannot show."""
     changes = header.get("changes", [])
     said = [f"  {name}: {header.get(name)}" for name in HEADER_FIELDS]
-    return [f"pass {header['model']}", *said, f"  uncommitted at launch: {len(changes)} paths"]
+    pasted = [f"  {name}: {header[name]}" for name in PASTED_HEADER_FIELDS if name in header]
+    uncommitted = f"  uncommitted at launch: {len(changes)} paths"
+    return [f"pass {header['model']}", *said, *pasted, uncommitted]
 
 
 def rate(hits: int, sample: int) -> str:

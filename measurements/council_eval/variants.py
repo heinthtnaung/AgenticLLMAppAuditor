@@ -18,12 +18,20 @@ the request fingerprint is taken over the variant's own words, so a pass of one
 cannot be replayed as another. The record a replay rebuilds still names the
 product's version on each member, because the product's runner names it from
 the prompt it built: which variant was asked is read off the pass, not the record.
+
+**`chat` and `chat-reversed` are no rewording of the product's prompt**: they are
+the prompt a person pastes into a chat interface (`council_eval.chat_prompt`),
+under its own version. They are here so a pasted pass is replayed, paired and
+counted as any other, and they are kept out of `VARIANTS`, which is what
+`collect` may ask a local model in.
 """
 
 from dataclasses import dataclass, replace
 
 from council.definitions import definition_of
 from council.prompt import PROMPT_VERSION, MemberPrompt, value_lines
+
+from council_eval.chat_prompt import CHAT_PROMPT_VERSION, definition_texts
 
 # The CVSS v3.1 User Guide, section 3.7, "Scoring Vulnerabilities in Software
 # Libraries (and Similar)": its first paragraph word for word, without its last
@@ -72,17 +80,22 @@ class Variant:
     name: str
     library: bool
     reversed_options: bool
+    chat: bool = False
 
     @property
     def prompt_version(self) -> str:
         """Name the question this variant asks: the product's version, and each change to it."""
+        asked = CHAT_PROMPT_VERSION if self.chat else PROMPT_VERSION
         library = LIBRARY_SUFFIX if self.library else ""
         reversal = REVERSED_SUFFIX if self.reversed_options else ""
-        return f"{PROMPT_VERSION}{library}{reversal}"
+        return f"{asked}{library}{reversal}"
 
     @property
     def added_texts(self) -> tuple[str, ...]:
         """Give the reference text this variant adds to the prompt, which is no advisory's."""
+        # A chat prompt shows every metric's definitions, so quoting any is quoting the prompt.
+        if self.chat:
+            return definition_texts()
         return (LIBRARY_LEAD, LIBRARY_GUIDANCE) if self.library else ()
 
 
@@ -91,19 +104,29 @@ LIBRARY = Variant("library", library=True, reversed_options=False)
 REVERSED = Variant("reversed", library=False, reversed_options=True)
 LIBRARY_REVERSED = Variant("library-reversed", library=True, reversed_options=True)
 VARIANTS = {one.name: one for one in (BASELINE, LIBRARY, REVERSED, LIBRARY_REVERSED)}
+CHAT = Variant("chat", library=False, reversed_options=False, chat=True)
+CHAT_REVERSED = Variant("chat-reversed", library=False, reversed_options=True, chat=True)
+ASKED_VARIANTS = (*VARIANTS.values(), CHAT, CHAT_REVERSED)
+
+
+def chat_variant(reversed_options: bool) -> Variant:
+    """Give the variant a pasted prompt or pass in one order of the options is recorded under."""
+    return CHAT_REVERSED if reversed_options else CHAT
 
 
 def variant_asked(prompt_version: str) -> Variant:
     """Find the variant that asks under a prompt version, refusing a version none asks under."""
-    found = [one for one in VARIANTS.values() if one.prompt_version == prompt_version]
+    found = [one for one in ASKED_VARIANTS if one.prompt_version == prompt_version]
     if not found:
-        known = ", ".join(one.prompt_version for one in VARIANTS.values())
+        known = ", ".join(one.prompt_version for one in ASKED_VARIANTS)
         raise ValueError(f"no variant asks under {prompt_version!r}; these do: {known}")
     return found[0]
 
 
 def variant_prompt(prompt: MemberPrompt, variant: Variant) -> MemberPrompt:
     """Give the prompt a variant asks in place of the product's, under the variant's version."""
+    if variant.chat:
+        raise VariantMismatch(f"{variant.prompt_version} is pasted by a person, not sent")
     if prompt.version != PROMPT_VERSION:
         raise VariantMismatch(f"a variant changes {PROMPT_VERSION}, not {prompt.version}")
     values = tuple(definition_of(prompt.metric).value_meanings)

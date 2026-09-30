@@ -15,6 +15,7 @@ from council_eval.replies import (
     ReplayMismatch,
     call_line,
     read_replies,
+    recorded_call,
 )
 from council_eval.variants import BASELINE, PASS_ORDER_CHECK, VARIANTS, Variant
 
@@ -113,3 +114,10 @@ def test_a_pass_replays_only_as_the_variant_it_was_asked_in(variant):
     for other in (one for one in VARIANTS.values() if one != variant):
         with pytest.raises(ReplayMismatch, match="was asked otherwise"):
             ReplayClient(samples.KEY, calls, other, samples.WINDOW)(MEMBER, PROMPT)
+
+
+def test_a_recorded_call_is_found_by_item_model_and_metric_or_refused():
+    calls = recorded_calls()
+    assert recorded_call(calls, samples.KEY, samples.MODEL, "AV").metric == "AV"
+    with pytest.raises(ReplayMismatch, match=f"no call of {samples.MODEL} on {samples.KEY} E"):
+        recorded_call(calls, samples.KEY, samples.MODEL, "E")

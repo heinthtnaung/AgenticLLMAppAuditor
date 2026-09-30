@@ -4,7 +4,8 @@ Only `collect` asks a model. `dataset` runs Syft and Trivy offline, and `gate`
 and `score` replay saved passes through the product's own code, so either can
 be re-run as often as anyone likes without a model or a scan. The checks on the
 evidence itself -- reruns, quotations, the server's log -- are
-`council_eval.inspections`.
+`council_eval.inspections`. `chat-prompts` and `chat-replies` write the prompts a
+person pastes into a chat and read back what the chat said, and ask nothing.
 """
 
 import argparse
@@ -16,6 +17,8 @@ from typing import Any, Mapping
 from deps import syft_runner, trivy_runner
 from deps.trivy_database import database_built_at, metadata_of, trivy_cache_directory
 
+from council_eval.chat_prompts_step import add_chat_prompts
+from council_eval.chat_replies_step import add_chat_replies
 from council_eval.collect import ask_item, collect
 from council_eval.compose import pass_models, replay_roster, rosters
 from council_eval.contests import contest_measures
@@ -75,6 +78,8 @@ def parser() -> argparse.ArgumentParser:
     add_inspections(commands)
     add_order_checked(commands)
     add_grades(commands)
+    add_chat_prompts(commands)
+    add_chat_replies(commands)
     return top
 
 
