@@ -9,7 +9,9 @@ finding, so neither is counted or tagged "agree".
 
 from organisation.risk import assess, per_source
 from report.disagreement import agreement_unchecked, sources_agree, sources_disagree
-from report.html_overview import finding_row, overview_panel, segments
+from report.html_overview import (
+    CVSS_PHONE_LABEL, RISK_PHONE_LABEL, finding_row, overview_panel, segments,
+)
 from report.record import build_report
 from report_samples import (
     CONFIDENTIALITY_ONLY, LOW_CONFIDENTIALITY, PROVENANCE, TOTAL_LOSS, VERSION_2_VECTOR,
@@ -125,7 +127,24 @@ def test_the_org_risk_cell_shows_a_mini_per_source_linked_to_the_risk_entry():
 
 def test_a_finding_nobody_answered_for_shows_a_dash_in_the_org_risk_cell():
     row = finding_row(report_of(disagreeing()), disagreeing())
-    assert '<td data-label="Org risk"><div class="minis">—</div></td>' in row
+    assert f'<td data-label="{RISK_PHONE_LABEL}"><div class="minis">—</div></td>' in row
+
+
+def test_the_stacked_phone_labels_say_the_cell_holds_a_score_per_source():
+    # At phone width the row stacks and each cell shows its data-label. The
+    # template's CVSS and Org risk cells read longer there than the column head.
+    row = finding_row(report_of(disagreeing(), answers=EXPOSED), disagreeing())
+    assert f'data-label="{CVSS_PHONE_LABEL}"' in row
+    assert f'data-label="{RISK_PHONE_LABEL}"' in row
+    assert (CVSS_PHONE_LABEL, RISK_PHONE_LABEL) == ("CVSS by source", "Org risk by source")
+
+
+def test_the_longer_phone_labels_do_not_change_the_desktop_headers():
+    # The desktop column heads stay short; only the stacked data-labels grow.
+    page = overview_panel(report_of(disagreeing()))
+    assert "<th>CVSS</th>" in page and "<th>Org risk</th>" in page
+    assert f"<th>{CVSS_PHONE_LABEL}</th>" not in page
+    assert f"<th>{RISK_PHONE_LABEL}</th>" not in page
 
 
 def test_the_filter_offers_all_the_tabs_promised():

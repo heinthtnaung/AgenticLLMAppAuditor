@@ -31,6 +31,11 @@ from report.html_absences import approval_card, not_assessed_card
 
 FINDINGS_TABLE = "findings-table"
 COLUMNS = ("Advisory", "Sources", "CVSS", "Org risk", "Council", "Approval")
+# The stacked-row labels a phone reads: longer than the desktop headers because a
+# cell that stacks under its label has room the column head does not, and it says
+# a cell holds one score per source, as the template's data-labels do.
+CVSS_PHONE_LABEL = "CVSS by source"
+RISK_PHONE_LABEL = "Org risk by source"
 # A mini chip's shape class: a CVSS square and an Organisation Risk pill, never one badge.
 RISK_SHAPE = "risk"
 DASH = "—"
@@ -154,7 +159,7 @@ def sources_cell(finding) -> str:
 def cvss_cell(finding) -> str:
     """Give the CVSS cell: one mini chip per source, in the order the finding carries them."""
     chips = [cvss_mini(one) for one in finding.scores]
-    return cell("CVSS", tag("div", "".join(chips) or DASH, "minis"))
+    return cell(CVSS_PHONE_LABEL, tag("div", "".join(chips) or DASH, "minis"))
 
 
 def cvss_mini(score) -> str:
@@ -167,9 +172,9 @@ def risk_cell(report: Report, advisory_id: str) -> str:
     """Give the Org risk cell: one mini chip per source, linked to the finding's risk entry."""
     weighed = report.risk.get(advisory_id)
     if weighed is None:
-        return cell("Org risk", tag("div", DASH, "minis"))
+        return cell(RISK_PHONE_LABEL, tag("div", DASH, "minis"))
     chips = "".join(risk_mini(one) for one in weighed.scores)
-    return cell("Org risk", jump(f"risk/{advisory_id}", chips, "goto cell-link minis"))
+    return cell(RISK_PHONE_LABEL, jump(f"risk/{advisory_id}", chips, "goto cell-link minis"))
 
 
 def risk_mini(scored) -> str:
