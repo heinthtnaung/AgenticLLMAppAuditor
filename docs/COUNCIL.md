@@ -500,8 +500,13 @@ value naming two models.
 
 **What it costs.** Two calls per open metric, a count known only once the
 council has answered, so the progress stream counts them apart and without a
-total. It runs after each advisory's council, so a model too large to stay
-loaded beside the members is loaded once per advisory; that has not been timed.
+total. It runs once every finding's council has answered, so a model too large to
+stay loaded beside the members is loaded once per run, not once per finding — what
+a server that cannot hold it beside the members needs, and the saving has not been
+timed. The same replies give the same record byte for byte, but batching leaves
+the members loaded across findings, and a live model can answer differently warm
+than cold (`measurements/council_eval/compose.py`, `measurements/README.md`), so
+a batch run is not guaranteed the same replies as one finding at a time.
 
 **What is not yet known.** It has been tested with stand-in models only. No
 escalation model has run live, and none has been measured on the pilot's
@@ -716,8 +721,8 @@ provider registry and the local Ollama client in it, the HTTP seam under that,
 the reply parser, the quotation check, the chairman, and the runner that puts
 one advisory to every reachable member, one member at a time: a member answers
 all eight metrics, each in both orders, before the next is asked, and the order
-check reconciles its two replies. Then escalation puts what the council left
-open to the escalation model, where one is named. The explainer's prompt, its
+check reconciles its two replies. Once every finding's council has run,
+escalation puts what each left open to the escalation model, where one is named. The explainer's prompt, its
 reply parser and the step that keeps only quoted items are there too
 (`src/council/explanation*.py`). `src/cvss` is the engine it hands a vector to.
 

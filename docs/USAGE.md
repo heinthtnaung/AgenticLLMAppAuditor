@@ -610,10 +610,15 @@ left it as, then the model's row in the shape of a member's, and `null` on a
 metric nobody escalated. The metric's own `outcome` is what came of it.
 
 **It costs two calls per open metric**, a number known only once the council has
-answered, so the progress stream counts them apart. It runs after each
-advisory's council, so a model too large to stay loaded beside the members
-is loaded once per advisory; that has not been timed. Nothing escalated reaches
-the Organisation Risk Score, as nothing a council settles does.
+answered, so the progress stream counts them apart. It runs once every finding's
+council has answered, so a model too large to stay loaded beside the members is
+loaded once per run, not once per finding — what a server that cannot hold it
+beside the members needs, and the saving has not been timed. The same replies
+give the same record byte for byte, but batching leaves the members loaded across
+findings, and a live model can answer differently warm than cold
+(`measurements/council_eval/compose.py`), so a batch run is not guaranteed the
+same replies as one finding at a time. Nothing escalated reaches the Organisation
+Risk Score, as nothing a council settles does.
 
 **It has been tested only with stand-in models.** No escalation model has run
 live or been measured on the pilot's findings, so nothing yet says whether one
@@ -792,11 +797,12 @@ one finding, the second line is
 
 The denominators are what this run will actually do: 5 findings after scoping,
 not 18, and only the members it can reach. A total counting calls nobody makes
-is a progress bar that never fills. An escalation call is counted apart, as
-`escalation 1  finding 1/1 CVE-2021-23337  AC  big:27b`, with no total, because
-how many a run makes is known only once each council has answered. The
-explanations come last, one line each, counted against the disputed findings:
-`explanation 1/1  finding CVE-2021-23337  small:1b`.
+is a progress bar that never fills. The escalation calls come after every council
+line, once every finding's council has answered, each still naming its own
+finding: `escalation 1  finding 1/1 CVE-2021-23337  AC  big:27b`, counted apart
+and with no total, because how many a run makes is known only once every council
+has answered. The explanations come last, one line each, counted against the
+disputed findings: `explanation 1/1  finding CVE-2021-23337  small:1b`.
 
 One member answers all eight metrics of a finding before the next is asked.
 Two members that do not fit in the GPU's memory together are then swapped once

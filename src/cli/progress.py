@@ -65,6 +65,12 @@ class CouncilProgress:
         self.reached += 1
         self.advisory_id = advisory_id
 
+    def returning_to(self, position: int, advisory_id: str) -> None:
+        """Note that escalation has come back to an advisory the council read earlier in the run."""
+        # Set, not counted: the council reached it already, at this place among the findings.
+        self.reached = position
+        self.advisory_id = advisory_id
+
     def asking(self, metric: str, member: str, reversed_options: bool = False) -> None:
         """Say which member is about to be asked which metric, and in which order, before it is."""
         self.asked += 1
@@ -90,6 +96,9 @@ class NoProgress:
     """Say nothing, which is what a run with nothing slow in it needs."""
 
     def starting(self, advisory_id: str) -> None:
+        """Note nothing."""
+
+    def returning_to(self, position: int, advisory_id: str) -> None:
         """Note nothing."""
 
     def asking(self, metric: str, member: str, reversed_options: bool = False) -> None:

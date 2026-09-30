@@ -60,7 +60,7 @@ flowchart TD
     walk -->|"the manifests read from nothing,<br/>named next under not assessed"| rec
     trivy -->|"each secret by file, line and rule,<br/>never the secret; a secret exits 1"| rec
 
-    fin --> cou["Council, only if members were named,<br/>by --council-member, or by AUDITOR_COUNCIL_MEMBERS<br/>under --council, and only for the findings<br/>their sources do not settle — diagram 4"]
+    fin --> cou["Council, only if members were named,<br/>by --council-member, or by AUDITOR_COUNCIL_MEMBERS<br/>under --council, and only for the findings<br/>their sources do not settle — diagram 4<br/>every finding's council, then every escalation"]
     fin --> ctx["Organisation context<br/>scored once per source<br/>diagram 3"]
     ans["Answer file<br/>--answers: the approved questions<br/>answered by id, and who approved"] --> ctx
     fin --> rec["Report record: the findings,<br/>the secrets, and what was not assessed"]
@@ -513,7 +513,12 @@ On a contest the value must also be one the council's verified quotations alread
 support, so the model can side with evidence and never add a reading. Anything
 else leaves the metric where the council left it, and the record keeps both. It
 costs two calls per open metric, known only once the council has answered, and
-it has been run with stand-in models only.
+it has been run with stand-in models only. It runs once every finding's council
+has answered, so a model too large to hold beside the members is loaded once per
+run, not once per finding; the saving has not been timed. The same replies give
+the same record byte for byte, but batching leaves the members loaded across
+findings, and a live model can answer differently warm than cold, so a batch run
+is not guaranteed the same replies as one finding at a time.
 
 The `Not asked` box reaches the record for the same reason the `Skipped` one
 does. A finding the council was passed over, a finding it assessed and could not

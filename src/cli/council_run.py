@@ -32,6 +32,12 @@ to say which. This one says *none*: every metric is given a
 exactly the precedence the design refuses to set, arriving through the back door
 of an error path.
 
+**Every council is asked before any escalation**, so a server that cannot hold the
+escalation model beside the members needs to load it once per run; the saving is
+unmeasured. No prompt or ruling reads the order, so the same replies give the same
+record, byte for byte. But the order changes which model is warm, and a model can
+answer differently warm and cold (`measurements/council_eval/compose.py`).
+
 What a run comes to in the record is `cli.council_outcome`; what it may escalate,
 and to which model, is `council.escalation`.
 """
@@ -40,6 +46,7 @@ from cvss.metrics import METRIC_ORDER
 from council.escalation import escalate, refuse_unfit_escalation
 from council.roster import Member, Roster, members_to_ask
 from council.prompt import build_prompt
+from council.run import CouncilRun
 from council.runner import PROVIDER_CLIENTS, assess
 from council.ruling import NoFallbackPublished
 from findings.finding import Finding
@@ -98,9 +105,12 @@ def assessments(
     """Put the council to the findings that need one, and record why the rest were passed over."""
     # Refused before any call, rather than once the first advisory's council has run.
     refuse_unfit_escalation(escalation, tuple(one.name for one in roster.members), clients)
+    # Every council before any escalation, so the escalation calls come last and together.
+    asking = to_assess(findings, every_finding)
+    councils = [(one, council_on(one, roster, clients, progress, order_check)) for one in asking]
     assessed = [
-        assess_one(one, roster, clients, progress, order_check, escalation)
-        for one in to_assess(findings, every_finding)
+        escalated_at(position, one, council, escalation, clients, progress)
+        for position, (one, council) in enumerate(councils, start=1)
     ]
     return (*assessed, *passed_over(findings, every_finding))
 
@@ -139,9 +149,32 @@ def assess_one(
     escalation: Member | None = None,
 ) -> CouncilOutcome:
     """Put one advisory to the council and escalate what it left open, handing on any vector."""
+    council = council_on(finding, roster, clients, progress, order_check)
+    return escalated_outcome(finding, council, escalation, clients, progress)
+
+
+def council_on(
+    finding: Finding, roster: Roster, clients, progress, order_check: bool
+) -> CouncilRun:
+    """Put one advisory to every member of the council, escalating nothing yet."""
     progress.starting(finding.advisory.advisory_id)
+    return assess(advisory_text(finding), roster, FALLBACKS, clients, progress.asking, order_check)
+
+
+def escalated_at(
+    position: int, finding: Finding, council: CouncilRun,
+    escalation: Member | None, clients, progress,
+) -> CouncilOutcome:
+    """Go back to the advisory at this place in the run and escalate what its council left open."""
+    progress.returning_to(position, finding.advisory.advisory_id)
+    return escalated_outcome(finding, council, escalation, clients, progress)
+
+
+def escalated_outcome(
+    finding: Finding, council: CouncilRun, escalation: Member | None, clients, progress
+) -> CouncilOutcome:
+    """Escalate what one advisory's council left open, and record what the run came to."""
     text = advisory_text(finding)
-    council = assess(text, roster, FALLBACKS, clients, progress.asking, order_check)
     run = escalate(council, text, escalation, clients, progress.escalating)
     # The text the members actually read, which is what their quotations were
     # checked against and so what the record has to re-check them against.
