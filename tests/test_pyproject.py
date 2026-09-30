@@ -95,6 +95,13 @@ def test_the_lint_config_enforces_import_order():
     assert "I" in declared_ruff()["lint"]["extend-select"]
 
 
+def test_the_sort_settings_keep_sorted_files_short():
+    # Without both, a re-sort wraps to one name per line and pushes files past 200.
+    ruff = declared_ruff()
+    assert ruff["line-length"] == 100
+    assert ruff["lint"]["isort"]["split-on-trailing-comma"] is False
+
+
 def test_the_source_roots_make_the_test_helpers_first_party():
     # So report_samples and its siblings group with cli and report, not third-party.
     roots = set(declared_ruff()["src"])
