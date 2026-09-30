@@ -726,13 +726,18 @@ line under the `COUNCIL (n)` heading in text, and the first line after the lede
 and the toolbar in the Council tab, is
 `escalation model big:27b: asked each metric the council left open`, naming the
 model, or `no escalation model named: a metric the council left open stays open`.
-It is left out only for a record that says nothing of how local models were
-asked, so every council run carries one or the other.
+It is part of the section, which shows whenever the run has a finding to account
+for, assessed or passed over, under `COUNCIL (0)` when every one was passed over.
+A run that named members but found no finding drops the section and the line with
+it, and a run that named no members never asked a local model at all.
 
 Every model the run asks is named too, with the first 12 characters of its
 digest and the server's version. In the text report this is the line after the
-escalation one, under the `COUNCIL` heading; on the page it is in the masthead,
-under the tool and database lines, not in the Council tab. From a run with
+escalation one, under the `COUNCIL` heading, and it is dropped with the section
+when the run found no finding; on the page it is in the masthead, under the tool
+and database lines, not in the Council tab, and it stands even then, because the
+masthead draws it from the models the run named, not from whether the council
+assessed anything. From a run with
 stand-in models and a stand-in server listing the two members and not the
 escalation model:
 `models: qwen2.5:7b-instruct 845dbda0ea48, llama3.2:latest a80c4f17acd5, qwen2.5:14b (escalation) digest unknown; Ollama 0.34.3`.
