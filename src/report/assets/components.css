@@ -77,6 +77,8 @@ a.minis, .cell-link { text-decoration: none; }
   vertical-align: baseline; opacity: .7;
 }
 .refusal { color: var(--muted-fg); font-size: .88em; }
+/* A severity floor that raised a band; a note beside the score, not a refusal. */
+.floor-note { color: var(--muted-fg); font-size: .88em; }
 .sources > li, .risk-scores > li {
   display: flex; flex-wrap: wrap; gap: .35rem .6rem; align-items: center;
   padding: .3rem 0; border-top: 1px solid var(--rule);

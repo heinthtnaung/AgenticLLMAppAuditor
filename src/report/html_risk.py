@@ -111,7 +111,7 @@ def floors_note(scored) -> str:
     if not scored.floors:
         return ""
     steps = [f"{one.rule_id}: {one.band_before} to {one.band_after}" for one in scored.floors]
-    return tag("span", text(f"{FLOORED_BY} {', '.join(steps)}"), "refusal")
+    return tag("span", text(f"{FLOORED_BY} {', '.join(steps)}"), "floor-note")
 
 
 def source_of(scored) -> str:

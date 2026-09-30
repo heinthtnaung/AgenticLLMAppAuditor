@@ -81,6 +81,12 @@ def test_every_band_class_is_a_rule_in_the_sheet():
     assert all(f".{one}" in STYLESHEET for one in BAND_CLASSES.values())
 
 
+def test_the_floor_note_has_its_own_rule_in_the_sheet():
+    # The floor note carries its own class, not `refusal`, so the sheet must style
+    # it; without this the class would render unstyled and no markup test would see.
+    assert ".floor-note {" in STYLESHEET
+
+
 def test_a_band_the_palette_cannot_reach_is_refused_rather_than_rendered_unstyled():
     try:
         band_class("Severe")
