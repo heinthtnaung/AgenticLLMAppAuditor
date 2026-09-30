@@ -25,6 +25,7 @@ from report.html_finding_card import (
     article,
     card_head,
     card_links,
+    council_flag,
     nothing_published,
     source_table,
     unreadable_table,
@@ -94,9 +95,9 @@ def cards_of(report: Report, findings: list, build) -> str:
 
 def contested_card(report: Report, finding) -> str:
     """Give one contested finding: spread, sources, any refused one, and why they differ."""
-    body = card_head(report, finding) + facts(finding) + source_table(finding)
-    body += refused_note(finding) + why_block(report, finding) + card_links(report, finding)
-    return article(finding, "disagree", body)
+    body = card_head(report, finding) + council_flag(report, finding) + facts(finding)
+    body += source_table(finding) + refused_note(finding) + why_block(report, finding)
+    return article(finding, "disagree", body + card_links(report, finding))
 
 
 def plain_card(report: Report, finding) -> str:

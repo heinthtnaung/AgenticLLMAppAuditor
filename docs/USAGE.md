@@ -780,8 +780,11 @@ equals the other or sits inside it without cutting into a word: an end of the
 shorter quotation that is a letter, digit or underscore may not touch another word
 character, but a punctuation end needs nothing, so `(PR:N)` is inside
 `privileges(PR:N)` while `network` is not inside `networks`; case is kept
-(`council.same_evidence`). The page shows it as a flag on the metric, and the JSON
-carries `same_evidence_different_reading` on the ruling. **It decides nothing** —
+(`council.same_evidence`). On the page the Council tab shows the full sentence on
+the metric, while the Overview's "All findings" Council cell and each card on the
+Disagreements tab carry a compact `same evidence: <metrics>` flag naming those
+metrics; the JSON carries `same_evidence_different_reading` on the ruling. **It
+decides nothing** —
 the council's ruling on a flagged metric is contested, though an escalation may
 still settle it, and the flag remains either way because it is about what the
 members read; only members count, not the escalation model. It tells a reader the

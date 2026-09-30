@@ -59,6 +59,7 @@ a.minis, .cell-link { text-decoration: none; }
 .title { display: flex; flex-wrap: wrap; gap: .15rem .6rem; align-items: baseline; }
 .adv { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   overflow-wrap: anywhere; }
+.card-flag { margin: 0 0 .6rem; }
 .facts { display: flex; flex-wrap: wrap; gap: .3rem 1.2rem; margin: 0 0 .6rem; }
 .facts div { display: flex; gap: .35rem; }
 .facts dt { color: var(--muted-fg); margin: 0; }

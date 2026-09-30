@@ -18,8 +18,10 @@ from report.council_record import (
     CouncilNotAsked,
     CouncilOutcome,
     CouncilWithoutVector,
+    flagged_metrics,
     was_assessed,
 )
+from same_evidence_runs import same_words, unflagged
 
 
 def test_a_skip_that_says_no_reason_is_refused():
@@ -35,6 +37,12 @@ def test_a_finding_passed_over_is_not_a_finding_that_was_assessed():
     assert was_assessed(CouncilNotAsked("CVE-1", SOURCES_AGREE)) is False
     assert was_assessed(settled) is True
     assert was_assessed(still_open) is True
+
+
+def test_flagged_metrics_names_only_the_rulings_read_two_ways_from_the_same_words():
+    assert flagged_metrics(same_words()) == ("AV",)
+    assert flagged_metrics(unflagged(same_words())) == ()
+    assert flagged_metrics(CouncilNotAsked("CVE-1", "the sources agreed")) == ()
 
 
 def test_the_states_every_renderer_is_shown_are_every_state_the_record_can_hold():

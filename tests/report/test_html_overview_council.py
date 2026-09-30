@@ -4,11 +4,14 @@ The band and the open metrics are read off the record's council outcome, never
 worked out in the page.
 """
 
+from dataclasses import replace
+
 from council_runs import DISSENTING, council_ran
 from report.council_record import CouncilNotAsked
 from report.html_overview_council import council_cell, open_metrics_line
 from report.record import build_report
 from report_samples import CONFIDENTIALITY_ONLY, PROVENANCE, catalogue, component, finding
+from same_evidence_runs import same_words
 
 DJANGO = component()
 
@@ -55,3 +58,30 @@ def test_a_finding_with_no_council_outcome_shows_a_dash():
 def test_the_open_metrics_come_off_the_record():
     outcome = council_ran("CVE-2019-14234", **DISSENTING)
     assert "AV" in open_metrics_line(outcome)
+
+
+def test_a_metric_read_two_ways_from_the_same_words_is_flagged_on_the_cell():
+    cell = council_cell(report_with(same_words("CVE-2019-14234")), "CVE-2019-14234")
+    assert '<span class="flag">same evidence: AV</span>' in cell
+
+
+def test_a_cell_whose_metrics_were_read_from_different_words_carries_no_flag():
+    cell = council_cell(report_with(council_ran("CVE-2019-14234", **DISSENTING)), "CVE-2019-14234")
+    assert "same evidence" not in cell
+
+
+def flag_av(settled):
+    """Flag AV as same-evidence on a settled outcome, leaving every other ruling as it was."""
+    rulings = tuple(
+        replace(one, same_evidence_different_reading=True) if one.metric == "AV" else one
+        for one in settled.rulings
+    )
+    return replace(settled, rulings=rulings)
+
+
+def test_a_settled_metric_read_two_ways_from_the_same_words_is_flagged_beside_the_vector():
+    # The settled branch: an escalation settles AV that two members read two ways, so
+    # the cell shows the vector and the flag together -- the flag decides nothing.
+    cell = council_cell(report_with(flag_av(council_ran("CVE-2019-14234"))), "CVE-2019-14234")
+    assert '<span class="badge badge-ok">Settled</span>' in cell
+    assert '<span class="flag">same evidence: AV</span>' in cell
