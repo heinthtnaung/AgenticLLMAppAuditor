@@ -2,8 +2,10 @@
 
 Its own file so `report.html_overview` stays under the size limit and about the
 table as a whole. Each cell holds one mini chip per source the finding carries, so
-a source is never a column; the CVSS square and the Organisation Risk pill stay in
-the two shapes they never share (`docs/SCORING_MODEL.md`).
+a source is never a column, and the CVSS and Organisation Risk scores are never
+merged (`docs/SCORING_MODEL.md`), so their minis never look alike: the CVSS one
+outlined with a band-coloured edge, the Organisation Risk one filled with its
+band colour.
 """
 
 from cvss.score import severity_band
@@ -30,7 +32,8 @@ from report.record import Report
 # a cell holds one score per source, as the template's data-labels do.
 CVSS_PHONE_LABEL = "CVSS by source"
 RISK_PHONE_LABEL = "Org risk by source"
-# A mini chip's shape class: a CVSS square and an Organisation Risk pill, never one badge.
+# A mini's fill class: the Organisation Risk mini filled with its band colour, the
+# CVSS mini outlined with a band-coloured edge, never one badge.
 RISK_SHAPE = "risk"
 DASH = "—"
 
@@ -111,7 +114,7 @@ def risk_cell(report: Report, advisory_id: str) -> str:
 
 
 def risk_mini(scored) -> str:
-    """Give one source's org score as a mini pill, or the full org chip where none scored."""
+    """Give one source's org score as a filled mini, or the full org chip where none scored."""
     # The no-source sentinel is a sentence, not a source, so it gets the full org
     # chip rather than a mini whose source column a sentence would overflow.
     if source_of(scored) == NO_SOURCE:
