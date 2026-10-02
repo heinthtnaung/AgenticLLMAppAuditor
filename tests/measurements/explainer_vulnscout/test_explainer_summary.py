@@ -54,6 +54,15 @@ def test_a_readme_without_one_pair_of_markers_is_refused_and_nothing_is_written(
     assert (folder / "README.md").read_text(encoding="utf-8") == readme
 
 
+def test_markers_in_reverse_order_are_refused_saying_so_and_nothing_is_written(tmp_path):
+    readme = BEFORE + END + "stale\n" + BEGIN + AFTER
+    folder = stand_in(tmp_path, readme)
+    with pytest.raises(ValueError, match="out of order: end comes before begin"):
+        scoring.write_record(folder)
+    assert not (folder / "summary.txt").exists()
+    assert (folder / "README.md").read_text(encoding="utf-8") == readme
+
+
 def test_a_summary_not_in_three_sections_is_refused_rather_than_shown_in_part():
     with pytest.raises(ValueError, match="scoring, rows and counts"):
         scoring.scored_block("scored by x\n\nrows only\n")

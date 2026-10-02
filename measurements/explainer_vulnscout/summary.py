@@ -138,9 +138,13 @@ def scored_block(text: str) -> str:
 
 
 def with_block(readme: str, block: str) -> str:
-    """Give the README with its scored block replaced, refusing one without one pair of markers."""
+    """Give the README with a new scored block, refusing markers missing, doubled or reversed."""
     if readme.count(BLOCK_BEGIN) != 1 or readme.count(BLOCK_END) != 1:
         raise ValueError("the README must hold each scored-block marker exactly once")
+    if readme.index(BLOCK_END) < readme.index(BLOCK_BEGIN):
+        raise ValueError(
+            "the README's scored-block markers are out of order: end comes before begin"
+        )
     before, rest = readme.split(BLOCK_BEGIN)
     _, after = rest.split(BLOCK_END)
     return before + BLOCK_BEGIN + block + BLOCK_END + after
