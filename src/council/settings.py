@@ -71,6 +71,9 @@ SERVER_SCHEMES = ("http", "https")
 REMOTE_OPT_IN = "yes"
 # What an earlier version of this project had operators write, endpoint and all.
 OLD_ENDPOINT = "/api/generate"
+# What an address may not carry, by its opening mark; "#" goes first, owning any "?" after it.
+USERINFO_MARK = "@"
+EXTRA_PARTS = (("#", "a fragment"), ("?", "a query"))
 FROM_DEFAULT = "the default"
 
 
@@ -136,6 +139,7 @@ def opted_in(value: str, source: str) -> bool:
 
 def server_of(value: str, source: str, remote_opted_in: bool) -> str:
     """Give the server's address, the old form with its endpoint accepted, refusing any other."""
+    refuse_extra_parts(value, source)
     address = value.strip().rstrip("/").removesuffix(OLD_ENDPOINT)
     parts = urlsplit(address)
     if parts.scheme not in SERVER_SCHEMES or not parts.hostname or parts.path:
@@ -150,6 +154,23 @@ def server_of(value: str, source: str, remote_opted_in: bool) -> str:
         f"may only talk to {', '.join(LOOPBACK_HOSTS[:2])}; set {REMOTE_SERVER}={REMOTE_OPT_IN} "
         "to send the advisory text to that machine"
     )
+
+
+def refuse_extra_parts(value: str, source: str) -> None:
+    """Refuse an address carrying a username or password, a fragment or a query, naming which."""
+    # Not quoted: what sits before an "@" may be a password.
+    if USERINFO_MARK in value:
+        raise SettingsError(
+            f"{SERVER} ({source}) has an '{USERINFO_MARK}' in it, so it may carry a username or "
+            f"password; give the server's address alone, as {DEFAULTS[SERVER]}. It is not "
+            "quoted here in case it holds a secret"
+        )
+    carried = [part for mark, part in EXTRA_PARTS if mark in value]
+    if carried:
+        raise SettingsError(
+            f"{SERVER} is {value!r} ({source}), which carries {carried[0]}; give the server's "
+            f"address alone, as {DEFAULTS[SERVER]}"
+        )
 
 
 def on_this_machine(server: str) -> bool:
