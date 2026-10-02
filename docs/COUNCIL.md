@@ -727,10 +727,10 @@ this machine (`ran_local`), the roster as configured, the chairman's reasoning, 
 escalation model's reply on each metric the council left open, beside what the
 council had left it as, the final vector, and the computed score. Per run: the
 server's version and the digest of every model the run asks
-(`run.local_models`). Per finding whose sources disagree: the explanation's
-kept items, every item it dropped with the reason, and the model asked with its
-prompt version, `sources-differ-1`, whether or not anything was kept. A score
-nobody can re-derive is not a
+(`run.local_models`). Per finding a model was asked about — sources that
+disagree, with text to read: the explanation's kept items, every item it dropped
+with the reason, and the model and its prompt version, `sources-differ-1`,
+whether or not anything was kept. A score nobody can re-derive is not a
 score, and a roster nobody can reconstruct is not a council.
 
 ## What is built, and what is not
