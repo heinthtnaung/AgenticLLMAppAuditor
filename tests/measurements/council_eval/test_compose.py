@@ -161,15 +161,3 @@ def test_a_replay_names_no_escalation_model_rather_than_leaving_it_to_a_default(
     )
     replay_roster((samples.item(),), (samples.MODEL, samples.OTHER_MODEL), recorded)
     assert options == [{"order_check": False, "escalation": None}]
-
-
-def test_a_pass_taken_on_a_server_elsewhere_replays_its_members_as_local():
-    # A known gap, asserted so that closing it turns this red. A replay builds its
-    # roster from this machine's settings, not from the passes' headers, so a pass
-    # headed with a host elsewhere rebuilds as run local. No measure reads `ran_local`.
-    taken = passes()
-    elsewhere = tuple({**one, "remote_host": "192.0.2.15"} for one in taken.headers)
-    replayed = Replies(headers=elsewhere, calls=taken.calls)
-    (outcome,) = replay_roster((samples.item(),), (samples.MODEL,), replayed)
-    everyone = chain.from_iterable(ruling.said for ruling in outcome.rulings)
-    assert {said.member.ran_local for said in everyone} == {True}

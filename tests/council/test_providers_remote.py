@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import pytest
 
 from council.prompt import build_prompt
-from council.providers import ask_local_model, ollama_member, refuse_mislabelled
+from council.providers import ask_local_model, ollama_member, ollama_member_on, refuse_mislabelled
 from council_samples import member
 
 PROMPT = build_prompt("AV", "Some advisory text.")
@@ -29,6 +29,14 @@ def test_on_a_server_elsewhere_a_member_is_not_local_and_its_egress_is_the_opt_i
         False, True, True, False,
     )
     assert made.identify("member-base-metric-3").ran_local is False
+
+
+@pytest.mark.parametrize("this_machine", [True, False])
+def test_a_member_placed_by_its_caller_is_where_it_is_told_whatever_the_settings(this_machine):
+    # A replay places each member where its pass ran, not where this machine's settings point.
+    made = ollama_member_on("qwen2.5:7b", this_machine=this_machine)
+    assert (made.runs_local, made.egress) == (this_machine, not this_machine)
+    assert made.family == "qwen2.5"
 
 
 def test_a_member_on_the_server_elsewhere_is_asked_there(remote_server, monkeypatch):

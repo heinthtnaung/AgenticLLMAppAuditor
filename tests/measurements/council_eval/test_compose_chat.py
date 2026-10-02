@@ -23,7 +23,7 @@ def local_pass() -> Replies:
 
 def test_a_pasted_pass_is_replayed_with_hosted_members_answering_from_its_replies():
     pasted = chat_samples.fixture_pass()
-    roster = pass_roster((chat_samples.FIXTURE_MODEL,), CHAT)
+    roster = pass_roster((chat_samples.FIXTURE_MODEL,), CHAT, pasted)
     assert [(one.provider, one.runs_local) for one in roster.members] == [("chat", False)]
     assert isinstance(item_client(samples.KEY, pasted, CHAT), PastedReplayClient)
     (outcome,) = replay_roster((samples.item(),), (chat_samples.FIXTURE_MODEL,), pasted)

@@ -112,6 +112,21 @@ def test_passes_at_two_windows_are_not_paired():
         checked(one_pass(samples.ANSWERS, BASELINE), narrow)
 
 
+@pytest.mark.parametrize("remote_side", ("forward", "reversed"))
+def test_passes_one_model_took_in_two_places_are_not_paired(remote_side):
+    # A member is rebuilt where its passes ran, which two places would leave unsaid.
+    pair = {
+        "forward": one_pass(samples.ANSWERS, BASELINE),
+        "reversed": one_pass(samples.ANSWERS, REVERSED),
+    }
+    taken = pair[remote_side]
+    pair[remote_side] = Replies(
+        headers=(taken.headers[0] | {"remote_host": "192.0.2.15"},), calls=taken.calls
+    )
+    with pytest.raises(ValueError, match="each model took in one place"):
+        checked(pair["forward"], pair["reversed"])
+
+
 def test_a_reversed_pass_missing_a_call_stops_the_scoring():
     reversed_ = one_pass(samples.ANSWERS, REVERSED)
     del reversed_.calls[(samples.KEY, samples.MODEL, "S")]

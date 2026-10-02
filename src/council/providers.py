@@ -43,18 +43,22 @@ NO_CLIENT_FOR_PROVIDER = "no client for provider {provider!r} exists on this mac
 
 def ollama_member(model: str) -> Member:
     """Describe one model on the settings' Ollama server as a council member, wherever it is."""
+    return ollama_member_on(model, this_machine=on_this_machine(current_settings().server))
+
+
+def ollama_member_on(model: str, this_machine: bool) -> Member:
+    """Describe one model on an Ollama server, this machine's or another's, as a council member."""
     # The family is guessed from the model's own name, which is what a roster file
     # would carry properly. It is only read to judge how much a roster's agreement
     # is worth, never by the chairman, so a wrong guess costs a reader and not a number.
-    here = on_this_machine(current_settings().server)
     return Member(
         name=model,
         provider=OLLAMA_PROVIDER,
         model=model,
         family=family_of(model),
-        runs_local=here,
+        runs_local=this_machine,
         # Elsewhere only with `AUDITOR_REMOTE_SERVER=yes`: that opt-in is this member's egress.
-        egress=not here,
+        egress=not this_machine,
     )
 
 

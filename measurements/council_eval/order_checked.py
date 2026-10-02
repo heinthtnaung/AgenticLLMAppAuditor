@@ -33,6 +33,7 @@ from council_eval.compose import (
     ItemClient,
     clients_for,
     item_client,
+    pass_places,
     pass_roster,
     pass_variant,
     pass_window,
@@ -100,7 +101,7 @@ def order_checked_roster(
     """Rebuild what an order-checked roster decides on every item, and every verdict behind it."""
     refuse_unpaired(forward, reversed_)
     orders = pass_variant(forward), pass_variant(reversed_)
-    roster = pass_roster(models, orders[0])
+    roster = pass_roster(models, orders[0], forward)
     clients = [
         OrderCheckedClient(
             item_client(item.key, forward, orders[0]),
@@ -130,3 +131,6 @@ def refuse_unpaired(forward: Replies, reversed_: Replies) -> None:
     # A chat names no window, and nothing is rebuilt at one.
     if not ahead.chat and pass_window(forward) != pass_window(reversed_):
         raise ValueError("an order check pairs passes recorded at one window")
+    # A member is rebuilt where its passes ran, so its two orders must have run in one place.
+    if not ahead.chat and pass_places(forward) != pass_places(reversed_):
+        raise ValueError("an order check pairs passes each model took in one place")
