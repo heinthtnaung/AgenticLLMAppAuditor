@@ -94,6 +94,20 @@ def test_a_mark_with_nothing_after_it_or_after_the_old_endpoint_is_refused_all_t
 
 
 @pytest.mark.parametrize(
+    "value",
+    ["ftp://127.0.0.1:11434", "127.0.0.1:11434", "http://:11434", f"{HERE}/v1"],
+    ids=["another-scheme", "no-scheme", "no-host", "a-path"],
+)
+def test_an_address_without_its_scheme_and_host_alone_is_refused_quoting_it(value):
+    with pytest.raises(SettingsError) as refused:
+        load_settings({"AUDITOR_SERVER_URL": value}, ABSENT)
+    assert str(refused.value) == (
+        f"AUDITOR_SERVER_URL is {value!r} (the environment); give the server's address alone, "
+        "as http://127.0.0.1:11434"
+    )
+
+
+@pytest.mark.parametrize(
     ("given", "read"),
     [
         (HERE, HERE),
