@@ -113,7 +113,7 @@ def models_line(run) -> str:
 
 
 def approval_indicator(report: Report) -> str:
-    """Give the masthead's glance at the human act: a green pill approved, else a muted note."""
+    """Give the masthead's glance at the human act: a green box approved, else a muted note."""
     decided = report.approval
     if isinstance(decided, Approval):
         who = f"{decided.decision.value} by " + tag("b", text(decided.approver))
