@@ -24,7 +24,7 @@ from report.html_layout import (
     text,
 )
 from report.html_overview_council import council_cell
-from report.html_risk import NO_SOURCE, RISK_SCALE, source_of
+from report.html_risk import NO_SOURCE, RISK_FILL, RISK_SCALE, source_of
 from report.record import Report
 
 # The stacked-row labels a phone reads: longer than the desktop headers because a
@@ -32,9 +32,6 @@ from report.record import Report
 # a cell holds one score per source, as the template's data-labels do.
 CVSS_PHONE_LABEL = "CVSS by source"
 RISK_PHONE_LABEL = "Org risk by source"
-# A mini's fill class: the Organisation Risk mini filled with its band colour, the
-# CVSS mini outlined with a band-coloured edge, never one badge.
-RISK_FILL = "risk"
 DASH = "—"
 
 
@@ -118,7 +115,7 @@ def risk_mini(scored) -> str:
     # The no-source sentinel is a sentence, not a source, so it gets the full org
     # chip rather than a mini whose source column a sentence would overflow.
     if source_of(scored) == NO_SOURCE:
-        return scored_chip(RISK_SCALE, number(scored.score), scored.band, "risk")
+        return scored_chip(RISK_SCALE, number(scored.score), scored.band, RISK_FILL)
     return mini_chip(source_of(scored), number(scored.score), scored.band, RISK_FILL)
 
 

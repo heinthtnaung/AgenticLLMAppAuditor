@@ -35,6 +35,9 @@ from report.risk_order import bands_contested_first
 from report.risk_words import FLOORED_BY, PROVISIONAL
 
 RISK_SCALE = "org"
+# The Organisation Risk chip's fill class: it is filled with its band colour,
+# where the CVSS chip is outlined with a band-coloured edge, never one badge.
+RISK_FILL = "risk"
 NO_SOURCE = "no source scored this"
 BAND_MOVES = "the source changes the band"
 NO_RISK = "No finding was scored: this run recorded no organisation answers."
@@ -106,7 +109,7 @@ def risk_row(scored) -> str:
     """Give one organisation score and the source whose technical severity produced it."""
     return (
         tag("span", text(source_of(scored)), "source-name")
-        + scored_chip(RISK_SCALE, number(scored.score), scored.band, "risk")
+        + scored_chip(RISK_SCALE, number(scored.score), scored.band, RISK_FILL)
         + floors_note(scored)
         + unknown_answers(scored)
     )
