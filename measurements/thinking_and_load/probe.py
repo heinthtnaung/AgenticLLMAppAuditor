@@ -4,7 +4,9 @@
 evidence for that pin and for the precondition on reproducibility they turned
 up. Both ask one prompt, `build_prompt("AV", ADVISORY)`, built and pinned by the
 product's own `build_request`, and vary only the `think` field and whether the
-models were unloaded first. Every envelope is written whole, but for its token ids.
+models were unloaded first. Every envelope is written whole, but for its token ids,
+beside the server it came from and that server's `remote_host` where it is another
+machine.
 
     thinking     per model: from a fresh load, `think` absent, then `think` false
     load-state   per model: cold absent, warm absent, warm false, cold false,
@@ -25,9 +27,12 @@ from itertools import product
 from pathlib import Path
 from typing import Any, Callable, Mapping, TextIO
 
-from council.ollama import LocalModel, build_request, generate_url
-from council.prompt import build_prompt
-from council.transport import post_json
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from council.ollama import LocalModel, build_request, generate_url  # noqa: E402
+from council.prompt import build_prompt  # noqa: E402
+from council.transport import post_json  # noqa: E402
+from council_eval.pass_provenance import server_named  # noqa: E402
 
 # `tests/council/council_samples.ADVISORY`, which the recorded probes asked about.
 # Copied rather than imported so a measurement does not lean on the test tree;
@@ -97,9 +102,16 @@ def kept(envelope: Mapping[str, Any]) -> dict[str, Any]:
     return {name: value for name, value in envelope.items() if name not in DROPPED_FIELDS}
 
 
-def line_of(probe: str, model: str, step: Step, envelope: Mapping[str, Any]) -> dict[str, Any]:
-    """Give one call as a line of the recorded file for its probe."""
-    return {"model": model, LABEL_FIELD[probe]: step.label, "envelope": kept(envelope)}
+def line_of(
+    probe: str, step: Step, pinning: LocalModel, envelope: Mapping[str, Any]
+) -> dict[str, Any]:
+    """Give one call as a line of the recorded file for its probe, naming the server asked."""
+    return {
+        "model": pinning.model,
+        LABEL_FIELD[probe]: step.label,
+        **server_named(pinning.host),
+        "envelope": kept(envelope),
+    }
 
 
 def run(
@@ -115,7 +127,7 @@ def run(
             unload_every_model(post, models)
         pinning = LocalModel(model=model)
         envelope = post(generate_url(pinning), request_for(step.think, pinning))
-        out.write(json.dumps(line_of(probe, model, step, envelope)) + "\n")
+        out.write(json.dumps(line_of(probe, step, pinning, envelope)) + "\n")
         out.flush()
 
 

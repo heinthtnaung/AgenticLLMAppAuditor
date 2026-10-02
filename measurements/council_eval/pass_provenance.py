@@ -8,6 +8,8 @@ A figure nobody can re-derive is not a measurement. The prompt version is the
 variant's, which begins with the product's version it was made from. A pass on
 a server elsewhere (`AUDITOR_REMOTE_SERVER=yes`) is headed with its host as
 `remote_host`; a pass on this machine carries no such field, as none before did.
+A measurement's own record names its server with `server_named`: the server
+always, and its host as `remote_host` where it is another machine.
 
 The pinning is read from the product's own constants and `LocalModel`, never
 restated here, so a pass cannot claim a seed or a temperature the request did
@@ -37,6 +39,7 @@ GIT_COMMIT = ("git", "rev-parse", "HEAD")
 GIT_CHANGES = ("git", "status", "--short", "src/", "measurements/")
 TURN_START = "cold: the model is unloaded before each item"
 REMOTE_HOST_FIELD = "remote_host"
+SERVER_FIELD = "server"
 
 Run = Callable[[tuple[str, ...]], str]
 
@@ -81,6 +84,11 @@ def server_elsewhere(host: str) -> dict[str, str]:
     if not elsewhere:
         return {}
     return {REMOTE_HOST_FIELD: elsewhere}
+
+
+def server_named(host: str) -> dict[str, str]:
+    """Name the server asked, and its host where it is another machine, as a record's fields."""
+    return {SERVER_FIELD: host, **server_elsewhere(host)}
 
 
 def held_listing(host: str, get: Read) -> Listing:

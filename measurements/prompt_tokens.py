@@ -2,9 +2,10 @@
 
 Run it: `python measurements/prompt_tokens.py [MODEL ...]`, with the operator's
 `AUDITOR_MODEL` when none is named. **This one needs `ollama serve` up with each model pulled**,
-unlike the other measurement here. It talks to loopback only, through
-`council.transport`, which bypasses the corporate proxy rather than relying on
-NO_PROXY being exported.
+unlike the other measurement here. It talks to the settings' server, this machine's
+unless `AUDITOR_REMOTE_SERVER=yes` names another, through `council.transport`, which
+bypasses the corporate proxy rather than relying on NO_PROXY being exported. Its
+first line names that server, and its `remote_host` where it is another machine.
 
 It answers two questions `council.ollama` states as fact: what the prompt costs
 with no advisory in it, and what the worst advisory in the corpus takes it to.
@@ -35,7 +36,12 @@ from council.ollama import (  # noqa: E402
 from council.prompt import PROMPT_VERSION, MemberPrompt, build_prompt  # noqa: E402
 from council.settings import current_settings  # noqa: E402
 from council.transport import Transport, get_json, post_json  # noqa: E402
-from council_eval.pass_provenance import held_listing, held_version, model_digest  # noqa: E402
+from council_eval.pass_provenance import (  # noqa: E402
+    held_listing,
+    held_version,
+    model_digest,
+    server_named,
+)
 
 PROMPT_TOKEN_FIELD = "prompt_eval_count"
 
@@ -90,13 +96,19 @@ def model_lines(
     ]
 
 
+def heading(ollama: str, server: str) -> str:
+    """Name the prompt, the server's version, the server, and its host where it is elsewhere."""
+    named = ", ".join(f"{field} {value}" for field, value in server_named(server).items())
+    return f"prompt {PROMPT_VERSION}, Ollama {ollama}, {named}"
+
+
 def main(argv: list[str], post: Transport = post_json, get: Read = get_json) -> int:
     """Print what was asked of which weights, then each model's costs and the estimate's error."""
     advisory_id, text = longest_advisory()
     server = current_settings().server
     listing = held_listing(server, get)
     ollama = held_version(server, get)
-    print(f"prompt {PROMPT_VERSION}, Ollama {ollama}")
+    print(heading(ollama, server))
     print(f"the longest advisory, {advisory_id}: {len(text)} characters")
     fixed = build_prompt(WIDEST_METRIC, ALMOST_NO_ADVISORY)
     worst = build_prompt(WIDEST_METRIC, text)

@@ -7,7 +7,7 @@ import eval_samples as samples
 from cli.model_identity import Listing
 from council.settings import Settings
 from council_eval import pass_provenance
-from council_eval.pass_provenance import file_digest, model_digest, pass_header
+from council_eval.pass_provenance import file_digest, model_digest, pass_header, server_named
 from council_eval.variants import BASELINE, LIBRARY_REVERSED, Variant
 
 TAGS = {"models": [{"name": samples.MODEL, "digest": "sha256-abc"}]}
@@ -71,3 +71,10 @@ def test_a_pass_on_a_server_elsewhere_is_headed_with_its_host(tmp_path, remote_s
 
 def test_a_pass_on_this_machine_carries_no_host_as_no_pass_before_it_did(tmp_path):
     assert "remote_host" not in header(tmp_path)
+
+
+def test_a_record_names_its_server_and_the_host_only_of_a_server_elsewhere():
+    assert server_named("http://127.0.0.1:11434") == {"server": "http://127.0.0.1:11434"}
+    assert server_named("http://192.0.2.15:11434") == {
+        "server": "http://192.0.2.15:11434", "remote_host": "192.0.2.15",
+    }

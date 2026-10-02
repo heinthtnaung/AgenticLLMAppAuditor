@@ -34,6 +34,13 @@ def replies(model: str) -> dict[str, str]:
     return {label: envelope["response"] for label, envelope in states(model).items()}
 
 
+def test_the_recorded_probes_name_no_server_having_been_taken_before_the_field():
+    # A known gap, asserted: scratch drafts wrote both files on 2026-09-24, before
+    # `probe.py` named its server; the README says where they ran instead.
+    recorded = lines("probe_state.jsonl") + lines("probe_think.jsonl")
+    assert [line for line in recorded if {"server", "remote_host"} & set(line)] == []
+
+
 def test_no_recorded_envelope_carries_a_thinking_field():
     recorded = lines("probe_state.jsonl") + lines("probe_think.jsonl")
     envelopes = [line["envelope"] for line in recorded]

@@ -95,6 +95,14 @@ def test_the_worst_prompt_has_been_counted_by_these_models_only():
     }
 
 
+def test_the_saved_counts_name_no_server_having_been_taken_before_the_field():
+    # A known gap, asserted: the file is as `prompt_tokens.py` printed it at `d591c21`,
+    # which read and counted at its `DEFAULT_HOST`, loopback, and named no server.
+    # A re-count names its server, and replacing the file with one turns this red.
+    first = RECORD.read_text(encoding="utf-8").splitlines()[0]
+    assert first == "prompt member-base-metric-3, Ollama 0.34.3"
+
+
 def highest_ratio() -> float:
     """Give the highest count-over-estimate measured, on the worst prompt or any saved call."""
     saved = [value for _, value in recorded_ratios()]

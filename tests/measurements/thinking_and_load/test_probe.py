@@ -73,9 +73,18 @@ def test_a_cold_step_unloads_the_probed_models_itself_included_and_a_warm_step_d
     ]
 
 
-def test_a_load_state_call_is_written_as_recorded_without_the_token_ids():
+def test_a_load_state_call_is_written_with_its_server_and_without_the_token_ids():
     _, lines = probed(probe.LOAD_STATE, probe.STEPS[probe.LOAD_STATE][:1])
-    assert lines == [{"model": "m", "label": "cold, field absent", "envelope": {"response": "{}"}}]
+    assert lines == [{
+        "model": "m", "label": "cold, field absent", "server": "http://127.0.0.1:11434",
+        "envelope": {"response": "{}"},
+    }]
+
+
+def test_a_call_to_a_server_elsewhere_names_it_and_its_host(remote_server):
+    _, lines = probed(probe.THINKING, probe.STEPS[probe.THINKING])
+    named = {(line["server"], line["remote_host"]) for line in lines}
+    assert named == {(remote_server, "192.0.2.15")}
 
 
 def test_a_thinking_call_is_named_by_its_think_setting_as_recorded():

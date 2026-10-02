@@ -67,10 +67,23 @@ def test_every_model_named_is_counted_by_its_weights_and_the_pinned_one_when_non
     prompt_tokens.main([], Counting(430), serving)
     named = [line for line in capsys.readouterr().out.splitlines() if not line.startswith(" ")]
     heading = [
-        "prompt member-base-metric-3, Ollama 0.34.3", "the longest advisory, GHSA-x: 7 characters",
+        "prompt member-base-metric-3, Ollama 0.34.3, server http://127.0.0.1:11434",
+        "the longest advisory, GHSA-x: 7 characters",
     ]
     assert named == [*heading, "a:1b sha-a:1b", "b:2b sha-b:2b",
                      *heading, "qwen2.5:7b-instruct sha-qwen2.5:7b-instruct"]
+
+
+def test_counts_taken_on_a_server_elsewhere_name_it_and_its_host(
+    monkeypatch, capsys, remote_server
+):
+    monkeypatch.setattr(prompt_tokens, "longest_advisory", lambda: ("GHSA-x", "A flaw."))
+    prompt_tokens.main(["a:1b"], Counting(430), serving)
+    first = capsys.readouterr().out.splitlines()[0]
+    assert first == (
+        f"prompt member-base-metric-3, Ollama 0.34.3, server {remote_server}, "
+        "remote_host 192.0.2.15"
+    )
 
 
 def test_a_model_the_server_does_not_hold_is_refused_before_it_is_counted(monkeypatch):
