@@ -40,6 +40,9 @@ GIT_CHANGES = ("git", "status", "--short", "src/", "measurements/")
 TURN_START = "cold: the model is unloaded before each item"
 REMOTE_HOST_FIELD = "remote_host"
 SERVER_FIELD = "server"
+# What the weights and the server are named under, on a pass header and a probe's line alike.
+DIGEST_FIELD = "digest"
+VERSION_FIELD = "ollama"
 
 Run = Callable[[tuple[str, ...]], str]
 
@@ -60,8 +63,8 @@ def pass_header(
     return {
         "kind": HEADER_KIND,
         "model": model,
-        "digest": model_digest(model, held_listing(pinning.host, get)),
-        "ollama": held_version(pinning.host, get),
+        DIGEST_FIELD: model_digest(model, held_listing(pinning.host, get)),
+        VERSION_FIELD: held_version(pinning.host, get),
         PROMPT_VERSION_FIELD: variant.prompt_version,
         "temperature": PINNED_TEMPERATURE,
         "seed": pinning.seed,
