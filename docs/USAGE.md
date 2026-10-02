@@ -12,8 +12,9 @@ reflects the environment the code is deployed into.
 
 A council of models reads advisories and agrees one vector, each member quoting
 the text it relied on. Its models run on an Ollama server — this machine unless
-you opt in to one other; no hosted model has a client yet. A deterministic
-engine turns that vector into every number. The two are never the same step.
+you opt in to one other machine; no hosted model has a client yet. A
+deterministic engine turns that vector into every number. The two are never the
+same step.
 
 ## Running a scan
 
