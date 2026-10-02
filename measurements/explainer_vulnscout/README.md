@@ -48,7 +48,7 @@ another.
 | `replies.jsonl` | the run: a header, then each call's finding, model, seed, prompt version, request, Ollama's envelope without `context`, and the outcome `explain` recorded at the time |
 | `summary.txt` | what the explainer's current reading makes of the saved replies, from `summary.py` |
 | `probe.py` | the calls, for a re-run |
-| `summary.py` | the scoring, from the saved replies alone |
+| `summary.py` | the scoring, from the saved replies alone; `--write` puts it in `summary.txt` and the scored block below |
 
 ## What the replies show
 
@@ -75,12 +75,14 @@ which `git log --find-object=ID` resolves to the commits holding them. The recor
 re-derives `summary.txt` byte for byte, and `test_explainer_readme.py` holds this block to
 it.
 
-**The replies were re-scored by the commit "Read an explainer metric written as its
-name"**, and the ids below are those files as of it. The parser now reads a metric written
-as its name, alone or in brackets beside its code, so each of the six gemma calls recorded
-as dropping its one item now keeps it. Scored as of `910778f`, before that commit, gemma's
+**The ids below name the reading that scored this block.** Any edit to one of those files
+changes its id, a docstring's included, so they need not be the ids of any one commit's
+change to the reading. The last change to how a reply is read was the commit "Read an
+explainer metric written as its name". From it the parser reads a metric written as its
+name, alone or in brackets beside its code, so each of the six gemma calls recorded as
+dropping its one item keeps it. Under `910778f`'s reading, before that commit, gemma's
 one-metric row was 0 of 6 calls explained and 0 of 6 items kept, with all 6 dropped as not
-a disputed metric; the other three rows were as they are now.
+a disputed metric; the other three rows were as they are below.
 
 <!-- scored: begin -->
 ```text
@@ -100,9 +102,11 @@ glm-4.7-flash  multi-metric calls 4  explained 4  kept 12 of 12  drops {}
 ```
 <!-- scored: end -->
 
-**A change to how a reply is read changes this block and the paragraph above it that names
-the commit, and nothing else.** Regenerate `summary.txt` with the command below, and copy
-its first and last sections here. The outcomes recorded at the time stay in
+**Re-scoring is one command**, `summary.py --write` below. It rewrites `summary.txt` and
+this block together, from the summary's first and last sections, and leaves the rest of
+this file as it is. An edit to a file named on the first line changes the block even where
+no figure moves. A change to how a reply is read can move the figures as well, and then
+the paragraph above should name its commit. The outcomes recorded at the time stay in
 `replies.jsonl`, and the second line counts the calls now scored otherwise.
 
 ## The decision this settled
@@ -138,15 +142,17 @@ draft passed every setting explicitly: `http://127.0.0.1:11434`, 8192 tokens, 18
 Those are the defaults `probe.py` reads through `council.settings`. The draft's header
 therefore lacks `server`, `dataset_sha256`, `commit`, `changes` and `started`, which are
 stated above; the server was this machine, so a `probe.py` header would carry no
-`remote_host` either. It also asked for glm untagged, as `glm-4.7-flash`. `probe.py` refuses an untagged
-name, so a re-run names `glm-4.7-flash:latest`.
+`remote_host` either. It also asked for glm untagged, as `glm-4.7-flash`. `probe.py`
+refuses an untagged name, so a re-run names `glm-4.7-flash:latest`.
 
 ```bash
 export NO_PROXY=localhost,127.0.0.1 no_proxy=localhost,127.0.0.1
-# Score the saved replies again, with no model called.
+# Re-score the saved replies, no model called: rewrites summary.txt and the block above.
+python measurements/explainer_vulnscout/summary.py --write
+# Or check the saved summary against a fresh scoring, writing nothing.
 python measurements/explainer_vulnscout/summary.py \
     measurements/explainer_vulnscout/replies.jsonl \
-    > measurements/explainer_vulnscout/summary.txt
+    | cmp - measurements/explainer_vulnscout/summary.txt
 # Re-run the 20 calls into a new file.
 python measurements/explainer_vulnscout/probe.py gemma4:latest glm-4.7-flash:latest \
     --out /tmp/explain.jsonl

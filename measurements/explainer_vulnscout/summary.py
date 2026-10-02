@@ -10,11 +10,15 @@ looks a metric's name up in, by their git blob ids, so the summary says which re
 produced it; `git log --find-object=ID` finds the commits that hold one. The `metric`
 strings are read from the raw reply, before the parser reads them.
 
+`--write` re-scores this record in one step: it rewrites `summary.txt`, and the README's
+scored block between its two markers, which shows the summary's scoring and counts.
+
+    python measurements/explainer_vulnscout/summary.py --write
     python measurements/explainer_vulnscout/summary.py \\
-        measurements/explainer_vulnscout/replies.jsonl \\
-        > measurements/explainer_vulnscout/summary.txt
+        measurements/explainer_vulnscout/replies.jsonl
 """
 
+import argparse
 import hashlib
 import json
 import sys
@@ -43,6 +47,16 @@ SCORING_CODE = {
     "src/council/explanation.py": sorting,
     "src/cvss/metrics.py": naming,
 }
+RECORD = Path(__file__).resolve().parent
+REPLIES = "replies.jsonl"
+SUMMARY = "summary.txt"
+README = "README.md"
+# The README's copy of the summary's scoring and counts sits between these, as a text block.
+BLOCK_BEGIN = "<!-- scored: begin -->\n```text\n"
+BLOCK_END = "```\n<!-- scored: end -->"
+# The summary's three sections, scoring, rows and counts, are split by a blank line.
+SECTION = "\n\n"
+WRITE_HELP = "rewrite this record's summary.txt and its README's scored block"
 
 
 def recorded_calls(path: Path) -> tuple[dict[str, Any], list[Line]]:
@@ -114,5 +128,46 @@ def summary(path: Path) -> str:
     ]) + "\n"
 
 
+def scored_block(text: str) -> str:
+    """Give what the README shows of a summary: its scoring and its counts, not its rows."""
+    sections = text.split(SECTION)
+    if len(sections) != 3:
+        raise ValueError(f"a summary has scoring, rows and counts; this has {len(sections)} parts")
+    scoring, _, counts = sections
+    return scoring + SECTION + counts
+
+
+def with_block(readme: str, block: str) -> str:
+    """Give the README with its scored block replaced, refusing one without one pair of markers."""
+    if readme.count(BLOCK_BEGIN) != 1 or readme.count(BLOCK_END) != 1:
+        raise ValueError("the README must hold each scored-block marker exactly once")
+    before, rest = readme.split(BLOCK_BEGIN)
+    _, after = rest.split(BLOCK_END)
+    return before + BLOCK_BEGIN + block + BLOCK_END + after
+
+
+def write_record(folder: Path) -> None:
+    """Re-score a record's replies into its summary and its README's block, both or neither."""
+    text = summary(folder / REPLIES)
+    readme = with_block((folder / README).read_text(encoding="utf-8"), scored_block(text))
+    (folder / SUMMARY).write_text(text, encoding="utf-8")
+    (folder / README).write_text(readme, encoding="utf-8")
+
+
+def main(argv: list[str]) -> int:
+    """Print the summary of the replies named, or rewrite this record's summary and README."""
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("replies", nargs="?", type=Path, help="print the summary of these replies")
+    parser.add_argument("--write", action="store_true", help=WRITE_HELP)
+    options = parser.parse_args(argv)
+    if options.write == (options.replies is not None):
+        parser.error("give a replies file to print its summary, or --write, and not both")
+    if options.write:
+        write_record(RECORD)
+        return 0
+    sys.stdout.write(summary(options.replies))
+    return 0
+
+
 if __name__ == "__main__":
-    sys.stdout.write(summary(Path(sys.argv[1])))
+    sys.exit(main(sys.argv[1:]))

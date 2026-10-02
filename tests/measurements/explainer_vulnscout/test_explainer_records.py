@@ -117,6 +117,7 @@ def test_the_seed_changed_the_reply_on_nine_of_the_ten_pairs():
 def test_the_saved_summary_re_derives_byte_for_byte_from_the_replies():
     saved = (RECORDS / "summary.txt").read_text(encoding="utf-8")
     assert summary(REPLIES) == saved, (
-        "the explainer now reads these replies otherwise: regenerate summary.txt with the "
-        "command in its README, and update the README's scored block with it"
+        "the reading that scores these replies has changed: run "
+        "`python measurements/explainer_vulnscout/summary.py --write`, which rewrites "
+        "summary.txt and the README's scored block together"
     )
