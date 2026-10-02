@@ -75,6 +75,16 @@ def test_a_query_is_refused_quoting_the_address_and_naming_the_part():
     )
 
 
+def test_a_fragment_is_refused_quoting_the_address_whole():
+    # Quoted back whole, the fragment too, by the user's choice: only an "@" may hide a secret.
+    with pytest.raises(SettingsError) as refused:
+        load_settings({"AUDITOR_SERVER_URL": f"{HERE}#frag"}, ABSENT)
+    assert str(refused.value) == (
+        "AUDITOR_SERVER_URL is 'http://127.0.0.1:11434#frag' (the environment), which carries "
+        "a fragment; give the server's address alone, as http://127.0.0.1:11434"
+    )
+
+
 @pytest.mark.parametrize(
     ("value", "said"),
     [
