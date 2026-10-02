@@ -134,3 +134,49 @@ def test_an_address_carrying_nothing_more_is_still_read(given, read):
 def test_with_the_opt_in_a_plain_address_elsewhere_is_still_read():
     environment = {"AUDITOR_SERVER_URL": ELSEWHERE, "AUDITOR_REMOTE_SERVER": "yes"}
     assert load_settings(environment, ABSENT).server == ELSEWHERE
+
+
+UNUSABLE_PORTS = ["abc", "11434;p", "99999", "0"]
+PORT_IDS = ["letters", "trailing-semicolon", "past-65535", "zero"]
+NOT_A_PORT = "whose port is not a whole number from 1 to 65535"
+
+
+@pytest.mark.parametrize("port", UNUSABLE_PORTS, ids=PORT_IDS)
+def test_a_port_no_server_can_be_at_is_refused_from_the_environment(port):
+    with pytest.raises(SettingsError, match=NOT_A_PORT) as refused:
+        load_settings({"AUDITOR_SERVER_URL": f"http://127.0.0.1:{port}"}, ABSENT)
+    assert "(the environment)" in str(refused.value)
+
+
+@pytest.mark.parametrize("port", UNUSABLE_PORTS, ids=PORT_IDS)
+def test_a_port_no_server_can_be_at_is_refused_from_the_file(tmp_path, port):
+    written = env_file(tmp_path, f"http://127.0.0.1:{port}")
+    with pytest.raises(SettingsError, match=NOT_A_PORT) as refused:
+        load_settings({}, written)
+    assert f"{written} line 1" in str(refused.value)
+
+
+@pytest.mark.parametrize("port", UNUSABLE_PORTS, ids=PORT_IDS)
+def test_the_opt_in_lets_no_unusable_port_through(port):
+    address = f"http://192.0.2.15:{port}"
+    with pytest.raises(SettingsError, match=NOT_A_PORT):
+        load_settings({"AUDITOR_SERVER_URL": address, "AUDITOR_REMOTE_SERVER": "yes"}, ABSENT)
+
+
+def test_a_port_refusal_quotes_the_address_and_names_the_range():
+    with pytest.raises(SettingsError) as refused:
+        load_settings({"AUDITOR_SERVER_URL": "http://127.0.0.1:abc"}, ABSENT)
+    assert str(refused.value) == (
+        "AUDITOR_SERVER_URL is 'http://127.0.0.1:abc' (the environment), whose port is not a "
+        "whole number from 1 to 65535; give the address with a port in that range, or none, "
+        "as http://127.0.0.1:11434"
+    )
+
+
+@pytest.mark.parametrize(
+    "address",
+    ["http://127.0.0.1:1", "http://127.0.0.1:65535", "http://127.0.0.1", "http://127.0.0.1:"],
+    ids=["one", "65535", "no-port", "empty-port-is-the-scheme-s-own"],
+)
+def test_a_port_from_1_to_65535_or_none_is_still_read(address):
+    assert load_settings({"AUDITOR_SERVER_URL": address}, ABSENT).server == address
