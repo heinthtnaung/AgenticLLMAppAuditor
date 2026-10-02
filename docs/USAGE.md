@@ -10,10 +10,10 @@ repository, join it to a pinned advisory database, score each finding by the
 published CVSS v3.1 equations, and add an **Organisation Risk Score** that
 reflects the environment the code is deployed into.
 
-A council of models — local today, hosted once a client for one exists — reads
-advisories and agrees one vector, each member quoting the text it relied on. A
-deterministic engine turns that vector into every number. The two are never the
-same step.
+A council of models reads advisories and agrees one vector, each member quoting
+the text it relied on. Its models run on an Ollama server — this machine unless
+you opt in to one other; no hosted model has a client yet. A deterministic
+engine turns that vector into every number. The two are never the same step.
 
 ## Running a scan
 
