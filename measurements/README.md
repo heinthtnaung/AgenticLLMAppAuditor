@@ -571,8 +571,10 @@ started on CUDA since 19:30 on 2026-09-23.
 audit's own runner and chairman, with no model and no scan. A pass holds one
 order of the options, so `collect` and every replay run with the product's order
 check off (`council_eval/variants.py`); `order-checked` pairs two passes
-instead. A pass holds one model's calls, so none of them escalates: no figure
-here includes an escalation model. One pass per model buys every roster the
+instead, and refuses the pair outright if any model's forward and reversed
+passes ran in different places. A pass holds one model's calls, so none of them
+escalates: no figure here includes an escalation model. One pass per model buys
+every roster the
 models can form.
 
 That rests on two things. The first is the panel rule: a member sees nothing
@@ -589,7 +591,10 @@ with the product's code and refuses one whose fingerprint differs — a prompt
 reworded, a redaction widened, a pinning moved — so a pass is never scored
 against a question it was not asked (`council_eval/replies.py`). It rebuilds
 each at the window the pass header records, whatever `AUDITOR_CONTEXT_TOKENS`
-says now, so a saved score re-derives the same under any setting.
+says now, so a saved score re-derives the same under any setting. Each member is
+rebuilt where its pass ran, not where `AUDITOR_SERVER_URL` points now: a pass
+headed with `remote_host` replays as run on another machine, `ran_local: false`,
+and one without as run here.
 
 | Step | What it does | What it needs |
 |---|---|---|
