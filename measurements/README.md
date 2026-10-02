@@ -54,11 +54,14 @@ own order, `TRIVY_CACHE_DIR`, a `cache.dir` in a `trivy.yaml` where it runs,
 `$XDG_CACHE_HOME/trivy`, then `~/.cache/trivy`. It touches no network and no
 model. `prompt_tokens.py [MODEL ...]` additionally needs `ollama serve` up with
 each model it names pulled, or the one `AUDITOR_MODEL` names when it names none,
-`qwen2.5:7b-instruct` by default; it talks to loopback only, at
-`AUDITOR_SERVER_URL`. No `NO_PROXY` export is needed for it or for any script
-here: every call to the model server goes through `src/council/transport.py`,
-which never uses a proxy. The recorder sets `NO_PROXY` itself for what it runs,
-and a plain `ollama ps` answered with the proxy set and `NO_PROXY` unset
+`qwen2.5:7b-instruct` by default. It talks to the server `AUDITOR_SERVER_URL`
+names, this machine unless `AUDITOR_REMOTE_SERVER=yes` names another. Its first
+line names that server, with its `remote_host` where it is another machine. No
+`NO_PROXY` export is needed for it or for any script here: every call to the
+model server goes through `src/council/transport.py`, which never uses a proxy,
+so a server elsewhere is reached directly too, and one only the proxy can reach
+is not reached. The recorder sets `NO_PROXY` itself for what it runs, and a
+plain `ollama ps` answered with the proxy set and `NO_PROXY` unset
 (`docs/SETUP.md`).
 
 ## The numbers, and what they support
@@ -95,8 +98,10 @@ number where the table says 878, and every other redaction count the same. The
 longest advisory is still `GHSA-pw6j-qg29-8w7f` at 17,893 characters.
 Run on 2026-09-25 over four models, `prompt_tokens.py` gives Qwen the same
 421, 4,897 and 39 (`prompt_tokens.2026-09-25.txt`). The file does not name the
-database it read; by date it was the successor. On the worst prompt, estimated
-at 4,936 tokens, `llama3.2:latest` counts 4,791 (−2.9%), `gemma4:latest` 5,689
+database it read; by date it was the successor. Nor does it name its server:
+`prompt_tokens.py` at `d591c21` read and counted at `http://127.0.0.1:11434`,
+its `DEFAULT_HOST`. On the worst prompt, estimated at 4,936 tokens,
+`llama3.2:latest` counts 4,791 (−2.9%), `gemma4:latest` 5,689
 (+15.3%), and `qwen2.5-coder:7b-instruct` the same as Qwen. That spread is why
 `refuse_overlong_prompt` now allows 75% of the window, where it allowed 90%.
 Across 1,440 saved calls of four models the most any counted past the estimate
