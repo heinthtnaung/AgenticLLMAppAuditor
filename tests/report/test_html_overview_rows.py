@@ -65,6 +65,15 @@ def test_a_finding_nobody_answered_for_shows_a_dash_in_the_org_risk_cell():
     assert f'<td data-label="{RISK_PHONE_LABEL}"><div class="minis">—</div></td>' in row
 
 
+def test_a_no_source_org_score_renders_as_the_full_org_chip_not_a_mini():
+    # No source published a readable vector, so the score names a sentence, not a
+    # source: it gets the full org chip with the risk fill class, never a mini.
+    row = finding_row(report_of(unscored(), answers=EXPOSED), unscored())
+    assert 'href="#risk/CVE-UNSCORED"' in row
+    assert 'class="risk band-' in row
+    assert "mini risk" not in row
+
+
 def test_the_stacked_phone_labels_say_the_cell_holds_a_score_per_source():
     # At phone width the row stacks and each cell shows its data-label. The
     # template's CVSS and Org risk cells read longer there than the column head.
