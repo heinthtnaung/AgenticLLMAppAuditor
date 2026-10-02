@@ -30,7 +30,12 @@ from pathlib import Path
 from council.env_file import COUNCIL_MEMBERS, SERVER
 
 PROGRAM = "audit"
-DESCRIPTION = "Audit a repository against the pinned advisory database, offline."
+# The scan is offline; a council, when one runs, reaches a model server, so the
+# description cannot call the whole run offline. SERVER names it, here or remote.
+DESCRIPTION = (
+    "Audit a repository against the pinned advisory database, offline; a council, "
+    f"when one runs, asks the Ollama server {SERVER} names."
+)
 
 TEXT_FORMAT = "text"
 JSON_FORMAT = "json"

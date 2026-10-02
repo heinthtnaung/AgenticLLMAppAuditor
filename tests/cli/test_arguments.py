@@ -5,6 +5,7 @@ import pytest
 from cli.arguments import (
     BOTH_COUNCILS,
     COUNCIL_HELP,
+    DESCRIPTION,
     JSON_FORMAT,
     MEMBER_HELP,
     TEXT_FORMAT,
@@ -104,3 +105,10 @@ def test_the_council_flags_name_the_settings_server_and_never_call_its_models_lo
     # With AUDITOR_REMOTE_SERVER=yes that server is another machine.
     assert "the Ollama server AUDITOR_SERVER_URL names" in said
     assert "local" not in said
+
+
+def test_the_description_is_true_for_an_offline_scan_and_a_council_that_reaches_a_server():
+    # The scan is offline, but a council can reach a model server, so the help may
+    # not call the whole run offline; it names the server the way the flags do.
+    assert "offline" in DESCRIPTION
+    assert "the Ollama server AUDITOR_SERVER_URL names" in DESCRIPTION
