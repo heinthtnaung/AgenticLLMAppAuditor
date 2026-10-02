@@ -8,7 +8,7 @@ should not scroll past.
 
 from report.approval_needed import needing_approval
 from report.council_beside import council_figure
-from report.council_record import was_assessed
+from report.council_queries import was_assessed
 from report.disagreement import sources_disagree
 from report.html_layout import tag, text
 from report.record import Report

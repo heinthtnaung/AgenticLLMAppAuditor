@@ -6,7 +6,8 @@ outcome, never worked out here.
 """
 
 from report.council_beside import council_figure
-from report.council_record import CouncilNotAsked, council_left_open
+from report.council_queries import council_left_open
+from report.council_record import CouncilNotAsked
 from report.html_council_flag import same_evidence_flag
 from report.html_layout import CVSS_SCALE, badge, cell, jump, mini_chip, number, tag, text
 from report.record import Report

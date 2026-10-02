@@ -6,7 +6,8 @@ here. It is informational: it moves no filter count, tag or approval, and the fu
 sentence is the council tab's, in `report.council_words`.
 """
 
-from report.council_record import CouncilOutcome, flagged_metrics
+from report.council_queries import flagged_metrics
+from report.council_record import CouncilOutcome
 from report.html_layout import tag, text
 
 SAME_EVIDENCE_LABEL = "same evidence"

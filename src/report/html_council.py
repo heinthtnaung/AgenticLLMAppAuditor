@@ -21,13 +21,12 @@ from collections import Counter
 
 from report.council_beside import figure_of
 from report.council_passed_over import PassedOver, grouped_by_reason
+from report.council_queries import council_left_open, was_assessed
 from report.council_record import (
     CouncilAssessment,
     CouncilNotAsked,
     CouncilWithoutVector,
     MetricRuling,
-    council_left_open,
-    was_assessed,
 )
 from report.council_words import (
     NO_VECTOR,
