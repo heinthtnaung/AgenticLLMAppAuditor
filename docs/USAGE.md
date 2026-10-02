@@ -10,11 +10,14 @@ repository, join it to a pinned advisory database, score each finding by the
 published CVSS v3.1 equations, and add an **Organisation Risk Score** that
 reflects the environment the code is deployed into.
 
-A council of models reads advisories and agrees one vector, each member quoting
-the text it relied on. Its models run on an Ollama server — this machine unless
-you opt in to one other machine; no hosted model has a client yet. A
-deterministic engine turns that vector into every number. The two are never the
-same step.
+A council of models reads each advisory it is given and settles a metric where
+its members' verified readings agree, each member quoting the text it relied on.
+Any other metric is left unresolved, where no reading was verified, or
+contested, where verified readings disagree, and may go to one escalation model.
+Its models run on an Ollama server — this machine unless you opt in to one other
+machine; no hosted model has a client yet. A whole vector stands only where all
+eight metrics settle, and a deterministic engine, never a model, turns that
+vector into its number. The reading and the scoring are never the same step.
 
 ## Running a scan
 

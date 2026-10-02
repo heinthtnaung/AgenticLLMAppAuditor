@@ -74,15 +74,17 @@ of the roster, opted in like any other.
 
 ```
 n council members  ->  a metric value + the sentence that supports it
-chairman           ->  one agreed vector + a rationale + a confidence  <- code, no model
+chairman           ->  each metric settled, with its basis and confidence, or left open;
+                       a vector only where all eight settle            <- code, no model
 scoring engine     ->  the number                                      <- code, no model
 human              ->  approve or override
 ```
 
-**The chairman hands over a vector, never a score.** The engine turns a vector
-into a number by the published formula, the same way every time. A model that
-emitted 7.4 directly would be unauditable, and `docs/SCORING_MODEL.md` forbids
-it. That holds for every member, local or hosted, at every n.
+**The chairman hands over metric values, and a vector where all eight settle,
+never a score.** The engine turns a vector into a number by the published
+formula, the same way every time. A model that emitted 7.4 directly would be
+unauditable, and `docs/SCORING_MODEL.md` forbids it. That holds for every
+member, local or hosted, at every n.
 
 **That number is shown beside the Organisation Risk Score, never weighed into
 it.** The risk score is weighed from the published sources alone, and a
@@ -136,9 +138,12 @@ the ruling. The edges are still real:
 - **n = 0** is a configuration error. Refuse the run. Do not fall back to the
   published vector and call the result an assessment.
 - **n = 1** is not a council. It degrades to a single assessor: the quotation
-  check still runs and the chairman still hands over a vector, but with no
-  cross-check a metric can only come out settled, on the `SOLE` basis, or
-  unresolved — `contested` can never arise. The record marks the run
+  check still runs and the chairman still rules on each metric, but with no
+  cross-check a member's metric can only come out settled, on the `SOLE` basis,
+  or unresolved — `contested` can never arise. An escalation model, where one is
+  named, may still settle an unresolved metric on the `ESCALATED` basis; without
+  one, a vector stands only where all eight settle on one model's reading. The
+  record marks the run
   single-assessor, so no reader takes council-grade confidence from one
   model. **The count is of the members a run will ask, not of the roster**:
   three members of whom two are hosted without `egress` cross-check nothing,

@@ -462,7 +462,7 @@ flowchart TD
     esc -->|"no"| stays
     settled --> all{"All eight<br/>metrics settled?"}
     escd --> all
-    all -->|"yes"| vec["One agreed vector<br/>plus rationale plus confidence"]
+    all -->|"yes"| vec["One settled vector<br/>plus each metric's basis and confidence"]
     all -->|"no"| novec["No vector<br/>no council figure beside the scores"]
     stays --> novec
 
