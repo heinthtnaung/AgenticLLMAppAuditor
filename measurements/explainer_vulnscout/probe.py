@@ -45,7 +45,7 @@ from council_eval.pass_provenance import (  # noqa: E402
     held_version,
     model_digest,
     now,
-    server_elsewhere,
+    server_named,
 )
 from findings.finding import Finding  # noqa: E402
 
@@ -72,8 +72,7 @@ def header(
     listing = held_listing(settings.server, get)
     return {
         "ollama_version": held_version(settings.server, get),
-        "server": settings.server,
-        **server_elsewhere(settings.server),
+        **server_named(settings.server),
         "digests": {model: model_digest(model, listing) for model in models},
         "prompt_version": EXPLANATION_PROMPT_VERSION,
         "temperature": PINNED_TEMPERATURE,

@@ -15,6 +15,7 @@ from cli.council_run import advisory_text  # noqa: E402
 from cli.explanation_run import published_on  # noqa: E402
 from council.explanation_prompt import build_explanation_prompt  # noqa: E402
 from council.ollama import LocalModel, build_request  # noqa: E402
+from council_eval.pass_provenance import server_named  # noqa: E402
 from explainer_vulnscout import probe  # noqa: E402
 
 MODELS = ("small:1b", "other:2b")
@@ -96,6 +97,14 @@ def test_a_probe_on_a_server_elsewhere_names_its_server_and_its_host(remote_serv
     described = lines[0]["header"]
     assert (described["server"], described["remote_host"]) == (remote_server, "192.0.2.15")
     assert server.posted
+
+
+def test_the_header_names_its_server_as_every_measurement_record_does(remote_server):
+    # The shared fields, in their order, right after the version, where the header had them.
+    described = probed(seeds=(11,))[1][0]["header"]
+    named = server_named(remote_server)
+    assert list(described)[:4] == ["ollama_version", "server", "remote_host", "digests"]
+    assert {name: described[name] for name in named} == named
 
 
 def test_a_model_the_server_does_not_list_is_refused_before_any_call():
