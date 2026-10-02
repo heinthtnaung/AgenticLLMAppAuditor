@@ -15,8 +15,9 @@ Five settings, each named `AUDITOR_*`:
   context guard in `council.ollama` scales with.
 
 How `.env` is read, and which other `AUDITOR_*` names exist, is
-`council.env_file`. **A council is never switched on here.** A setting names
-members; only `--council` or `--council-member` runs one. A bad value is
+`council.env_file`; what a server's address may look like is
+`council.server_address`. **A council is never switched on here.** A setting
+names members; only `--council` or `--council-member` runs one. A bad value is
 refused naming where it came from.
 
 **Whether a run was local is read off the server's host, not the opt-in.** `yes`
@@ -48,6 +49,7 @@ from council.env_file import (
     auditor_lines,
     refuse_unknown_names,
 )
+from council.server_address import DEFAULT_ADDRESS, address_of
 
 # Looked up each time a setting is read, which is how the tests point it at no file at all.
 ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
@@ -58,7 +60,7 @@ ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
 # with, which is why the record states the window a run used.
 DEFAULTS = {
     MODEL: "qwen2.5:7b-instruct",
-    SERVER: "http://127.0.0.1:11434",
+    SERVER: DEFAULT_ADDRESS,
     # Unset or empty: the server stays on this machine.
     REMOTE_SERVER: "",
     TIMEOUT: "180",
@@ -66,14 +68,8 @@ DEFAULTS = {
 }
 
 LOOPBACK_HOSTS = ("127.0.0.1", "localhost", "::1")
-SERVER_SCHEMES = ("http", "https")
 # The one value that lets the server be another machine; `true` or `1` is refused.
 REMOTE_OPT_IN = "yes"
-# What an earlier version of this project had operators write, endpoint and all.
-OLD_ENDPOINT = "/api/generate"
-# What an address may not carry, by its opening mark; "#" goes first, owning any "?" after it.
-USERINFO_MARK = "@"
-EXTRA_PARTS = (("#", "a fragment"), ("?", "a query"))
 FROM_DEFAULT = "the default"
 
 
@@ -139,14 +135,8 @@ def opted_in(value: str, source: str) -> bool:
 
 def server_of(value: str, source: str, remote_opted_in: bool) -> str:
     """Give the server's address, the old form with its endpoint accepted, refusing any other."""
-    refuse_extra_parts(value, source)
-    address = value.strip().rstrip("/").removesuffix(OLD_ENDPOINT)
-    parts = urlsplit(address)
-    if parts.scheme not in SERVER_SCHEMES or not parts.hostname or parts.path:
-        raise SettingsError(
-            f"{SERVER} is {value!r} ({source}); give the server's address alone, "
-            f"as {DEFAULTS[SERVER]}"
-        )
+    # Its shape is `council.server_address`'s; where it may be is this file's.
+    address = address_of(value, source)
     if remote_opted_in or on_this_machine(address):
         return address
     raise SettingsError(
@@ -154,23 +144,6 @@ def server_of(value: str, source: str, remote_opted_in: bool) -> str:
         f"may only talk to {', '.join(LOOPBACK_HOSTS[:2])}; set {REMOTE_SERVER}={REMOTE_OPT_IN} "
         "to send the advisory text to that machine"
     )
-
-
-def refuse_extra_parts(value: str, source: str) -> None:
-    """Refuse an address carrying a username or password, a fragment or a query, naming which."""
-    # Not quoted: what sits before an "@" may be a password.
-    if USERINFO_MARK in value:
-        raise SettingsError(
-            f"{SERVER} ({source}) has an '{USERINFO_MARK}' in it, so it may carry a username or "
-            f"password; give the server's address alone, as {DEFAULTS[SERVER]}. It is not "
-            "quoted here in case it holds a secret"
-        )
-    carried = [part for mark, part in EXTRA_PARTS if mark in value]
-    if carried:
-        raise SettingsError(
-            f"{SERVER} is {value!r} ({source}), which carries {carried[0]}; give the server's "
-            f"address alone, as {DEFAULTS[SERVER]}"
-        )
 
 
 def on_this_machine(server: str) -> bool:
