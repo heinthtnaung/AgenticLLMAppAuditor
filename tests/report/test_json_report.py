@@ -4,19 +4,16 @@ import json
 
 import pytest
 
+from cli.council_run import SOURCES_AGREE
+from council_runs import ALONE, OPEN_TWO_WAYS, council_ran, council_states, passed_over_entirely
 from cvss.score import base_score
 from cvss.vector import parse
-from report.json_report import as_dictionary, as_json
-from report.provenance import RunProvenance, UnknownAdvisoryDatabase
-from cli.council_run import SOURCES_AGREE
-from council_runs import (
-    ALONE, OPEN_TWO_WAYS, council_ran, council_states, passed_over_entirely,
-)
 from full_runs import fully_assessed
 from report.absences import NOTHING_WAS_PUT_TO_IT
+from report.json_report import as_dictionary, as_json
+from report.provenance import RunProvenance, UnknownAdvisoryDatabase
 from report.record import build_report
 from report_samples import (
-    catalogue,
     CONFIDENTIALITY_ONLY,
     DATABASE,
     LOW_CONFIDENTIALITY,
@@ -24,6 +21,7 @@ from report_samples import (
     REFUSED_DISSENT,
     TOTAL_LOSS,
     VERSION_2_VECTOR,
+    catalogue,
     component,
     finding,
     unidentified,

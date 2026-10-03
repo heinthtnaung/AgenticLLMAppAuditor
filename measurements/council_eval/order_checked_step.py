@@ -12,8 +12,6 @@ from itertools import product
 from pathlib import Path
 from typing import Any
 
-from cvss.metrics import METRIC_ORDER
-
 from council_eval.compose import pass_models, rosters
 from council_eval.dataset import Item, read_dataset
 from council_eval.inspections import named_value_lines
@@ -31,6 +29,7 @@ from council_eval.tables import (
 )
 from council_eval.variants import BASELINE
 from council_eval.vectors import vector_measures
+from cvss.metrics import METRIC_ORDER
 
 VERDICT_COLUMNS = ("member", "metric", *VERDICTS)
 

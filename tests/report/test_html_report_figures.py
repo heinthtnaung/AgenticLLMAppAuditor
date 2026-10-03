@@ -14,8 +14,8 @@ from report.html_report import as_html
 from report.json_report import as_dictionary
 from report.provenance import RunProvenance, UnknownAdvisoryDatabase
 from report.record import build_report
-from report_samples import PROVENANCE, catalogue, finding
 from report_pages import DJANGO, full_report, report_with_models
+from report_samples import PROVENANCE, catalogue, finding
 from scoring.scale import MAXIMUM_CATEGORY_SCORE
 
 FIGURE_CLASSES = frozenset(

@@ -8,9 +8,9 @@ import pytest
 # The recorder is a script beside the corpus it measures, not a package in `src/`.
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "measurements"))
 
+from recorder_samples import OPERATORS_OWN, PAGE, RECORD, TEXT, made_project  # noqa: E402
 from run_directory import AUDIT_RAN, keep_reports, link_project  # noqa: E402
 from run_provenance import RecordingFailed  # noqa: E402
-from recorder_samples import OPERATORS_OWN, PAGE, RECORD, TEXT, made_project  # noqa: E402
 
 RAN = 1
 COULD_NOT_RUN = 2

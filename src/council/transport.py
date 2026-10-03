@@ -10,20 +10,32 @@ request for 127.0.0.1 to that proxy, which answers 502 -- a failure that reads
 exactly like the model server being down. Bypassing the proxy here fixes it for
 good, rather than each operator remembering to export NO_PROXY.
 
+**No redirect, ever.** `urllib`'s default opener follows 301, 302, 303, 307 and
+308 to wherever `Location` points, and turns a redirected POST into a GET with
+no body, so another host's answer would come back as the server's: its version
+and digests in the record, or a member's reply beside `ran_local: true`.
+`RefuseRedirects` follows none. `urllib` then raises the 3xx itself, and it fails
+here as any other refusal does, saying where it pointed.
+
 **Nothing here keeps a call on loopback.** `post_json` and `get_json` send to
-the URL they are handed. The guarantee lives one layer up:
+the URL they are handed, and only there. The guarantee lives one layer up:
 `council.ollama.refuse_remote_host` for a member's call, and
 `council.settings.server_of` for the two reads, whose host is always the
-settings' server. The distinction is worth keeping straight because the proxy
-bypass above is right only while every caller is local: the hosted client
-`docs/COUNCIL.md` describes would need the proxy back, so it wants its own
-transport rather than this one with the rule relaxed.
+settings' server -- this machine, or the one other machine
+`AUDITOR_REMOTE_SERVER=yes` lets it name. The distinction is worth keeping
+straight because the proxy bypass above is right only while every caller is
+this machine or a server on the operator's own network, which is what the
+opt-in is for: a server reachable only through the proxy is not reached here,
+and the hosted client `docs/COUNCIL.md` describes would need the proxy back, so
+it wants its own transport rather than this one with the rule relaxed.
 """
 
+import http.client
 import json
 import urllib.error
 import urllib.request
-from typing import Any, Protocol
+from email.message import Message
+from typing import IO, Any, Protocol
 
 from council.settings import current_settings
 
@@ -32,14 +44,31 @@ JSON_CONTENT_TYPE = "application/json"
 # Enough of a server's complaint to act on, without a body in an exception.
 BODY_EXCERPT_CHARACTERS = 400
 
-NO_PROXY_OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+# A 3xx is an answer from somewhere else, and nothing here goes to fetch it.
+REDIRECT_CODES = range(300, 400)
+LOCATION_HEADER = "Location"
+
+
+class RefuseRedirects(urllib.request.HTTPRedirectHandler):
+    """Follow no redirect, so every reply comes from the URL the caller named."""
+
+    def redirect_request(
+        self, req: urllib.request.Request, fp: IO[bytes], code: int, msg: str,
+        headers: Message, newurl: str,
+    ) -> None:
+        """Decline the redirect: `urllib` then raises the 3xx as the answer it is."""
+        return None
+
+
+NO_PROXY_OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}), RefuseRedirects())
 
 
 class ModelUnavailable(RuntimeError):
     """Nothing usable came back from a model server, for any of the reasons there are.
 
     Raised here when the server could not be reached, was too slow for the
-    timeout, or did not return the JSON it promised, and in `council.envelope`
+    timeout, redirected the request, sent a reply that is not well-formed HTTP,
+    or did not return the JSON it promised, and in `council.envelope`
     when a server that was reached refused, cut the model off, or sent no text.
     One exception for all of them because they are one fact to a caller: that
     member has no answer to give, and `council.runner` records the failure and
@@ -77,6 +106,10 @@ def fetch_json(url: str, request: urllib.request.Request | str, timeout: float |
         raise ModelUnavailable(http_failure_message(url, fault)) from fault
     except (urllib.error.URLError, OSError) as fault:
         raise ModelUnavailable(unanswered_message(url, fault, timeout)) from fault
+    # After OSError, so a server that hung up unanswered (RemoteDisconnected, which
+    # is both) is still named as not reached rather than as a broken reply.
+    except http.client.HTTPException as fault:
+        raise ModelUnavailable(f"{url} sent a malformed HTTP reply: {fault!r}") from fault
     return read_json(url, body)
 
 
@@ -98,9 +131,20 @@ def unanswered_message(url: str, fault: OSError, timeout: float) -> str:
 
 
 def http_failure_message(url: str, fault: urllib.error.HTTPError) -> str:
-    """Say that a server refused the request, quoting the start of what it said."""
+    """Say that a server refused or redirected the request, quoting the start of what it said."""
+    if fault.code in REDIRECT_CODES:
+        return redirect_message(url, fault)
     body = fault.read().decode("utf-8", errors="replace")[:BODY_EXCERPT_CHARACTERS]
     return f"{url} answered {fault.code}: {body.strip() or fault.reason}"
+
+
+def redirect_message(url: str, fault: urllib.error.HTTPError) -> str:
+    """Say where a server sent the request, and that nothing went there."""
+    where = fault.headers.get(LOCATION_HEADER) or "no location"
+    return (
+        f"{url} answered {fault.code}, a redirect to {where}, which is not followed: "
+        "the server the settings name must answer itself"
+    )
 
 
 def read_json(url: str, body: str) -> Any:

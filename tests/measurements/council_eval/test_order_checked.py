@@ -2,12 +2,13 @@
 
 import pytest
 
+import chat_samples
 import eval_samples as samples
-from council_eval import order_checked as order_checked_module
-from cli.council_run import local_member
 from council.prompt import PROMPT_VERSION, build_prompt
+from council.providers import ollama_member
 from council.reply import read_reply
 from council.transport import ModelUnavailable
+from council_eval import order_checked as order_checked_module
 from council_eval.collect import ask_item
 from council_eval.order_checked import (
     DECLINED,
@@ -26,7 +27,7 @@ from report.council_record import Outcome
 
 # Reversed, the member reads AV otherwise and declines A: AV turns order-sensitive, A declined.
 REVERSED_ANSWERS = samples.ANSWERS | {"AV": samples.reply("L"), "A": samples.DECLINED}
-MEMBER = local_member(samples.MODEL)
+MEMBER = ollama_member(samples.MODEL)
 WHO = MEMBER.identify(PROMPT_VERSION)
 
 
@@ -111,6 +112,21 @@ def test_passes_at_two_windows_are_not_paired():
         checked(one_pass(samples.ANSWERS, BASELINE), narrow)
 
 
+@pytest.mark.parametrize("remote_side", ("forward", "reversed"))
+def test_passes_one_model_took_in_two_places_are_not_paired(remote_side):
+    # A member is rebuilt where its passes ran, which two places would leave unsaid.
+    pair = {
+        "forward": one_pass(samples.ANSWERS, BASELINE),
+        "reversed": one_pass(samples.ANSWERS, REVERSED),
+    }
+    taken = pair[remote_side]
+    pair[remote_side] = Replies(
+        headers=(taken.headers[0] | {"remote_host": "192.0.2.15"},), calls=taken.calls
+    )
+    with pytest.raises(ValueError, match="each model took in one place"):
+        checked(pair["forward"], pair["reversed"])
+
+
 def test_a_reversed_pass_missing_a_call_stops_the_scoring():
     reversed_ = one_pass(samples.ANSWERS, REVERSED)
     del reversed_.calls[(samples.KEY, samples.MODEL, "S")]
@@ -132,3 +148,23 @@ def test_an_order_checked_replay_names_no_escalation_model(monkeypatch):
     )
     order_checked_roster((samples.item(),), (samples.MODEL,), forward, reversed_)
     assert options == [{"order_check": False, "escalation": None}]
+
+
+def test_two_pasted_passes_are_paired_with_no_window_to_compare():
+    forward, reversed_ = chat_samples.fixture_passes()
+    (outcome,), verdicts = order_checked_roster(
+        (samples.item(),), (chat_samples.FIXTURE_MODEL,), forward, reversed_
+    )
+    assert (samples.KEY, chat_samples.FIXTURE_MODEL, "AV", ORDER_SENSITIVE) in verdicts
+    assert (samples.KEY, chat_samples.FIXTURE_MODEL, "UI", STABLE) in verdicts
+
+
+@pytest.mark.parametrize("pasted_side", ("forward", "reversed"))
+def test_a_pasted_pass_is_never_paired_with_a_local_one(pasted_side):
+    forward, reversed_ = chat_samples.fixture_passes()
+    if pasted_side == "forward":
+        pair = (forward, one_pass(REVERSED_ANSWERS, REVERSED))
+    else:
+        pair = (one_pass(samples.ANSWERS, BASELINE), reversed_)
+    with pytest.raises(ValueError, match="pairs a pass in the product's order with one reversed"):
+        checked(*pair)

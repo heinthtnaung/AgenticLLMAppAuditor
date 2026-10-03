@@ -61,25 +61,30 @@ does not.
 
 The project's source notes, kept outside this repository, sketch a ladder: a
 small local model, then a larger one, then a cloud one, each asked whether the
-published scores align. Two rungs of it are built, both on this machine: the
-council, then one larger local model asked only what the council left open
-("Escalation", below). **The cloud rung is excluded, not deferred**: by the
-project's rule escalation stays local, so a hosted model takes part only as an
-ordinary member of the roster, opted in like any other.
+published scores align. Two rungs of it are built, both on the one Ollama server
+the members share: the council, then one larger model asked only what the council
+left open ("Escalation", below). That server is this machine by default, and
+`AUDITOR_REMOTE_SERVER=yes` lets it be one other machine, meant to be on the
+operator's own network (`docs/USAGE.md`). **The cloud rung is excluded, not
+deferred**: the escalation model runs as an ordinary member on that server, held
+there by the code (below), so a hosted model takes part only as an ordinary member
+of the roster, opted in like any other.
 
 ## What the council decides, and what it does not
 
 ```
 n council members  ->  a metric value + the sentence that supports it
-chairman           ->  one agreed vector + a rationale + a confidence  <- code, no model
+chairman           ->  each metric settled, with its basis and confidence, or left open;
+                       a vector only where all eight settle            <- code, no model
 scoring engine     ->  the number                                      <- code, no model
 human              ->  approve or override
 ```
 
-**The chairman hands over a vector, never a score.** The engine turns a vector
-into a number by the published formula, the same way every time. A model that
-emitted 7.4 directly would be unauditable, and `docs/SCORING_MODEL.md` forbids
-it. That holds for every member, local or hosted, at every n.
+**The chairman hands over metric values, and a vector where all eight settle,
+never a score.** The engine turns a vector into a number by the published
+formula, the same way every time. A model that emitted 7.4 directly would be
+unauditable, and `docs/SCORING_MODEL.md` forbids it. That holds for every
+member, local or hosted, at every n.
 
 **That number is shown beside the Organisation Risk Score, never weighed into
 it.** The risk score is weighed from the published sources alone, and a
@@ -122,7 +127,7 @@ readings are trusted (`measurements/README.md`).
 
 | Kind | Reached through | What it costs |
 |---|---|---|
-| local | Ollama on this machine | nothing per call; pinnable; shares one Ollama server with the other local members |
+| Ollama | this machine, or the one `AUDITOR_REMOTE_SERVER=yes` names | nothing per call; pinnable; shares one Ollama server with the other Ollama members; the text leaves the machine only when that server is elsewhere |
 | hosted | OpenRouter or another API | money per call; not pinnable; the text leaves the machine; an API could answer calls in parallel, but the runner asks each member in turn |
 
 Nothing in the design counts members towards a ruling, so nothing depends on n
@@ -133,9 +138,12 @@ the ruling. The edges are still real:
 - **n = 0** is a configuration error. Refuse the run. Do not fall back to the
   published vector and call the result an assessment.
 - **n = 1** is not a council. It degrades to a single assessor: the quotation
-  check still runs and the chairman still hands over a vector, but with no
-  cross-check a metric can only come out settled, on the `SOLE` basis, or
-  unresolved — `contested` can never arise. The record marks the run
+  check still runs and the chairman still rules on each metric, but with no
+  cross-check a member's metric can only come out settled, on the `SOLE` basis,
+  or unresolved — `contested` can never arise. An escalation model, where one is
+  named, may still settle an unresolved metric on the `ESCALATED` basis; without
+  one, a vector stands only where all eight settle on one model's reading. The
+  record marks the run
   single-assessor, so no reader takes council-grade confidence from one
   model. **The count is of the members a run will ask, not of the roster**:
   three members of whom two are hosted without `egress` cross-check nothing,
@@ -286,7 +294,7 @@ metric           which one it is assessing
 value            the value it supports
 evidence         a verbatim quotation from the advisory
 confidence       high / medium / low
-member           which member answered, and whether it ran local or hosted
+member           which member answered, whether it ran on this machine (ran_local) and through which provider
 ```
 
 **Evidence is a quotation, not a paraphrase.** It must appear in the text it was
@@ -313,9 +321,10 @@ become one (`src/council/order_check.py`). The same value both ways stands as
 the in-order reply, quotation, confidence and kind included. Two different
 values make the member **order-sensitive**, recorded with both, which like a
 decline weighs nothing. A failure in either order is a failure, a reversed one
-saying so; otherwise a decline in either is a decline. A lean to the middle
-option survives it, because the middle stays in the middle when the list is
-reversed.
+saying so; otherwise a decline in either is a decline. The run keeps both
+readings, so the record names which order it declined in, though the chairman
+reads only the one reply. A lean to the middle option survives it, because the
+middle stays in the middle when the list is reversed.
 
 **Expect guesses, and expect the fallback.** Asked about a metric its text is
 silent on, a model tends to answer regardless: `qwen2.5:7b-instruct` returned
@@ -338,7 +347,8 @@ quotation is not in the text supports nothing, however many members give it.
 - **The verified answers support one value** → that value, with the confidence
   of the weakest of them, and a record of what it rests on.
 - **They support more than one value** → the metric is contested, and goes to
-  the escalation model where one is named.
+  the escalation model where one is named; where two members read different values
+  from the same verified words, the record flags it, as information only.
 - **There are none** → the metric is unresolved, and goes to the escalation
   model where one is named. Fall back to a published vector, and record both
   that the fallback happened and which source it came from — there is usually
@@ -467,7 +477,7 @@ second was a silent drop until scoping landed, folded in with "no council ran".
 that passed over three, because counting the skips into it would claim the
 council did more than it did.
 
-## Escalation: one larger local model, for what the council leaves open
+## Escalation: one larger model on the members' server, for what the council leaves open
 
 **A metric the order-checked council leaves contested or unresolved goes to one
 more model, and nothing else does** (`src/council/escalation.py`). The model is
@@ -487,17 +497,30 @@ an unverified quotation, a value nobody contested and a failed call all leave th
 metric as the council left it, and the record keeps what the model said beside
 what the council had left.
 
-**One model, on this machine, and never a member.** The name is a model on the
-local Ollama server, so a hosted one cannot be written: **hosted escalation is
-excluded by the project's rule, not deferred.** A model already on the council
-is refused before any model is asked, because a member escalating to itself
-would read the same prompt again and count twice. So is a value naming two
-models.
+**One model, on the members' server, and never a member.** The name is a model on
+the Ollama server the members share, so a hosted one cannot be written: **hosted
+escalation is excluded, not deferred.** The escalation model is an ordinary Ollama
+member, and three guards hold every one to this machine or to the single server
+`AUDITOR_REMOTE_SERVER=yes` opted in to: `council.settings.server_of` refuses an
+`AUDITOR_SERVER_URL` whose host is neither, `council.ollama.refuse_remote_host`
+refuses such a host again on each call, and `council.providers.refuse_mislabelled`
+refuses a member whose record would misstate where it ran, before anything is
+sent. The transport follows no redirect, so a server that answers a call with a
+3xx is recorded as unavailable, not followed, and cannot hand the call to a host
+the guards never allowed (`council.transport`). A model already on the council is
+refused before the scan and before any model is asked,
+because a member escalating to itself would read the same prompt again and count
+twice. So is a value naming two models.
 
 **What it costs.** Two calls per open metric, a count known only once the
 council has answered, so the progress stream counts them apart and without a
-total. It runs after each advisory's council, so a model too large to stay
-loaded beside the members is loaded once per advisory; that has not been timed.
+total. It runs once every finding's council has answered, so a model too large to
+stay loaded beside the members is loaded once per run, not once per finding — what
+a server that cannot hold it beside the members needs, and the saving has not been
+timed. The same replies give the same record byte for byte, but batching leaves
+the members loaded across findings, and a live model can answer differently warm
+than cold (`measurements/council_eval/compose.py`, `measurements/README.md`), so
+a batch run is not guaranteed the same replies as one finding at a time.
 
 **What is not yet known.** It has been tested with stand-in models only. No
 escalation model has run live, and none has been measured on the pilot's
@@ -628,6 +651,16 @@ So hosted members are **opt-in per member**, off by default, and the record
 names every member that ran, its provider, and whether it was local or hosted.
 A record that does not say where the text went is not an audit record.
 
+**And the opted-in Ollama server.** With `AUDITOR_REMOTE_SERVER=yes`, that same
+text — the redacted advisory and the metric definitions, and, to the explainer,
+each source's value on the disputed metrics; never the organisation's answers, the
+repository's contents or any secret — is sent to the one Ollama server elsewhere
+the operator named, over the address's own scheme: plain, unencrypted http unless
+it is `https://`. Every member, the escalation model and the explainer run there,
+so this is **opt-in per run, not per member**. Each member answer and escalation
+reply is marked `ran_local: false`, and `run.local_models` puts `remote_host`
+beside `server` to say where the explainer ran.
+
 **Money and time.** Calls scale with n × the findings the scope leaves × metrics
 × 2, every metric asked in both orders. An escalation model adds 2 for each
 metric the council leaves open, and the explanation 1 for each finding whose
@@ -643,8 +676,8 @@ budget decision as much as a design one.
 ## A roster as configuration
 
 **A sketch.** Two roster settings are built: `AUDITOR_COUNCIL_MEMBERS`, the
-local models `audit --council` runs, comma-separated, and
-`AUDITOR_ESCALATION_MODEL`, the one local model it escalates to (`docs/USAGE.md`).
+Ollama models `audit --council` runs, comma-separated, and
+`AUDITOR_ESCALATION_MODEL`, the one Ollama model it escalates to (`docs/USAGE.md`).
 The roster below, with families, hosted members and `egress`, has no committed
 format: it shows what a reader would be editing rather than a schema to write
 against. The model names are examples; check the provider's catalogue for
@@ -675,7 +708,7 @@ council:
 
 Adding a member is a list entry; removing one is deleting it. `egress` is the
 opt-in, and it fails closed: a hosted member without it does not run, and the
-report says it did not. The escalation block names a local model and no
+report says it did not. The escalation block names an Ollama model and no
 provider, because hosted escalation is excluded rather than deferred.
 
 **There is no `chairman` key, because there is no chairman model.**
@@ -694,26 +727,27 @@ one back inside the path a vector takes to a number.
 ## What is kept
 
 Per assessment: each member's answer and evidence, the model, provider, family
-and both prompt versions behind it, in order and reversed, whether that member
-ran local or hosted, the roster as configured, the chairman's reasoning, the
+and both prompt versions behind it, in order and reversed, whether it ran on
+this machine (`ran_local`), the roster as configured, the chairman's reasoning, the
 escalation model's reply on each metric the council left open, beside what the
 council had left it as, the final vector, and the computed score. Per run: the
-server's version and the digest of every local model the run asks
-(`run.local_models`). Per finding whose sources disagree: the explanation's
-kept items, every item it dropped with the reason, the model that wrote it, and
-its prompt version, `sources-differ-1`. A score nobody can re-derive is not a
+server's version and the digest of every model the run asks
+(`run.local_models`). Per finding a model was asked about — sources that
+disagree, with text to read: the explanation's kept items, every item it dropped
+with the reason, and the model and its prompt version, `sources-differ-1`,
+whether or not anything was kept. A score nobody can re-derive is not a
 score, and a roster nobody can reconstruct is not a council.
 
 ## What is built, and what is not
 
 **The council is `src/council/`, with tests beside every module.** The roster
 and its `egress` gate, the redaction, the prompt and the wire contract, the
-provider registry and the local Ollama client in it, the HTTP seam under that,
+provider registry and the Ollama client in it, the HTTP seam under that,
 the reply parser, the quotation check, the chairman, and the runner that puts
 one advisory to every reachable member, one member at a time: a member answers
 all eight metrics, each in both orders, before the next is asked, and the order
-check reconciles its two replies. Then escalation puts what the council left
-open to the escalation model, where one is named. The explainer's prompt, its
+check reconciles its two replies. Once every finding's council has run,
+escalation puts what each left open to the escalation model, where one is named. The explainer's prompt, its
 reply parser and the step that keeps only quoted items are there too
 (`src/council/explanation*.py`). `src/cvss` is the engine it hands a vector to.
 
@@ -766,7 +800,8 @@ Four things described above are not built, each deferred rather than forgotten:
   hole that is hidden.
 
 Hosted escalation is not on this list, because it is not deferred: escalation
-stays on this machine by rule.
+stays on the members' Ollama server by rule — this machine, or the one
+`AUDITOR_REMOTE_SERVER=yes` names, never a hosted API.
 
 **`src/cli/` orchestrates all of it**, and that is where to look for the wiring.
 `src/cli/council_run.py` chooses the findings and runs the council over them,

@@ -4,12 +4,14 @@ import json
 from itertools import chain, product
 
 from council.answer import MemberOrderSensitive
-from council.prompt import PROMPT_VERSION, REVERSED_PROMPT_VERSION
+from council.chairman import rule_on_metric
+from council.order_check import reconciled
+from council.prompt import PROMPT_VERSION, REVERSED_PROMPT_VERSION, build_prompt
 from council.roster import Roster
-from council.ruling import SettledMetric, UnresolvedMetric
+from council.ruling import MetricRuling, SettledMetric, UnresolvedMetric
 from council.runner import assess
-from cvss.metrics import METRIC_ORDER
 from council_samples import FALLBACKS, LEGAL_VALUE, OTHER_VALUE, QUOTABLE, clients_of, member
+from cvss.metrics import METRIC_ORDER
 
 # Reversed, this member reads AV and UI the other way: the list's order decided them.
 FLIPPED = {"AV", "UI"}
@@ -66,3 +68,39 @@ def test_each_call_is_announced_with_the_order_it_is_asked_in():
            lambda metric, name, reversed_options: announced.append((metric, reversed_options)),
            order_check=True)
     assert announced == list(product(METRIC_ORDER, (False, True)))
+
+
+def test_each_round_keeps_both_readings_of_every_member_in_roster_order():
+    clients = clients_of(answering_by_order([]))
+    roster = Roster((member("one"), member("two")))
+    done = assess(QUOTABLE, roster, FALLBACKS, clients, order_check=True)
+    readings = done.rounds[0].readings
+    assert [one.in_order.member.name for one in readings] == ["one", "two"]
+    assert {one.in_order.member.prompt_version for one in readings} == {PROMPT_VERSION}
+    assert {one.reversed_order.member.prompt_version for one in readings} == {
+        REVERSED_PROMPT_VERSION
+    }
+    assert {one.reversed_order.value for one in readings} == {OTHER_VALUE["AV"]}
+
+
+def reconciled_replies(round_) -> tuple:
+    """Give one round's replies as reconciling its kept readings makes them."""
+    return tuple(reconciled(one.in_order, one.reversed_order) for one in round_.readings)
+
+
+def ruled_again(round_) -> MetricRuling:
+    """Rule on one round again, from its kept readings reconciled."""
+    shown = build_prompt(round_.metric, QUOTABLE).advisory_shown
+    replies = reconciled_replies(round_)
+    return rule_on_metric(round_.metric, replies, shown, FALLBACKS[round_.metric])
+
+
+def test_keeping_both_readings_rules_exactly_as_reconciling_them_does():
+    rounds = run(order_check=True)[0].rounds
+    assert [one.replies for one in rounds] == [reconciled_replies(one) for one in rounds]
+    assert [one.ruling for one in rounds] == [ruled_again(one) for one in rounds]
+
+
+def test_a_run_asking_the_options_once_keeps_no_readings_pair():
+    done, _ = run(order_check=False)
+    assert [one.readings for one in done.rounds] == [()] * len(METRIC_ORDER)

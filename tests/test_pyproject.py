@@ -38,6 +38,12 @@ def declared_package_data() -> list[str]:
         return tomllib.load(handle)["tool"]["setuptools"]["package-data"]["report"]
 
 
+def declared_ruff() -> dict:
+    """Read the `[tool.ruff]` table that turns on import order and names the source roots."""
+    with PYPROJECT_PATH.open("rb") as handle:
+        return tomllib.load(handle)["tool"]["ruff"]
+
+
 def assets_on_disk() -> set[str]:
     """Give every asset file under src/report/assets, as pyproject names it."""
     return {f"assets/{one.name}" for one in ASSETS.iterdir() if one.is_file()}
@@ -82,3 +88,22 @@ def test_every_asset_on_disk_is_shipped_and_nothing_is_shipped_that_is_missing()
 def test_the_shipped_list_names_each_file_once():
     shipped = declared_package_data()
     assert len(shipped) == len(set(shipped))
+
+
+def test_the_lint_config_enforces_import_order():
+    # I is isort; without it `ruff check` passes a mis-ordered import.
+    assert "I" in declared_ruff()["lint"]["extend-select"]
+
+
+def test_the_sort_settings_keep_sorted_files_short():
+    # Without both, a re-sort wraps to one name per line and pushes files past 200.
+    ruff = declared_ruff()
+    assert ruff["line-length"] == 100
+    assert ruff["lint"]["isort"]["split-on-trailing-comma"] is False
+
+
+def test_the_source_roots_make_the_test_helpers_first_party():
+    # So report_samples and its siblings group with cli and report, not third-party.
+    roots = set(declared_ruff()["src"])
+    assert "src" in roots
+    assert {"tests/report", "tests/cli", "measurements"} <= roots

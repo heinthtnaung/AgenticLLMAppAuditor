@@ -20,17 +20,26 @@ from organisation.risk import FindingRisk
 from report.council_beside import COUNCIL_SOURCE, NOT_IN_THE_SCORE, CouncilFigure, council_figure
 from report.html_answers import derivation
 from report.html_layout import (
-    empty_note, figure_chip, listing, number, panel_head, scored_chip, tag, text,
+    empty_note,
+    figure_chip,
+    listing,
+    number,
+    panel_head,
+    scored_chip,
+    tag,
+    text,
 )
 from report.html_vector import vector_markup
 from report.record import Report
 from report.risk_order import bands_contested_first
+from report.risk_words import FLOORED_BY, PROVISIONAL
 
 RISK_SCALE = "org"
+# The Organisation Risk chip's fill class: it is filled with its band colour,
+# where the CVSS chip is outlined with a band-coloured edge, never one badge.
+RISK_FILL = "risk"
 NO_SOURCE = "no source scored this"
-PROVISIONAL = "provisional"
 BAND_MOVES = "the source changes the band"
-FLOORED_BY = "floored by"
 NO_RISK = "No finding was scored: this run recorded no organisation answers."
 
 RISK_LEDE = (
@@ -100,7 +109,7 @@ def risk_row(scored) -> str:
     """Give one organisation score and the source whose technical severity produced it."""
     return (
         tag("span", text(source_of(scored)), "source-name")
-        + scored_chip(RISK_SCALE, number(scored.score), scored.band, "risk")
+        + scored_chip(RISK_SCALE, number(scored.score), scored.band, RISK_FILL)
         + floors_note(scored)
         + unknown_answers(scored)
     )
@@ -111,7 +120,7 @@ def floors_note(scored) -> str:
     if not scored.floors:
         return ""
     steps = [f"{one.rule_id}: {one.band_before} to {one.band_after}" for one in scored.floors]
-    return tag("span", text(f"{FLOORED_BY} {', '.join(steps)}"), "refusal")
+    return tag("span", text(f"{FLOORED_BY} {', '.join(steps)}"), "floor-note")
 
 
 def source_of(scored) -> str:

@@ -3,8 +3,9 @@
 Every setting is read the same way -- an environment variable wins, then this
 file -- and this is the part they share: which `AUDITOR_*` names exist, and how
 a line of the file is read. What each setting's value may be is its reader's:
-`council.settings` for the server, `council.member_setting` for the members,
-`council.escalation_setting` for the escalation model.
+`council.settings` for the server and whether it may be another machine,
+`council.member_setting` for the members, `council.escalation_setting` for the
+escalation model.
 
 **Only `AUDITOR_*` lines are read.** The file is the operator's and holds other
 things -- on this machine, a key for a hosted service this project does not use
@@ -22,12 +23,13 @@ QUOTES = "\"'"
 
 MODEL = "AUDITOR_MODEL"
 SERVER = "AUDITOR_SERVER_URL"
+REMOTE_SERVER = "AUDITOR_REMOTE_SERVER"
 TIMEOUT = "AUDITOR_TIMEOUT_SECONDS"
 CONTEXT = "AUDITOR_CONTEXT_TOKENS"
 COUNCIL_MEMBERS = "AUDITOR_COUNCIL_MEMBERS"
 ESCALATION_MODEL = "AUDITOR_ESCALATION_MODEL"
 # Every name a setting may have, in the order a refusal lists them.
-NAMES = (MODEL, SERVER, TIMEOUT, CONTEXT, COUNCIL_MEMBERS, ESCALATION_MODEL)
+NAMES = (MODEL, SERVER, REMOTE_SERVER, TIMEOUT, CONTEXT, COUNCIL_MEMBERS, ESCALATION_MODEL)
 
 FROM_ENVIRONMENT = "the environment"
 

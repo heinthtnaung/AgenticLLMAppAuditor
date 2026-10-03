@@ -12,7 +12,12 @@ The sentences this shares with the terminal are `report.explanation_words`.
 
 from report.explanation_record import ExplainedMetric, SourcesExplained, SourcesNotExplained
 from report.explanation_words import (
-    CHECKED, HEADING, MODEL_WRITTEN, explained_by, not_explained, sources_on,
+    CHECKED,
+    HEADING,
+    MODEL_WRITTEN,
+    explained_by,
+    not_explained,
+    sources_on,
 )
 from report.html_layout import separated, tag, text
 

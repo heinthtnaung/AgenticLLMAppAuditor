@@ -23,11 +23,10 @@ from itertools import chain, product
 from math import sqrt
 from typing import Iterable, Mapping
 
-from cvss.metrics import METRIC_ORDER
-from report.council_record import CouncilOutcome, MemberSaid, MetricRuling, Outcome, SaidKind
-
 from council_eval.dataset import Item
 from council_eval.reference import r1_reference
+from cvss.metrics import METRIC_ORDER
+from report.council_record import CouncilOutcome, MemberSaid, MetricRuling, Outcome, SaidKind
 
 # A 95% interval.
 Z = 1.96

@@ -9,7 +9,13 @@ comes out of a real chairman, through `council_runs`.
 import pytest
 
 from council_runs import (
-    ADVISORY, DISSENTING, HYPHENATED_AT_THE_EDGE, INVENTED, LONG_QUOTE, OTHER_QUOTE, answering,
+    ADVISORY,
+    DISSENTING,
+    HYPHENATED_AT_THE_EDGE,
+    INVENTED,
+    LONG_QUOTE,
+    OTHER_QUOTE,
+    answering,
     council_ran,
 )
 from report.record import build_report

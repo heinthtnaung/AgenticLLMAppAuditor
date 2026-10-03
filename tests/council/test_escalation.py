@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from council.answer import MemberAnswer, MemberOrderSensitive
+from council.answer import MemberAnswer, MemberFoundNoEvidence, MemberOrderSensitive
 from council.escalation import escalate
 from council.prompt import PROMPT_VERSION, REVERSED_PROMPT_VERSION
 from council.roster import Roster
@@ -75,6 +75,14 @@ def test_a_stable_verified_contested_value_settles_it_and_the_council_s_ruling_i
     assert round_.replies == council.rounds[0].replies
 
 
+def test_the_escalation_keeps_both_its_readings_beside_the_one_reply_made_of_them():
+    declined = {("big-local", "AV", REVERSED_PROMPT_VERSION): "NO_EVIDENCE"}
+    escalation = escalated_run(declined)[0].rounds[0].escalation
+    assert isinstance(escalation.readings.in_order, MemberAnswer)
+    assert isinstance(escalation.readings.reversed_order, MemberFoundNoEvidence)
+    assert isinstance(escalation.reply, MemberFoundNoEvidence)
+
+
 def test_a_value_the_orders_disagree_on_leaves_the_metric_contested_and_is_recorded():
     flipped = {("big-local", "AV", REVERSED_PROMPT_VERSION): "L", ("big-local", "AV"): "N"}
     round_ = escalated_run(flipped)[0].rounds[0]
@@ -114,3 +122,15 @@ def test_an_unfit_escalation_model_is_refused_before_it_is_asked(escalation, sai
     with pytest.raises(ValueError, match=said):
         escalate(council, RAW_ADVISORY, escalation, clients)
     assert asked == []
+
+
+def test_an_escalation_model_on_the_members_server_elsewhere_is_asked_like_a_local_one():
+    # The members' own server, opted in to with AUDITOR_REMOTE_SERVER=yes, and so not hosted.
+    elsewhere = member("big-elsewhere", model="big:27b", runs_local=False, egress=True)
+    asked = []
+    clients = {"ollama": answering(asked, {**CONTESTING_AV, ("big-elsewhere", "AV"): "L"})}
+    council = assess(RAW_ADVISORY, COUNCIL, FALLBACKS, clients, order_check=True)
+    asked.clear()
+    done = escalate(council, RAW_ADVISORY, elsewhere, clients)
+    assert [who for who, *_ in asked] == ["big-elsewhere", "big-elsewhere"]
+    assert done.rounds[0].escalation.reply.member.ran_local is False

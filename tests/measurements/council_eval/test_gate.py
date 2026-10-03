@@ -5,12 +5,14 @@ from pathlib import Path
 import pytest
 
 import eval_samples as samples
-from cli.council_run import OLLAMA_PROVIDER, assess_one, build_roster
+from cli.council_run import assess_one, build_roster
+from council.roster import OLLAMA_PROVIDER
 from council.ruling import Basis
 from council_eval.commands import main
 from council_eval.gate import differences, recorded_findings, replayed_findings
 from council_eval.recording import RecordingClient
 from council_eval.variants import PASS_ORDER_CHECK
+from report.council_words import SAME_EVIDENCE
 from report.text_council import advisory_lines
 
 OTHER_ANSWERS = samples.ANSWERS | {"AV": samples.reply("L"), "UI": samples.DECLINED}
@@ -136,6 +138,26 @@ def test_a_recording_without_the_figure_still_has_its_vector_compared():
     recorded = recorded_findings(with_heading(settled_outcome(), heading))
     found = differences(recorded, replayed_findings((settled_outcome(),)))
     assert any("heading" in one for one in found)
+
+
+def test_a_recording_with_no_flag_passes_a_replay_flagging_one_which_is_the_known_gap():
+    """The gap the gate documents, asserted so that closing it cannot happen unremarked."""
+    # RED HERE MEANS THE GAP HAS BEEN CLOSED, not that something broke. A finding
+    # whose recording shows no same-evidence flag matches the replay with its
+    # flags taken out, so one recorded after the flag and missing one passes too.
+    lines = advisory_lines(outcome())
+    assert f"      {SAME_EVIDENCE}" in lines
+    before = [line for line in lines if line.strip() != SAME_EVIDENCE]
+    assert differences(recorded_findings(report_of(before)), replayed_findings((outcome(),))) == []
+
+
+def test_a_recording_showing_a_flag_the_replay_lacks_is_named():
+    apart = outcome(second=samples.ANSWERS | {"AV": samples.reply("L", samples.CRASH)})
+    lines = advisory_lines(apart)
+    at = next(i for i, line in enumerate(lines) if line.strip().startswith("AV  ·  contested"))
+    flagged = [*lines[: at + 1], f"      {SAME_EVIDENCE}", *lines[at + 1 :]]
+    found = differences(recorded_findings(report_of(flagged)), replayed_findings((apart,)))
+    assert any("unsettled lines are now" in one for one in found)
 
 
 @pytest.mark.parametrize("pair", GATED_PAIRS, ids=["scored pair", "third runs"])

@@ -23,7 +23,6 @@ from cvss.metrics import METRIC_ORDER
 from cvss.vector import differing_metrics
 from deps.syft_report import Component, component_order
 from deps.trivy_report import Advisory
-
 from findings.assessment import SourceScore, UnreadableSource, read_sources
 
 NO_ADVISORIES: tuple[Advisory, ...] = ()

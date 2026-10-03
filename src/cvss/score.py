@@ -56,6 +56,9 @@ SEVERITY_BANDS = (
     (0.0, "None"),
 )
 
+# The band names alone, worst first, defined here once so nothing restates them.
+SEVERITY_BAND_NAMES: tuple[str, ...] = tuple(name for _, name in SEVERITY_BANDS)
+
 
 def base_score(vector: CvssVector) -> float:
     """Compute the CVSS Base score for a parsed vector, rounded to one decimal."""

@@ -16,7 +16,9 @@ deterministic: no clock, no random id, stable ordering, so one record gives
 byte-identical HTML.
 """
 
+from organisation.approval import Approval
 from report.council_words import models_named
+from report.disagreement import sources_agree, sources_disagree
 from report.html_absences import inventory_panel
 from report.html_assets import script, stylesheet
 from report.html_council import council_panel
@@ -26,8 +28,6 @@ from report.html_overview import overview_panel
 from report.html_risk import risk_panel
 from report.html_secrets import secrets_panel
 from report.html_tabs import Panel, panels_main, tabbar
-from report.disagreement import sources_agree, sources_disagree
-from organisation.approval import Approval
 from report.provenance import SCORING_RULES_LABEL, AdvisoryDatabase
 from report.record import Report
 
@@ -113,7 +113,7 @@ def models_line(run) -> str:
 
 
 def approval_indicator(report: Report) -> str:
-    """Give the masthead's glance at the human act: a green pill approved, else a muted note."""
+    """Give the masthead's glance at the human act: a green box approved, else a muted note."""
     decided = report.approval
     if isinstance(decided, Approval):
         who = f"{decided.decision.value} by " + tag("b", text(decided.approver))

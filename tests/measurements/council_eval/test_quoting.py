@@ -3,7 +3,12 @@
 import eval_samples  # noqa: F401  (puts the evaluation package on the path)
 from council.definitions import definition_of
 from council.ruling import Basis
-from council_eval.quoting import prompt_quoted_by_member, sole_by_member, unverified_by_member
+from council_eval.quoting import (
+    is_prompt_text,
+    prompt_quoted_by_member,
+    sole_by_member,
+    unverified_by_member,
+)
 from council_eval.variants import LIBRARY, LIBRARY_GUIDANCE
 from report.council_record import (
     CouncilWithoutVector,
@@ -61,3 +66,11 @@ def test_a_quotation_of_a_variant_s_guidance_is_the_prompt_only_where_the_varian
     outcomes = record(MetricRuling("S", Outcome.UNRESOLVED, (quoted(QWEN, part, False),)))
     assert prompt_quoted_by_member(outcomes, LIBRARY.added_texts) == {("qwen", "S"): 1}
     assert prompt_quoted_by_member(outcomes) == {}
+
+
+def test_a_bare_quotation_is_the_prompt_s_where_it_is_the_metric_s_definition_or_text_added():
+    other = definition_of("AV").value_meanings["N"]
+    assert is_prompt_text("UI", PROMPT_TEXT, ())
+    assert not is_prompt_text("UI", other, ())
+    assert is_prompt_text("UI", other, (other,))
+    assert not is_prompt_text("UI", "   ", (other,))

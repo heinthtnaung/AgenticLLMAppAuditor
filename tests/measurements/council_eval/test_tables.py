@@ -44,3 +44,12 @@ def test_a_pass_names_its_pinning_and_how_much_was_uncommitted():
     lines = pass_lines({"model": "m", "seed": 11, "think": False, "changes": [" M src/x.py"]})
     assert "  seed: 11" in lines and "  think: False" in lines
     assert lines[-1] == "  uncommitted at launch: 1 paths"
+
+
+def test_a_pasted_pass_names_what_it_cannot_show_and_a_local_pass_prints_as_before():
+    local = pass_lines({"model": "m", "changes": []})
+    pasted = pass_lines({"model": "m", "changes": [], "interface": "web", "web_browsing": "no"})
+    assert "  interface: web" in pasted and "  web_browsing: no" in pasted
+    added = [line for line in pasted if line not in local]
+    assert added == ["  interface: web", "  web_browsing: no"]
+    assert not any(line.startswith("  interface") for line in local)

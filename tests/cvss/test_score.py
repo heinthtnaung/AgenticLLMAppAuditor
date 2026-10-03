@@ -4,7 +4,14 @@ import math
 
 import pytest
 
-from cvss.score import base_score, impact_score, roundup, severity_band
+from cvss.score import (
+    SEVERITY_BAND_NAMES,
+    SEVERITY_BANDS,
+    base_score,
+    impact_score,
+    roundup,
+    severity_band,
+)
 from cvss.vector import differing_metrics, parse
 
 # CVE-2025-37164: one CVE, two published scorings, one metric apart.
@@ -155,3 +162,8 @@ def test_a_number_off_the_scale_is_refused_rather_than_banded(score):
 def test_every_published_score_bands_without_complaint():
     banded = [severity_band(base_score(parse(text))) for text, _ in PUBLISHED_SCORES]
     assert banded == ["Critical", "Critical", "High", "High", "Low", "None", "None"]
+
+
+def test_the_band_names_are_the_bands_named_once():
+    # The one place the names are held, so a renderer imports them rather than restating.
+    assert SEVERITY_BAND_NAMES == tuple(name for _, name in SEVERITY_BANDS)

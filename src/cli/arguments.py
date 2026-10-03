@@ -27,10 +27,15 @@ import argparse
 from dataclasses import dataclass
 from pathlib import Path
 
-from council.env_file import COUNCIL_MEMBERS
+from council.env_file import COUNCIL_MEMBERS, SERVER
 
 PROGRAM = "audit"
-DESCRIPTION = "Audit a repository against the pinned advisory database, offline."
+# The scan is offline; a council, when one runs, reaches a model server, so the
+# description cannot call the whole run offline. SERVER names it, here or remote.
+DESCRIPTION = (
+    "Audit a repository against the pinned advisory database, offline; a council, "
+    f"when one runs, asks the Ollama server {SERVER} names."
+)
 
 TEXT_FORMAT = "text"
 JSON_FORMAT = "json"
@@ -46,13 +51,14 @@ ANSWERS_HELP = (
     "a JSON file of this organisation's answers to the approved questions; "
     "without one no Organisation Risk Score is computed and the report says so"
 )
+# Not "local": with AUDITOR_REMOTE_SERVER=yes the server is another machine.
 MEMBER_HELP = (
-    "add one local model to the assessor council, by its Ollama name; "
-    "repeat for more members, and give none to run no council"
+    f"add one model on the Ollama server {SERVER} names to the assessor council, "
+    "by its Ollama name; repeat for more members, and give none to run no council"
 )
 COUNCIL_HELP = (
-    f"run the assessor council with the local models {COUNCIL_MEMBERS} names, "
-    "in the environment or .env, comma-separated"
+    f"run the assessor council with the models {COUNCIL_MEMBERS} names, in the environment "
+    f"or .env, comma-separated, on the Ollama server {SERVER} names"
 )
 ALL_FINDINGS_HELP = (
     "put every finding to the council, not only those whose published sources "

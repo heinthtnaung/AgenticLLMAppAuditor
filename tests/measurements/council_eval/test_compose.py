@@ -7,9 +7,11 @@ import pytest
 
 import council.ollama
 import eval_samples as samples
-from council_eval import compose as compose_module
-from cli.council_run import OLLAMA_PROVIDER, assess_one, build_roster
+from cli.council_run import assess_one, build_roster
 from council.prompt import PROMPT_VERSION, REVERSED_PROMPT_VERSION
+from council.roster import OLLAMA_PROVIDER
+from council.settings import Settings
+from council_eval import compose as compose_module
 from council_eval.collect import ask_item
 from council_eval.compose import pass_models, replay_roster, rosters
 from council_eval.recording import RecordingClient
@@ -22,7 +24,6 @@ from council_eval.variants import (
     Variant,
     VariantMismatch,
 )
-from council.settings import Settings
 
 # The second member disagrees on AV with a verified quotation, and declines UI.
 OTHER_ANSWERS = samples.ANSWERS | {"AV": samples.reply("L"), "UI": samples.DECLINED}

@@ -23,10 +23,9 @@ from council.ollama import (  # noqa: E402
     estimated_tokens,
 )
 from council.prompt import build_prompt  # noqa: E402
-from council_eval.dataset import read_dataset  # noqa: E402
-from council_eval.replies import read_replies  # noqa: E402
-from council_eval.dataset import Item  # noqa: E402
+from council_eval.dataset import Item, read_dataset  # noqa: E402
 from council_eval.recording import CallRecord  # noqa: E402
+from council_eval.replies import read_replies  # noqa: E402
 from council_eval.variants import Variant, variant_asked, variant_prompt  # noqa: E402
 
 RECORD = ROOT / "measurements" / "prompt_tokens.2026-09-25.txt"
@@ -94,6 +93,14 @@ def test_the_worst_prompt_has_been_counted_by_these_models_only():
     assert set(worst_prompt_ratios()) == {
         "qwen2.5:7b-instruct", "llama3.2:latest", "gemma4:latest", "qwen2.5-coder:7b-instruct",
     }
+
+
+def test_the_saved_counts_name_no_server_having_been_taken_before_the_field():
+    # A known gap, asserted: the file is as `prompt_tokens.py` printed it at `d591c21`,
+    # which read and counted at its `DEFAULT_HOST`, loopback, and named no server.
+    # A re-count names its server, and replacing the file with one turns this red.
+    first = RECORD.read_text(encoding="utf-8").splitlines()[0]
+    assert first == "prompt member-base-metric-3, Ollama 0.34.3"
 
 
 def highest_ratio() -> float:

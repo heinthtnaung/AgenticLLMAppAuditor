@@ -5,11 +5,11 @@ import json
 from cli.council_detail import rulings_of
 from cli.council_outcome import VECTOR_VERSION, metrics_of, outcome_of
 from cli.council_run import FALLBACKS, advisory_text, build_roster
+from cli_samples import ADVISORY, LEGAL, LODASH, QUOTATION
 from council.ruling import UnresolvedMetric
 from council.runner import assess
 from findings.finding import build_finding
 from report.council_record import CouncilAssessment, CouncilWithoutVector
-from cli_samples import ADVISORY, LEGAL, LODASH, QUOTATION
 
 FINDING = build_finding(LODASH, ADVISORY)
 

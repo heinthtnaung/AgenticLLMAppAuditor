@@ -7,8 +7,8 @@ produce. **Nothing here opens a socket** -- the model answers from a dict.
 
 import json
 
-from cli.council_run import local_member
 from cli.explanation_run import explanations
+from council.providers import ollama_member
 from report.absences import Coverage
 from report.record import Report, build_report
 from report_samples import (
@@ -21,7 +21,7 @@ from report_samples import (
     finding,
 )
 
-EXPLAINER = local_member("big:27b")
+EXPLAINER = ollama_member("big:27b")
 DETAILS = "An issue was discovered. Remote users can read some files."
 QUOTED = "Remote users can read some files"
 WHY = "It says some files, which one reader takes as limited and another as total."

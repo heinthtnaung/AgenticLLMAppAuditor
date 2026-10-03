@@ -3,13 +3,7 @@
 import pytest
 
 import recorded_replies as recorded
-from council.ollama import (
-    GENERATE_PATH,
-    LocalModel,
-    ask,
-    build_request,
-    generate_url,
-)
+from council.ollama import GENERATE_PATH, LocalModel, ask, build_request, generate_url
 from council.prompt import build_prompt
 from council.reply import read_reply
 from council.transport import ModelUnavailable

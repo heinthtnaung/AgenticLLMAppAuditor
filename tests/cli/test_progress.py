@@ -88,6 +88,20 @@ def test_the_finding_count_climbs_as_the_run_moves_on():
     assert "2/3" in written.getvalue()
 
 
+def test_an_escalation_after_every_council_names_the_finding_it_went_back_to():
+    watching, written = reporting(findings=3, members=1)
+    for advisory in ("CVE-1", "CVE-2", "CVE-3"):
+        watching.starting(advisory)
+    watching.returning_to(1, "CVE-1")
+    watching.escalating("S", "big")
+    watching.returning_to(3, "CVE-3")
+    watching.escalating("AC", "big")
+    assert written.getvalue().splitlines() == [
+        "escalation 1  finding 1/3 CVE-1  S  big",
+        "escalation 2  finding 3/3 CVE-3  AC  big",
+    ]
+
+
 class RecordingStream(io.StringIO):
     """A stream that remembers being flushed, which StringIO cannot show on its own."""
 
@@ -121,6 +135,7 @@ def test_a_run_nobody_is_watching_says_nothing():
     # A scan with no council takes about a second and needs none of this.
     NO_PROGRESS.starting("CVE-1")
     NO_PROGRESS.asking("AV", "qwen")
+    NO_PROGRESS.returning_to(1, "CVE-1")
 
 
 def test_each_explanation_is_said_before_it_is_asked_counting_towards_its_total():

@@ -29,7 +29,6 @@ from council.providers import AskMember
 from council.roster import Member
 from council.transport import ModelUnavailable
 
-
 # Why an item was not kept, the first that applies, in this order.
 NOT_A_DISPUTED_METRIC = "not a disputed metric"
 EMPTY_WHY = "empty why"

@@ -13,9 +13,10 @@ its own file, under `tmp_path`.
 **And no test reaches the model server.** Every request to it goes through
 `council.transport`, and outside the live tests (`COUNCIL_LIVE_OLLAMA`) one
 sent to the server's port is refused, so a test that forgot its fake client
-fails rather than asking the operator's Ollama for real. A test's own server,
-on a port of its own, is still reached, whether it is asked with a request or a
-plain URL.
+fails rather than asking the operator's Ollama for real. So is one sent to any
+machine but this one, on any port, so a test of a server elsewhere
+(`remote_server`) cannot reach one. A test's own server, on a port of its own
+here, is still reached, whether it is asked with a request or a plain URL.
 
 **The guard covers this process and nothing it starts.** A subprocess -- a
 docs live check running `audit`, say -- has its own opener and is not guarded.
@@ -27,6 +28,7 @@ the day one does.
 
 import os
 from pathlib import Path
+from typing import Iterator
 from urllib.parse import urlsplit
 
 import pytest
@@ -37,6 +39,9 @@ from council import env_file, settings, transport
 NO_ENV_FILE = Path(__file__).resolve().parent / "no-operator-settings.env"
 # The flag the live tests are asked for by; only they may reach a model server.
 LIVE_MODEL_FLAG = "COUNCIL_LIVE_OLLAMA"
+# A documentation address (RFC 5737), which routes nowhere, standing in for an
+# Ollama server on the operator's network.
+REMOTE_SERVER_URL = "http://192.0.2.15:11434"
 
 
 def pytest_configure(config: pytest.Config) -> None:
@@ -58,11 +63,23 @@ def no_model_server_is_asked(monkeypatch: pytest.MonkeyPatch) -> None:
     server = urlsplit(settings.current_settings().server)
 
     def refusing(request, *given, **named):
-        """Fail a request to the model server; pass any other, such as a test's own server."""
-        # `open` takes a plain URL as well as a request, as `pass_provenance` sends one.
+        """Fail a request to the model server or another machine; pass a test's own server here."""
+        # `open` takes a plain URL as well as a request, as `transport.get_json` sends one.
         url = request if isinstance(request, str) else request.full_url
-        if urlsplit(url).port == server.port:
+        sent_to = urlsplit(url)
+        if sent_to.port == server.port or sent_to.hostname not in settings.LOOPBACK_HOSTS:
             raise AssertionError(f"a test sent a request to {url}; give it a fake client instead")
         return opening(request, *given, **named)
 
     monkeypatch.setattr(transport.NO_PROXY_OPENER, "open", refusing)
+
+
+@pytest.fixture
+def remote_server(monkeypatch: pytest.MonkeyPatch) -> Iterator[str]:
+    """Opt the settings in to an Ollama server on another machine for one test, giving its URL."""
+    monkeypatch.setenv(env_file.SERVER, REMOTE_SERVER_URL)
+    monkeypatch.setenv(env_file.REMOTE_SERVER, settings.REMOTE_OPT_IN)
+    settings.current_settings.cache_clear()
+    yield REMOTE_SERVER_URL
+    # Read again by the next test, from the environment `monkeypatch` puts back.
+    settings.current_settings.cache_clear()

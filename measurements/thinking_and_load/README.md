@@ -25,11 +25,17 @@ one server, on the RTX 3070 (CUDA). No other client was using the server.
 | `probe_think.jsonl` | 6 | per model: `think` left out, then `think` false |
 | `probe_state.jsonl` | 16 | per model: cold left out, warm left out, warm false, cold false, warm false again; Gemma then warm true |
 
-Each line is the model, the step, and Ollama's whole envelope without
-`context`, the token ids. **Cold** means the first call after the models were
-unloaded; **warm** means straight after the call before it, on the model that
-call left loaded. Every cold call's envelope shows a load of several seconds,
-and no warm call's does.
+Each line is the model, the step, and Ollama's whole envelope without `context`,
+the token ids. A line `probe.py` writes now also names the server it asked, with
+its `remote_host` where that is another machine, and the model's `digest` and
+the server's version as `ollama`. Both are read once, before the first call, as
+a pass header reads them and under the same names; a model the server does not
+list under exactly the name given is refused before anything is asked. The two
+saved files, written by scratch drafts, name none of these; when, where and on
+what they ran is in the paragraph and table above. **Cold** means the first call
+after the models were unloaded; **warm** means straight after the call before
+it, on the model that call left loaded. Every cold call's envelope shows a load
+of several seconds, and no warm call's does.
 
 ## What the files show
 

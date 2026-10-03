@@ -9,7 +9,13 @@ from organisation.risk import assess, per_source
 from report.absences import Coverage
 from report.record import Report, build_report
 from report_samples import (
-    HARMLESS, LOW_CONFIDENTIALITY, PROVENANCE, TOTAL_LOSS, catalogue, component, finding,
+    HARMLESS,
+    LOW_CONFIDENTIALITY,
+    PROVENANCE,
+    TOTAL_LOSS,
+    catalogue,
+    component,
+    finding,
 )
 from scoring.library import APPROVED_QUESTIONS
 from scoring.question import Answer

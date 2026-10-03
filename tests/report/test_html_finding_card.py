@@ -5,12 +5,25 @@ here once: the advisory link leaves the page with an inline icon and nothing els
 reaches off it, and a refused source stays on the card marked not scored.
 """
 
-from report.html_finding_card import advisory_name, card_head, source_table, unreadable_table
+from report.html_finding_card import (
+    advisory_name,
+    card_head,
+    council_flag,
+    source_table,
+    unreadable_table,
+)
 from report.record import build_report
 from report_samples import (
-    ADVISORY_URL, CONFIDENTIALITY_ONLY, ESCAPED_URL, PROVENANCE, VERSION_2_VECTOR,
-    catalogue, component, finding,
+    ADVISORY_URL,
+    CONFIDENTIALITY_ONLY,
+    ESCAPED_URL,
+    PROVENANCE,
+    VERSION_2_VECTOR,
+    catalogue,
+    component,
+    finding,
 )
+from same_evidence_runs import same_words
 
 DJANGO = component()
 
@@ -49,6 +62,16 @@ def test_every_source_is_a_row_of_its_own_under_generic_headers():
     assert table.count('<span class="source-name">') == 2
     assert "<th>Source</th>" in table
     assert "<th>ghsa" not in table and "<th>nvd" not in table
+
+
+def test_a_metric_read_two_ways_from_the_same_words_is_flagged_on_the_card():
+    one = finding(DJANGO)
+    report = build_report(PROVENANCE, catalogue(DJANGO), (one,), {}, (same_words("CVE-2019-14234"),))
+    assert council_flag(report, one) == '<p class="card-flag"><span class="flag">same evidence: AV</span></p>'
+
+
+def test_a_card_whose_council_flagged_nothing_carries_no_flag():
+    assert council_flag(report_of(), finding(DJANGO)) == ""
 
 
 def test_a_refused_source_is_kept_marked_not_scored_with_its_reason():

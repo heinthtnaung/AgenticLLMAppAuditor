@@ -68,16 +68,32 @@ class SourcesExplained:
 
 @dataclass(frozen=True)
 class SourcesNotExplained:
-    """A finding with no explanation of its sources, why there is none, and what was not kept."""
+    """A finding with no explanation of its sources, why there is none, and what was not kept.
+
+    `model` and `prompt_version` name the explainer and its prompt where a model
+    was asked, as `SourcesExplained` does, and are both empty where none was: the
+    sources agree, or there is no text to read.
+    """
 
     advisory_id: str
     because: str
     dropped_items: tuple[DroppedMetric, ...] = ()
+    model: str = ""
+    prompt_version: str = ""
+
+    @property
+    def asked(self) -> bool:
+        """Say whether a model was asked, and so whether the record names one."""
+        return bool(self.model)
 
     def __post_init__(self) -> None:
-        """Refuse an unexplained absence, which reads on a report as an oversight."""
+        """Refuse an unexplained absence, or model output that does not name what produced it."""
         if not self.because:
             raise ValueError(f"{self.advisory_id} has no explanation and no reason why")
+        if bool(self.model) != bool(self.prompt_version):
+            raise ValueError(f"{self.advisory_id} names a model or a prompt version, not both")
+        if self.dropped_items and not self.asked:
+            raise ValueError(f"{self.advisory_id} holds dropped items and names no model")
 
 
 ExplanationRecord = SourcesExplained | SourcesNotExplained

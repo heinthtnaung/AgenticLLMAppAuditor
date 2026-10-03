@@ -15,23 +15,26 @@ from dataclasses import replace
 from pathlib import Path
 from typing import TextIO
 
-from council.escalation_setting import escalation_model
-from council.member_setting import council_members
-from council.ollama import PINNED_SEED, PINNED_TEMPERATURE, PINNED_THINKING
-from council.settings import current_settings
-from council.transport import get_json
-from deps import manifests, syft_runner, trivy_runner
-from deps.trivy_database import DatedDatabase
-from findings.finding import build_findings
-from report.absences import Coverage
-from report.provenance import AdvisoryDatabase, LocalModels, RunProvenance
-from report.record import Report, build_report
-
 from cli.arguments import Options
 from cli.council_run import ORDER_CHECK, assessments, build_roster, escalation_member, watching
 from cli.explanation_run import explainer_of, explaining, explanations
 from cli.model_identity import local_identities
 from cli.organisation_run import organisation_of, weigh_findings
+from council.escalation import refuse_unfit_escalation
+from council.escalation_setting import escalation_model
+from council.member_setting import council_members
+from council.ollama import PINNED_SEED, PINNED_TEMPERATURE, PINNED_THINKING
+from council.providers import PROVIDER_CLIENTS
+from council.settings import current_settings, remote_host
+from council.transport import get_json
+from deps import manifests, syft_runner, trivy_runner
+from deps.syft_report import Catalogue
+from deps.trivy_database import DatedDatabase
+from deps.trivy_runner import TrivyScan
+from findings.finding import build_findings
+from report.absences import Coverage
+from report.provenance import AdvisoryDatabase, LocalModels, RunProvenance
+from report.record import Report, build_report
 
 
 def run_audit(
@@ -41,10 +44,7 @@ def run_audit(
     # Read first, like the walk below: a bad setting stops the run before the scan.
     options = members_asked_for(options)
     local = local_models_of(options)
-    # Walked first: a directory nobody can list stops the run before the scan.
-    unread = manifests.unread_manifests(options.repository)
-    catalogue = syft_runner.scan_directory(options.repository)
-    scanned = trivy_runner.scan_directory(options.repository, database.cache)
+    unread, catalogue, scanned = scan_repository(options.repository, database.cache)
     findings = build_findings(catalogue.components, scanned.advisories)
     council = council_of(findings, options, progress_to, local)
     # Only once every value the council and escalation produce is in, for every finding.
@@ -63,6 +63,21 @@ def run_audit(
         coverage=coverage_of(options, unread),
         explanations=explained,
     )
+
+
+def scan_repository(
+    repository: Path, cache: Path
+) -> tuple[tuple[str, ...], Catalogue, TrivyScan]:
+    """Walk and scan the repository's real directory: manifests, components and advisories."""
+    # Resolved once so both scanners descend the same real directory. Syft follows a
+    # symlinked root but `trivy fs` does not, so a linked root would catalogue in Syft
+    # and match nothing in Trivy -- a "could not run" reading as "found nothing".
+    # Absolute changes no path either tool reports; the record still names it as given.
+    # Walked first: a directory nobody can list stops the run before the scan.
+    root = repository.resolve()
+    unread = manifests.unread_manifests(root)
+    catalogue = syft_runner.scan_directory(root)
+    return unread, catalogue, trivy_runner.scan_directory(root, cache)
 
 
 def coverage_of(options: Options, unread: tuple[str, ...]) -> Coverage:
@@ -101,6 +116,8 @@ def local_models_of(options: Options) -> LocalModels | None:
     if not options.council_models:
         return None
     chosen, escalation = current_settings(), escalation_model()
+    # Before the server is read or the repository scanned: a run that must stop starts nothing.
+    refuse_unfit_escalation(escalation_member(escalation), options.council_models, PROVIDER_CLIENTS)
     # Two reads of the server, and only here: a run naming no member makes neither.
     version, models = local_identities(options.council_models, escalation, chosen.server, get_json)
     return LocalModels(
@@ -114,6 +131,7 @@ def local_models_of(options: Options) -> LocalModels | None:
         escalation_model=escalation,
         ollama_version=version,
         models=models,
+        remote_host=remote_host(chosen.server),
     )
 
 

@@ -5,7 +5,12 @@ cannot drift apart on the name of a control.
 """
 
 from report.html_filters import (
-    Segment, empty_line, search_box, segmented, toggle_all_button, toolbar,
+    Segment,
+    empty_line,
+    search_box,
+    segmented,
+    toggle_all_button,
+    toolbar,
 )
 
 SEGMENTS = (Segment("all", "All", 3), Segment("disagree", "Disagree", 1))

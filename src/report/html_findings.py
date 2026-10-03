@@ -12,13 +12,23 @@ cards a reader sees and in what order, so the two change for different reasons.
 """
 
 from report.disagreement import (
-    agreement_unchecked, bands_crossed, most_contested_first, score_spread, sources_agree,
+    agreement_unchecked,
+    bands_crossed,
+    most_contested_first,
+    score_spread,
+    sources_agree,
     sources_disagree,
 )
 from report.explanation_words import LEDE as EXPLANATION_LEDE
 from report.html_explanation import why_block
 from report.html_finding_card import (
-    article, card_head, card_links, nothing_published, source_table, unreadable_table,
+    article,
+    card_head,
+    card_links,
+    council_flag,
+    nothing_published,
+    source_table,
+    unreadable_table,
 )
 from report.html_layout import empty_note, group, number, panel_head, tag, text
 from report.record import Report
@@ -85,9 +95,9 @@ def cards_of(report: Report, findings: list, build) -> str:
 
 def contested_card(report: Report, finding) -> str:
     """Give one contested finding: spread, sources, any refused one, and why they differ."""
-    body = card_head(report, finding) + facts(finding) + source_table(finding)
-    body += refused_note(finding) + why_block(report, finding) + card_links(report, finding)
-    return article(finding, "disagree", body)
+    body = card_head(report, finding) + council_flag(report, finding) + facts(finding)
+    body += source_table(finding) + refused_note(finding) + why_block(report, finding)
+    return article(finding, "disagree", body + card_links(report, finding))
 
 
 def plain_card(report: Report, finding) -> str:

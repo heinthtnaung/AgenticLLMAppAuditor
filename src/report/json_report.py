@@ -16,6 +16,8 @@ something.
 import json
 from typing import Any
 
+from report.absences import Absence
+from report.approval_needed import needing_approval, reasons_for
 from report.disagreement import (
     bands_crossed,
     carries_a_refused_source,
@@ -28,8 +30,6 @@ from report.json_local_models import local_models_of
 from report.json_risk import approval_of, risk_of
 from report.json_secrets import secrets_of
 from report.provenance import AdvisoryDatabase
-from report.absences import Absence
-from report.approval_needed import needing_approval, reasons_for
 from report.record import Report
 
 INDENT = 2

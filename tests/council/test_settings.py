@@ -6,7 +6,7 @@ import pytest
 
 import council.ollama
 from council import settings
-from council.env_file import NAMES
+from council.env_file import NAMES, REMOTE_SERVER
 from council.ollama import LocalModel, build_request
 from council.prompt import build_prompt
 from council.settings import Settings, SettingsError, current_settings, load_settings
@@ -46,7 +46,7 @@ def test_the_old_server_form_with_its_endpoint_is_read_as_the_server_alone(tmp_p
 @pytest.mark.parametrize(
     "value, said",
     [
-        ("http://ollama.example.com:11434", "is not this machine"),
+        ("http://ollama.example.com:11434", "is not this machine.*AUDITOR_REMOTE_SERVER=yes"),
         ("http://127.0.0.1:11434/v1/chat", "give the server's address alone"),
         ("127.0.0.1:11434", "give the server's address alone"),
     ],
@@ -95,7 +95,10 @@ def test_a_member_named_no_further_takes_its_model_window_and_server_from_the_se
 def test_the_committed_example_holds_every_setting_at_its_default_and_nothing_else():
     example = Path(settings.__file__).resolve().parents[2] / ".env.example"
     lines = [line for line in example.read_text("utf-8").splitlines() if line and line[0] != "#"]
-    assert [line.split("=")[0] for line in lines] == list(NAMES)
+    # The opt-in is shown commented out: set, it would send advisory text elsewhere.
+    shown = [name for name in NAMES if name != REMOTE_SERVER]
+    assert [line.split("=")[0] for line in lines] == shown
+    assert f"# {REMOTE_SERVER}=yes" in example.read_text("utf-8").splitlines()
     assert load_settings({}, example) == DEFAULTS
 
 

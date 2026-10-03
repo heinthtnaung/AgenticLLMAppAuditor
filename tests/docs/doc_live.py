@@ -27,7 +27,6 @@ import pytest
 from cli.main import COULD_NOT_RUN
 from cli.preflight import CannotRun, refuse_unrunnable
 from deps.trivy_database import trivy_cache_directory
-
 from doc_answers import answers_for
 from doc_drift import Drift, drift_of, looks_elided
 from doc_markers import MARKER_NAME, unmarked_note

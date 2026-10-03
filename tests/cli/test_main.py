@@ -7,7 +7,11 @@ import pytest
 
 from cli import main as entry
 from cli.main import (
-    COULD_NOT_RUN, FOUND_NOTHING, FOUND_NOTHING_BUT_UNCHECKED, FOUND_SOMETHING, main,
+    COULD_NOT_RUN,
+    FOUND_NOTHING,
+    FOUND_NOTHING_BUT_UNCHECKED,
+    FOUND_SOMETHING,
+    main,
 )
 from cli.preflight import CannotRun
 from cli.report_files import WRITTEN_TO
@@ -15,11 +19,11 @@ from cli_samples import LODASH, REPORTS_FOLDER, TRIVY_VERSION, run_command_line,
 from deps.scanner import ScannerFailed, ScannerUnavailable
 from deps.trivy_database import CACHE_VARIABLE, XDG_CACHE_VARIABLE
 from report.absences import (
+    NO_ANSWERS_GIVEN,
+    NO_COUNCIL_RUN,
     NOTHING_ABSENT,
     NOTHING_TO_PUT,
     NOTHING_TO_WEIGH,
-    NO_ANSWERS_GIVEN,
-    NO_COUNCIL_RUN,
 )
 
 FOUND_NOTHING_AT_ALL = {"components": (), "advisories": {}}

@@ -4,7 +4,10 @@
 evidence for that pin and for the precondition on reproducibility they turned
 up. Both ask one prompt, `build_prompt("AV", ADVISORY)`, built and pinned by the
 product's own `build_request`, and vary only the `think` field and whether the
-models were unloaded first. Every envelope is written whole, but for its token ids.
+models were unloaded first. Every envelope is written whole, but for its token ids,
+beside the server it came from and that server's `remote_host` where it is another
+machine, and the model's digest and the server's Ollama version, read once before any
+call as `council_eval.pass_provenance` reads them for a pass header.
 
     thinking     per model: from a fresh load, `think` absent, then `think` false
     load-state   per model: cold absent, warm absent, warm false, cold false,
@@ -25,9 +28,21 @@ from itertools import product
 from pathlib import Path
 from typing import Any, Callable, Mapping, TextIO
 
-from council.ollama import LocalModel, build_request, generate_url
-from council.prompt import build_prompt
-from council.transport import post_json
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from cli.model_identity import Read  # noqa: E402
+from council.ollama import LocalModel, build_request, generate_url  # noqa: E402
+from council.prompt import build_prompt  # noqa: E402
+from council.settings import current_settings  # noqa: E402
+from council.transport import get_json, post_json  # noqa: E402
+from council_eval.pass_provenance import (  # noqa: E402
+    DIGEST_FIELD,
+    VERSION_FIELD,
+    held_listing,
+    held_version,
+    model_digest,
+    server_named,
+)
 
 # `tests/council/council_samples.ADVISORY`, which the recorded probes asked about.
 # Copied rather than imported so a measurement does not lean on the test tree;
@@ -51,6 +66,8 @@ UNLOADED = "unload"
 DROPPED_FIELDS = ("context",)
 
 Post = Callable[[str, dict[str, Any]], Any]
+# Each probed model's digest and the server's version, by model.
+Weights = dict[str, dict[str, str]]
 
 
 @dataclass(frozen=True)
@@ -97,9 +114,28 @@ def kept(envelope: Mapping[str, Any]) -> dict[str, Any]:
     return {name: value for name, value in envelope.items() if name not in DROPPED_FIELDS}
 
 
-def line_of(probe: str, model: str, step: Step, envelope: Mapping[str, Any]) -> dict[str, Any]:
-    """Give one call as a line of the recorded file for its probe."""
-    return {"model": model, LABEL_FIELD[probe]: step.label, "envelope": kept(envelope)}
+def weights_held(models: tuple[str, ...], get: Read = get_json) -> Weights:
+    """Name each model's digest and the server's version, refusing a model the server lacks."""
+    server = current_settings().server
+    listing, version = held_listing(server, get), held_version(server, get)
+    return {
+        model: {DIGEST_FIELD: model_digest(model, listing), VERSION_FIELD: version}
+        for model in models
+    }
+
+
+def line_of(
+    probe: str, step: Step, pinning: LocalModel, weights: Mapping[str, str],
+    envelope: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Give one call as a line of its probe's file, naming the server and the weights asked."""
+    return {
+        "model": pinning.model,
+        LABEL_FIELD[probe]: step.label,
+        **server_named(pinning.host),
+        **weights,
+        "envelope": kept(envelope),
+    }
 
 
 def run(
@@ -108,14 +144,16 @@ def run(
     models: tuple[str, ...],
     out: TextIO,
     post: Post = post_json,
+    get: Read = get_json,
 ) -> None:
-    """Ask every model every step in order, writing each envelope as it comes back."""
+    """Name the weights, then ask every model every step in order, writing each envelope."""
+    weights = weights_held(models, get)
     for model, step in product(models, steps):
         if step.cold:
             unload_every_model(post, models)
         pinning = LocalModel(model=model)
         envelope = post(generate_url(pinning), request_for(step.think, pinning))
-        out.write(json.dumps(line_of(probe, model, step, envelope)) + "\n")
+        out.write(json.dumps(line_of(probe, step, pinning, weights[model], envelope)) + "\n")
         out.flush()
 
 

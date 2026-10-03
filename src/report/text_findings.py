@@ -23,6 +23,7 @@ from report.disagreement import (
 from report.record import Report
 from report.text_layout import INDENT, SOURCE_SEPARATOR, id_width, identified, named, section
 
+
 def contested_block(report: Report) -> str:
     """List the findings whose sources disagree, the ones worth reading first."""
     contested = [one for one in report.findings if sources_disagree(one)]

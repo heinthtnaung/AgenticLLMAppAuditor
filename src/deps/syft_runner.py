@@ -13,12 +13,7 @@ report an audit with no components, and say why, rather than fail the run.
 import shutil
 from pathlib import Path
 
-from deps.scanner import (
-    as_directory,
-    refuse_missing_directory,
-    run_json_scanner,
-    run_scanner,
-)
+from deps.scanner import as_directory, refuse_missing_directory, run_json_scanner, run_scanner
 from deps.syft_report import Catalogue, read_catalogue
 
 SYFT_EXECUTABLE = "syft"

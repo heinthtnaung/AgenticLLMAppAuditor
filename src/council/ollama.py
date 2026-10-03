@@ -1,4 +1,4 @@
-"""The local member: one pinned Ollama model, asked one question over loopback.
+"""The Ollama member: one pinned model, asked one question on the settings' server.
 
 **Pinning is the whole point of a local member.** `docs/COUNCIL.md` says a
 hosted member cannot be reproduced run to run and a local one can, so the four
@@ -32,11 +32,11 @@ turns those into an answer.
 
 from dataclasses import dataclass, field
 from typing import Any
-from urllib.parse import urlsplit
 
+from council.env_file import REMOTE_SERVER
 from council.envelope import MODEL_FIELD, PROMPT_COUNT_FIELD, ModelReply, read_envelope
 from council.question import Question
-from council.settings import LOOPBACK_HOSTS, current_settings
+from council.settings import LOOPBACK_HOSTS, current_settings, on_this_machine
 from council.transport import ModelUnavailable, Transport, post_json
 
 GENERATE_PATH = "/api/generate"
@@ -74,8 +74,9 @@ class LocalModel:
     """The pinning of one local member: which model, which seed, how much context, which host.
 
     `host` is here with the other three because it is pinned in the same sense:
-    `refuse_remote_host` holds it to loopback, and that is what makes `ran_local`
-    on a record an observation rather than a label.
+    `refuse_remote_host` holds it to loopback or to the one server elsewhere the
+    operator opted in to, and `council.providers` refuses a member whose record
+    would say otherwise, which is what makes `ran_local` an observation.
     """
 
     # The operator's where none is given: `council.settings`, read once a process.
@@ -85,7 +86,7 @@ class LocalModel:
     host: str = field(default_factory=lambda: current_settings().server)
 
     def __post_init__(self) -> None:
-        """Refuse a pinning that is not one, and a host that is not this machine."""
+        """Refuse a pinning that is not one, and a host neither here nor the opted-in server."""
         if not self.model:
             raise ValueError("A local member must name the model it runs")
         if self.context_tokens <= 0:
@@ -172,11 +173,14 @@ def refuse_cut_prompt(counted: Any, prompt: Question, pinning: LocalModel) -> No
 
 
 def refuse_remote_host(host: str) -> None:
-    """Refuse a host that is not this machine, so 'ran local' on a record is never a lie."""
-    hostname = urlsplit(host).hostname
-    if hostname in LOOPBACK_HOSTS:
+    """Refuse a host that is neither this machine nor the server elsewhere the operator chose."""
+    if on_this_machine(host):
+        return
+    chosen = current_settings()
+    if chosen.remote_opted_in and host == chosen.server:
         return
     raise ValueError(
-        f"{host!r} is not this machine: an Ollama member records ran_local, so it may only "
-        f"talk to {', '.join(LOOPBACK_HOSTS[:2])}. A model elsewhere is a hosted member."
+        f"{host!r} is not this machine: an Ollama member may only talk to "
+        f"{', '.join(LOOPBACK_HOSTS[:2])}, or to the one server {REMOTE_SERVER}=yes lets the "
+        "settings name. A model elsewhere is a hosted member."
     )

@@ -48,3 +48,18 @@ def test_a_version_the_server_did_not_give_says_why_and_names_no_version():
 
 def test_a_run_with_no_council_has_no_local_models():
     assert local_models_of(None) is None
+
+
+def test_a_server_elsewhere_is_named_by_its_host_right_after_the_server():
+    elsewhere = replace(ASKED, server="http://10.205.4.15:11434", remote_host="10.205.4.15")
+    rendered = local_models_of(elsewhere)
+    assert list(rendered)[:3] == ["server", "remote_host", "context_tokens"]
+    assert rendered["remote_host"] == "10.205.4.15"
+    # Only added: every key a run on this machine writes is still there, as it was.
+    assert {name: value for name, value in rendered.items() if name != "remote_host"} == {
+        **local_models_of(ASKED), "server": "http://10.205.4.15:11434",
+    }
+
+
+def test_a_server_on_this_machine_writes_no_host_at_all():
+    assert "remote_host" not in local_models_of(ASKED)

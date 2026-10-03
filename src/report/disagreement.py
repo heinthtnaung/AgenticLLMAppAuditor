@@ -16,11 +16,11 @@ which is a decision. So a finding whose sources put it in different bands sorts
 above one with a wider spread inside a single band.
 """
 
-from cvss.score import SEVERITY_BANDS, severity_band
+from cvss.score import SEVERITY_BAND_NAMES, severity_band
 from findings.finding import Finding
 
-# Worst first, read off the bands themselves so this cannot drift from them.
-BAND_ORDER: tuple[str, ...] = tuple(name for _, name in SEVERITY_BANDS)
+# Worst first, the CVSS band names defined once in `cvss.score` so this cannot drift.
+BAND_ORDER: tuple[str, ...] = SEVERITY_BAND_NAMES
 
 SCORE_DECIMALS = 1
 

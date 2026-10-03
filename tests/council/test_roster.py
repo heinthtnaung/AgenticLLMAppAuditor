@@ -3,13 +3,7 @@
 import pytest
 
 from council.answer import MemberIdentity
-from council.roster import (
-    Member,
-    Roster,
-    is_single_assessor,
-    members_skipped,
-    members_to_ask,
-)
+from council.roster import Member, Roster, is_single_assessor, members_skipped, members_to_ask
 from council_samples import SAMPLE_PROMPT_VERSION, hosted, member
 
 
@@ -59,6 +53,14 @@ def test_egress_is_off_by_default():
 
 def test_a_local_member_needs_no_egress():
     assert member().may_run()
+
+
+def test_only_a_member_neither_here_nor_on_an_ollama_server_is_hosted():
+    # An Ollama member on another machine is on the settings' server, beside the rest.
+    elsewhere = member(runs_local=False, egress=True)
+    assert [one.is_hosted() for one in (member(), elsewhere, hosted(egress=True))] == [
+        False, False, True,
+    ]
 
 
 def test_a_roster_nobody_can_be_asked_from_is_refused():

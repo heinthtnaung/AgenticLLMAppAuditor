@@ -13,11 +13,12 @@ from cli.explanation_run import (
     explaining,
     explanations,
 )
+from cli_samples import ADVISORY, LEGAL, LODASH, QUOTATION, advisory_like
 from council.explanation_prompt import EXPLANATION_PROMPT_VERSION, ExplanationPrompt
 from council.roster import Member, Roster
+from council.transport import ModelUnavailable
 from findings.finding import build_finding
 from report.explanation_record import DroppedMetric, SourcesExplained, SourcesNotExplained
-from cli_samples import ADVISORY, LEGAL, LODASH, QUOTATION, advisory_like
 
 DISPUTED = build_finding(LODASH, ADVISORY)
 AGREEING = build_finding(LODASH, advisory_like("CVE-AGREED"))
@@ -53,9 +54,16 @@ def test_a_hosted_member_is_passed_over_for_the_first_local_one():
     assert explainer_of(Roster((hosted, near)), None) == near
 
 
+def test_a_member_on_the_server_elsewhere_explains_as_a_local_one_would(remote_server):
+    # Every member is on the opted-in server, so the first of them explains there.
+    elsewhere = build_roster(("small", "other"))
+    assert explainer_of(elsewhere, None) == elsewhere.members[0]
+    assert explainer_of(elsewhere, None).runs_local is False
+
+
 def test_a_roster_with_no_local_member_and_no_escalation_model_is_refused_saying_why():
     hosted = Member("far", "openrouter", "far/model", "far", runs_local=False, egress=True)
-    with pytest.raises(ValueError, match="no local member to explain with") as refused:
+    with pytest.raises(ValueError, match="no member to explain with that is not hosted") as refused:
         explainer_of(Roster((hosted,)), None)
     assert str(refused.value) == NO_LOCAL_EXPLAINER
 
@@ -102,6 +110,19 @@ def test_an_explanation_that_quoted_nothing_says_which_model_and_why():
         ADVISORY.advisory_id,
         "big:27b: the model offered 1 item, and none was kept (unverified quotation 1)",
         (DroppedMetric("C", "x", "not in it", False, "unverified quotation"),),
+        model="big:27b",
+        prompt_version=EXPLANATION_PROMPT_VERSION,
+    )
+
+
+def test_a_call_that_fails_still_names_the_model_and_the_prompt_it_was_asked_with():
+    def timing_out(member, prompt):
+        """Fail as a slow server fails."""
+        raise ModelUnavailable("did not answer within 180 s")
+
+    (record,) = explanations((DISPUTED,), EXPLAINER, {"ollama": timing_out})
+    assert (record.model, record.prompt_version, record.dropped_items) == (
+        "big:27b", EXPLANATION_PROMPT_VERSION, (),
     )
 
 

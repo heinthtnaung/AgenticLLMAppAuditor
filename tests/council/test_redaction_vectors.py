@@ -3,7 +3,6 @@
 import pytest
 
 from council.redaction import VECTOR_MARKER, redact
-
 from redaction_samples import PUBLISHED
 
 BARE = "AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H"

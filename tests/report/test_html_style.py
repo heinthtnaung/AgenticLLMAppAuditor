@@ -9,6 +9,7 @@ is the same failure from the other end and is held the same way.
 
 import re
 
+from cvss.score import SEVERITY_BAND_NAMES
 from report.html_assets import stylesheet
 from report.html_style import BAND_CLASSES, BANDS, band_class
 
@@ -70,6 +71,12 @@ def test_every_token_a_rule_reaches_for_is_defined():
     assert reached <= tokens(dark_block())
 
 
+def test_the_palette_colours_the_bands_named_once_and_does_not_restate_them():
+    # The CVSS band names cover the organisation ones, so the sheet imports them
+    # rather than listing a second copy that could drift from the calculator's.
+    assert BANDS is SEVERITY_BAND_NAMES
+
+
 def test_every_band_has_a_colour_in_both_themes():
     named = {f"--band-{one.lower()}-bg" for one in BANDS}
     named |= {f"--band-{one.lower()}-fg" for one in BANDS}
@@ -79,6 +86,12 @@ def test_every_band_has_a_colour_in_both_themes():
 
 def test_every_band_class_is_a_rule_in_the_sheet():
     assert all(f".{one}" in STYLESHEET for one in BAND_CLASSES.values())
+
+
+def test_the_floor_note_has_its_own_rule_in_the_sheet():
+    # The floor note carries its own class, not `refusal`, so the sheet must style
+    # it; without this the class would render unstyled and no markup test would see.
+    assert ".floor-note {" in STYLESHEET
 
 
 def test_a_band_the_palette_cannot_reach_is_refused_rather_than_rendered_unstyled():

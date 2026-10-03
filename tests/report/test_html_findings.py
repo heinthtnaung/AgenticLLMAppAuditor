@@ -14,9 +14,19 @@ from report.html_findings import NO_DISAGREEMENT, agreements_panel, disagreement
 from report.html_report import as_html
 from report.record import build_report
 from report_samples import (
-    ADVISORY_URL, CONFIDENTIALITY_ONLY, ENVIRONMENTAL_VECTOR, LOW_CONFIDENTIALITY,
-    PROVENANCE, REFUSED_DISSENT, TOTAL_LOSS, VERSION_2_VECTOR, catalogue, component, finding,
+    ADVISORY_URL,
+    CONFIDENTIALITY_ONLY,
+    ENVIRONMENTAL_VECTOR,
+    LOW_CONFIDENTIALITY,
+    PROVENANCE,
+    REFUSED_DISSENT,
+    TOTAL_LOSS,
+    VERSION_2_VECTOR,
+    catalogue,
+    component,
+    finding,
 )
+from same_evidence_runs import same_words
 
 DJANGO = component()
 
@@ -77,6 +87,16 @@ def test_a_contested_card_says_how_far_apart_and_which_bands_that_crosses():
     assert "4.5 apart" in page
     assert "Critical and Medium" in page
     assert "Differ on" in page
+
+
+def test_a_contested_card_flags_a_metric_the_council_read_two_ways_from_the_same_words():
+    # Off the record's ruling, informational: the badge names the metric; the card's
+    # spread, sources and approval are the disagreeing finding's own, untouched.
+    one = disagreeing()
+    council = (same_words(one.advisory.advisory_id),)
+    report = build_report(PROVENANCE, catalogue(DJANGO), (one,), {}, council)
+    page = disagreements_panel(report)
+    assert '<p class="card-flag"><span class="flag">same evidence: AV</span></p>' in page
 
 
 def test_an_agreeing_finding_gets_the_same_rows_without_a_spread():

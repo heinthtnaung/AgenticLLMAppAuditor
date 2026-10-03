@@ -28,6 +28,9 @@ def test_a_record_with_no_answers_says_only_disagreement_could_mark_a_finding():
     said = approval_count(approval_report(approval=APPROVED))
     assert said == f"Approval is needed for 1 of 3: sources that disagree. {UNWEIGHED}"
     assert "a High or Critical Organisation Risk Score" in UNWEIGHED
+    # "no finding was checked", not the ambiguous "none was checked".
+    assert "no finding was checked for" in UNWEIGHED
+    assert "none was checked" not in UNWEIGHED
 
 
 def test_findings_needing_approval_with_none_recorded_are_said_plainly():

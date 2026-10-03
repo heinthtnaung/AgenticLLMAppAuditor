@@ -58,3 +58,15 @@ def test_a_version_the_server_did_not_give_is_said_to_be_unknown():
 
 def test_a_record_that_does_not_say_how_the_models_were_asked_names_none():
     assert models_named(None) == []
+
+
+def test_a_server_elsewhere_is_named_by_its_host_on_both_pages():
+    elsewhere = replace(ASKED, server="http://10.205.4.15:11434", remote_host="10.205.4.15")
+    said = f"{SAID} on 10.205.4.15, not this machine"
+    assert models_named(elsewhere) == [said]
+    assert all(said in page for page in pages(elsewhere))
+
+
+def test_this_machine_goes_unsaid_so_a_local_run_s_line_is_as_it_was():
+    assert models_named(ASKED) == [SAID] and ASKED.remote_host == ""
+    assert all(" on " not in line for line in models_named(ASKED))

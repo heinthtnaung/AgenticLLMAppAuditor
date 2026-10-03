@@ -6,7 +6,9 @@ outcome, never worked out here.
 """
 
 from report.council_beside import council_figure
-from report.council_record import CouncilNotAsked, council_left_open
+from report.council_queries import council_left_open
+from report.council_record import CouncilNotAsked
+from report.html_council_flag import same_evidence_flag
 from report.html_layout import CVSS_SCALE, badge, cell, jump, mini_chip, number, tag, text
 from report.record import Report
 
@@ -15,16 +17,18 @@ DASH = "—"
 
 def council_cell(report: Report, advisory_id: str) -> str:
     """Give the Council cell: the settled vector and its band, or the metrics it left open."""
+    outcome = report.council.get(advisory_id)
+    flag = same_evidence_flag(outcome)
     figure = council_figure(report, advisory_id)
     if figure is not None:
         chip = mini_chip("council", number(figure.base_score), figure.band, CVSS_SCALE)
-        return council_link(advisory_id, badge("Settled", "ok") + chip)
-    outcome = report.council.get(advisory_id)
+        return council_link(advisory_id, badge("Settled", "ok") + chip + flag)
     if outcome is None:
         return cell("Council", DASH)
     if isinstance(outcome, CouncilNotAsked):
         return council_link(advisory_id, badge("not asked", "muted"))
-    return council_link(advisory_id, badge("No vector", "muted") + open_metrics_line(outcome))
+    open_line = badge("No vector", "muted") + open_metrics_line(outcome) + flag
+    return council_link(advisory_id, open_line)
 
 
 def council_link(advisory_id: str, inner: str) -> str:

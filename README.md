@@ -79,8 +79,9 @@ Audit of fetched/vulnscout
   scoring rules ors-1
 
 18 findings across 60 components. 5 carry sources that disagree.
-Approval is needed for 5 of 18: sources that disagree. With no organisation answers, none was
-checked for a High or Critical Organisation Risk Score. No approval is recorded for this audit.
+Approval is needed for 5 of 18: sources that disagree. With no organisation answers, no finding
+was checked for a High or Critical Organisation Risk Score. No approval is recorded for this
+audit.
 0 secrets matched the secret rules built into Trivy.
 
 SOURCES DISAGREE (5)
@@ -198,7 +199,7 @@ AUDITOR_ESCALATION_MODEL=qwen2.5:14b audit fetched/vulnscout --council
 ```
 
 Sends each metric the council leaves contested or unresolved to one larger
-local model.
+model on the members' server.
 
 ### Ask the council about every finding
 
@@ -216,15 +217,16 @@ visible. The report stays on stdout.
 
 ## Settings
 
-Six `AUDITOR_*` keys, read from the environment, then from `.env` at the project
+Seven `AUDITOR_*` keys, read from the environment, then from `.env` at the project
 root, then the default. Copy `.env.example` to `.env` to start. `audit` reads
 them only on a council run.
 
 | Key | Default | Sets |
 |---|---|---|
 | `AUDITOR_COUNCIL_MEMBERS` | unset | the models `--council` runs, comma-separated |
-| `AUDITOR_ESCALATION_MODEL` | unset | one local model for what the council leaves open |
-| `AUDITOR_SERVER_URL` | `http://127.0.0.1:11434` | the Ollama server, which must be this machine |
+| `AUDITOR_ESCALATION_MODEL` | unset | one model on the members' server for what the council leaves open |
+| `AUDITOR_SERVER_URL` | `http://127.0.0.1:11434` | the Ollama server; this machine unless `AUDITOR_REMOTE_SERVER` opts in |
+| `AUDITOR_REMOTE_SERVER` | unset | `yes` lets the server be another machine; every advisory text is then sent there |
 | `AUDITOR_TIMEOUT_SECONDS` | `180` | how long one model call may wait |
 | `AUDITOR_CONTEXT_TOKENS` | `8192` | the context window every model is pinned to |
 | `AUDITOR_MODEL` | `qwen2.5:7b-instruct` | the model a measurement script asks; never the audit's |
@@ -250,6 +252,21 @@ python -m pytest -q
 Some tests skip unless a flag asks for them, because they need a model, a
 scanner or a real scan. [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) lists the
 flags.
+
+## How the results are checked
+
+Each result below is held to a rule in application code as the tool makes it.
+Each row names a result, the check it must pass, and where that check is.
+
+| Result | How it is checked | Where |
+|---|---|---|
+| every CVSS number | a deterministic engine, the FIRST v3.1 equations of section 7.1, with no model, clock or network in the path | `src/cvss/score.py` |
+| an Organisation Risk Score | a deterministic engine weighs the answers to the twelve approved questions, each category held to 0–100 before weighting; an Unknown answer marks the score provisional | `src/scoring/risk_score.py`, `src/scoring/category.py` |
+| a council member's reading | counts only where the member gives the same value with the options in both orders and its quotation is found in the advisory text it read; a paraphrase does not verify | `src/council/order_check.py`, `src/council/evidence.py` |
+| a metric | left unresolved where no reading's quotation verifies, contested where verified readings disagree; neither is guessed, and members are never counted as votes | `src/council/chairman.py` |
+| a council vector | stands only when all eight metrics settle, and then sits beside, never in, the Organisation Risk Score; otherwise the finding's published scores stand alone | `src/cli/council_outcome.py` |
+| escalation | what the council leaves open goes to one named model, asked in both option orders; its reply settles a metric only where both orders agree, its quotation is found in the advisory, and on a contested metric it names a value the council's verified quotations already support. The record keeps why it did or did not settle | `src/council/escalation.py`, `src/council/chairman.py` |
+| the record | names each model, its digest or why the server gave none, and the prompt version behind every member's reading | `src/report/council_record.py`, `src/report/model_identity.py` |
 
 ## Learn more
 

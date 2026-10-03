@@ -6,10 +6,10 @@ import pytest
 
 from cli.council_detail import rulings_of
 from cli.council_run import FALLBACKS, build_roster
+from cli_samples import ADVISORY, LEGAL, QUOTATION
 from council.prompt import REVERSED_PROMPT_VERSION, build_prompt
 from council.runner import assess
-from report.council_record import Outcome, SaidKind
-from cli_samples import ADVISORY, LEGAL, QUOTATION
+from report.council_record import Outcome, ReadingOrder, SaidKind
 
 # `ADVISORY.details` first, so `QUOTATION` is verbatim in it.
 TEXT = f"{ADVISORY.details} Exploiting it requires a specially crafted payload."
@@ -133,3 +133,46 @@ def test_a_member_whose_two_orders_disagreed_is_recorded_with_both_values():
     assert said.kind is SaidKind.ORDER_SENSITIVE
     assert (said.order_values, said.value) == (("N", "L"), "")
     assert av.outcome is Outcome.UNRESOLVED
+
+
+def declining_reversed(member, prompt):
+    """Say NO_EVIDENCE on UI when its options are reversed, and as `replying` does otherwise."""
+    if prompt.metric == "UI" and prompt.version == REVERSED_PROMPT_VERSION:
+        return json.dumps({"value": "NO_EVIDENCE", "evidence": ""})
+    return replying()["ollama"](member, prompt)
+
+
+def test_a_decline_in_one_order_is_recorded_with_the_order_it_came_from():
+    said = by_name(ruled({"ollama": declining_reversed}, order_check=True)["UI"])["qwen2.5:7b"]
+    assert said.kind is SaidKind.DECLINED
+    assert (said.declined_in, said.unverified_in) == ((ReadingOrder.REVERSED,), ())
+
+
+def test_a_member_asked_the_options_once_is_recorded_with_no_order_at_all():
+    said = by_name(ruled({"ollama": declining_reversed})["UI"])["qwen2.5:7b"]
+    assert said.kind is SaidKind.ANSWERED
+    assert (said.declined_in, said.unverified_in) == ((), ())
+
+
+# On AV both members quote the advisory and read N and A: from the same words,
+# `QUOTATION` being the start of `SENTENCE`, or from two different sentences.
+SENTENCE = "A remote attacker can inject commands through a template option."
+SAME_WORDS = {"gemma4:latest": {"AV": {"value": "A", "evidence": SENTENCE, "confidence": "high"}}}
+APART = {"gemma4:latest": {"AV": {"value": "A", "evidence": OTHER_QUOTE, "confidence": "high"}}}
+
+
+def decided(ruling) -> tuple:
+    """Give everything the chairman decided about one metric, the flag left out."""
+    return (ruling.outcome, ruling.value, ruling.basis, ruling.confidence, ruling.fallback_source)
+
+
+def test_two_values_read_from_the_same_verified_words_are_flagged_on_that_metric_alone():
+    rulings = ruled(replying(**SAME_WORDS))
+    flagged = [metric for metric, one in rulings.items() if one.same_evidence_different_reading]
+    assert flagged == ["AV"]
+    assert not ruled(replying(**APART))["AV"].same_evidence_different_reading
+
+
+def test_the_flag_changes_no_outcome_value_basis_or_confidence():
+    flagged, twin = ruled(replying(**SAME_WORDS)), ruled(replying(**APART))
+    assert [decided(one) for one in flagged.values()] == [decided(one) for one in twin.values()]

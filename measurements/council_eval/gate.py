@@ -6,7 +6,7 @@ reader of the report sees is compared -- each heading and vector, each metric
 the council could not settle, and every member's kind, value, confidence,
 verification and quotation -- and nothing about the layout is.
 
-**Three changes since the recorded runs are allowed for, by name.** Quotations
+**Four changes since the recorded runs are allowed for, by name.** Quotations
 are compared with their whitespace removed, because the renderer has stopped
 breaking lines at hyphens. A settled heading now ends its vector with the CVSS
 base score and band it computes to; a recording that shows no such figure was
@@ -16,9 +16,14 @@ matched: before `4526250` a value one member quoted alone read "every member
 that offered a quotation supported this value", which is now `SOLE`. So in a
 recording that names no `SOLE`, the `AGREED` count must equal the replay's
 `AGREED` and `SOLE` together and `EVIDENCE` must match; a recording that names
-`SOLE` was rendered after the change and must match exactly. The sum is the
-one place the gate is weaker than the report: in a pre-`SOLE` recording, which
-of those settled metrics one member quoted alone is not written down anywhere.
+`SOLE` was rendered after the change and must match exactly. The sum is one
+place the gate is weaker than the report: in a pre-`SOLE` recording, which of
+those settled metrics one member quoted alone is not written down anywhere.
+Last, a metric two members read differently from the same verified words now
+carries a flag line; a finding whose recording shows none matches with the
+replay's flags taken out, and one that shows a flag must match exactly. That is
+the other place it is weaker: a finding recorded after the flag and missing one
+passes as if it predated it.
 """
 
 import re
@@ -30,7 +35,7 @@ from council.ruling import Basis
 from cvss.score import SEVERITY_BANDS
 from report.council_beside import CVSS_SCALE_NAME
 from report.council_record import CouncilOutcome
-from report.council_words import SETTLED
+from report.council_words import SAME_EVIDENCE, SETTLED
 from report.text_council import advisory_lines
 from report.text_layout import INDENT, SOURCE_SEPARATOR
 from report.text_metric import ADVISORY_DEPTH, QUOTATION_DEPTH
@@ -163,10 +168,19 @@ def headings_match(old: str, new: str) -> bool:
 
 def entry_differences(key: str, old: tuple[str, ...], new: tuple[str, ...]) -> list[str]:
     """Name each unsettled-metric line that differs, and a difference in how many there are."""
+    new = unflagged(old, new)
     found = [f"{key}: {was!r} is now {now!r}" for was, now in zip(old, new) if was != now]
     if len(old) != len(new):
         found.append(f"{key}: {len(old)} unsettled lines are now {len(new)}")
     return found
+
+
+def unflagged(old: tuple[str, ...], new: tuple[str, ...]) -> tuple[str, ...]:
+    """Take the replay's same-evidence flags out where the recording shows none, predating them."""
+    # A recording that shows the flag was rendered after it, and must match exactly.
+    if SAME_EVIDENCE in old:
+        return new
+    return tuple(one for one in new if one != SAME_EVIDENCE)
 
 
 def bases_reconcile(old: Mapping[str, int], new: Mapping[str, int]) -> bool:

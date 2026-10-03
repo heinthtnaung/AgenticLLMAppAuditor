@@ -1,5 +1,6 @@
 """Guards on counting a prompt's tokens: the product's request, any model, one token generated."""
 
+import inspect
 import sys
 from pathlib import Path
 
@@ -11,6 +12,7 @@ sys.path.insert(0, str(ROOT / "measurements"))
 import prompt_tokens  # noqa: E402
 from council.ollama import LocalModel, build_request  # noqa: E402
 from council.prompt import build_prompt  # noqa: E402
+from council.transport import get_json  # noqa: E402
 
 PROMPT = build_prompt("AC", "A flaw was found.")
 
@@ -49,7 +51,7 @@ def test_the_estimate_s_error_and_what_the_guard_s_limit_would_cost_are_printed(
     assert lines[3].endswith(f"about {round(8192 * 0.75 * 430 / estimated)} of the 8192 pinned")
 
 
-def serving(url: str) -> dict:
+def serving(url: str, timeout: float) -> dict:
     """Answer the two reads that name the server and the weights."""
     if url.endswith("/api/version"):
         return {"version": "0.34.3"}
@@ -65,13 +67,31 @@ def test_every_model_named_is_counted_by_its_weights_and_the_pinned_one_when_non
     prompt_tokens.main([], Counting(430), serving)
     named = [line for line in capsys.readouterr().out.splitlines() if not line.startswith(" ")]
     heading = [
-        "prompt member-base-metric-3, Ollama 0.34.3", "the longest advisory, GHSA-x: 7 characters",
+        "prompt member-base-metric-3, Ollama 0.34.3, server http://127.0.0.1:11434",
+        "the longest advisory, GHSA-x: 7 characters",
     ]
     assert named == [*heading, "a:1b sha-a:1b", "b:2b sha-b:2b",
                      *heading, "qwen2.5:7b-instruct sha-qwen2.5:7b-instruct"]
+
+
+def test_counts_taken_on_a_server_elsewhere_name_it_and_its_host(
+    monkeypatch, capsys, remote_server
+):
+    monkeypatch.setattr(prompt_tokens, "longest_advisory", lambda: ("GHSA-x", "A flaw."))
+    prompt_tokens.main(["a:1b"], Counting(430), serving)
+    first = capsys.readouterr().out.splitlines()[0]
+    assert first == (
+        f"prompt member-base-metric-3, Ollama 0.34.3, server {remote_server}, "
+        "remote_host 192.0.2.15"
+    )
 
 
 def test_a_model_the_server_does_not_hold_is_refused_before_it_is_counted(monkeypatch):
     monkeypatch.setattr(prompt_tokens, "longest_advisory", lambda: ("GHSA-x", "A flaw."))
     with pytest.raises(ValueError, match="the server holds no c:3b"):
         prompt_tokens.main(["c:3b"], Counting(430), serving)
+
+
+def test_the_counts_read_the_server_through_the_product_s_transport_and_keep_no_copy():
+    assert inspect.signature(prompt_tokens.main).parameters["get"].default is get_json
+    assert "/api/" not in Path(prompt_tokens.__file__).read_text(encoding="utf-8")

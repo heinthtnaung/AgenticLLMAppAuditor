@@ -2,7 +2,6 @@
 
 import pytest
 
-from findings.finding import Finding, build_findings, unmatched_purls
 from finding_samples import (
     CNA_SCORE,
     CNA_VECTOR,
@@ -21,6 +20,7 @@ from finding_samples import (
     component,
     index,
 )
+from findings.finding import Finding, build_findings, unmatched_purls
 
 PYYAML = component(name="pyyaml", version="5.1", purl=PYYAML_PURL)
 PYYAML_ADVISORY = advisory(advisory_id="CVE-2020-14343", purl=PYYAML_PURL)

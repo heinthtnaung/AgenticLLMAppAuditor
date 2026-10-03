@@ -10,10 +10,14 @@ repository, join it to a pinned advisory database, score each finding by the
 published CVSS v3.1 equations, and add an **Organisation Risk Score** that
 reflects the environment the code is deployed into.
 
-A council of models — local today, hosted once a client for one exists — reads
-advisories and agrees one vector, each member quoting the text it relied on. A
-deterministic engine turns that vector into every number. The two are never the
-same step.
+A council of models reads each advisory it is given and settles a metric where
+its members' verified readings agree, each member quoting the text it relied on.
+Any other metric is left unresolved, where no reading was verified, or
+contested, where verified readings disagree, and may go to one escalation model.
+Its models run on an Ollama server — this machine unless you opt in to one other
+machine; no hosted model has a client yet. A whole vector stands only where all
+eight metrics settle, and a deterministic engine, never a model, turns that
+vector into its number. The reading and the scoring are never the same step.
 
 ## Running a scan
 
@@ -370,7 +374,7 @@ every time.
 
 **Without `--answers` only disagreement is checked**, because there is no risk
 score to band, and the summary says so, as in the README's sample run:
-`With no organisation answers, none was checked for a High or Critical Organisation Risk Score.`
+`With no organisation answers, no finding was checked for a High or Critical Organisation Risk Score.`
 When a finding needs approval and the answer file records none, the summary
 adds `No approval is recorded for this audit.`
 
@@ -436,7 +440,9 @@ audit fetched/vulnscout \
 
 No `NO_PROXY` export is needed for a council run. Every call a member makes to
 Ollama goes through `src/council/transport.py`, which never uses a proxy, so a
-corporate proxy set on the machine cannot answer for the model server. Run on
+corporate proxy set on the machine cannot answer for the model server. A server
+`AUDITOR_REMOTE_SERVER=yes` names is reached the same way, directly and never
+through the proxy, though it is on the network rather than loopback. Run on
 2026-09-25, before the order check, with the proxy set and `NO_PROXY` unset,
 the command above with `qwen2.5:7b-instruct` alone made all 40 of its calls, and
 no member failed.
@@ -448,7 +454,7 @@ readings is about that pair, not the tool, so a model you switch to needs its
 own evaluation on the same findings before its readings are trusted, and
 `measurements/README.md` says how.
 
-Each `--council-member` names one local Ollama model. With none named, and no
+Each `--council-member` names one Ollama model. With none named, and no
 `--council`, there is no council, which is the default: the published scores
 stand side by side, and a council, when one runs, adds its own reading beside
 them without choosing among them.
@@ -475,17 +481,19 @@ server's reason, as a `--council-member` name does. `--council` beside a
 
 ### The models, server, window and timeout are settings; the sampling is not
 
-Six `AUDITOR_*` keys: one names the members `--council` runs, one the model a
-council escalates to, and four set how local models are asked. Each is read
-from the environment first, then from `.env` at the project root, then its
-default. `.env.example` holds all six, the members and the escalation model left
-empty: copy it to `.env`, which git ignores, and change what you need.
+Seven `AUDITOR_*` keys: one names the members `--council` runs, one the model a
+council escalates to, one opts in to a server on another machine, and four set
+how the models are asked. Each is read from the environment first, then from
+`.env` at the project root, then its default. `.env.example` holds all seven, the
+members and the escalation model left empty: copy it to `.env`, which git
+ignores, and change what you need.
 
 | Key | Default | What it sets |
 |---|---|---|
 | `AUDITOR_COUNCIL_MEMBERS` | unset: no members | the models `audit --council` runs, comma-separated, in the order they are asked. Nothing else uses it, and `--council` with it unset or empty is refused |
-| `AUDITOR_ESCALATION_MODEL` | unset: no escalation | one local model, as `ollama list` names it, that a metric the council leaves contested or unresolved is sent to. An empty environment variable turns it off over a `.env` that names one; two names are refused |
-| `AUDITOR_SERVER_URL` | `http://127.0.0.1:11434` | the Ollama server. It must be this machine, `127.0.0.1`, `localhost` or `::1`, or it is refused; an address ending `/api/generate`, the older form, is read without it |
+| `AUDITOR_ESCALATION_MODEL` | unset: no escalation | one model on the members' server, as `ollama list` names it, that a metric the council leaves contested or unresolved is sent to. An empty environment variable turns it off over a `.env` that names one; two names are refused |
+| `AUDITOR_SERVER_URL` | `http://127.0.0.1:11434` | the Ollama server: `http://` or `https://`, a host and an optional port, and after it nothing but trailing slashes or the older `/api/generate` ending, which is read without it. A port, if given, is a whole number from 1 to 65535; one outside that, such as `:abc`, `:99999` or `:0`, is refused when the settings are read. One carrying a username or password, a query or a fragment is refused, even with `AUDITOR_REMOTE_SERVER=yes`. It must be this machine — `127.0.0.1`, `localhost` or `::1` — unless `AUDITOR_REMOTE_SERVER` is `yes`, or it is refused |
+| `AUDITOR_REMOTE_SERVER` | unset: this machine | `yes`, and nothing else, lets `AUDITOR_SERVER_URL` name another machine; every advisory text a council reads is then sent there over the address's own scheme: plain, unencrypted http unless it is `https://`. `yes` beside a loopback address is allowed and the run is recorded as local. Unset or empty, a server elsewhere is refused |
 | `AUDITOR_TIMEOUT_SECONDS` | `180` | how long one call may wait; a call that waits longer fails as `did not answer within N s` |
 | `AUDITOR_CONTEXT_TOKENS` | `8192` | the window every member is pinned to, which the context guard scales with |
 | `AUDITOR_MODEL` | `qwen2.5:7b-instruct` | the model a measurement, such as `prompt_tokens.py`, asks when it names none. It is not the audit's model and never starts a council |
@@ -499,7 +507,8 @@ Temperature 0, seed 11 and `think: false` are not settings. They are what makes
 a local member reproducible, and a run whose sampling a file can change is not
 comparable with the last one (`docs/COUNCIL.md`). The window and the timeout
 can change a result too, so the JSON record's `run.local_models` states the
-server, window and timeout a council run used, beside those three,
+server, its `remote_host` where that server is another machine, the window and
+timeout a council run used, beside those three,
 `"order_check": true`, every metric asked in both orders, and
 `escalation_model`, the model named or `null`. It is `null` itself for a run
 with no member.
@@ -509,7 +518,8 @@ began.** A tag such as `gemma4:latest` names whatever weights the server holds
 under it, and pulling again changes them without changing a word of the record.
 So a council run reads the server twice before any model is asked, `/api/tags`
 and `/api/version`, through the same no-proxy client every call uses, at the
-settings' server, which `council.settings` holds to loopback. Each read waits
+settings' server, which `council.settings` holds to loopback unless
+`AUDITOR_REMOTE_SERVER=yes` lets it name another machine. Each read waits
 `READ_TIMEOUT_SECONDS`, 30 s, not the generation timeout, since both come before
 the scan. It records `ollama_version` once and, under `models`, each model it
 asks with its `role`, `member` or `escalation`, and its `digest`. The explainer
@@ -577,7 +587,17 @@ other row. Every member row names both prompts it was asked,
 fills both; the second is `null` only for a member asked in one order, as the
 measurement harness replays them.
 
-### A metric the council leaves open can go to one larger local model
+**A member asked both ways records which order it declined in.** Its JSON row
+carries `declined_in`, the orders it answered `NO_EVIDENCE` in, and
+`unverified_in`, those whose quotation the advisory does not contain — each a
+list of `in_order`, `reversed`, both or neither, and `null` for a member asked
+once. Where only one order declined, the text and the page end the member's row
+`with the options reversed: declined` or `with the options in order: quotation
+not found in the advisory`; a member that declined both ways reads `declined`, as
+before. The chairman still rules on the one reconciled reply: which order declined
+is recorded, not weighed.
+
+### A metric the council leaves open can go to one larger model on the members' server
 
 **Name one in `AUDITOR_ESCALATION_MODEL`, and every metric the order-checked
 council leaves contested or unresolved is put to it**, in both orders like a
@@ -593,10 +613,12 @@ Anything else leaves the metric as the council left it, with what the model said
 recorded. A metric it settles carries the basis `ESCALATED`, "the council left
 it open, and the escalation model's verified quotation settled it".
 
-**It is local, and it is not a member.** The name is a model on the local
-Ollama server, so a hosted escalation cannot be written: hosted escalation is
-excluded, not deferred. A model already on the council is refused after the
-scan, before any model is asked, and `audit` exits `2` with
+**It runs on the members' server, and it is not a member.** The name is a model
+on the Ollama server the members share — this machine, or the one
+`AUDITOR_REMOTE_SERVER=yes` let the settings name — so a hosted escalation cannot
+be written: hosted escalation is excluded, not deferred. A model already on the
+council is refused before the
+scan, and before the model server is read, and `audit` exits `2` with
 `audit: big:27b is on the council, so it cannot also be the model the council's open metrics escalate to`.
 
 In the text and the page, a metric that went to the model says what came of it.
@@ -610,10 +632,15 @@ left it as, then the model's row in the shape of a member's, and `null` on a
 metric nobody escalated. The metric's own `outcome` is what came of it.
 
 **It costs two calls per open metric**, a number known only once the council has
-answered, so the progress stream counts them apart. It runs after each
-advisory's council, so a model too large to stay loaded beside the members
-is loaded once per advisory; that has not been timed. Nothing escalated reaches
-the Organisation Risk Score, as nothing a council settles does.
+answered, so the progress stream counts them apart. It runs once every finding's
+council has answered, so a model too large to stay loaded beside the members is
+loaded once per run, not once per finding — what a server that cannot hold it
+beside the members needs, and the saving has not been timed. The same replies
+give the same record byte for byte, but batching leaves the members loaded across
+findings, and a live model can answer differently warm than cold
+(`measurements/council_eval/compose.py`), so a batch run is not guaranteed the
+same replies as one finding at a time. Nothing escalated reaches the Organisation
+Risk Score, as nothing a council settles does.
 
 **It has been tested only with stand-in models.** No escalation model has run
 live or been measured on the pilot's findings, so nothing yet says whether one
@@ -626,16 +653,23 @@ none (`PASS_ESCALATION = None` in `measurements/council_eval/variants.py`).
 It is made only when a council was asked for, and only after the council and any
 escalation have finished with every finding, so the one model asked is loaded
 once. That model is the escalation model where one is named, otherwise the
-council's first local member, and the record names it: the explainer runs on this
-machine. A roster with neither is refused once its council has run, with
-`audit: no local member to explain with: the explainer runs on this machine, and no escalation model is named`,
-and `audit` exits `2`. Every `--council-member` is local, so the command line
-cannot build such a roster today. The model is shown each source's value on the
+council's first member that is not hosted, and the record names it: the explainer
+runs on the members' Ollama server, this machine or the one
+`AUDITOR_REMOTE_SERVER=yes` names. A roster with neither is refused once its
+council has run, with
+`audit: no member to explain with that is not hosted: the explainer runs on the members' Ollama server, and no escalation model is named`,
+and `audit` exits `2`. Every `--council-member` is an Ollama model, which is never
+hosted, so the command line cannot build such a roster today. The model is shown
+each source's value on the
 disputed metrics alone, with what those values mean, and the redacted advisory:
 never a whole vector, never the CVE id.
 
 **Only the quotation is checked.** Each item the model offers names a disputed
-metric, says why in its own words, and quotes the advisory. The first item on
+metric, says why in its own words, and quotes the advisory. A metric is read as
+its code, in any case, or as its CVSS name spelled exactly as the specification
+spells it, alone or bracketed with the code (`Availability`, `A (Availability)`,
+`Availability (A)`). A code and name that disagree, or any other spelling, is
+dropped as `not a disputed metric`. The first item on
 each disputed metric with a `why` that is not empty and a quotation the advisory
 contains is kept. Every other item is dropped, and the record keeps it with the
 first reason that applies, in this order: `not a disputed metric`, `empty why`,
@@ -660,7 +694,9 @@ The page carries the same, without the `·` separators or the colon.
 In the JSON, every finding carries `llm_explanation`:
 `{"assessed": true, "model", "prompt_version": "sources-differ-1", "items", "dropped"}`,
 each item a `metric`, `why`, `evidence`, `evidence_verified` and
-`"why_checked": false`, or `{"assessed": false, "because"}`. `evidence_verified`
+`"why_checked": false`; or `{"assessed": false, "model", "prompt_version", "because"}`
+where a model was asked and nothing was kept, and `{"assessed": false, "because"}`
+where none was — no council, the sources agree, or no advisory text. `evidence_verified`
 covers the quotation alone; `why_checked` says so, so a machine reader cannot
 take it as covering the prose.
 
@@ -671,14 +707,17 @@ quotation check's own answer: a repeat quotes the advisory as surely as the item
 kept. `dropped_items` is empty where nothing was offered, and where nothing was
 kept it holds what was, beside a `because` such as
 `small:1b: the model offered 1 item, and none was kept (unverified quotation 1)`.
+The model that `because` opens with also stands alone in `model`, and its prompt
+in `prompt_version`, so a reader need not parse the string.
 Where no finding was explained, `NOT ASSESSED` names `Why the sources differ`
 with one of three reasons: no council was asked for, as in the README's sample
 run; no finding's sources disagree; or
 `a model was asked why the sources differ, and no explanation was kept`.
 
-**It costs one call per disputed finding.** It has been tested only with
-stand-in models, and nothing yet measures whether an explanation is right: the
-quotation is in the advisory, and that is all that is known of it.
+**It costs one call per disputed finding.** It has now run live once, over
+vulnscout's 5 disputed findings, in `measurements/explainer_vulnscout/`;
+nothing yet measures whether an explanation is right: the quotation is in the
+advisory, and that is all that is known of it.
 
 ### It is asked only about the findings the sources do not settle
 
@@ -726,16 +765,25 @@ line under the `COUNCIL (n)` heading in text, and the first line after the lede
 and the toolbar in the Council tab, is
 `escalation model big:27b: asked each metric the council left open`, naming the
 model, or `no escalation model named: a metric the council left open stays open`.
-It is left out only for a record that says nothing of how local models were
-asked, so every council run carries one or the other.
+It is part of the section, which shows whenever the run has a finding to account
+for, assessed or passed over, under `COUNCIL (0)` when every one was passed over.
+A run that named members but found no finding drops the section and the line with
+it, and a run that named no members never asked a model at all.
 
 Every model the run asks is named too, with the first 12 characters of its
 digest and the server's version. In the text report this is the line after the
-escalation one, under the `COUNCIL` heading; on the page it is in the masthead,
-under the tool and database lines, not in the Council tab. From a run with
+escalation one, under the `COUNCIL` heading, and it is dropped with the section
+when the run found no finding; on the page it is in the masthead, under the tool
+and database lines, not in the Council tab, and it stands even then, because the
+masthead draws it from the models the run named, not from whether the council
+assessed anything. From a run with
 stand-in models and a stand-in server listing the two members and not the
 escalation model:
 `models: qwen2.5:7b-instruct 845dbda0ea48, llama3.2:latest a80c4f17acd5, qwen2.5:14b (escalation) digest unknown; Ollama 0.34.3`.
+On a run `AUDITOR_REMOTE_SERVER=yes` sent to another machine, the same line ends
+with that server's host, as
+`models: …; Ollama 0.34.3 on 10.205.4.15, not this machine`; on this machine it
+ends at the version, as above.
 Where the server gives no digest or no version, it reads `digest unknown` or
 `Ollama version unknown`, and the reason it gave none is in the JSON record
 alone, under `run.local_models`. The record keeps each digest whole.
@@ -746,6 +794,28 @@ score and band, as `settled  ·  CVSS:3.1/…  ·  CVSS 9.8 Critical`. The page 
 a CVSS chip on the same line, and the JSON's `council` entry carries the figure
 as `base_score` beside `vector`, `null` where no vector was settled. It is on
 the CVSS scale and never the risk score.
+
+**A contested metric can carry a flag: `same evidence, different reading`.** When
+two members' verified quotations are the same words and they read different values
+from them, the metric's line adds `same evidence, different reading: members
+quoted the same words and read different values`. Two quotations are the same when,
+after the quotation check's own folding of whitespace and typographic quotes, one
+equals the other or sits inside it without cutting into a word: an end of the
+shorter quotation that is a letter, digit or underscore may not touch another word
+character, but a punctuation end needs nothing, so `(PR:N)` is inside
+`privileges(PR:N)` while `network` is not inside `networks`; case is kept
+(`council.same_evidence`). On the page the Council tab shows the full sentence on
+the metric, while the Overview's "All findings" Council cell and each card on the
+Disagreements tab carry a compact `same evidence: <metrics>` flag naming those
+metrics; the JSON carries `same_evidence_different_reading` on the ruling. **It
+decides nothing** —
+the council's ruling on a flagged metric is contested, though an escalation may
+still settle it, and the flag remains either way because it is about what the
+members read; only members count, not the escalation model. It tells a reader the
+evidence did not choose between the values. In the pilot replay it fell on 6 of
+the 13 contested metrics
+(`measurements/council_eval_runs/pilot-vulnscout/README.md`): one roster, one
+order and one observation, not a rate.
 
 ### A council run says where it has got to
 
@@ -787,11 +857,12 @@ one finding, the second line is
 
 The denominators are what this run will actually do: 5 findings after scoping,
 not 18, and only the members it can reach. A total counting calls nobody makes
-is a progress bar that never fills. An escalation call is counted apart, as
-`escalation 1  finding 1/1 CVE-2021-23337  AC  big:27b`, with no total, because
-how many a run makes is known only once each council has answered. The
-explanations come last, one line each, counted against the disputed findings:
-`explanation 1/1  finding CVE-2021-23337  small:1b`.
+is a progress bar that never fills. The escalation calls come after every council
+line, once every finding's council has answered, each still naming its own
+finding: `escalation 1  finding 1/1 CVE-2021-23337  AC  big:27b`, counted apart
+and with no total, because how many a run makes is known only once every council
+has answered. The explanations come last, one line each, counted against the
+disputed findings: `explanation 1/1  finding CVE-2021-23337  small:1b`.
 
 One member answers all eight metrics of a finding before the next is asked.
 Two members that do not fit in the GPU's memory together are then swapped once

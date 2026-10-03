@@ -11,7 +11,6 @@ from pathlib import Path
 import pytest
 
 import model_shapes as shapes
-from council_samples import ADVISORY
 from council.ollama import (
     CUT_PROMPT_FRACTION,
     LocalModel,
@@ -21,6 +20,7 @@ from council.ollama import (
 )
 from council.prompt import MemberPrompt, build_prompt
 from council.transport import ModelUnavailable
+from council_samples import ADVISORY
 
 # What each word of advisory adds to a prompt the tests size.
 WORD = "word "

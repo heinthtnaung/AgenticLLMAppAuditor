@@ -1,19 +1,28 @@
 """The local model server's settings: an environment variable wins, then `.env`, then the default.
 
-Four settings, each named `AUDITOR_*`:
+Five settings, each named `AUDITOR_*`:
 
 - `AUDITOR_MODEL`, the model asked where none is named -- by a measurement
   such as `prompt_tokens.py` or a bare `LocalModel()`, never by an audit, and
   never under pytest, where every setting is its default;
-- `AUDITOR_SERVER_URL`, the Ollama server, which must be this machine;
+- `AUDITOR_SERVER_URL`, the Ollama server, which must be this machine unless
+  the next setting says otherwise;
+- `AUDITOR_REMOTE_SERVER`, the operator's opt-in to a server on another
+  machine: only `yes` lets the server be one, and every advisory text a council
+  reads is then sent to it;
 - `AUDITOR_TIMEOUT_SECONDS`, how long one call may take;
 - `AUDITOR_CONTEXT_TOKENS`, the window a member is pinned to, which the
   context guard in `council.ollama` scales with.
 
 How `.env` is read, and which other `AUDITOR_*` names exist, is
-`council.env_file`. **A council is never switched on here.** A setting names
-members; only `--council` or `--council-member` runs one. A bad value is
+`council.env_file`; what a server's address may look like is
+`council.server_address`. **A council is never switched on here.** A setting
+names members; only `--council` or `--council-member` runs one. A bad value is
 refused naming where it came from.
+
+**Whether a run was local is read off the server's host, not the opt-in.** `yes`
+beside a loopback address is allowed, and that run is recorded as local,
+because it was.
 
 **Not settings, on purpose:** temperature, seed and `think` stay pinned in
 `council.ollama`, because they are what makes a local member reproducible, and
@@ -33,12 +42,14 @@ from council.env_file import (
     CONTEXT,
     FROM_ENVIRONMENT,
     MODEL,
+    REMOTE_SERVER,
     SERVER,
     TIMEOUT,
     SettingsError,
     auditor_lines,
     refuse_unknown_names,
 )
+from council.server_address import DEFAULT_ADDRESS, address_of
 
 # Looked up each time a setting is read, which is how the tests point it at no file at all.
 ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
@@ -49,26 +60,28 @@ ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
 # with, which is why the record states the window a run used.
 DEFAULTS = {
     MODEL: "qwen2.5:7b-instruct",
-    SERVER: "http://127.0.0.1:11434",
+    SERVER: DEFAULT_ADDRESS,
+    # Unset or empty: the server stays on this machine.
+    REMOTE_SERVER: "",
     TIMEOUT: "180",
     CONTEXT: "8192",
 }
 
 LOOPBACK_HOSTS = ("127.0.0.1", "localhost", "::1")
-SERVER_SCHEMES = ("http", "https")
-# What an earlier version of this project had operators write, endpoint and all.
-OLD_ENDPOINT = "/api/generate"
+# The one value that lets the server be another machine; `true` or `1` is refused.
+REMOTE_OPT_IN = "yes"
 FROM_DEFAULT = "the default"
 
 
 @dataclass(frozen=True)
 class Settings:
-    """The four settings a run of the local model server uses."""
+    """The five settings a run of the model server uses; one on this machine need not opt in."""
 
     model: str
     server: str
     timeout_seconds: float
     context_tokens: int
+    remote_opted_in: bool = False
 
 
 @cache
@@ -78,15 +91,17 @@ def current_settings() -> Settings:
 
 
 def load_settings(environment: Mapping[str, str], env_file: Path) -> Settings:
-    """Read the four settings: an environment variable wins, then `.env`, then the default."""
+    """Read the five settings: an environment variable wins, then `.env`, then the default."""
     refuse_unknown_names(environment, FROM_ENVIRONMENT)
     from_file = auditor_lines(env_file)
     chosen = {name: chosen_value(name, environment, from_file) for name in DEFAULTS}
+    remote_opted_in = opted_in(*chosen[REMOTE_SERVER])
     return Settings(
         model=model_of(*chosen[MODEL]),
-        server=server_of(*chosen[SERVER]),
+        server=server_of(*chosen[SERVER], remote_opted_in),
         timeout_seconds=positive(TIMEOUT, *chosen[TIMEOUT], float),
         context_tokens=positive(CONTEXT, *chosen[CONTEXT], int),
+        remote_opted_in=remote_opted_in,
     )
 
 
@@ -106,21 +121,42 @@ def model_of(value: str, source: str) -> str:
     return value.strip()
 
 
-def server_of(value: str, source: str) -> str:
+def opted_in(value: str, source: str) -> bool:
+    """Say whether the operator opted in to a server elsewhere, refusing all but `yes` or none."""
+    if value.strip() == REMOTE_OPT_IN:
+        return True
+    if not value.strip():
+        return False
+    raise SettingsError(
+        f"{REMOTE_SERVER} is {value!r} ({source}); only `{REMOTE_OPT_IN}` enables it, letting "
+        f"{SERVER} name another machine, and unset or empty leaves it off"
+    )
+
+
+def server_of(value: str, source: str, remote_opted_in: bool) -> str:
     """Give the server's address, the old form with its endpoint accepted, refusing any other."""
-    address = value.strip().rstrip("/").removesuffix(OLD_ENDPOINT)
-    parts = urlsplit(address)
-    if parts.scheme not in SERVER_SCHEMES or not parts.hostname or parts.path:
-        raise SettingsError(
-            f"{SERVER} is {value!r} ({source}); give the server's address alone, "
-            f"as {DEFAULTS[SERVER]}"
-        )
-    if parts.hostname not in LOOPBACK_HOSTS:
-        raise SettingsError(
-            f"{SERVER} is {value!r} ({source}), which is not this machine: a local member "
-            f"may only talk to {', '.join(LOOPBACK_HOSTS[:2])}"
-        )
-    return address
+    # Its shape is `council.server_address`'s; where it may be is this file's.
+    address = address_of(value, source)
+    if remote_opted_in or on_this_machine(address):
+        return address
+    raise SettingsError(
+        f"{SERVER} is {value!r} ({source}), which is not this machine: a local member "
+        f"may only talk to {', '.join(LOOPBACK_HOSTS[:2])}; set {REMOTE_SERVER}={REMOTE_OPT_IN} "
+        "to send the advisory text to that machine"
+    )
+
+
+def on_this_machine(server: str) -> bool:
+    """Say whether a server's address is this machine's own."""
+    return not remote_host(server)
+
+
+def remote_host(server: str) -> str:
+    """Give the host of a server on another machine, and nothing for this machine's own."""
+    hostname = urlsplit(server).hostname
+    if not hostname:
+        raise SettingsError(f"{server!r} names no host, so nothing can say which machine it is")
+    return "" if hostname in LOOPBACK_HOSTS else hostname
 
 
 def positive(name: str, value: str, source: str, kind: Callable[[str], float]) -> float:

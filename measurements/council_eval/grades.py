@@ -15,11 +15,10 @@ from collections import Counter
 from dataclasses import dataclass
 from typing import Iterable
 
-from cvss.score import SEVERITY_BANDS
-
 from council_eval.reference import NO_FULL_REFERENCE
 from council_eval.tables import table
 from council_eval.vectors import VectorMeasure, reference_band
+from cvss.score import SEVERITY_BANDS
 
 # Lowest first, so a difference of positions is a difference of bands.
 BAND_ORDER = tuple(name for _, name in reversed(SEVERITY_BANDS))

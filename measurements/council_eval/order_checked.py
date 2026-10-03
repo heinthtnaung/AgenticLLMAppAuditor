@@ -22,24 +22,26 @@ import json
 from dataclasses import dataclass, field
 from itertools import chain
 
-from cli.council_run import OLLAMA_PROVIDER, assess_one, build_roster
+from cli.council_run import assess_one
 from council.answer import MemberFoundNoEvidence, MemberReply
 from council.prompt import MemberPrompt
 from council.reply import read_reply
-from council.reply_format import (
-    CONFIDENCE_FIELD,
-    EVIDENCE_FIELD,
-    NO_EVIDENCE_VALUE,
-    VALUE_FIELD,
-)
+from council.reply_format import CONFIDENCE_FIELD, EVIDENCE_FIELD, NO_EVIDENCE_VALUE, VALUE_FIELD
 from council.roster import Member
 from council.transport import ModelUnavailable
-from report.council_record import CouncilOutcome
-
-from council_eval.compose import pass_variant, pass_window
+from council_eval.compose import (
+    ItemClient,
+    clients_for,
+    item_client,
+    pass_places,
+    pass_roster,
+    pass_variant,
+    pass_window,
+)
 from council_eval.dataset import Item
-from council_eval.replies import ReplayClient, Replies
+from council_eval.replies import Replies
 from council_eval.variants import PASS_ESCALATION, PASS_ORDER_CHECK
+from report.council_record import CouncilOutcome
 
 STABLE = "stable"
 ORDER_SENSITIVE = "order-sensitive"
@@ -59,8 +61,8 @@ Verdict = tuple[str, str, str, str]
 class OrderCheckedClient:
     """A provider client answering one item from two replays of it, and noting each verdict."""
 
-    forward: ReplayClient
-    reversed: ReplayClient
+    forward: ItemClient
+    reversed: ItemClient
     verdicts: list[Verdict] = field(default_factory=list)
 
     def __call__(self, member: Member, prompt: MemberPrompt) -> str:
@@ -98,18 +100,18 @@ def order_checked_roster(
 ) -> tuple[tuple[CouncilOutcome, ...], list[Verdict]]:
     """Rebuild what an order-checked roster decides on every item, and every verdict behind it."""
     refuse_unpaired(forward, reversed_)
-    roster, window = build_roster(models), pass_window(forward)
     orders = pass_variant(forward), pass_variant(reversed_)
+    roster = pass_roster(models, orders[0], forward)
     clients = [
         OrderCheckedClient(
-            ReplayClient(item.key, forward.calls, orders[0], window),
-            ReplayClient(item.key, reversed_.calls, orders[1], window),
+            item_client(item.key, forward, orders[0]),
+            item_client(item.key, reversed_, orders[1]),
         )
         for item in items
     ]
     outcomes = tuple(
         assess_one(
-            item.finding, roster, {OLLAMA_PROVIDER: client},
+            item.finding, roster, clients_for(roster, client),
             order_check=PASS_ORDER_CHECK, escalation=PASS_ESCALATION,
         )
         for item, client in zip(items, clients)
@@ -120,10 +122,15 @@ def order_checked_roster(
 def refuse_unpaired(forward: Replies, reversed_: Replies) -> None:
     """Refuse two sets of passes that differ in anything but the order of the options."""
     ahead, behind = pass_variant(forward), pass_variant(reversed_)
-    if ahead.reversed_options or not behind.reversed_options or ahead.library != behind.library:
+    same_prompt = ahead.library == behind.library and ahead.chat == behind.chat
+    if ahead.reversed_options or not behind.reversed_options or not same_prompt:
         raise ValueError(
             f"an order check pairs a pass in the product's order with one reversed, "
             f"not {ahead.prompt_version} with {behind.prompt_version}"
         )
-    if pass_window(forward) != pass_window(reversed_):
+    # A chat names no window, and nothing is rebuilt at one.
+    if not ahead.chat and pass_window(forward) != pass_window(reversed_):
         raise ValueError("an order check pairs passes recorded at one window")
+    # A member is rebuilt where its passes ran, so its two orders must have run in one place.
+    if not ahead.chat and pass_places(forward) != pass_places(reversed_):
+        raise ValueError("an order check pairs passes each model took in one place")

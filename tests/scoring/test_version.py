@@ -18,9 +18,7 @@ from scoring.library import ANSWERED_CATEGORIES, APPROVED_QUESTIONS, answers_for
 from scoring.question import Answer, Category
 from scoring.risk_score import CATEGORY_WEIGHTS, SCORE_DECIMALS, organisation_risk_score
 from scoring.scale import MAXIMUM_CATEGORY_SCORE, MINIMUM_CATEGORY_SCORE
-from scoring.technical import (
-    CVSS_TO_CATEGORY_SCALE, UnknownTechnicalSeverity, from_cvss_base_score,
-)
+from scoring.technical import CVSS_TO_CATEGORY_SCALE, UnknownTechnicalSeverity, from_cvss_base_score
 from scoring.version import SCORING_RULES_VERSION
 
 # The rules, fingerprinted. A weight, a threshold, a question or a floor that

@@ -1,0 +1,34 @@
+scored by src/council/explanation_reply.py 52202351be92d76cbcaad2ec6cc885a9898bc526, src/council/explanation.py 83dbbe3200a2c346a93c681d963903d770a4a323, src/cvss/metrics.py 4f2c0035bc23cc66ed589efef2f04cb118a642e9
+calls 20; scored otherwise than recorded at the time: 6
+gemma4:latest seed 11 CVE-2026-13149
+gemma4:latest seed 11 CVE-2025-13465
+gemma4:latest seed 11 CVE-2026-4800
+gemma4:latest seed 12 CVE-2026-13149
+gemma4:latest seed 12 CVE-2025-13465
+gemma4:latest seed 12 CVE-2026-4800
+
+gemma4:latest  seed 11  CVE-2026-13149  A      kept 1/1  dropped: -  written: 'Availability'
+gemma4:latest  seed 11  CVE-2021-4279   C,I,A  kept 3/3  dropped: -  written: 'C', 'I', 'A'
+gemma4:latest  seed 11  CVE-2025-13465  A      kept 1/1  dropped: -  written: 'Availability'
+gemma4:latest  seed 11  CVE-2026-2950   PR,I,A kept 3/3  dropped: -  written: 'PR', 'I', 'A'
+gemma4:latest  seed 11  CVE-2026-4800   AC     kept 1/1  dropped: -  written: 'AC (Attack Complexity)'
+gemma4:latest  seed 12  CVE-2026-13149  A      kept 1/1  dropped: -  written: 'Availability'
+gemma4:latest  seed 12  CVE-2021-4279   C,I,A  kept 3/3  dropped: -  written: 'C', 'I', 'A'
+gemma4:latest  seed 12  CVE-2025-13465  A      kept 1/1  dropped: -  written: 'Availability (A)'
+gemma4:latest  seed 12  CVE-2026-2950   PR,I,A kept 3/3  dropped: -  written: 'PR', 'I', 'A'
+gemma4:latest  seed 12  CVE-2026-4800   AC     kept 1/1  dropped: -  written: 'AC (Attack Complexity)'
+glm-4.7-flash  seed 11  CVE-2026-13149  A      kept 1/1  dropped: -  written: 'A'
+glm-4.7-flash  seed 11  CVE-2021-4279   C,I,A  kept 3/3  dropped: -  written: 'C', 'I', 'A'
+glm-4.7-flash  seed 11  CVE-2025-13465  A      kept 1/1  dropped: -  written: 'A'
+glm-4.7-flash  seed 11  CVE-2026-2950   PR,I,A kept 3/3  dropped: -  written: 'PR', 'I', 'A'
+glm-4.7-flash  seed 11  CVE-2026-4800   AC     kept 1/1  dropped: 'AC' repeat, quotation found True  written: 'AC', 'AC'
+glm-4.7-flash  seed 12  CVE-2026-13149  A      kept 1/1  dropped: -  written: 'A'
+glm-4.7-flash  seed 12  CVE-2021-4279   C,I,A  kept 3/3  dropped: -  written: 'C', 'I', 'A'
+glm-4.7-flash  seed 12  CVE-2025-13465  A      kept 1/1  dropped: -  written: 'A'
+glm-4.7-flash  seed 12  CVE-2026-2950   PR,I,A kept 3/3  dropped: -  written: 'PR', 'I', 'A'
+glm-4.7-flash  seed 12  CVE-2026-4800   AC     kept 1/1  dropped: 'AC' repeat, quotation found True  written: 'AC', 'AC'
+
+gemma4:latest  one-metric   calls 6  explained 6  kept 6 of 6  drops {}
+gemma4:latest  multi-metric calls 4  explained 4  kept 12 of 12  drops {}
+glm-4.7-flash  one-metric   calls 6  explained 6  kept 6 of 6  drops {'repeat': 2}
+glm-4.7-flash  multi-metric calls 4  explained 4  kept 12 of 12  drops {}

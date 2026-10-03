@@ -9,10 +9,11 @@ council leaves open stays open, and the record says no escalation model was
 named. An empty environment variable wins over the file like any other, so it
 switches escalation off for one run.
 
-**Only ever a local model.** The name is a model on the Ollama server
-`AUDITOR_SERVER_URL` names, which `council.settings` holds to this machine, and
-the member built from it runs local (`cli.council_run.local_member`). There is
-no provider to name, so a hosted escalation cannot be written here.
+**Only ever a model on the members' server.** The name is a model on the Ollama
+server `AUDITOR_SERVER_URL` names, which `council.settings` holds to this machine
+unless `AUDITOR_REMOTE_SERVER=yes`, and the member built from it is recorded
+where that server is, as the members are (`council.providers.ollama_member`).
+There is no provider to name, so a hosted escalation cannot be written here.
 
 Read only when a council is asked for, so a `.env` naming a model starts no
 model call on its own.

@@ -15,10 +15,9 @@ which calls those were.
 from dataclasses import dataclass
 from typing import Mapping
 
-from cvss.metrics import METRIC_ORDER
-
 from council_eval.recording import CallRecord
 from council_eval.replies import CallKey, Replies
+from cvss.metrics import METRIC_ORDER
 
 NANOSECONDS = 1e9
 # A warm call loads in milliseconds; a load from memory took 3 s or more here.

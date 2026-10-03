@@ -16,6 +16,8 @@ QWEN = "qwen2.5:7b-instruct"
 LLAMA = "llama3.2:latest"
 GEMMA = "gemma4:latest"
 LOADED = 1_000_000_000
+# What a line `probe.py` writes names beside the call, which the drafts' lines do not.
+NAMED_SINCE = ("server", "remote_host", "digest", "ollama")
 
 
 def lines(name: str) -> list[dict]:
@@ -32,6 +34,14 @@ def states(model: str) -> dict[str, dict]:
 def replies(model: str) -> dict[str, str]:
     """Give one model's load-state replies by step, as the server returned them."""
     return {label: envelope["response"] for label, envelope in states(model).items()}
+
+
+def test_the_recorded_probes_name_no_server_version_or_digest_having_predated_them():
+    # A known gap, asserted: scratch drafts wrote both files on 2026-09-24, before
+    # `probe.py` named its server, its version or the weights; the README says where
+    # they ran and on what instead. A re-run names all of them and turns this red.
+    recorded = lines("probe_state.jsonl") + lines("probe_think.jsonl")
+    assert [line for line in recorded if set(NAMED_SINCE) & set(line)] == []
 
 
 def test_no_recorded_envelope_carries_a_thinking_field():

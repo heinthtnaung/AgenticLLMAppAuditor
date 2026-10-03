@@ -9,11 +9,11 @@ import json
 import pytest
 
 from cli.council_run import assessments, build_roster, escalation_member, watching
+from cli_samples import ADVISORY, LEGAL, LODASH, QUOTATION
 from council.prompt import PROMPT_VERSION, REVERSED_PROMPT_VERSION
 from council.ruling import Basis
 from findings.finding import build_finding
 from report.council_record import CouncilAssessment, CouncilWithoutVector
-from cli_samples import ADVISORY, LEGAL, LODASH, QUOTATION
 
 FINDING = build_finding(LODASH, ADVISORY)
 COUNCIL = build_roster(("small", "other"))

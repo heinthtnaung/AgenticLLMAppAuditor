@@ -3,6 +3,10 @@
 Every setting the run was asked with, then which server answered and which
 weights: `ollama_version` once, and a digest per model the run asks, member or
 escalation. Each is known, or it says why not, as `advisory_database` does.
+
+`remote_host` follows `server` only where the server is another machine, so the
+record of a run on this one is what it always was. The key `local_models` keeps
+its name for the same reason, though such a run's models were not local.
 """
 
 from typing import Any
@@ -17,6 +21,7 @@ def local_models_of(local: LocalModels | None) -> dict[str, Any] | None:
         return None
     return {
         "server": local.server,
+        **remote_host_of(local),
         "context_tokens": local.context_tokens,
         "timeout_seconds": local.timeout_seconds,
         "temperature": local.temperature,
@@ -27,6 +32,13 @@ def local_models_of(local: LocalModels | None) -> dict[str, Any] | None:
         "ollama_version": version_of(local.ollama_version),
         "models": [model_of(one) for one in local.models],
     }
+
+
+def remote_host_of(local: LocalModels) -> dict[str, str]:
+    """Name the server's host where it is another machine, and add nothing where it is this one."""
+    if not local.remote_host:
+        return {}
+    return {"remote_host": local.remote_host}
 
 
 def version_of(version: ServerVersion) -> dict[str, Any]:

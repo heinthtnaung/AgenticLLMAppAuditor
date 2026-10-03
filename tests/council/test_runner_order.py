@@ -9,8 +9,8 @@ from itertools import product
 from council.roster import Roster
 from council.run import MetricRound
 from council.runner import assess
-from cvss.metrics import METRIC_ORDER
 from council_samples import FALLBACKS, RAW_ADVISORY, clients_of, member, replying
+from cvss.metrics import METRIC_ORDER
 
 PAIR = ("one", "two")
 

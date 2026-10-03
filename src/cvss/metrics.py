@@ -104,6 +104,9 @@ METRICS_BY_ABBREVIATION: dict[str, Metric] = {
     metric.abbreviation: metric for metric in BASE_METRICS
 }
 
+# A Base metric by its name in words, spelled exactly as the table above spells it.
+METRICS_BY_NAME: dict[str, Metric] = {metric.name: metric for metric in BASE_METRICS}
+
 # Every metric a published vector may carry and still be read.
 READABLE_METRICS: dict[str, Metric] = {
     metric.abbreviation: metric for metric in (*BASE_METRICS, *TEMPORAL_METRICS)

@@ -22,6 +22,7 @@ from cvss.metrics import (
     INTEGRITY,
     METRIC_ORDER,
     METRICS_BY_ABBREVIATION,
+    METRICS_BY_NAME,
     PRIVILEGES_REQUIRED,
     SCOPE,
     SCOPE_CHANGED,
@@ -116,6 +117,15 @@ def test_the_lookup_maps_each_abbreviation_to_its_own_metric():
         if metric.abbreviation != abbreviation
     ]
     assert mismatched == []
+
+
+@pytest.mark.parametrize(("abbreviation", "name"), NAME_CASES)
+def test_each_name_in_words_looks_up_its_own_metric(abbreviation, name):
+    assert METRICS_BY_NAME[name].abbreviation == abbreviation
+
+
+def test_the_name_lookup_holds_the_eight_base_names_and_nothing_else():
+    assert set(METRICS_BY_NAME) == {row[1] for row in SPECIFICATION}
 
 
 def test_the_impact_metrics_are_confidentiality_integrity_availability():

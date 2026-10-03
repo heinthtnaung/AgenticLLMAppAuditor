@@ -15,9 +15,12 @@ render time and inlined, because a scan runs offline and a fetched stylesheet
 arrives unreadable.
 """
 
-# The CVSS bands plus the organisation ones, which are the same names without
-# `None`. A band with no colour is refused rather than rendered unstyled.
-BANDS: tuple[str, ...] = ("Critical", "High", "Medium", "Low", "None")
+from cvss.score import SEVERITY_BAND_NAMES
+
+# The CVSS band names, defined once in `cvss.score`: they cover the organisation
+# ones, which are the same names without `None`. A band with no colour is refused
+# rather than rendered unstyled.
+BANDS: tuple[str, ...] = SEVERITY_BAND_NAMES
 
 BAND_CLASSES = {name: f"band-{name.lower()}" for name in BANDS}
 

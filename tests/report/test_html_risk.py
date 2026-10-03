@@ -127,7 +127,9 @@ def test_a_floor_is_named_beside_the_chip_it_raised_with_the_band_before():
     )))
     chip = '<span class="value">59.4</span><span class="band">Critical</span></span>'
     note = "floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: High to Critical"
-    assert f'{chip}<span class="refusal">{note}</span>' in page
+    # A floor is a note beside the score, not a refusal, so it carries its own class.
+    assert f'{chip}<span class="floor-note">{note}</span>' in page
+    assert '<span class="refusal">' not in page
 
 
 def test_a_score_no_floor_raised_names_no_floor():

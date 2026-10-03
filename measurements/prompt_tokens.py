@@ -2,9 +2,10 @@
 
 Run it: `python measurements/prompt_tokens.py [MODEL ...]`, with the operator's
 `AUDITOR_MODEL` when none is named. **This one needs `ollama serve` up with each model pulled**,
-unlike the other measurement here. It talks to loopback only, through
-`council.transport`, which bypasses the corporate proxy rather than relying on
-NO_PROXY being exported.
+unlike the other measurement here. It talks to the settings' server, this machine's
+unless `AUDITOR_REMOTE_SERVER=yes` names another, through `council.transport`, which
+bypasses the corporate proxy rather than relying on NO_PROXY being exported. Its
+first line names that server, and its `remote_host` where it is another machine.
 
 It answers two questions `council.ollama` states as fact: what the prompt costs
 with no advisory in it, and what the worst advisory in the corpus takes it to.
@@ -20,17 +21,11 @@ token generated.
 
 import sys
 from pathlib import Path
-from typing import Any, Callable
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from advisories import advisory_texts  # noqa: E402
-from council_eval.pass_provenance import (  # noqa: E402
-    TAGS_PATH,
-    VERSION_PATH,
-    get_json,
-    model_digest,
-)
+from cli.model_identity import Read  # noqa: E402
 from council.ollama import (  # noqa: E402
     USABLE_CONTEXT_FRACTION,
     LocalModel,
@@ -40,11 +35,15 @@ from council.ollama import (  # noqa: E402
 )
 from council.prompt import PROMPT_VERSION, MemberPrompt, build_prompt  # noqa: E402
 from council.settings import current_settings  # noqa: E402
-from council.transport import Transport, post_json  # noqa: E402
+from council.transport import Transport, get_json, post_json  # noqa: E402
+from council_eval.pass_provenance import (  # noqa: E402
+    held_listing,
+    held_version,
+    model_digest,
+    server_named,
+)
 
 PROMPT_TOKEN_FIELD = "prompt_eval_count"
-
-Get = Callable[[str], Any]
 
 # The widest definitions of the eight, so a cost measured here is the worst one.
 WIDEST_METRIC = "AC"
@@ -97,18 +96,24 @@ def model_lines(
     ]
 
 
-def main(argv: list[str], post: Transport = post_json, get: Get = get_json) -> int:
+def heading(ollama: str, server: str) -> str:
+    """Name the prompt, the server's version, the server, and its host where it is elsewhere."""
+    named = ", ".join(f"{field} {value}" for field, value in server_named(server).items())
+    return f"prompt {PROMPT_VERSION}, Ollama {ollama}, {named}"
+
+
+def main(argv: list[str], post: Transport = post_json, get: Read = get_json) -> int:
     """Print what was asked of which weights, then each model's costs and the estimate's error."""
     advisory_id, text = longest_advisory()
     server = current_settings().server
-    tags = get(f"{server}{TAGS_PATH}")
-    ollama = get(f"{server}{VERSION_PATH}")["version"]
-    print(f"prompt {PROMPT_VERSION}, Ollama {ollama}")
+    listing = held_listing(server, get)
+    ollama = held_version(server, get)
+    print(heading(ollama, server))
     print(f"the longest advisory, {advisory_id}: {len(text)} characters")
     fixed = build_prompt(WIDEST_METRIC, ALMOST_NO_ADVISORY)
     worst = build_prompt(WIDEST_METRIC, text)
     for model in tuple(argv) or (current_settings().model,):
-        print(f"{model} {model_digest(model, tags)}")
+        print(f"{model} {model_digest(model, listing)}")
         print("\n".join(model_lines(model, fixed, worst, post)))
     return 0
 

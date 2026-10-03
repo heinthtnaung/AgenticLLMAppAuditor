@@ -17,12 +17,11 @@ from dataclasses import dataclass
 from typing import Mapping
 
 from council.ruling import Basis
-from cvss.metrics import METRIC_ORDER
-from report.council_record import CouncilOutcome, MetricRuling, Outcome, SaidKind
-
 from council_eval.dataset import Item
 from council_eval.measures import ruling_for
 from council_eval.reference import r1_reference
+from cvss.metrics import METRIC_ORDER
+from report.council_record import CouncilOutcome, MetricRuling, Outcome, SaidKind
 
 
 @dataclass(frozen=True)

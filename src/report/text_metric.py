@@ -21,8 +21,10 @@ from report.council_words import (
     checked,
     confident,
     counted,
+    declined_one_way,
     escalated_who,
     outcome_said,
+    same_evidence_said,
     unanswered,
     who,
 )
@@ -46,6 +48,7 @@ def ruling_lines(ruling: MetricRuling) -> list[str]:
     said = SOURCE_SEPARATOR.join([ruling.metric, outcome_said(ruling), spoke])
     return [
         indented(METRIC_DEPTH, said),
+        *[indented(MEMBER_DEPTH, one) for one in same_evidence_said(ruling)],
         *chairman_lines(ruling),
         *chain.from_iterable(member_lines(one) for one in ruling.said),
         *escalation_lines(ruling),
@@ -74,9 +77,10 @@ def member_lines(said: MemberSaid) -> list[str]:
 def said_lines(named: str, said: MemberSaid) -> list[str]:
     """Give one model's answer under the name it is listed by, and its quotation in full."""
     if said.kind is not SaidKind.ANSWERED:
-        return [indented(MEMBER_DEPTH, f"{named}  {unanswered(said)}")]
+        unsaid = SOURCE_SEPARATOR.join([unanswered(said), *declined_one_way(said)])
+        return [indented(MEMBER_DEPTH, f"{named}  {unsaid}")]
     answered = SOURCE_SEPARATOR.join(
-        [said.value, confident(said.confidence), checked(said.verified)]
+        [said.value, confident(said.confidence), checked(said.verified), *declined_one_way(said)]
     )
     return [
         indented(MEMBER_DEPTH, f"{named}  {answered}"),

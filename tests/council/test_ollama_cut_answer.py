@@ -16,7 +16,6 @@ from council.evidence import is_quotation_from
 from council.ollama import estimated_tokens
 from council.prompt import build_prompt
 from council.reply import read_reply
-
 from council_samples import ADVISORY, identity
 from model_shapes import CUT_PROMPTS
 

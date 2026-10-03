@@ -87,3 +87,15 @@ def test_the_band_after_the_floors_is_the_last_one_raised_to_or_the_band_itself(
 def test_a_rule_naming_what_does_not_exist_is_refused(fields, fault):
     with pytest.raises(ValueError, match=fault):
         SeverityFloor(*fields)
+
+
+@pytest.mark.parametrize("fields", [
+    ("", ("THR-1",), "High", "why"),
+    ("FLOOR-X", (), "High", "why"),
+], ids=["no rule id", "no answers to read"])
+def test_a_rule_missing_its_id_or_the_answers_it_reads_is_refused(fields):
+    """A floor needs an id and the answers it reads, not only a reason the other test pins."""
+    # An empty answers tuple is the dangerous one: `meets` reads it with all(),
+    # and all() over nothing is True, so such a floor would fire on every score.
+    with pytest.raises(ValueError, match="needs an id, the answers it reads, and its reason"):
+        SeverityFloor(*fields)

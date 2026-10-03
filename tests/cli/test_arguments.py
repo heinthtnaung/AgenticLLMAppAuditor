@@ -2,7 +2,15 @@
 
 import pytest
 
-from cli.arguments import BOTH_COUNCILS, JSON_FORMAT, TEXT_FORMAT, parse_arguments
+from cli.arguments import (
+    BOTH_COUNCILS,
+    COUNCIL_HELP,
+    DESCRIPTION,
+    JSON_FORMAT,
+    MEMBER_HELP,
+    TEXT_FORMAT,
+    parse_arguments,
+)
 from cli.main import COULD_NOT_RUN
 
 
@@ -90,3 +98,17 @@ def test_the_council_flag_beside_a_named_member_is_refused_rather_than_one_winni
         parse_arguments(["repo", "--council", "--council-member", "small"])
     assert leaving.value.code == COULD_NOT_RUN
     assert BOTH_COUNCILS in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("said", [MEMBER_HELP, COUNCIL_HELP], ids=["council-member", "council"])
+def test_the_council_flags_name_the_settings_server_and_never_call_its_models_local(said):
+    # With AUDITOR_REMOTE_SERVER=yes that server is another machine.
+    assert "the Ollama server AUDITOR_SERVER_URL names" in said
+    assert "local" not in said
+
+
+def test_the_description_is_true_for_an_offline_scan_and_a_council_that_reaches_a_server():
+    # The scan is offline, but a council can reach a model server, so the help may
+    # not call the whole run offline; it names the server the way the flags do.
+    assert "offline" in DESCRIPTION
+    assert "the Ollama server AUDITOR_SERVER_URL names" in DESCRIPTION

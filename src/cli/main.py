@@ -37,21 +37,7 @@ import sys
 from pathlib import Path
 from typing import TextIO
 
-from deps.manifests import ManifestsUnreadable
-from deps.scanner import ScannerFailed, ScannerUnavailable
-from deps.trivy_database import trivy_cache_directory
-from report.html_report import as_html
-from report.json_report import as_json
-from report.record import Report
-from report.text_report import as_text
-
-from cli.arguments import (
-    HTML_FORMAT,
-    JSON_FORMAT,
-    PROGRAM,
-    TEXT_FORMAT,
-    parse_arguments,
-)
+from cli.arguments import HTML_FORMAT, JSON_FORMAT, PROGRAM, TEXT_FORMAT, parse_arguments
 from cli.audit import run_audit
 from cli.preflight import CannotRun, refuse_unrunnable
 from cli.report_files import (
@@ -61,6 +47,13 @@ from cli.report_files import (
     where_written,
     write_reports,
 )
+from deps.manifests import ManifestsUnreadable
+from deps.scanner import ScannerFailed, ScannerUnavailable
+from deps.trivy_database import trivy_cache_directory
+from report.html_report import as_html
+from report.json_report import as_json
+from report.record import Report
+from report.text_report import as_text
 
 RENDERERS = {TEXT_FORMAT: as_text, JSON_FORMAT: as_json, HTML_FORMAT: as_html}
 REFUSALS = (

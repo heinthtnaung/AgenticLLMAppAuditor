@@ -30,16 +30,31 @@ class MemberFailure:
 
 
 @dataclass(frozen=True)
+class OrderReadings:
+    """One member's two readings of one metric, the options in order and reversed, as each came.
+
+    `council.order_check.reconciled` makes the pair one reply, refusing a pair that
+    is not one member's on one metric, and the chairman rules on that reply alone.
+    The pair is kept beside it because the one reply cannot say which order a
+    member declined in.
+    """
+
+    in_order: MemberReply | MemberFailure
+    reversed_order: MemberReply | MemberFailure
+
+
+@dataclass(frozen=True)
 class MetricEscalation:
     """A metric the council left open, put to the escalation model in both orders.
 
     `prior` is the ruling the council reached, contested or unresolved, and
-    `reply` is the escalation model's two readings made one (`council.order_check`).
+    `reply` is the escalation model's two `readings` made one (`council.order_check`).
     What came of it is the round's ruling: settled on it, or `prior` unchanged.
     """
 
     prior: MetricRuling
     reply: MemberReply | MemberFailure
+    readings: OrderReadings
 
 
 @dataclass(frozen=True)
@@ -47,7 +62,9 @@ class MetricRound:
     """One metric put to every reachable member: what came back, and the ruling on it.
 
     `escalation` is None for a metric the council settled, and for every metric
-    of a run that named no escalation model.
+    of a run that named no escalation model. `readings` is every member's two
+    readings, in roster order, where the run asked both orders, and empty where
+    it asked one.
     """
 
     metric: str
@@ -55,6 +72,7 @@ class MetricRound:
     failures: tuple[MemberFailure, ...]
     ruling: MetricRuling
     escalation: MetricEscalation | None = None
+    readings: tuple[OrderReadings, ...] = ()
 
 
 @dataclass(frozen=True)

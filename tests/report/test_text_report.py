@@ -2,16 +2,16 @@
 
 import pytest
 
-from report.provenance import RunProvenance, UnknownAdvisoryDatabase
 from council_runs import OPEN_TWO_WAYS, council_ran, council_states, passed_over_entirely
 from full_runs import fully_assessed
 from report.absences import (
+    NO_COUNCIL_RUN,
     NOTHING_ABSENT,
     NOTHING_WAS_PUT_TO_IT,
-    NO_COUNCIL_RUN,
     UNREAD_MANIFEST,
     Coverage,
 )
+from report.provenance import RunProvenance, UnknownAdvisoryDatabase
 from report.record import build_report
 from report.text_report import as_text
 from report_samples import (

@@ -59,6 +59,7 @@ a.minis, .cell-link { text-decoration: none; }
 .title { display: flex; flex-wrap: wrap; gap: .15rem .6rem; align-items: baseline; }
 .adv { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   overflow-wrap: anywhere; }
+.card-flag { margin: 0 0 .6rem; }
 .facts { display: flex; flex-wrap: wrap; gap: .3rem 1.2rem; margin: 0 0 .6rem; }
 .facts div { display: flex; gap: .35rem; }
 .facts dt { color: var(--muted-fg); margin: 0; }
@@ -77,6 +78,8 @@ a.minis, .cell-link { text-decoration: none; }
   vertical-align: baseline; opacity: .7;
 }
 .refusal { color: var(--muted-fg); font-size: .88em; }
+/* A severity floor that raised a band; a note beside the score, not a refusal. */
+.floor-note { color: var(--muted-fg); font-size: .88em; }
 .sources > li, .risk-scores > li {
   display: flex; flex-wrap: wrap; gap: .35rem .6rem; align-items: center;
   padding: .3rem 0; border-top: 1px solid var(--rule);

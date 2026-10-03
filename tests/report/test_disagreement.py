@@ -2,7 +2,7 @@
 
 import pytest
 
-from cvss.score import SEVERITY_BANDS
+from cvss.score import SEVERITY_BAND_NAMES, SEVERITY_BANDS
 from report.disagreement import (
     BAND_ORDER,
     bands_crossed,
@@ -16,11 +16,11 @@ from report_samples import (
     CONFIDENTIALITY_ONLY,
     HARMLESS,
     LOW_CONFIDENTIALITY,
-    TOP_OF_MEDIUM,
-    WIDE_WITHIN_MEDIUM,
     SAME_SCORE_ONE,
     SAME_SCORE_TWO,
+    TOP_OF_MEDIUM,
     TOTAL_LOSS,
+    WIDE_WITHIN_MEDIUM,
     component,
     finding,
 )
@@ -67,6 +67,8 @@ def test_the_bands_are_read_off_the_cvss_bands_rather_than_restated():
     # Restating them here would let the two drift and file a finding under a
     # band the calculator does not use.
     assert BAND_ORDER == tuple(name for _, name in SEVERITY_BANDS)
+    # And it is the one shared tuple, not a second derivation of the same names.
+    assert BAND_ORDER is SEVERITY_BAND_NAMES
 
 
 def test_the_bands_a_finding_reaches_are_named_worst_first():

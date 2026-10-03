@@ -10,9 +10,6 @@ where nobody was named to ask are different facts.
 
 import io
 
-from council.roster import Member, Roster
-from council.ruling import NoFallbackPublished
-from report.council_record import CouncilAssessment, CouncilNotAsked, CouncilWithoutVector
 from cli.council_run import (
     FALLBACKS,
     NO_TEXT_TO_READ,
@@ -21,9 +18,12 @@ from cli.council_run import (
     build_roster,
     watching,
 )
+from cli_samples import ADVISORY, LODASH, TOTAL_LOSS, advisory_like, answering
+from council.roster import Member, Roster
+from council.ruling import NoFallbackPublished
 from cvss.metrics import METRIC_ORDER
 from findings.finding import build_finding
-from cli_samples import ADVISORY, LODASH, TOTAL_LOSS, advisory_like, answering
+from report.council_record import CouncilAssessment, CouncilNotAsked, CouncilWithoutVector
 
 FINDING = build_finding(LODASH, ADVISORY)
 UNDISPUTED = build_finding(LODASH, advisory_like("CVE-AGREED"))
@@ -45,7 +45,7 @@ def test_a_member_is_reached_through_ollama_on_this_machine():
     assert build_roster(("qwen2.5:7b",)).members[0].provider == "ollama"
 
 
-def test_the_family_is_guessed_from_the_tag():
+def test_the_family_is_guessed_from_the_model_s_own_name():
     # A roster file would carry it properly. It is only read to judge how much a
     # roster's agreement is worth, so a wrong guess costs a reader, not a number.
     assert build_roster(("qwen2.5:7b-instruct",)).members[0].family == "qwen2.5"

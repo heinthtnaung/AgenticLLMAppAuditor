@@ -3,7 +3,8 @@
 Two requests, once per run and only when a council is asked for: the server's
 models with their digests (`/api/tags`) and its version (`/api/version`),
 through the same no-proxy client every call uses (`council.transport.get_json`),
-at the settings' server, which `council.settings` holds to loopback. Every
+at the settings' server, which `council.settings` holds to loopback unless
+`AUDITOR_REMOTE_SERVER=yes` let it name another machine. Every
 model the run asks is looked up -- the members, and the escalation model where
 one is named; the explainer is always one of those.
 
@@ -21,6 +22,7 @@ the server were gone.
 from dataclasses import dataclass, field
 from typing import Any, Mapping, Protocol
 
+from council.model_name import TAG_SEPARATOR, last_part
 from council.transport import ModelUnavailable
 from report.model_identity import (
     ESCALATION_ROLE,
@@ -43,7 +45,6 @@ DIGEST_FIELD = "digest"
 READ_TIMEOUT_SECONDS = 30.0
 # The tag Ollama assumes when a name carries none, as `llama3.2` for `llama3.2:latest`.
 DEFAULT_TAG = ":latest"
-TAG_SEPARATOR = ":"
 
 
 class Read(Protocol):
@@ -125,4 +126,5 @@ def identity_of(model: str, role: str, listing: Listing) -> ModelIdentity:
 
 def tagged(model: str) -> str:
     """Name a model as the server lists it, with the tag Ollama assumes where it has none."""
-    return model if TAG_SEPARATOR in model else f"{model}{DEFAULT_TAG}"
+    # Read after the last "/": in `myregistry:5000/model` the ":" is the registry's port.
+    return model if TAG_SEPARATOR in last_part(model) else f"{model}{DEFAULT_TAG}"

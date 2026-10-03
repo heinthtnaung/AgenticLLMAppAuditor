@@ -3,7 +3,6 @@
 import pytest
 
 import eval_samples as samples
-from cvss.metrics import METRIC_ORDER
 from council_eval.measures import (
     NOT_IN_ADVISORY,
     VERIFIED,
@@ -12,6 +11,7 @@ from council_eval.measures import (
     outcome_totals,
     wilson,
 )
+from cvss.metrics import METRIC_ORDER
 from report.council_record import (
     CouncilWithoutVector,
     MemberIdentity,

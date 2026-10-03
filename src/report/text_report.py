@@ -17,21 +17,20 @@ it goes on.
 """
 
 from organisation.approval import Approval
-from report.provenance import SCORING_RULES_LABEL, AdvisoryDatabase
 from report.absences import NOTHING_ABSENT
+from report.provenance import SCORING_RULES_LABEL, AdvisoryDatabase
 from report.record import Report
 from report.summary_words import (
-    approval_count, counts, inventory_pointer, secrets_count, unread_pointer,
+    approval_count,
+    counts,
+    inventory_pointer,
+    secrets_count,
+    unread_pointer,
 )
 from report.text_approval import approval_needed_block
 from report.text_council import council_block
 from report.text_explanation import explanation_block
-from report.text_findings import (
-    agreeing_block,
-    contested_block,
-    unchecked_block,
-    unscored_block,
-)
+from report.text_findings import agreeing_block, contested_block, unchecked_block, unscored_block
 from report.text_layout import INDENT, SOURCE_SEPARATOR, section, wrapped
 from report.text_risk import risk_block
 from report.text_secrets import secrets_block

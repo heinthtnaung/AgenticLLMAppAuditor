@@ -14,8 +14,18 @@ from council.roster import Roster
 from council.ruling import Basis, PublishedFallback
 from council.runner import assess
 from council_samples import (
-    ADVISORY, FALLBACKS, NOT_IN_THE_ADVISORY, RAW_ADVISORY, answer, clients_of, found_nothing,
-    guessed, guessing, identity, member, replying,
+    ADVISORY,
+    FALLBACKS,
+    NOT_IN_THE_ADVISORY,
+    RAW_ADVISORY,
+    answer,
+    clients_of,
+    found_nothing,
+    guessed,
+    guessing,
+    identity,
+    member,
+    replying,
 )
 
 FALLBACK = PublishedFallback(value="L", source="nvd")

@@ -1,8 +1,10 @@
 """Guards on the probe: the product's request with only `think` varied, and cold steps unloaded."""
 
+import inspect
 import io
 import json
 import sys
+from itertools import product
 from pathlib import Path
 
 import pytest
@@ -15,19 +17,22 @@ sys.path.insert(0, str(ROOT / "tests" / "council"))
 import council_samples  # noqa: E402
 from council.ollama import LocalModel, build_request  # noqa: E402
 from council.prompt import build_prompt  # noqa: E402
+from council.transport import get_json  # noqa: E402
 from thinking_and_load import probe  # noqa: E402
 
 PINNING = LocalModel(model="qwen2.5:7b-instruct")
 RECORDED_STATES = ROOT / "measurements" / "thinking_and_load" / "probe_state.jsonl"
+HELD = ("m", "n")
 
 
 class FakeServer:
-    """A stand-in for Ollama that unloads when asked and answers every prompt the same way."""
+    """A stand-in for Ollama that lists two models, unloads when asked, and answers alike."""
 
     def __init__(self, unload_answer: str = probe.UNLOADED) -> None:
-        """Remember every request, and say what an unload request is answered with."""
+        """Remember every request and read, and say what an unload request is answered with."""
         self.unload_answer = unload_answer
         self.posted: list[dict] = []
+        self.read: list[str] = []
 
     def __call__(self, url: str, payload: dict) -> dict:
         """Answer one request."""
@@ -36,13 +41,20 @@ class FakeServer:
             return {"done_reason": self.unload_answer}
         return {"response": "{}", "context": [1, 2, 3]}
 
+    def get(self, url: str, timeout: float) -> dict:
+        """Answer the version and the model listing, as a pass header reads them."""
+        self.read.append(url.rsplit("/", 1)[1])
+        if url.endswith("/api/version"):
+            return {"version": "0.0.1"}
+        return {"models": [{"name": one, "digest": f"digest-{one}"} for one in HELD]}
+
 
 def probed(
     name: str, steps: tuple[probe.Step, ...], models: tuple[str, ...] = ("m",)
 ) -> tuple[FakeServer, list[dict]]:
     """Run one probe over its models against the fake server, and read back what it wrote."""
     server, out = FakeServer(), io.StringIO()
-    probe.run(name, steps, models, out, server)
+    probe.run(name, steps, models, out, server, server.get)
     return server, [json.loads(line) for line in out.getvalue().splitlines()]
 
 
@@ -73,9 +85,34 @@ def test_a_cold_step_unloads_the_probed_models_itself_included_and_a_warm_step_d
     ]
 
 
-def test_a_load_state_call_is_written_as_recorded_without_the_token_ids():
+def test_a_load_state_call_is_written_with_its_server_and_weights_without_the_token_ids():
     _, lines = probed(probe.LOAD_STATE, probe.STEPS[probe.LOAD_STATE][:1])
-    assert lines == [{"model": "m", "label": "cold, field absent", "envelope": {"response": "{}"}}]
+    assert lines == [{
+        "model": "m", "label": "cold, field absent", "server": "http://127.0.0.1:11434",
+        "digest": "digest-m", "ollama": "0.0.1", "envelope": {"response": "{}"},
+    }]
+
+
+def test_each_line_names_its_own_model_s_digest_read_once_before_any_call():
+    server, lines = probed(probe.LOAD_STATE, probe.STEPS[probe.LOAD_STATE], HELD)
+    assert [(line["model"], line["digest"]) for line in lines] == [
+        (model, f"digest-{model}") for model, _ in product(HELD, probe.STEPS[probe.LOAD_STATE])
+    ]
+    assert server.read == ["tags", "version"]
+
+
+def test_a_model_the_server_does_not_hold_is_refused_before_any_call():
+    server = FakeServer()
+    with pytest.raises(ValueError, match="the server holds no absent:1b"):
+        probe.run(probe.THINKING, probe.STEPS[probe.THINKING], ("absent:1b",), io.StringIO(),
+                  server, server.get)
+    assert server.posted == []
+
+
+def test_a_call_to_a_server_elsewhere_names_it_and_its_host(remote_server):
+    _, lines = probed(probe.THINKING, probe.STEPS[probe.THINKING])
+    named = {(line["server"], line["remote_host"]) for line in lines}
+    assert named == {(remote_server, "192.0.2.15")}
 
 
 def test_a_thinking_call_is_named_by_its_think_setting_as_recorded():
@@ -87,6 +124,10 @@ def test_the_load_state_steps_are_the_ones_recorded_in_their_order():
     lines = [json.loads(line) for line in RECORDED_STATES.read_text().splitlines()]
     gemma = [line["label"] for line in lines if line["model"] == "gemma4:latest"]
     assert gemma == [step.label for step in (*probe.STEPS[probe.LOAD_STATE], probe.THINK_TRUE)]
+
+
+def test_a_probe_reads_the_server_through_the_product_s_transport_by_default():
+    assert inspect.signature(probe.run).parameters["get"].default is get_json
 
 
 def test_a_server_that_does_not_unload_is_refused():

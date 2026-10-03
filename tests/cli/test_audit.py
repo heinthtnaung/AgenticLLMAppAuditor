@@ -5,12 +5,9 @@ import json
 import pytest
 
 from cli import audit as audit_module
-from cli.arguments import Options, TEXT_FORMAT
+from cli.arguments import TEXT_FORMAT, Options
 from cli.audit import run_audit
 from cli.council_run import assess_one
-from deps.trivy_runner import TrivyScan
-from report.council_record import CouncilAssessment
-from scoring.library import APPROVED_QUESTIONS
 from cli_samples import (
     ADVISORY,
     BUILT_AT,
@@ -24,6 +21,9 @@ from cli_samples import (
     scanners_answering,
     written_answers,
 )
+from deps.trivy_runner import TrivyScan
+from report.council_record import CouncilAssessment
+from scoring.library import APPROVED_QUESTIONS
 
 # A reading far below both published ones, 9.8 and 5.3, so a council vector
 # weighed into the score in any way at all would move a number.

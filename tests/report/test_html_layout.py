@@ -7,7 +7,17 @@ there is one place to hold.
 """
 
 from report.html_layout import (
-    badge, cell, group, jump, listing, mini_chip, number, scored_chip, separated, tag, text,
+    badge,
+    cell,
+    group,
+    jump,
+    listing,
+    mini_chip,
+    number,
+    scored_chip,
+    separated,
+    tag,
+    text,
 )
 
 CLOSING_TAG = "</style><script>alert(1)</script>"
@@ -83,7 +93,7 @@ def test_a_chip_says_which_scale_it_is_on_as_well_as_which_band():
 
 def test_a_mini_chip_carries_the_source_the_value_and_the_band_it_lands_in():
     # In a table cell a finding shows one mini per source, so the source rides on
-    # the chip and the CVSS scale stays a square while the org scale is a pill.
+    # the chip; the CVSS mini is outlined with a band edge and the org one filled.
     chip = mini_chip("ghsa", "6.5", "Medium", "cvss")
     assert '<span class="src">ghsa</span>' in chip
     assert '<span class="value">6.5</span>' in chip

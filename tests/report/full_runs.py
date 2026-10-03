@@ -15,9 +15,9 @@ and imports by basename.
 
 import json
 
-from cli.council_run import local_member
 from cli.explanation_run import explanations
 from cli.organisation_run import weigh_findings
+from council.providers import ollama_member
 from council_runs import council_ran
 from organisation.answers import OrganisationAnswers
 from organisation.approval import Approval, Decision
@@ -68,5 +68,5 @@ def fully_assessed(coverage: Coverage = Coverage()) -> Report:
         risk=weigh_findings((one,), EVERYWHERE_NO),
         approval=APPROVED,
         coverage=coverage,
-        explanations=explanations((one,), local_member("qwen2.5:7b"), {"ollama": explaining}),
+        explanations=explanations((one,), ollama_member("qwen2.5:7b"), {"ollama": explaining}),
     )

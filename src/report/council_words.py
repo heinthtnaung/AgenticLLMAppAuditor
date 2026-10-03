@@ -23,6 +23,7 @@ from report.council_record import (
     MemberSaid,
     MetricRuling,
     Outcome,
+    ReadingOrder,
     SaidKind,
 )
 from report.model_identity import (
@@ -52,6 +53,14 @@ NO_ESCALATION = "no escalation model named: a metric the council left open stays
 SHORT_DIGEST = 12
 UNKNOWN_DIGEST = "digest unknown"
 UNKNOWN_VERSION = "Ollama version unknown"
+NOT_THIS_MACHINE = "not this machine"
+SAME_EVIDENCE = (
+    "same evidence, different reading: members quoted the same words and read different values"
+)
+READ_IN = {
+    ReadingOrder.IN_ORDER: "with the options in order",
+    ReadingOrder.REVERSED: "with the options reversed",
+}
 
 
 def who(member: MemberIdentity) -> str:
@@ -87,6 +96,17 @@ def unanswered(said: MemberSaid) -> str:
     return said.kind.value
 
 
+def declined_one_way(said: MemberSaid) -> list[str]:
+    """Name the order a member declined in where the other order did not; both need no naming."""
+    ways = [(said.declined_in, SaidKind.DECLINED.value), (said.unverified_in, UNVERIFIED)]
+    return [f"{READ_IN[orders[0]]}: {what}" for orders, what in ways if len(orders) == 1]
+
+
+def same_evidence_said(ruling: MetricRuling) -> list[str]:
+    """Flag a metric members read different values from the same verified words, if they did."""
+    return [SAME_EVIDENCE] if ruling.same_evidence_different_reading else []
+
+
 def escalation_named(local: LocalModels | None) -> list[str]:
     """Say which model the metrics the council left open went to, or that none was named."""
     # Nothing where the record does not say how the models were asked.
@@ -98,11 +118,13 @@ def escalation_named(local: LocalModels | None) -> list[str]:
 
 
 def models_named(local: LocalModels | None) -> list[str]:
-    """Name every model the run asks with the start of its digest, and the server's version."""
+    """Name every model the run asks with the start of its digest, the server's version and host."""
     if local is None:
         return []
     named = ", ".join(model_said(one) for one in local.models)
-    return [f"models: {named}; {version_said(local.ollama_version)}"]
+    # This machine goes unsaid, so a local run's line reads as it always has.
+    where = f" on {local.remote_host}, {NOT_THIS_MACHINE}" if local.remote_host else ""
+    return [f"models: {named}; {version_said(local.ollama_version)}{where}"]
 
 
 def model_said(model: ModelIdentity) -> str:

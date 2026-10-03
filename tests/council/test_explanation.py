@@ -71,6 +71,32 @@ def test_an_item_not_kept_is_recorded_whole_with_its_reason_and_the_rest_kept(
     assert said.quotation == extra["quotation"]
 
 
+@pytest.mark.parametrize("written", ["Availability", "A (Availability)", "Availability (A)"])
+def test_a_disputed_metric_written_as_its_name_is_kept_as_its_code(written):
+    outcome = explained(item(written), item("A", why="Again."))
+    assert [one.metric for one in outcome.items] == ["A"]
+    assert [(one.item.metric, one.reason) for one in outcome.dropped] == [("A", REPEAT)]
+
+
+@pytest.mark.parametrize(
+    ("written", "recorded"),
+    [
+        ("Confidentiality", "C"), ("A (Attack Vector)", "A (ATTACK VECTOR)"),
+        ("Attack Vector (A)", "ATTACK VECTOR (A)"), ("one of AV, A", "ONE OF AV, A"),
+    ],
+    ids=["another metric's name", "a code and a name that disagree", "reversed", "the schema"],
+)
+def test_a_metric_named_that_is_not_one_disputed_metric_is_dropped_as_not_disputed(
+    written, recorded
+):
+    # AV and A are both disputed here, so a mismatch is refused, not read as either.
+    outcome = explained(item(written))
+    assert isinstance(outcome, NotExplained)
+    assert [(one.item.metric, one.reason) for one in outcome.dropped] == [
+        (recorded, NOT_A_DISPUTED_METRIC),
+    ]
+
+
 def test_the_first_reason_that_applies_is_the_one_recorded():
     # An agreed metric and an empty why each outrank a bad quotation, and a bad
     # quotation outranks a repeat.

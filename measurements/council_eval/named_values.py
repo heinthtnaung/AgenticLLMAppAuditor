@@ -15,10 +15,9 @@ from itertools import chain, product
 from typing import Iterable, Mapping
 
 from council.definitions import definition_of
+from council_eval.variants import Variant, in_order
 from cvss.metrics import METRIC_ORDER
 from report.council_record import CouncilOutcome, MemberSaid
-
-from council_eval.variants import Variant, in_order
 
 COUNT_SEPARATOR = ":"
 

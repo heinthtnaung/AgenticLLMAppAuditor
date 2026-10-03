@@ -11,11 +11,13 @@ from council_runs import passed_over_entirely
 from full_runs import fully_assessed
 from organisation.approval import Approval, Decision
 from report.absences import (
-    NOTHING_ABSENT, NOTHING_WAS_PUT_TO_IT, NO_COUNCIL_RUN, UNREAD_MANIFEST, Coverage,
+    NO_COUNCIL_RUN,
+    NOTHING_ABSENT,
+    NOTHING_WAS_PUT_TO_IT,
+    UNREAD_MANIFEST,
+    Coverage,
 )
-from report.html_absences import (
-    approval_card, inventory_panel, not_assessed_card,
-)
+from report.html_absences import approval_card, inventory_panel, not_assessed_card
 from report.record import build_report
 from report_samples import PROVENANCE, advisory, catalogue, component, finding, unidentified
 

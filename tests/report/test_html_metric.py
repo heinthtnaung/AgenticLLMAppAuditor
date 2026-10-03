@@ -24,7 +24,11 @@ from council_runs import (
     published,
     rulings_with_fallbacks,
 )
+from order_runs import one_way, rulings_of
+from report.council_words import SAME_EVIDENCE
+from report.html_layout import SEPARATOR
 from report.html_metric import metric_details
+from same_evidence_runs import av_of, same_words, unflagged
 
 BOTH_INVENTING = {
     "qwen2.5:7b": {"AV": answering("N", INVENTED)},
@@ -128,3 +132,33 @@ def test_a_quotation_that_could_close_a_tag_is_escaped():
     }))
     assert "<script>" not in page
     assert "&lt;script&gt;" in page
+
+
+def test_a_member_that_declined_in_one_order_says_which_beside_its_decline():
+    page = metric_details(rulings_of(one_way())["UI"])
+    declined = '<span class="refusal">declined</span>'
+    one_way_mark = '<span class="refusal">with the options reversed: declined</span>'
+    assert f'{declined}<span class="separator">·</span>{one_way_mark}' in page
+    # Gemma declined both ways, so its decline names no order.
+    assert page.count(one_way_mark) == 1
+
+
+def test_a_quotation_not_found_in_one_order_alone_says_which_beside_the_check():
+    page = metric_details(rulings_of(one_way())["AC"])
+    found = '<span class="verified">quotation found in the advisory</span>'
+    unfound = "with the options reversed: quotation not found in the advisory"
+    mark = f'<span class="refusal">{unfound}</span>'
+    assert f'{found}<span class="separator">·</span>{mark}' in page
+
+
+def test_a_metric_read_two_ways_from_the_same_words_is_flagged_in_its_summary():
+    page = metric_details(av_of(same_words()))
+    summary = page[page.index("<summary>"):page.index("</summary>")]
+    assert f'<span class="flag">{SAME_EVIDENCE}</span>' in summary
+
+
+def test_the_flag_and_the_dot_before_it_are_all_a_metric_gains():
+    flag = f'{SEPARATOR}<span class="flag">{SAME_EVIDENCE}</span>'
+    plain = metric_details(av_of(unflagged(same_words())))
+    assert metric_details(av_of(same_words())).replace(flag, "", 1) == plain
+    assert SAME_EVIDENCE not in plain

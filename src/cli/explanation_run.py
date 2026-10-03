@@ -11,8 +11,9 @@ escalation, over every finding first, and only then asks for explanations
 fixed, and the explainer, one model, is loaded once rather than per finding.
 
 **The explainer is the escalation model where one is named, otherwise the
-council's first local member.** No setting chooses it, and the record names it.
-A roster with no local member has nobody to explain with, and is refused.
+council's first member that is not hosted** -- on this machine, or on the Ollama
+server the members share. No setting chooses it, and the record names it. A
+roster of hosted members only has nobody to explain with, and is refused.
 
 **Nothing reads an explanation back.** It is carried beside the published
 scores; the council's vector and the Organisation Risk Score never see it. And
@@ -22,12 +23,12 @@ asks for one, so every saved pass re-derives without it.
 
 from typing import Mapping
 
-from council.explanation import DroppedItem, Explanation, Explained, explain
+from cli.council_run import NO_TEXT_TO_READ, advisory_text
+from cli.progress import NO_EXPLANATION_PROGRESS, ExplanationProgress
+from council.explanation import DroppedItem, Explained, Explanation, explain
 from council.providers import PROVIDER_CLIENTS, AskMember
 from council.roster import Member, Roster, members_to_ask
 from findings.finding import Finding
-from cli.council_run import NO_TEXT_TO_READ, advisory_text
-from cli.progress import NO_EXPLANATION_PROGRESS, ExplanationProgress
 from report.explanation_record import (
     DroppedMetric,
     ExplainedMetric,
@@ -38,19 +39,19 @@ from report.explanation_record import (
 
 NOT_DISPUTED = "no two of its readable sources disagree, so there is nothing to explain"
 NO_LOCAL_EXPLAINER = (
-    "no local member to explain with: the explainer runs on this machine, and no escalation "
-    "model is named"
+    "no member to explain with that is not hosted: the explainer runs on the members' "
+    "Ollama server, and no escalation model is named"
 )
 
 
 def explainer_of(roster: Roster, escalation: Member | None) -> Member:
-    """Give the model that explains: the escalation model if named, else the first local member."""
+    """Give the model that explains: the escalation model if named, else the first not hosted."""
     if escalation is not None:
         return escalation
-    local = [one for one in members_to_ask(roster) if one.runs_local]
-    if not local:
+    unhosted = [one for one in members_to_ask(roster) if not one.is_hosted()]
+    if not unhosted:
         raise ValueError(NO_LOCAL_EXPLAINER)
-    return local[0]
+    return unhosted[0]
 
 
 def explanations(
@@ -99,7 +100,10 @@ def record_of(advisory_id: str, said: Explanation) -> ExplanationRecord:
     """Put what the explainer gave into the report's terms, what it did not keep included."""
     dropped = tuple(dropped_of(one) for one in said.dropped)
     if not isinstance(said, Explained):
-        return SourcesNotExplained(advisory_id, f"{said.model}: {said.because}", dropped)
+        because = f"{said.model}: {said.because}"
+        return SourcesNotExplained(
+            advisory_id, because, dropped, model=said.model, prompt_version=said.prompt_version
+        )
     # Verified, every one: `council.explanation` keeps no item whose quotation is not in the text.
     items = tuple(ExplainedMetric(one.metric, one.why, one.quotation, True) for one in said.items)
     return SourcesExplained(advisory_id, said.model, said.prompt_version, items, dropped)

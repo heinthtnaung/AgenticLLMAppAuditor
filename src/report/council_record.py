@@ -32,6 +32,13 @@ class SaidKind(Enum):
     ORDER_SENSITIVE = "order-sensitive"
 
 
+class ReadingOrder(Enum):
+    """Which order a member read a metric's options in, asked them both ways."""
+
+    IN_ORDER = "in_order"
+    REVERSED = "reversed"
+
+
 class Outcome(Enum):
     """What the chairman made of one metric."""
 
@@ -63,6 +70,9 @@ class MemberSaid:
     one that failed said nothing at all. `kind` says which, on every row.
     `order_values` is set for an order-sensitive member alone: the value it gave
     with the options in order, then the one it gave with them reversed.
+    `declined_in` names the orders a member asked both ways said NO_EVIDENCE in,
+    and `unverified_in` those whose quotation was not found in the advisory; both
+    are empty where it was asked once.
     """
 
     member: MemberIdentity
@@ -73,6 +83,8 @@ class MemberSaid:
     verified: bool = False
     reason: str = ""
     order_values: tuple[str, ...] = ()
+    declined_in: tuple[ReadingOrder, ...] = ()
+    unverified_in: tuple[ReadingOrder, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -92,7 +104,10 @@ class MetricRuling:
     """What the chairman decided about one metric, and what every member said first.
 
     `escalation` is None where the council settled the metric, and on every
-    metric of a run that named no escalation model.
+    metric of a run that named no escalation model. `same_evidence_different_reading`
+    flags two members whose verified quotations are the same words and whose
+    values differ (`council.same_evidence`); it is shown beside the ruling and
+    decides nothing.
     """
 
     metric: str
@@ -103,6 +118,7 @@ class MetricRuling:
     confidence: str = ""
     fallback_source: str = ""
     escalation: MetricEscalation | None = None
+    same_evidence_different_reading: bool = False
 
 
 @dataclass(frozen=True)
@@ -164,13 +180,3 @@ class CouncilWithoutVector:
 
 
 CouncilOutcome = CouncilAssessment | CouncilWithoutVector | CouncilNotAsked
-
-
-def council_left_open(ruling: MetricRuling) -> bool:
-    """Say whether the council itself left a metric open, whatever escalation made of it."""
-    return ruling.outcome is not Outcome.SETTLED or ruling.escalation is not None
-
-
-def was_assessed(outcome: CouncilOutcome) -> bool:
-    """Say whether a council actually read this advisory, rather than passing over it."""
-    return not isinstance(outcome, CouncilNotAsked)

@@ -2,7 +2,12 @@
 
 from council_runs import DISSENTING, council_ran, passed_over_entirely
 from report.council_beside import (
-    COUNCIL_SOURCE, CouncilFigure, banded, council_figure, figure_label, figure_of,
+    COUNCIL_SOURCE,
+    CouncilFigure,
+    banded,
+    council_figure,
+    figure_label,
+    figure_of,
 )
 from report.record import build_report
 from report_samples import LOW_CONFIDENTIALITY, PROVENANCE, TOTAL_LOSS, catalogue, component
