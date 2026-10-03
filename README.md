@@ -253,6 +253,21 @@ Some tests skip unless a flag asks for them, because they need a model, a
 scanner or a real scan. [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) lists the
 flags.
 
+## How the results are checked
+
+Each result below is held to a rule in application code as the tool makes it.
+Each row names a result, the check it must pass, and where that check is.
+
+| Result | How it is checked | Where |
+|---|---|---|
+| every CVSS number | a deterministic engine, the FIRST v3.1 equations of section 7.1, with no model, clock or network in the path | `src/cvss/score.py` |
+| an Organisation Risk Score | a deterministic engine weighs the answers to the twelve approved questions, each category held to 0–100 before weighting; an Unknown answer marks the score provisional | `src/scoring/risk_score.py`, `src/scoring/category.py` |
+| a council member's reading | counts only where the member gives the same value with the options in both orders and its quotation is found in the advisory text it read; a paraphrase does not verify | `src/council/order_check.py`, `src/council/evidence.py` |
+| a metric | left unresolved where no reading's quotation verifies, contested where verified readings disagree; neither is guessed, and members are never counted as votes | `src/council/chairman.py` |
+| a council vector | stands only when all eight metrics settle, and then sits beside, never in, the Organisation Risk Score; otherwise the finding's published scores stand alone | `src/cli/council_outcome.py` |
+| escalation | what the council leaves open goes to one named model, asked in both option orders; its reply settles a metric only where both orders agree, its quotation is found in the advisory, and on a contested metric it names a value the council's verified quotations already support. The record keeps why it did or did not settle | `src/council/escalation.py`, `src/council/chairman.py` |
+| the record | names each model, its digest or why the server gave none, and the prompt version behind every member's reading | `src/report/council_record.py`, `src/report/model_identity.py` |
+
 ## Learn more
 
 | Document | What it holds |
