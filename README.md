@@ -16,7 +16,7 @@ guide.
 
 | Tool | For | Tested with | Minimum |
 |---|---|---|---|
-| Python | everything | 3.11.11 | 3.10 |
+| Python | everything | 3.11.11 | 3.11 |
 | [Syft](https://github.com/anchore/syft) | listing the components | 1.52.0 | none set |
 | [Trivy](https://trivy.dev) and its advisory database | matching advisories and finding secrets, offline | 0.74.0 | none set |
 | [Ollama](https://ollama.com) and a pulled model | the council (optional) | 0.34.3 | none set |

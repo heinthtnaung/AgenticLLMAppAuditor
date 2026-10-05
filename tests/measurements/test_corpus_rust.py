@@ -8,15 +8,8 @@ crate's name and version whatever its source, found the same 29 advisories
 either way.
 """
 
+import tomllib
 from pathlib import Path
-
-try:
-    import tomllib
-except ModuleNotFoundError:
-    # Python 3.10 has no tomllib, and pytest depends on tomli there: the same
-    # parser under its older name, so the suite keeps the 3.10 minimum that
-    # `README.md` and `docs/SETUP.md` state.
-    import tomli as tomllib
 
 RUST_LOCK = Path(__file__).resolve().parents[2] / "measurements" / "corpus" / "rust" / "Cargo.lock"
 CRATES_IO = "registry+https://github.com/rust-lang/crates.io-index"
