@@ -14,15 +14,6 @@ from deps.trivy_database import DatedDatabase
 from deps.trivy_report import Advisory
 from scoring.library import APPROVED_QUESTIONS
 
-
-class FakeTerminal(io.StringIO):
-    """A readable stream that answers, as a terminal does, that it is one, so the bar is drawn."""
-
-    def isatty(self) -> bool:
-        """Claim to be a terminal, so progress draws a bar where a plain StringIO gets the log."""
-        return True
-
-
 BUILT_AT = "2026-09-22T02:00:05Z"
 # A dated database for a run whose scanners are answered, so its cache is never read.
 DATED = DatedDatabase(cache=Path("/no/trivy/cache/is/read"), built_at=BUILT_AT)
@@ -62,6 +53,14 @@ ADVISORY = Advisory(
 QUOTATION = "A remote attacker can inject commands"
 # One legal value per metric, so an unremarkable member answers a whole vector.
 LEGAL = {"AV": "N", "AC": "L", "PR": "N", "UI": "N", "S": "U", "C": "H", "I": "H", "A": "H"}
+
+
+class FakeTerminal(io.StringIO):
+    """A readable stream that answers, as a terminal does, that it is one, so the bar is drawn."""
+
+    def isatty(self) -> bool:
+        """Claim to be a terminal, so progress draws a bar where a plain StringIO gets the log."""
+        return True
 
 
 def advisory_like(advisory_id: str, **overrides) -> Advisory:

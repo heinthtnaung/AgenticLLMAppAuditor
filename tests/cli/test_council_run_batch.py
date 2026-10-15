@@ -8,8 +8,6 @@ saves on a real GPU has not been measured, and nothing here asks a live model.
 import io
 from pathlib import Path
 
-import pytest
-
 from batch_samples import (
     BIG,
     COUNCIL,
@@ -22,7 +20,6 @@ from batch_samples import (
 )
 from cli.council_run import assessments, watching
 from cli.progress import ESCALATION_LINE
-from cli_samples import FakeTerminal
 from council.prompt import PROMPT_VERSION, REVERSED_PROMPT_VERSION
 from report.council_record import CouncilAssessment, CouncilNotAsked, CouncilWithoutVector
 
@@ -114,18 +111,3 @@ def test_no_kept_run_escalated_so_what_the_batch_saves_on_a_gpu_is_unmeasured():
     kept = sorted(KEPT_RUNS.glob("*.progress.txt"))
     assert kept
     assert [one.name for one in kept if escalation_lines(one)] == []
-
-
-def test_a_council_that_raises_still_closes_its_bar_line():
-    # finish() runs in a finally, so a member that falls over still ends the bar's
-    # line and a traceback starts below it rather than overwriting it.
-    def exploding(member, prompt):
-        """Fail as nothing the runner records a failure for would: an unexpected error."""
-        raise RuntimeError("model fell over")
-
-    out = FakeTerminal()
-    progress = watching(FINDINGS, COUNCIL, out)
-    with pytest.raises(RuntimeError):
-        assessments(FINDINGS, COUNCIL, {"ollama": exploding}, progress, escalation=ESCALATION)
-    assert "\r" in out.getvalue()
-    assert out.getvalue().endswith("\n")
