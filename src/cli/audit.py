@@ -149,7 +149,7 @@ def council_of(findings, options: Options, progress_to: TextIO, local: LocalMode
         return ()
     every = options.council_all_findings
     roster = build_roster(options.council_models)
-    watcher = watching(findings, roster, progress_to, every)
+    watcher = watching(findings, roster, progress_to, every, debug=options.debug)
     escalation = escalation_member(local.escalation_model)
     return assessments(
         findings, roster, progress=watcher, every_finding=every, escalation=escalation
@@ -162,4 +162,5 @@ def explanations_of(findings, options: Options, progress_to: TextIO, local: Loca
         return ()
     roster = build_roster(options.council_models)
     explainer = explainer_of(roster, escalation_member(local.escalation_model))
-    return explanations(findings, explainer, progress=explaining(findings, progress_to))
+    watcher = explaining(findings, progress_to, options.debug)
+    return explanations(findings, explainer, progress=watcher)

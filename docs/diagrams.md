@@ -67,7 +67,7 @@ flowchart TD
     cou --> rec
     cou --> expl["Why the sources differ, beside a council<br/>one model, once per disputed finding,<br/>after the council and escalation;<br/>only its quotation is checked"]
     expl --> rec
-    expl -. "one line per call" .-> err
+    expl -. "a bar at a terminal,<br/>one line per call when redirected or --debug" .-> err
     ctx --> rec
     asked["What was asked for<br/>an answer file, council members<br/>kept even when nothing was found"] --> rec
     asked --> ident["If a council was named, before the scan:<br/>an escalation model already on the council stops the run here<br/>two reads of the model server, /api/tags then /api/version<br/>the version and each model's digest, into the record<br/>a run naming no member reads nothing"]
@@ -79,7 +79,7 @@ flowchart TD
     rnd --> saved[("reports/: all three, named after<br/>the repository's directory")]
     out --> hum["Human reviews"]
     saved --> hum
-    cou -. "one line per model call,<br/>printed before that call" .-> err["The error stream, never stdout:<br/>progress, then where the reports went"]
+    cou -. "a bar at a terminal,<br/>one line per model call when redirected or --debug,<br/>drawn before that call" .-> err["The error stream, never stdout:<br/>progress, then where the reports went"]
     saved -. "one line, once all three<br/>are written" .-> err
 ```
 
@@ -199,12 +199,14 @@ same directory name overwrite each other's.
 The dotted lines are the only thing a run writes outside that record, and they
 go to the error stream because stdout belongs to `--format json`: a council run
 says it is alive, and a run says where its files went, without the piped
-artefact gaining a byte. Each progress line carries counts and no elapsed time,
-and prints *before* the call it names, so a slow member is a line that sits
-there and the reader supplies the seconds. What that costs is an exact figure —
-the transcript afterwards cannot tell ninety seconds from nine minutes — and
-what it buys is that `src/` reads no clock, which is what keeps two runs of the
-same commit byte-identical.
+artefact gaining a byte. At a terminal each phase draws its own line, redrawn in
+place, with a bar where the total is known and a running count for escalation
+where it is not; redirected, piped or under `--debug`, it is one line per call.
+Either way it carries counts and no elapsed time, and prints *before* the call it
+names, so a slow member is a frame that sits there and the reader supplies the
+seconds. What that costs is an exact figure — neither the bar nor the transcript
+can tell ninety seconds from nine minutes — and what it buys is that `src/` reads
+no clock, which is what keeps two runs of the same commit byte-identical.
 
 What this does not show: how a repeat scan is diffed against the last one, which
 is not decided and not built. A repeat overwrites the last one's files, so

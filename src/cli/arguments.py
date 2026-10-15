@@ -71,6 +71,11 @@ ALL_FINDINGS_WITHOUT_MEMBERS = (
     "--council-all-findings needs --council or a --council-member: with nobody named "
     "there is no council to put the findings to"
 )
+# A terminal gets a progress bar by default; this asks for the full per-call log instead.
+DEBUG_HELP = (
+    "print one line per model call, as a council run does when the error stream is "
+    "redirected, instead of the progress bar a terminal gets"
+)
 # Taking one over the other would be a precedence the operator never chose.
 BOTH_COUNCILS = (
     f"--council runs the members {COUNCIL_MEMBERS} names and --council-member names "
@@ -91,6 +96,9 @@ class Options:
     # None is "no file was given", which is the only thing absence can mean for
     # a command-line path, and `organisation_run` reads it as exactly that.
     answers: Path | None = None
+    # The full per-call log instead of a terminal's progress bar;
+    # `cli.progress_bar.bar_for` chooses between them.
+    debug: bool = False
 
 
 def parse_arguments(argv: list[str] | None = None) -> Options:
@@ -108,6 +116,7 @@ def parse_arguments(argv: list[str] | None = None) -> Options:
         council_all_findings=parsed.council_all_findings,
         council_from_settings=parsed.council,
         answers=Path(parsed.answers) if parsed.answers else None,
+        debug=parsed.debug,
     )
 
 
@@ -126,4 +135,5 @@ def build_parser() -> argparse.ArgumentParser:
         "--council-all-findings", action="store_true", help=ALL_FINDINGS_HELP
     )
     parser.add_argument("--answers", metavar="FILE", default=None, help=ANSWERS_HELP)
+    parser.add_argument("--debug", action="store_true", help=DEBUG_HELP)
     return parser

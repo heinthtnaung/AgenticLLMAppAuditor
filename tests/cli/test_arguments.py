@@ -112,3 +112,12 @@ def test_the_description_is_true_for_an_offline_scan_and_a_council_that_reaches_
     # not call the whole run offline; it names the server the way the flags do.
     assert "offline" in DESCRIPTION
     assert "the Ollama server AUDITOR_SERVER_URL names" in DESCRIPTION
+
+
+def test_a_run_does_not_debug_unless_asked():
+    # Default off: at a terminal that means the bar, not the per-call log.
+    assert parse_arguments(["repo"]).debug is False
+
+
+def test_debug_asks_for_the_per_call_log():
+    assert parse_arguments(["repo", "--debug"]).debug is True

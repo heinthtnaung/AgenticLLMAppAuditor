@@ -212,8 +212,11 @@ two members on this repository, 576 council calls instead of 160. Either way
 the run adds one explanation call per finding whose sources disagree, 5 here,
 and escalation adds 2 for each metric the council leaves open.
 
-A council run prints one line per model call on stderr, so a slow model is
-visible. The report stays on stdout.
+At a terminal a council run draws its progress on stderr, each phase on its own
+line redrawn in place — a bar where the total is known, a running count for
+escalation where it is not. A slow model shows as a stalled line, though not by
+name; `--debug` prints one line per model call, which names it, as a redirected
+or piped stderr does. Either way the report stays on stdout.
 
 ## Settings
 

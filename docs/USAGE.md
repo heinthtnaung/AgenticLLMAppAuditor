@@ -826,7 +826,12 @@ indistinguishable from a hung one. `measurements/README.md` times a full run
 at 71 min 39 s on one baseline and 7 min 3 s on the next, which changed
 placement, second member, call order and Ollama version at once; both asked
 each metric once, and a run today asks it twice.
-So a run prints one line per call. The recorded `gpu-scoped` run in
+So a run says where it has got to, on the error stream. **At a terminal** each
+phase draws its own line, redrawn in place, with a bar where the total is known:
+the council bar carries the call count, a percentage and which finding, like
+`council [█████████░░░░░░░░░] 80/160  50%  finding 3/5`, and no clock. **Redirected
+or piped, or under `--debug`,** it is one line per call instead, so a saved run
+keeps every member it named. The recorded `gpu-scoped` run in
 `measurements/council_runs/` was the scoped two-member command, given the answer
 skeleton as well:
 
@@ -835,7 +840,8 @@ audit fetched/vulnscout --answers answers.example.json \
     --council-member qwen2.5:7b-instruct --council-member llama3.2:latest
 ```
 
-Its stderr, from `gpu-scoped.progress.txt`:
+Its stderr, saved to `gpu-scoped.progress.txt` — the per-call form a redirect and
+`--debug` both give:
 
 ```
 council 1/80  finding 1/5 CVE-2026-13149  AV  qwen2.5:7b-instruct
@@ -864,21 +870,27 @@ and with no total, because how many a run makes is known only once every council
 has answered. The explanations come last, one line each, counted against the
 disputed findings: `explanation 1/1  finding CVE-2021-23337  small:1b`.
 
+At a terminal the same phases show, each on a line of its own. Escalation is a
+running count with no bar and no percentage, `escalation 1  finding 1/1 CVE-2021-23337`,
+since its total is not known until the council leaves something open; the
+explanation phase fills a bar of its own against the disputed findings.
+
 One member answers all eight metrics of a finding before the next is asked.
 Two members that do not fit in the GPU's memory together are then swapped once
 per member per finding rather than on every call.
 
-**Every one of those lines goes to stderr and none to stdout.** So does the one
-after the last call, saying where the reports went. The report has the other
-stream to itself, so `--format json | jq` receives the artefact alone, byte for
-byte the same whether or not anybody was watching. Redirect stdout to a file and
-the progress still reaches your terminal.
+**The bar and every one of those lines go to stderr and none to stdout.** So does
+the one after the last call, saying where the reports went. The report has the
+other stream to itself, so `--format json | jq` receives the artefact alone, byte
+for byte the same whether or not anybody was watching. Redirect stdout to a file
+and the progress still reaches your terminal.
 
-Counts, and no elapsed time. A line prints *before* the call it names, so a slow
-member is a line that sits there and you supply the seconds yourself. That is
-what lets `src/` read no clock anywhere, which is what makes two runs of the
-same commit and the same database byte-identical. The cost is the scrollback
-afterwards: it cannot tell you whether a line sat for ninety seconds or nine
+Counts, and no elapsed time, in the bar and in the log alike. A line prints, or
+the bar advances, *before* the call it names, so a slow member is a frame that
+sits there and you supply the seconds yourself. That is what lets `src/` read no
+clock anywhere, which is what makes two runs of the same commit and the same
+database byte-identical. The cost is that neither the redrawn bar nor the log's
+scrollback can tell you afterwards whether a step sat for ninety seconds or nine
 minutes.
 
 ## The design in brief

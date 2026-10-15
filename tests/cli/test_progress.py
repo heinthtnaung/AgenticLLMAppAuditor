@@ -136,6 +136,7 @@ def test_a_run_nobody_is_watching_says_nothing():
     NO_PROGRESS.starting("CVE-1")
     NO_PROGRESS.asking("AV", "qwen")
     NO_PROGRESS.returning_to(1, "CVE-1")
+    NO_PROGRESS.finish()
 
 
 def test_each_explanation_is_said_before_it_is_asked_counting_towards_its_total():
@@ -151,6 +152,7 @@ def test_each_explanation_is_said_before_it_is_asked_counting_towards_its_total(
 
 def test_a_run_nobody_watches_says_nothing_of_explanations_either():
     NO_EXPLANATION_PROGRESS.explaining("CVE-1", "big:27b")
+    NO_EXPLANATION_PROGRESS.finish()
 
 
 def clock_reads(path: pathlib.Path) -> list[str]:
