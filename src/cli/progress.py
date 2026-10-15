@@ -10,7 +10,7 @@ hung run.
 stay pipeable and byte-identical; progress and the record share a process and
 nothing else.
 
-**One line per call, or one bar.** A terminal gets a single line redrawn in
+**One line per call, or one bar.** A terminal gets one line per phase, redrawn in
 place (`cli.progress_bar`); a redirected stream and `--debug` both get the full
 log, one line per call, so a saved run keeps every member it named. Which one is
 chosen is the stream's `isatty()` and the flag; the counting below is the same
