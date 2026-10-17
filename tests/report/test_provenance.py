@@ -1,6 +1,7 @@
 """Guards on what produced a run: a database there or named missing, and every field asked."""
 
 import json
+from dataclasses import replace
 
 import pytest
 
@@ -76,3 +77,16 @@ def test_every_rendering_names_the_scoring_rules_in_its_provenance():
     assert as_text(report).split("\n")[2] == f"  {said}"
     assert json.loads(as_json(report))["run"]["scoring_rules_version"] == SCORING_RULES_VERSION
     assert f'<span class="separator">·</span>{said}</p>' in as_html(report)
+
+
+TYPED = "typed at the prompt and saved to reports/x.answers.json"
+
+
+def test_a_typed_run_renders_the_same_text_and_html_as_an_untyped_one():
+    # Only the JSON artefact names where typed answers came from; the text report
+    # and the HTML page stay byte-identical to a file run, so adding it there turns red.
+    on_file = build_report(PROVENANCE, catalogue(component()), (), {})
+    typed = replace(PROVENANCE, answers_source=TYPED)
+    at_prompt = build_report(typed, catalogue(component()), (), {})
+    assert as_text(at_prompt) == as_text(on_file)
+    assert as_html(at_prompt) == as_html(on_file)

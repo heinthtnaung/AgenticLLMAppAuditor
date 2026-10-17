@@ -88,7 +88,10 @@ class RunProvenance:
     """What produced this report, so a reader can judge whether to believe it.
 
     `local_models` is None only for a run that named no council member, which
-    asked no local model anything.
+    asked no local model anything. `answers_source` is empty for a run whose
+    answers came from an answer file, or none, and otherwise names how they
+    arrived -- for a typed run, that they were asked at the prompt and then saved
+    here, where a later terminal run may overwrite them.
     """
 
     repository: str
@@ -97,6 +100,7 @@ class RunProvenance:
     database: Database
     local_models: LocalModels | None = None
     scoring_rules_version: str = SCORING_RULES_VERSION
+    answers_source: str = ""
 
     def __post_init__(self) -> None:
         """Refuse provenance a reader could not reproduce the run from."""

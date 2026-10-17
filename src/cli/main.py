@@ -72,18 +72,18 @@ def main(
     out: TextIO | None = None,
     error: TextIO | None = None,
     reports: Path = REPORTS_DIRECTORY,
+    stdin: TextIO | None = None,
 ) -> int:
     """Run one audit, write its three reports, and give the code that says which outcome it was."""
-    out = sys.stdout if out is None else out
-    error = sys.stderr if error is None else error
+    out, error, stdin = default_streams(out, error, stdin)
     try:
         options = parse_arguments(argv)
         # Resolved once and handed to both halves: the database dated is the one scanned.
         database = refuse_unrunnable(options.repository, trivy_cache_directory(os.environ))
         paths = planned_reports(options.repository, reports)
-        # Progress goes to the error stream, so the audit record on stdout stays
-        # pipeable and byte-identical whether or not anyone is watching.
-        report = run_audit(options, database, error)
+        # Progress and the prompt go to the error stream, so watching the progress
+        # adds no byte to the record on stdout.
+        report = run_audit(options, database, error, stdin, reports)
     except REFUSALS as fault:
         return refused(fault, error)
     by_format = renderings(report)
@@ -95,6 +95,17 @@ def main(
         # code still says it did not do everything it was asked to.
         return refused(fault, error)
     return outcome(report)
+
+
+def default_streams(
+    out: TextIO | None, error: TextIO | None, stdin: TextIO | None
+) -> tuple[TextIO, TextIO, TextIO | None]:
+    """Fall back to the real standard streams for any the caller did not pass."""
+    return (
+        sys.stdout if out is None else out,
+        sys.stderr if error is None else error,
+        sys.stdin if stdin is None else stdin,
+    )
 
 
 def outcome(report: Report) -> int:

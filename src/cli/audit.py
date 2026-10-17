@@ -18,8 +18,10 @@ from typing import TextIO
 from cli.arguments import Options
 from cli.council_run import ORDER_CHECK, assessments, build_roster, escalation_member, watching
 from cli.explanation_run import explainer_of, explaining, explanations
+from cli.interactive_answers import answers_entered
 from cli.model_identity import local_identities
 from cli.organisation_run import organisation_of, weigh_findings
+from cli.report_files import REPORTS_DIRECTORY
 from council.escalation import refuse_unfit_escalation
 from council.escalation_setting import escalation_model
 from council.member_setting import council_members
@@ -38,12 +40,15 @@ from report.record import Report, build_report
 
 
 def run_audit(
-    options: Options, database: DatedDatabase, progress_to: TextIO = sys.stderr
+    options: Options, database: DatedDatabase, progress_to: TextIO = sys.stderr,
+    stdin: TextIO | None = None, reports_directory: Path = REPORTS_DIRECTORY,
 ) -> Report:
     """Scan one repository against the pinned database and gather everything into a record."""
     # Read first, like the walk below: a bad setting stops the run before the scan.
     options = members_asked_for(options)
     local = local_models_of(options)
+    # After the checks, so a bad setting costs no answers; before the scan, so none interrupts it.
+    options, answers_source = answers_entered(options, reports_directory, stdin, progress_to)
     unread, catalogue, scanned = scan_repository(options.repository, database.cache)
     findings = build_findings(catalogue.components, scanned.advisories)
     council = council_of(findings, options, progress_to, local)
@@ -51,7 +56,7 @@ def run_audit(
     explained = explanations_of(findings, options, progress_to, local)
     answers, approval = organisation_of(options.answers)
     return build_report(
-        provenance=provenance_of(options.repository, database.built_at, local),
+        provenance=provenance_of(options.repository, database.built_at, local, answers_source),
         catalogue=catalogue,
         findings=findings,
         advisories_by_purl=scanned.advisories,
@@ -90,7 +95,8 @@ def coverage_of(options: Options, unread: tuple[str, ...]) -> Coverage:
 
 
 def provenance_of(
-    repository: Path, database_built_at: str, local: LocalModels | None
+    repository: Path, database_built_at: str, local: LocalModels | None,
+    answers_source: str = "",
 ) -> RunProvenance:
     """Record what produced this run, asking each tool its own version."""
     return RunProvenance(
@@ -99,6 +105,7 @@ def provenance_of(
         trivy_version=trivy_runner.installed_version(),
         database=AdvisoryDatabase(built_at=database_built_at),
         local_models=local,
+        answers_source=answers_source,
     )
 
 

@@ -244,6 +244,30 @@ audit fetched/vulnscout --answers answers.json
 That run prints an `ORGANISATION RISK` block, shown in full in the README under
 "Score it against your environment".
 
+You need no file to start. The tool asks the twelve questions before the scan,
+but only when stdin and stderr are both a terminal; with input piped in, the
+error stream redirected, or in CI, nothing is asked and there is no Organisation
+Risk Score. To run in the background, give `--answers FILE` or redirect input
+from `/dev/null`: a job backgrounded at a terminal keeps a terminal stdin, so it
+prompts and the shell stops it on the read. At the prompt each question is a line
+on the error stream,
+like `EXP-1 Is the affected service internet-facing? [y/n/U]`. It takes `y`, `n`
+or `u`, or Enter for Unknown; anything else is re-asked with a hint, and Ctrl-D
+ends the run before the scan. N/A is not offered at the prompt, though it stays
+available by editing the saved file.
+
+The replies are saved to `reports/<name>.answers.json`, in the example file's
+shape with an empty `approval` block, so `--answers reports/<name>.answers.json`
+reruns to the same score. A flagged finding carries `needs_approval: true` in the
+record whether or not an `approval` block is there; adding one only drops the
+summary's `No approval is recorded for this audit.` line. A later terminal run
+with no `--answers` asks again and overwrites this file, so after editing it,
+rerun with `--answers` on it.
+
+Only the JSON record marks a typed run: `run.answers_source` reads
+`typed at the prompt and saved to reports/<name>.answers.json`, and the text and
+HTML reports do not show it.
+
 The block's second line is the weighting those totals were reached with. It is
 read off the record rather than off `docs/SCORING_MODEL.md`, so a reader
 re-deriving a score by hand works from the run that produced it and not from a
@@ -349,9 +373,12 @@ change what a Yes is worth. `docs/SCORING_MODEL.md` lists them, says which
 weights are quoted from the design and which the library chose, and works
 through the design's own example end to end.
 
-Without `--answers` there is no Organisation Risk Score, and the report says so
-under `NOT ASSESSED` rather than printing a zero. With `--answers` and nothing
-found there is none either, and rather than claim nobody answered, it reads
+Without `--answers`, and with stdin or stderr not a terminal — input piped in, the
+error stream redirected, or CI — there is no Organisation Risk Score, and the
+report says so under `NOT ASSESSED` rather than printing a zero; with both a
+terminal the questions are asked at the prompt before the scan, so there is one.
+With `--answers` and nothing found there is none either, and rather than claim
+nobody answered, it reads
 `answers were supplied, but there was no finding to weigh them against`.
 
 ## Some findings are marked as needing approval
@@ -372,9 +399,11 @@ every time.
 | the page | `needs approval: sources that disagree` on the finding's heading, and the summary's approval sentences as a paragraph of their own |
 | JSON | `needs_approval` and `approval_reasons` on every finding, and `run.findings_needing_approval` |
 
-**Without `--answers` only disagreement is checked**, because there is no risk
+**With no answers only disagreement is checked**, because there is no risk
 score to band, and the summary says so, as in the README's sample run:
 `With no organisation answers, no finding was checked for a High or Critical Organisation Risk Score.`
+That is a run with no answers at all — no `--answers`, and stdin or stderr not a
+terminal; with both a terminal the prompt supplies them.
 When a finding needs approval and the answer file records none, the summary
 adds `No approval is recorded for this audit.`
 
@@ -881,9 +910,9 @@ per member per finding rather than on every call.
 
 **The bar and every one of those lines go to stderr and none to stdout.** So does
 the one after the last call, saying where the reports went. The report has the
-other stream to itself, so `--format json | jq` receives the artefact alone, byte
-for byte the same whether or not anybody was watching. Redirect stdout to a file
-and the progress still reaches your terminal.
+other stream to itself, so `--format json | jq` receives the artefact alone, and
+watching the progress adds no byte to it. Redirect stdout to a file and the
+progress still reaches your terminal.
 
 Counts, and no elapsed time, in the bar and in the log alike. A line prints, or
 the bar advances, *before* the call it names, so a slow member is a frame that

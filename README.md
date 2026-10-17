@@ -4,10 +4,10 @@ An SBOM-based vulnerability auditor. It lists a repository's components with
 Syft, matches them to advisories in an offline Trivy database, and scores every
 published CVSS v3.1 vector, one source at a time. The same Trivy run reports
 where its built-in rules match a credential, without ever showing the secret.
-Answer twelve questions about your environment and it adds an **Organisation
-Risk Score**. Name local models and a **council** reads each disputed advisory,
-quoting the text behind every value it gives. Every number comes from a
-deterministic engine, never a model.
+Answer twelve questions about your environment — at the prompt, or in a JSON
+file — and it adds an **Organisation Risk Score**. Name local models and a
+**council** reads each disputed advisory, quoting the text behind every value it
+gives. Every number comes from a deterministic engine, never a model.
 
 This page is the short version. [docs/USAGE.md](docs/USAGE.md) is the full
 guide.
@@ -111,6 +111,11 @@ the `MATCHED NOTHING` and `NEEDS APPROVAL` blocks. The rest is verbatim, the
 database date being the one it was recorded against. What is not assessed is
 named, never printed as a zero.
 
+This sample is a run that is not asked the questions — its input is piped in, its
+error stream redirected, or it is in CI; asking needs both stdin and stderr to be
+a terminal. With both a terminal and no `--answers`, the tool asks the twelve
+questions before the scan, under "Score it against your environment".
+
 ### Print JSON or HTML instead
 
 ```bash
@@ -167,6 +172,22 @@ ORGANISATION RISK (18)  ·  the source changes the band on 1
 
 A range runs from one source's score to another's, and the heading counts the
 findings whose band depends on which source you believe.
+
+You need no file to start. The tool asks the twelve questions before the scan,
+but only when stdin and stderr are both a terminal; with input piped in, stderr
+redirected, or in CI, nothing is asked and there is no Organisation Risk Score.
+At the prompt each question is a line on stderr, like
+`EXP-1 Is the affected service internet-facing? [y/n/U]`. Answer `y`, `n` or `u`,
+or press Enter for Unknown; anything else is re-asked, and Ctrl-D stops the run
+before the scan. N/A is not offered here; add it by editing the saved file.
+
+The replies are saved to `reports/<name>.answers.json`, in the example file's
+shape with an empty `approval` block, so `--answers reports/<name>.answers.json`
+reproduces the same score. A flagged finding carries `needs_approval: true` in the
+record whether or not an `approval` block is there; adding one only drops the
+summary's `No approval is recorded for this audit.` line. A later terminal run with
+no `--answers` asks again and overwrites this file, so after editing it, rerun with
+`--answers` on it.
 
 ### Add a council of local models
 

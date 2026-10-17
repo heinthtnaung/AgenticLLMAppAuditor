@@ -62,7 +62,7 @@ flowchart TD
 
     fin --> cou["Council, only if members were named,<br/>by --council-member, or by AUDITOR_COUNCIL_MEMBERS<br/>under --council, and only for the findings<br/>their sources do not settle — diagram 4<br/>every finding's council, then every escalation"]
     fin --> ctx["Organisation context<br/>scored once per source<br/>diagram 3"]
-    ans["Answer file<br/>--answers: the approved questions<br/>answered by id, and who approved"] --> ctx
+    ans["Organisation answers<br/>--answers: a JSON file, the approved questions by id, and who approved;<br/>or, at a terminal with no file, the 12 asked<br/>before the scan and saved beside the report"] --> ctx
     fin --> rec["Report record: the findings,<br/>the secrets, and what was not assessed"]
     cou --> rec
     cou --> expl["Why the sources differ, beside a council<br/>one model, once per disputed finding,<br/>after the council and escalation;<br/>only its quotation is checked"]
@@ -79,7 +79,7 @@ flowchart TD
     rnd --> saved[("reports/: all three, named after<br/>the repository's directory")]
     out --> hum["Human reviews"]
     saved --> hum
-    cou -. "a bar at a terminal,<br/>one line per model call when redirected, piped or --debug,<br/>drawn before that call" .-> err["The error stream, never stdout:<br/>progress, then where the reports went"]
+    cou -. "a bar at a terminal,<br/>one line per model call when redirected, piped or --debug,<br/>drawn before that call" .-> err["The error stream, never stdout:<br/>the questions at a terminal, then progress,<br/>then where the reports went"]
     saved -. "one line, once all three<br/>are written" .-> err
 ```
 
@@ -140,11 +140,14 @@ vector is parsed and scored as the finding is assembled, not in a pass over the
 findings afterwards.
 
 Two of the three inputs are optional, and the record says so when they are
-absent. Without `--answers` nobody has been asked about the environment, so
+absent. Without `--answers`, when stdin and stderr are both a terminal the twelve
+questions are asked at the prompt before the scan and saved to
+`reports/<name>.answers.json`, and the JSON record's `run.answers_source` says so;
+with input piped in, the error stream redirected, or in CI, nobody is asked, so
 there is no Organisation Risk Score and the report names the absence rather than
 printing a zero — a number there would read as a finding assessed and found
-harmless. Without `--council` or `--council-member` no model has read anything,
-and no council reading stands beside the published scores.
+harmless. Without `--council` or `--council-member` no model has read
+anything, and no council reading stands beside the published scores.
 
 The record also keeps what was asked for, because an absent score or ruling has
 two causes. With `--answers` or a council asked for and nothing found, there is
@@ -624,7 +627,7 @@ flowchart LR
         b5["src/findings<br/>the join, every source's score apart"]
         b7["src/council<br/>roster and the egress gate, redaction,<br/>prompt, provider registry, chairman,<br/>the model server's settings,<br/>the members --council runs,<br/>the order check, escalation<br/>to one model on that server, and the explainer"]
         b8["src/report<br/>the record, and three renderings of it:<br/>text, JSON, one self-contained tabbed HTML<br/>page, its stylesheet and script inlined"]
-        b9["src/cli<br/>arguments, preflight, the audit order,<br/>the council's scope and its record,<br/>the two reads of the model server it makes,<br/>the stderr progress stream, the report files<br/>in reports/, and the exit code a<br/>pipeline reads"]
+        b9["src/cli<br/>arguments, preflight, the audit order,<br/>the council's scope and its record,<br/>the two reads of the model server it makes,<br/>the approved questions asked at a terminal<br/>and the file they are saved to,<br/>the stderr progress stream, the report files<br/>in reports/, and the exit code a<br/>pipeline reads"]
         b6["src/scoring<br/>the approved question library, categories<br/>clamped then weighted, the band,<br/>the severity floors on it<br/>and the version naming those rules"]
         b10["src/organisation<br/>the answer file, the approval record,<br/>the rule for what needs approval,<br/>one score per source"]
         b0 --> b1

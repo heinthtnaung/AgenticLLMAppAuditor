@@ -62,6 +62,9 @@ def run_of(report: Report) -> dict[str, Any]:
     provenance = report.provenance
     return {
         "repository": provenance.repository,
+        # Present only for a run whose answers were typed; a file run or a run with
+        # no answers carries no such key.
+        **answers_source_of(provenance),
         "syft_version": provenance.syft_version,
         "trivy_version": provenance.trivy_version,
         "advisory_database": database_of(provenance.database),
@@ -69,6 +72,13 @@ def run_of(report: Report) -> dict[str, Any]:
         "scoring_rules_version": provenance.scoring_rules_version,
         # The window and the timeout can change a result, so they sit beside the pinning.
         "local_models": local_models_of(provenance.local_models),
+        **run_counts(report),
+    }
+
+
+def run_counts(report: Report) -> dict[str, Any]:
+    """Give the run's counts, each a number a reader checks against the findings themselves."""
+    return {
         "component_count": report.component_count,
         "finding_count": len(report.findings),
         # Readable sources only: a vector the calculator refused is not counted
@@ -86,6 +96,13 @@ def run_of(report: Report) -> dict[str, Any]:
         # Not findings: no CVSS, so never scored, weighed or put to the council.
         "secret_count": len(report.secrets),
     }
+
+
+def answers_source_of(provenance: Any) -> dict[str, str]:
+    """Name where a run's answers came from, for the typed run alone; a file run names none."""
+    if not provenance.answers_source:
+        return {}
+    return {"answers_source": provenance.answers_source}
 
 
 def database_of(database: Any) -> dict[str, Any]:
