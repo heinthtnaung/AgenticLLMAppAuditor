@@ -1,0 +1,37 @@
+{
+  "_questions": {
+    "EXP-1": "Is the affected service internet-facing?",
+    "EXP-2": "Is it reachable from an untrusted network?",
+    "EXP-3": "Is the vulnerable port or API exposed?",
+    "EXP-4": "Is the asset isolated or segmented?",
+    "EXP-5": "Is the component disabled?",
+    "BUS-1": "Is the asset business-critical?",
+    "BUS-2": "Is it running in production?",
+    "BUS-3": "Does it hold sensitive or regulated data?",
+    "BUS-4": "Would an outage halt a business process?",
+    "THR-1": "Is this vulnerability being exploited in the wild?",
+    "THR-2": "Is public exploit code available?",
+    "THR-3": "Is exploitation automated by worms or scanners?"
+  },
+  "answers": {
+    "EXP-1": "Yes",
+    "EXP-2": "No",
+    "EXP-3": "Yes",
+    "EXP-4": "Unknown",
+    "EXP-5": "No",
+    "BUS-1": "Yes",
+    "BUS-2": "Yes",
+    "BUS-3": "Unknown",
+    "BUS-4": "Yes",
+    "THR-1": "Yes",
+    "THR-2": "No",
+    "THR-3": "Unknown"
+  },
+  "by_advisory": {},
+  "approval": {
+    "approver": "Hein.TN",
+    "decision": "approved",
+    "recorded_at": "2026-10-21",
+    "note": "Running tests with 1x Low 1x High Council Members (qwen3.5:4b, deepseek-r1:32b) and 1x High Escalation (llama3.3:70b)."
+  }
+}

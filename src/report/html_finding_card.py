@@ -11,7 +11,8 @@ on the card, marked not scored and never as 0.0.
 """
 
 from cvss.score import severity_band
-from report.approval_needed import NEEDS_APPROVAL, reasons_for
+from report.approval_needed import reasons_for
+from report.html_approval import approval_status
 from report.html_council_flag import same_evidence_flag
 from report.html_layout import (
     CVSS_SCALE,
@@ -46,12 +47,13 @@ def card_head(report: Report, finding) -> str:
 
 
 def approval_badge(report: Report, finding) -> str:
-    """Mark a finding needing approval, naming the halves of the rule it meets."""
+    """Mark a flagged finding with the audit's decision, naming the halves of the rule it meets."""
     reasons = reasons_for(report, finding)
     if not reasons:
         return ""
+    word, tone = approval_status(report.approval)
     said = " and ".join(reason.value for reason in reasons)
-    return badge(f"{NEEDS_APPROVAL}: {said}", "alarm")
+    return badge(f"{word}: {said}", tone)
 
 
 def council_flag(report: Report, finding) -> str:

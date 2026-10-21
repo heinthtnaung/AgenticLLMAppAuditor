@@ -36,6 +36,7 @@ a.minis, .cell-link { text-decoration: none; }
 }
 .badge-alarm { background: var(--alarm-bg); color: var(--alarm-fg); }
 .badge-ok { background: var(--ok-bg); color: var(--ok-fg); }
+.badge-warn { background: var(--warn-bg); color: var(--warn-fg); }
 .badge-muted { background: var(--chip-bg); color: var(--muted-fg); }
 .stack { display: flex; flex-direction: column; gap: .15rem; align-items: flex-start; }
 .sub { color: var(--muted-fg); font-size: .8rem; }

@@ -288,9 +288,21 @@ set of answers.
 decision it was, when, and why all travel in the answer file, validated as a
 real instant so a record cannot carry `"yesterday"`. The time arrives with the
 human act rather than being read from a clock, which is also what keeps a run's
-JSON byte-identical between two runs over the same inputs. Stamping one would
-need an approval command, which does not exist — and it would be the first clock
-anywhere in `src/`.
+JSON byte-identical between two runs over the same inputs.
+
+**A decision may be recorded after the run.** `audit --approve` records the
+answer file's decision on a report that already ran, without auditing again
+(`docs/USAGE.md`). Only the answer file's `approval` block is read; the file's answers
+are ignored. The run's recorded answers are re-weighed only to check the reports
+reproduce, so no score changes. Before writing, it reads the saved record
+back and refuses unless the three renderings agree with each other and with what
+this version renders, so a report another version wrote, or one edited in a
+rendered field, is caught. A consistent edit to a field only the JSON shows is
+not detected. The time still comes from the answer file, so no clock is involved
+and determinism is unchanged — there is still none anywhere in `src/`. Such a
+decision is marked `attached_after_run` in the JSON, and shown as "added after
+the run" in the text and HTML, so the record stays honest that the approval was
+not part of the run.
 
 **Which findings need that approval is a rule, not a judgement.** A finding
 needs approval when any source's Organisation Risk Score is High or Critical, or

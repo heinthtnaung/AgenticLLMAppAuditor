@@ -10,11 +10,20 @@ hung run.
 stay pipeable and byte-identical; progress and the record share a process and
 nothing else.
 
+**One line per call, or one bar.** A terminal gets one line per phase, redrawn in
+place (`cli.progress_bar`); a redirected stream and `--debug` both get the full
+log, one line per call, so a saved run keeps every member it named. Which one is
+chosen is the stream's `isatty()` and the flag; the counting below is the same
+either way.
+
 **Counts, not timings, and the design makes that enough rather than merely
-accepting it.** A line is printed *before* the call it describes, so a slow
-member is a line that sits there -- which is how a reader sees which member is
-slow, with their own perception supplying the elapsed time a clock would. There
-is no clock anywhere in `src/`; it is what keeps the record byte-identical
+accepting it.** Both displays print *before* the call, and neither carries a
+clock: the bar supplies a running count and a percentage, and the log prints one
+line per call naming the member it is about to ask. So in the log -- off a
+terminal, or under `--debug` -- a slow member is a line that sits there naming
+it, which is how `--debug` shows which model is slow; the bar names no member and
+a reader there supplies the elapsed time from the frame that stops advancing.
+There is no clock anywhere in `src/`; it is what keeps the record byte-identical
 between runs, it is asserted in `docs/USAGE.md`, `docs/SETUP.md`,
 `docs/DEVELOPMENT.md`, `docs/diagrams.md` and `docs/SCORING_MODEL.md`, and it
 is not worth narrowing all five to print a number a reader already has.
@@ -22,6 +31,8 @@ is not worth narrowing all five to print a number a reader already has.
 
 from dataclasses import dataclass, field
 from typing import TextIO
+
+from cli.progress_bar import BarDisplay, bar_for
 
 METRICS_PER_FINDING = 8
 # How many times each member is asked each metric: in the options' order, and reversed.
@@ -50,10 +61,17 @@ class CouncilProgress:
     out: TextIO
     # Each metric asked in the options' order and reversed, where the run checks both.
     orders: int = ONE_ORDER
+    # The log is the default; `--debug` keeps it even at a terminal, where a bar is drawn instead.
+    debug: bool = False
     asked: int = field(default=0, init=False)
     escalated: int = field(default=0, init=False)
     reached: int = field(default=0, init=False)
     advisory_id: str = field(default="", init=False)
+    bar: BarDisplay | None = field(default=None, init=False)
+
+    def __post_init__(self) -> None:
+        """Choose the display once the stream is known: a bar on a terminal, else the log."""
+        self.bar = bar_for(self.out, self.debug)
 
     @property
     def calls(self) -> int:
@@ -74,12 +92,25 @@ class CouncilProgress:
     def asking(self, metric: str, member: str, reversed_options: bool = False) -> None:
         """Say which member is about to be asked which metric, and in which order, before it is."""
         self.asked += 1
+        if self.bar is not None:
+            self.bar.council(COUNCIL_LINE, self.asked, self.calls, self.reached, self.findings)
+            return
         self.say(f"{COUNCIL_LINE} {self.asked}/{self.calls}", metric, member, reversed_options)
 
     def escalating(self, metric: str, member: str, reversed_options: bool = False) -> None:
         """Say which metric the escalation model is about to be asked, and in which order."""
         self.escalated += 1
+        if self.bar is not None:
+            self.bar.escalation(
+                ESCALATION_LINE, self.escalated, self.reached, self.findings, self.advisory_id
+            )
+            return
         self.say(f"{ESCALATION_LINE} {self.escalated}", metric, member, reversed_options)
+
+    def finish(self) -> None:
+        """Close the bar's line so later output starts fresh; nothing to do for the log."""
+        if self.bar is not None:
+            self.bar.finish()
 
     def say(self, counted: str, metric: str, member: str, reversed_options: bool) -> None:
         """Write the line for one call about to be made, flushed so it shows before the call."""
@@ -107,6 +138,9 @@ class NoProgress:
     def escalating(self, metric: str, member: str, reversed_options: bool = False) -> None:
         """Say nothing."""
 
+    def finish(self) -> None:
+        """Note nothing."""
+
 
 NO_PROGRESS = NoProgress()
 
@@ -117,15 +151,30 @@ class ExplanationProgress:
 
     findings: int
     out: TextIO
+    # The log is the default; `--debug` keeps it even at a terminal, where a bar is drawn instead.
+    debug: bool = False
     asked: int = field(default=0, init=False)
+    bar: BarDisplay | None = field(default=None, init=False)
+
+    def __post_init__(self) -> None:
+        """Choose the display once the stream is known: a bar on a terminal, else the log."""
+        self.bar = bar_for(self.out, self.debug)
 
     def explaining(self, advisory_id: str, model: str) -> None:
         """Say which finding the explainer is about to be asked about, before it is."""
         self.asked += 1
+        if self.bar is not None:
+            self.bar.explanation(EXPLANATION_LINE, self.asked, self.findings, advisory_id)
+            return
         self.out.write(
             f"{EXPLANATION_LINE} {self.asked}/{self.findings}  finding {advisory_id}  {model}\n"
         )
         self.out.flush()
+
+    def finish(self) -> None:
+        """Close the bar's line so later output starts fresh; nothing to do for the log."""
+        if self.bar is not None:
+            self.bar.finish()
 
 
 @dataclass(frozen=True)
@@ -134,6 +183,9 @@ class NoExplanationProgress:
 
     def explaining(self, advisory_id: str, model: str) -> None:
         """Say nothing."""
+
+    def finish(self) -> None:
+        """Note nothing."""
 
 
 NO_EXPLANATION_PROGRESS = NoExplanationProgress()

@@ -39,6 +39,7 @@ QUIET = finding(FLASK, advisory_id="CVE-2023-30861", vectors={"ghsa": HARMLESS})
 EVERY_KIND = (DISPUTED, SEVERE, QUIET)
 
 APPROVED = Approval("hein", Decision.APPROVED, "2026-09-23T09:15:00Z")
+OVERRIDDEN = Approval("hein", Decision.OVERRIDDEN, "2026-09-23T09:15:00Z", "accepted the risk")
 
 
 def approval_report(answers=None, approval=None, findings=EVERY_KIND) -> Report:

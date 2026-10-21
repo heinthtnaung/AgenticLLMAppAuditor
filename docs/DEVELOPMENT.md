@@ -22,16 +22,15 @@ catalogued nothing.
 | `src/scoring/` | built | the approved question library, per-question weights, categories clamped then weighted, the band, the two severity floors that can raise it, and the version naming those rules |
 | `src/council/` | built | the roster and its `egress` gate, redaction, the prompt, a provider registry holding one Ollama client, the quotation check, the order check, the chairman, the runner, escalation of what the council leaves open to one larger model on the members' server, and the explainer that says why a finding's sources differ |
 | `src/organisation/` | built | the answer file, the approval record, the rule for which findings need approval, and one risk score per published source |
-| `src/report/` | built | the record every run produces, and its three renderings: a terminal report, the JSON audit artefact, and one self-contained, tabbed HTML page with its stylesheet and script inlined |
-| `src/cli/` | built | the arguments, the preflight refusals, the order the packages run in, which findings the council is put to, the server version and model digests a council run records, the progress it prints to stderr, the three report files in `reports/`, and the exit code |
+| `src/report/` | built | the record every run produces, its three renderings — a terminal report, the JSON audit artefact, and one self-contained, tabbed HTML page with its stylesheet and script inlined — and reading a saved record back from the JSON, which `src/cli/approve.py` re-renders to approve |
+| `src/cli/` | built | the arguments, the preflight refusals, the order the packages run in, which findings the council is put to, the approved questions asked at a terminal when no answer file is given and the file they are saved to, the server version and model digests a council run records, the progress it prints to stderr — a bar at a terminal, the per-call log when redirected or piped, or under `--debug` — the three report files in `reports/`, the exit code, and the `--approve` mode that records a decision on a report already written, without auditing again |
 | question selector | design | every approved question is asked, rather than the few a CVE's prerequisites call for |
 | answer validation | design | no model reads the answers back for gaps or contradictions |
 | hosted provider client | design | the local client works; nothing reaches OpenRouter or another API, so a hosted member is skipped for want of one. An adapter and a registry entry, and no other module moves |
-| an approval command | design | an approval is recorded, never stamped: the time arrives with it in the answer file, because there is no clock anywhere in `src/` |
 
 Diagram 5 of [`docs/diagrams.md`](diagrams.md) draws the same boundary from
 the import graph. Nothing built is unreachable any more: `src/organisation`
-imports the scoring engine, and `src/cli` reaches six packages to close the line
+imports the scoring engine, and `src/cli` reaches seven packages to close the line
 from a directory on disk to a banded score.
 
 ## Running the tests

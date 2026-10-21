@@ -7,15 +7,8 @@ files that actually exist, alongside the guards on the command itself.
 """
 
 import importlib
+import tomllib
 from pathlib import Path
-
-try:
-    import tomllib
-except ModuleNotFoundError:
-    # Python 3.10 has no tomllib, and pytest depends on tomli there: the same
-    # parser under its older name, so the suite keeps the 3.10 minimum that
-    # `README.md` and `docs/SETUP.md` state.
-    import tomli as tomllib
 
 from cli.arguments import PROGRAM
 

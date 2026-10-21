@@ -59,7 +59,11 @@ def explanations(
     clients=PROVIDER_CLIENTS, progress=NO_EXPLANATION_PROGRESS,
 ) -> tuple[ExplanationRecord, ...]:
     """Explain every disputed finding, and record why each of the others was not explained."""
-    return tuple(explanation_of(one, explainer, clients, progress) for one in findings)
+    try:
+        return tuple(explanation_of(one, explainer, clients, progress) for one in findings)
+    finally:
+        # Close the bar's line even if a call raised, so later output does not land on it.
+        progress.finish()
 
 
 def to_explain(findings: tuple[Finding, ...]) -> tuple[Finding, ...]:
@@ -67,9 +71,9 @@ def to_explain(findings: tuple[Finding, ...]) -> tuple[Finding, ...]:
     return tuple(one for one in findings if one.disputed_metrics() and advisory_text(one))
 
 
-def explaining(findings: tuple[Finding, ...], out) -> ExplanationProgress:
+def explaining(findings: tuple[Finding, ...], out, debug: bool = False) -> ExplanationProgress:
     """Count the explanation calls a run will make, for its progress lines."""
-    return ExplanationProgress(len(to_explain(findings)), out)
+    return ExplanationProgress(len(to_explain(findings)), out, debug)
 
 
 def explanation_of(

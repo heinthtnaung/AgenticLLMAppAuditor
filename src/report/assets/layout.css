@@ -82,6 +82,10 @@ a.stat:hover { border-color: var(--muted-fg); }
 .stat-sub { color: var(--muted-fg); font-size: .82rem; }
 .tone-alarm { border-left: 4px solid var(--alarm-fg); }
 .tone-alarm .stat-num { color: var(--alarm-fg); }
+.tone-ok { border-left: 4px solid var(--ok-fg); }
+.tone-ok .stat-num { color: var(--ok-fg); }
+.tone-warn { border-left: 4px solid var(--warn-fg); }
+.tone-warn .stat-num { color: var(--warn-fg); }
 
 /* Overview split */
 .split { display: grid; grid-template-columns: 1.3fr 1fr; gap: 1rem; margin-bottom: 1.4rem; }

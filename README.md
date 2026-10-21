@@ -4,10 +4,10 @@ An SBOM-based vulnerability auditor. It lists a repository's components with
 Syft, matches them to advisories in an offline Trivy database, and scores every
 published CVSS v3.1 vector, one source at a time. The same Trivy run reports
 where its built-in rules match a credential, without ever showing the secret.
-Answer twelve questions about your environment and it adds an **Organisation
-Risk Score**. Name local models and a **council** reads each disputed advisory,
-quoting the text behind every value it gives. Every number comes from a
-deterministic engine, never a model.
+Answer twelve questions about your environment — at the prompt, or in a JSON
+file — and it adds an **Organisation Risk Score**. Name local models and a
+**council** reads each disputed advisory, quoting the text behind every value it
+gives. Every number comes from a deterministic engine, never a model.
 
 This page is the short version. [docs/USAGE.md](docs/USAGE.md) is the full
 guide.
@@ -16,7 +16,7 @@ guide.
 
 | Tool | For | Tested with | Minimum |
 |---|---|---|---|
-| Python | everything | 3.11.11 | 3.10 |
+| Python | everything | 3.11.11 | 3.11 |
 | [Syft](https://github.com/anchore/syft) | listing the components | 1.52.0 | none set |
 | [Trivy](https://trivy.dev) and its advisory database | matching advisories and finding secrets, offline | 0.74.0 | none set |
 | [Ollama](https://ollama.com) and a pulled model | the council (optional) | 0.34.3 | none set |
@@ -111,6 +111,11 @@ the `MATCHED NOTHING` and `NEEDS APPROVAL` blocks. The rest is verbatim, the
 database date being the one it was recorded against. What is not assessed is
 named, never printed as a zero.
 
+This sample is a run that is not asked the questions — its input is piped in, its
+error stream redirected, or it is in CI; asking needs both stdin and stderr to be
+a terminal. With both a terminal and no `--answers`, the tool asks the twelve
+questions before the scan, under "Score it against your environment".
+
 ### Print JSON or HTML instead
 
 ```bash
@@ -168,6 +173,46 @@ ORGANISATION RISK (18)  ·  the source changes the band on 1
 A range runs from one source's score to another's, and the heading counts the
 findings whose band depends on which source you believe.
 
+You need no file to start. The tool asks the twelve questions before the scan,
+but only when stdin and stderr are both a terminal; with input piped in, stderr
+redirected, or in CI, nothing is asked and there is no Organisation Risk Score.
+At the prompt each question is a line on stderr, like
+`EXP-1 Is the affected service internet-facing? [y/n/U]`. Answer `y`, `n` or `u`,
+or press Enter for Unknown; anything else is re-asked, and Ctrl-D stops the run
+before the scan. N/A is not offered here; add it by editing the saved file.
+
+The replies are saved to `reports/<name>.answers.json`, in the example file's
+shape with an empty `approval` block, so `--answers reports/<name>.answers.json`
+reproduces the same score. A flagged finding carries `needs_approval: true` in the
+record whether or not an `approval` block is there; adding one drops the
+summary's `No approval is recorded for this audit.` line and shows the decision
+it records on the page's approval marks. A later terminal run with
+no `--answers` asks again and overwrites this file, so after editing it, rerun with
+`--answers` on it. Or record the decision on reports already written, without
+auditing again, with `audit --approve` (below).
+
+### Approve a report without re-running it
+
+A council run can take an hour and does not reproduce, so you need not run an
+audit again to approve its findings. `audit --approve` records the answer file's
+`approval` on the reports a run already wrote:
+
+```bash
+audit --approve reports/vulnscout.json --answers answers.json
+```
+
+It reads only the `approval` block from the answer file — the file's answers are
+ignored; the run's own recorded answers are re-weighed only to check the reports
+reproduce, not to change a score — and makes no model call. Before writing it
+reads the saved record back, re-renders the three reports, and checks they agree
+with what this version renders; it rewrites them only if they do, so a report
+another version wrote, or one whose three files no longer agree, is refused. A
+consistent hand-edit to a field only the JSON shows is not caught; `docs/USAGE.md`
+spells out that limit and the full refusal list. The decision is marked
+`added after the run` in the reports and `attached_after_run: true` in the JSON;
+it exits `0` when the decision is recorded and `2` when it refuses. The approval's
+time still comes from the answer file; nothing reads a clock.
+
 ### Add a council of local models
 
 Pull each model once, then name them:
@@ -212,8 +257,11 @@ two members on this repository, 576 council calls instead of 160. Either way
 the run adds one explanation call per finding whose sources disagree, 5 here,
 and escalation adds 2 for each metric the council leaves open.
 
-A council run prints one line per model call on stderr, so a slow model is
-visible. The report stays on stdout.
+At a terminal a council run draws its progress on stderr, each phase on its own
+line redrawn in place — a bar where the total is known, a running count for
+escalation where it is not. A slow model shows as a stalled line, though not by
+name; `--debug` prints one line per model call, which names it, as a redirected
+or piped stderr does. Either way the report stays on stdout.
 
 ## Settings
 
@@ -240,7 +288,8 @@ them only on a council run.
 | `2` | could not run, or could not save its reports |
 | `3` | ran and found nothing, but could not read a manifest or catalogued no component |
 
-A pipeline that passes only on `0` stops on the rest.
+A pipeline that passes only on `0` stops on the rest. `audit --approve` uses
+only `0`, when it records the decision, and `2`, when it refuses.
 
 ## Running the tests
 

@@ -17,6 +17,7 @@ byte-identical HTML.
 """
 
 from organisation.approval import Approval
+from report.approval_words import ATTACHED_AFTER_RUN
 from report.council_words import models_named
 from report.disagreement import sources_agree, sources_disagree
 from report.html_absences import inventory_panel
@@ -117,8 +118,16 @@ def approval_indicator(report: Report) -> str:
     decided = report.approval
     if isinstance(decided, Approval):
         who = f"{decided.decision.value} by " + tag("b", text(decided.approver))
-        said = tag("span", who + "<br>" + tag("span", text(decided.recorded_at), "when"))
+        when = tag("span", text(decided.recorded_at), "when") + after_run_note(decided)
+        said = tag("span", who + "<br>" + when)
         return tag("div", tag("span", "", "dot ok") + said, "approval ok")
     reason = tag("span", text(decided.reason), "when")
     said = tag("span", text("No approval recorded") + "<br>" + reason)
     return tag("div", tag("span", "", "dot") + said, "approval")
+
+
+def after_run_note(decided: Approval) -> str:
+    """Add the muted line saying a decision was attached after the run, or nothing for one in it."""
+    if not decided.attached_after_run:
+        return ""
+    return "<br>" + tag("span", text(ATTACHED_AFTER_RUN), "when")

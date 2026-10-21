@@ -244,6 +244,32 @@ audit fetched/vulnscout --answers answers.json
 That run prints an `ORGANISATION RISK` block, shown in full in the README under
 "Score it against your environment".
 
+You need no file to start. The tool asks the twelve questions before the scan,
+but only when stdin and stderr are both a terminal; with input piped in, the
+error stream redirected, or in CI, nothing is asked and there is no Organisation
+Risk Score. To run in the background, give `--answers FILE` or redirect input
+from `/dev/null`: a job backgrounded at a terminal keeps a terminal stdin, so it
+prompts and the shell stops it on the read. At the prompt each question is a line
+on the error stream,
+like `EXP-1 Is the affected service internet-facing? [y/n/U]`. It takes `y`, `n`
+or `u`, or Enter for Unknown; anything else is re-asked with a hint, and Ctrl-D
+ends the run before the scan. N/A is not offered at the prompt, though it stays
+available by editing the saved file.
+
+The replies are saved to `reports/<name>.answers.json`, in the example file's
+shape with an empty `approval` block, so `--answers reports/<name>.answers.json`
+reruns to the same score. A flagged finding carries `needs_approval: true` in the
+record whether or not an `approval` block is there; adding one drops the
+summary's `No approval is recorded for this audit.` line and shows the decision
+it records on the page's approval marks. A later terminal run
+with no `--answers` asks again and overwrites this file, so after editing it,
+rerun with `--answers` on it. To record a decision on reports already written,
+without auditing again, use `audit --approve` (below).
+
+Only the JSON record marks a typed run: `run.answers_source` reads
+`typed at the prompt and saved to reports/<name>.answers.json`, and the text and
+HTML reports do not show it.
+
 The block's second line is the weighting those totals were reached with. It is
 read off the record rather than off `docs/SCORING_MODEL.md`, so a reader
 re-deriving a score by hand works from the run that produced it and not from a
@@ -349,9 +375,12 @@ change what a Yes is worth. `docs/SCORING_MODEL.md` lists them, says which
 weights are quoted from the design and which the library chose, and works
 through the design's own example end to end.
 
-Without `--answers` there is no Organisation Risk Score, and the report says so
-under `NOT ASSESSED` rather than printing a zero. With `--answers` and nothing
-found there is none either, and rather than claim nobody answered, it reads
+Without `--answers`, and with stdin or stderr not a terminal — input piped in, the
+error stream redirected, or CI — there is no Organisation Risk Score, and the
+report says so under `NOT ASSESSED` rather than printing a zero; with both a
+terminal the questions are asked at the prompt before the scan, so there is one.
+With `--answers` and nothing found there is none either, and rather than claim
+nobody answered, it reads
 `answers were supplied, but there was no finding to weigh them against`.
 
 ## Some findings are marked as needing approval
@@ -369,12 +398,14 @@ every time.
 |---|---|
 | the summary | the count and which halves of the rule were checked, as `Approval is needed for 5 of 18: sources that disagree.` |
 | text | a `NEEDS APPROVAL (n)` block before `APPROVAL` and `NOT ASSESSED`, one line per finding with the reasons it meets |
-| the page | `needs approval: sources that disagree` on the finding's heading, and the summary's approval sentences as a paragraph of their own |
+| the page | the Overview's Approval column and the finding's heading. With an approval recorded they show the decision — `Approved` or `Overridden` in the column, `approved:` or `overridden:` with the reasons on the heading; with none, `Needs approval` and `needs approval: sources that disagree`. The summary's approval sentences also render as a paragraph of their own |
 | JSON | `needs_approval` and `approval_reasons` on every finding, and `run.findings_needing_approval` |
 
-**Without `--answers` only disagreement is checked**, because there is no risk
+**With no answers only disagreement is checked**, because there is no risk
 score to band, and the summary says so, as in the README's sample run:
 `With no organisation answers, no finding was checked for a High or Critical Organisation Risk Score.`
+That is a run with no answers at all — no `--answers`, and stdin or stderr not a
+terminal; with both a terminal the prompt supplies them.
 When a finding needs approval and the answer file records none, the summary
 adds `No approval is recorded for this audit.`
 
@@ -383,8 +414,58 @@ and stands for every marked finding, so no finding can be approved apart from
 the rest. With the answers above, all 18 findings land High or Critical on some
 source, so all 18 are marked and the mark tells none of them apart:
 `Approval is needed for 18 of 18: a High or Critical Organisation Risk Score, or sources that disagree.`
+Record an approval and every one of those marks shows that one decision — all
+`Approved`, or all `Overridden` — still telling none of them apart.
 The exit code does not change, because a marked finding is a finding and the
 run exits `1` already.
+
+## Record a decision on a report without running it again
+
+A council run can take an hour and does not reproduce, so once you have read a
+report you should not have to run it again to approve it. `audit --approve`
+records the answer file's `approval` on the reports a run already wrote:
+
+```bash
+audit --approve reports/vulnscout.json --answers answers.json
+```
+
+It names the saved JSON, reads the decision from `--answers`, makes no model
+call, and rewrites all three reports in place — printing the text report on
+stdout and the `reports written to …` line on stderr, as a run does. From the
+answer file it reads only the `approval` block; the file's answers are ignored.
+The run's own recorded answers are re-weighed, but only to check the reports
+reproduce, so the report's figures stay the run's.
+
+Before it writes, it reads the saved record back, re-renders the three formats,
+and checks they agree with each other and with what this version of the tool
+renders; it writes only if they do. This catches a report another version wrote,
+or one whose three files no longer agree. It does **not** catch a consistent
+hand-edit to a field only the JSON carries — an advisory summary, a fix version,
+a member's quoted evidence or prompt version, or a component's locations —
+because every rendering reproduces that field unchanged, so the three still
+agree.
+
+The decision is marked `attached_after_run: true` in the JSON and shown as
+`added after the run` in the text `APPROVAL` section, the HTML masthead box, and
+the Overview approval card. The time still comes from the answer file's
+`recorded_at`; nothing reads a clock. An approved report is refused unless you
+pass `--replace-approval`, which records the new decision over the old.
+
+It refuses with exit `2`, in a message naming the file, when:
+
+| Refused | Why |
+|---|---|
+| a `.txt` or `.html` beside the JSON is missing or unreadable | all three are needed to check the report reproduces |
+| the JSON is not a report this tool can read | there is nothing to record a decision on |
+| the three files do not agree with what this version renders | a rendered field was edited, or another version wrote them |
+| the report was scored by different rules | another `scoring_rules_version` could not re-render alike |
+| the answer file is missing | its decision cannot be read |
+| the answer file carries no `approval` block | there is no decision to record |
+| the answer file's `approval` block is invalid — a bad decision word or time | the decision cannot be read |
+| the report already carries an approval, without `--replace-approval` | a recorded decision is not overwritten by default |
+| the reports cannot be written back | it refuses before writing, rather than leave them half-written |
+
+Recording the decision exits `0`.
 
 ## The exit code says which of four things happened
 
@@ -394,6 +475,9 @@ run exits `1` already.
 | `1` | the audit ran and found something: a vulnerability or a secret |
 | `2` | the audit could not run, or could not save its reports |
 | `3` | the audit ran and found nothing, but could not read a manifest or catalogued no component |
+
+`audit --approve` leaves by only two of these: `0` when it records the decision,
+and `2` when it refuses (above).
 
 **`2` is the one that matters.** A missing database, an absent scanner or a path
 that is not there would otherwise exit 0 beside a genuinely clean repository, and
@@ -826,7 +910,12 @@ indistinguishable from a hung one. `measurements/README.md` times a full run
 at 71 min 39 s on one baseline and 7 min 3 s on the next, which changed
 placement, second member, call order and Ollama version at once; both asked
 each metric once, and a run today asks it twice.
-So a run prints one line per call. The recorded `gpu-scoped` run in
+So a run says where it has got to, on the error stream. **At a terminal** each
+phase draws its own line, redrawn in place, with a bar where the total is known:
+the council bar carries the call count, a percentage and which finding, like
+`council [█████████░░░░░░░░░] 80/160  50%  finding 3/5`, and no clock. **Redirected
+or piped, or under `--debug`,** it is one line per call instead, so a saved run
+keeps every member it named. The recorded `gpu-scoped` run in
 `measurements/council_runs/` was the scoped two-member command, given the answer
 skeleton as well:
 
@@ -835,7 +924,8 @@ audit fetched/vulnscout --answers answers.example.json \
     --council-member qwen2.5:7b-instruct --council-member llama3.2:latest
 ```
 
-Its stderr, from `gpu-scoped.progress.txt`:
+Its stderr, saved to `gpu-scoped.progress.txt` — the per-call form a redirect and
+`--debug` both give:
 
 ```
 council 1/80  finding 1/5 CVE-2026-13149  AV  qwen2.5:7b-instruct
@@ -864,21 +954,27 @@ and with no total, because how many a run makes is known only once every council
 has answered. The explanations come last, one line each, counted against the
 disputed findings: `explanation 1/1  finding CVE-2021-23337  small:1b`.
 
+At a terminal the same phases show, each on a line of its own. Escalation is a
+running count with no bar and no percentage, `escalation 1  finding 1/1 CVE-2021-23337`,
+since its total is not known until the council leaves something open; the
+explanation phase fills a bar of its own against the disputed findings.
+
 One member answers all eight metrics of a finding before the next is asked.
 Two members that do not fit in the GPU's memory together are then swapped once
 per member per finding rather than on every call.
 
-**Every one of those lines goes to stderr and none to stdout.** So does the one
-after the last call, saying where the reports went. The report has the other
-stream to itself, so `--format json | jq` receives the artefact alone, byte for
-byte the same whether or not anybody was watching. Redirect stdout to a file and
-the progress still reaches your terminal.
+**The bar and every one of those lines go to stderr and none to stdout.** So does
+the one after the last call, saying where the reports went. The report has the
+other stream to itself, so `--format json | jq` receives the artefact alone, and
+watching the progress adds no byte to it. Redirect stdout to a file and the
+progress still reaches your terminal.
 
-Counts, and no elapsed time. A line prints *before* the call it names, so a slow
-member is a line that sits there and you supply the seconds yourself. That is
-what lets `src/` read no clock anywhere, which is what makes two runs of the
-same commit and the same database byte-identical. The cost is the scrollback
-afterwards: it cannot tell you whether a line sat for ninety seconds or nine
+Counts, and no elapsed time, in the bar and in the log alike. A line prints, or
+the bar advances, *before* the call it names, so a slow member is a frame that
+sits there and you supply the seconds yourself. That is what lets `src/` read no
+clock anywhere, which is what makes two runs of the same commit and the same
+database byte-identical. The cost is that neither the redrawn bar nor the log's
+scrollback can tell you afterwards whether a step sat for ninety seconds or nine
 minutes.
 
 ## The design in brief

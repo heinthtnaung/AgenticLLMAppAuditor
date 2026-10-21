@@ -7,9 +7,15 @@ checked, neither agree nor disagree -- and the approval and settled marks ride o
 the row beside it.
 """
 
+import approval_runs
+from organisation.approval import ApprovalOutcome
 from overview_runs import EXPOSED, agreeing, disagreeing, refused, report_of, unscored
 from report.disagreement import agreement_unchecked, sources_agree, sources_disagree
-from report.html_overview_rows import CVSS_PHONE_LABEL, RISK_PHONE_LABEL, finding_row
+from report.html_overview_rows import CVSS_PHONE_LABEL, RISK_PHONE_LABEL, approval_cell, finding_row
+
+# A flagged finding (its sources disagree) and one the rule leaves alone, in approval_runs.
+FLAGGED = "CVE-2019-14234"
+NOT_FLAGGED = "CVE-2023-30861"
 
 
 def test_a_row_carries_one_mini_chip_per_source_the_finding_has():
@@ -81,3 +87,30 @@ def test_the_stacked_phone_labels_say_the_cell_holds_a_score_per_source():
     assert f'data-label="{CVSS_PHONE_LABEL}"' in row
     assert f'data-label="{RISK_PHONE_LABEL}"' in row
     assert (CVSS_PHONE_LABEL, RISK_PHONE_LABEL) == ("CVSS by source", "Org risk by source")
+
+
+def cell_for(advisory_id: str, approval: ApprovalOutcome | None = None) -> str:
+    """Give the approval cell for one of the approval-run findings, weighed and decided."""
+    report = approval_runs.approval_report(approval_runs.EXPOSED, approval)
+    found = next(one for one in report.findings if one.advisory.advisory_id == advisory_id)
+    return approval_cell(report, found)
+
+
+def test_a_flagged_finding_shows_needs_approval_when_the_audit_records_none():
+    assert cell_for(FLAGGED) == (
+        '<td data-label="Approval"><span class="badge badge-alarm">Needs approval</span></td>'
+    )
+
+
+def test_a_flagged_finding_shows_an_approved_badge_once_the_audit_is_approved():
+    cell = cell_for(FLAGGED, approval_runs.APPROVED)
+    assert '<span class="badge badge-ok">Approved</span>' in cell
+
+
+def test_a_flagged_finding_shows_a_distinct_overridden_badge_when_overridden():
+    cell = cell_for(FLAGGED, approval_runs.OVERRIDDEN)
+    assert '<span class="badge badge-warn">Overridden</span>' in cell
+
+
+def test_a_finding_the_rule_leaves_alone_keeps_the_dash_even_once_approved():
+    assert cell_for(NOT_FLAGGED, approval_runs.APPROVED) == '<td data-label="Approval">—</td>'

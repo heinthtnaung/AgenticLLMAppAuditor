@@ -23,6 +23,9 @@ from report.council_record import CouncilOutcome
 from report.explanation_record import ExplanationRecord, SourcesExplained
 
 NO_ANSWERS_GIVEN = "no organisation answers were supplied, so no environment was weighed"
+# What the approval absence is called; `cli.approve` drops this one entry when it
+# records a decision, so the approved report no longer lists approval as not assessed.
+APPROVAL_RECORD = "Approval record"
 NO_APPROVAL_GIVEN = "nobody has approved or overridden this audit"
 # Said only when no council ran at all. A council that ran and settled nothing
 # is a different fact and has its own record; conflating the two put a false
@@ -108,7 +111,7 @@ def absences(
         *risk_absence(risk, coverage.answers_given),
     ]
     if isinstance(approval, NotApproved):
-        named.append(Absence("Approval record", approval.reason))
+        named.append(Absence(APPROVAL_RECORD, approval.reason))
     council_named = coverage.council_named
     return tuple([
         *named,

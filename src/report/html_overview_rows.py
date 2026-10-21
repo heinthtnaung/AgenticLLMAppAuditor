@@ -12,6 +12,7 @@ from cvss.score import severity_band
 from report.approval_needed import reasons_for
 from report.council_beside import council_figure
 from report.disagreement import agreement_unchecked, score_spread, sources_agree, sources_disagree
+from report.html_approval import approval_status
 from report.html_layout import (
     CVSS_SCALE,
     badge,
@@ -120,7 +121,8 @@ def risk_mini(scored) -> str:
 
 
 def approval_cell(report: Report, finding) -> str:
-    """Give the Approval cell: the mark where the finding needs one, else a dash."""
-    if reasons_for(report, finding):
-        return cell("Approval", badge("Needs approval", "alarm"))
-    return cell("Approval", DASH)
+    """Give the Approval cell: the audit's decision where the finding is flagged, else a dash."""
+    if not reasons_for(report, finding):
+        return cell("Approval", DASH)
+    word, tone = approval_status(report.approval)
+    return cell("Approval", badge(word.capitalize(), tone))

@@ -141,4 +141,7 @@ def approval_of(report: Report) -> dict[str, Any]:
         "decision": decided.decision.value,
         "recorded_at": decided.recorded_at,
         "note": decided.note,
+        # Present only when attached after the run, so an ordinary run's record
+        # carries no such key and is byte-identical to what it always was.
+        **({"attached_after_run": True} if decided.attached_after_run else {}),
     }

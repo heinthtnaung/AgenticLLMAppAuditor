@@ -13,7 +13,7 @@ from cli.explanation_run import (
     explaining,
     explanations,
 )
-from cli_samples import ADVISORY, LEGAL, LODASH, QUOTATION, advisory_like
+from cli_samples import ADVISORY, LEGAL, LODASH, QUOTATION, FakeTerminal, advisory_like
 from council.explanation_prompt import EXPLANATION_PROMPT_VERSION, ExplanationPrompt
 from council.roster import Member, Roster
 from council.transport import ModelUnavailable
@@ -131,6 +131,19 @@ def test_each_explanation_call_is_said_before_it_is_made_counting_the_disputed_a
     findings = (AGREEING, DISPUTED)
     explanations(findings, EXPLAINER, recording([]), explaining(findings, out))
     assert out.getvalue() == f"explanation 1/1  finding {ADVISORY.advisory_id}  big:27b\n"
+
+
+def test_an_explanation_that_raises_still_closes_its_bar_line():
+    # finish() runs in a finally, so an unexpected error still ends the bar's line.
+    def exploding(member, prompt):
+        """Fail with an error neither `explain` nor `explanation_of` records: it propagates."""
+        raise RuntimeError("model fell over")
+
+    out = FakeTerminal()
+    with pytest.raises(RuntimeError):
+        explanations((DISPUTED,), EXPLAINER, {"ollama": exploding}, explaining((DISPUTED,), out))
+    assert "\r" in out.getvalue()
+    assert out.getvalue().endswith("\n")
 
 
 def test_the_step_the_harness_replays_never_asks_for_an_explanation():

@@ -55,6 +55,25 @@ QUOTATION = "A remote attacker can inject commands"
 LEGAL = {"AV": "N", "AC": "L", "PR": "N", "UI": "N", "S": "U", "C": "H", "I": "H", "A": "H"}
 
 
+class FakeTerminal(io.StringIO):
+    """A readable stream that answers, as a terminal does, that it is one, so the bar is drawn."""
+
+    def isatty(self) -> bool:
+        """Claim to be a terminal, so progress draws a bar where a plain StringIO gets the log."""
+        return True
+
+
+# Every approved question answered No, and one reply of every form the prompt
+# understands, Yes, No and Unknown among them, one per question.
+NO_TO_EVERYTHING = ["n"] * len(APPROVED_QUESTIONS)
+A_MIX = ["y", "n", "u", "", "yes", "no", "unknown", "Y", "N", "U", "n", "y"]
+
+
+def feed(replies: list[str]) -> FakeTerminal:
+    """A stdin terminal feeding one line per reply, as a person pressing Enter each time."""
+    return FakeTerminal("".join(reply + "\n" for reply in replies))
+
+
 def advisory_like(advisory_id: str, **overrides) -> Advisory:
     """Build one advisory against lodash, with whichever fields a test needs changed."""
     fields = {

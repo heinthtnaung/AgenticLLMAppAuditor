@@ -1,8 +1,8 @@
 """The report record: everything the run computed, and everything it did not.
 
-Built once and rendered twice, so the audit artefact and the thing a person
-reads are two views of one record rather than one derived from the other's
-formatting.
+Built once and rendered as text, JSON and HTML, so the audit artefact and the
+pages a person reads are views of one record rather than one derived from
+another's formatting.
 
 **A score nobody can re-derive is not a score.** `docs/SCORING_MODEL.md` makes
 that the rule the record is shaped by: every source's vector travels beside its

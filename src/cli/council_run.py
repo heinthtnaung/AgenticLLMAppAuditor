@@ -92,12 +92,18 @@ def assessments(
     refuse_unfit_escalation(escalation, tuple(one.name for one in roster.members), clients)
     # Every council before any escalation, so the escalation calls come last and together.
     asking = to_assess(findings, every_finding)
-    councils = [(one, council_on(one, roster, clients, progress, order_check)) for one in asking]
-    assessed = [
-        escalated_at(position, one, council, escalation, clients, progress)
-        for position, (one, council) in enumerate(councils, start=1)
-    ]
-    return (*assessed, *passed_over(findings, every_finding))
+    try:
+        councils = [
+            (one, council_on(one, roster, clients, progress, order_check)) for one in asking
+        ]
+        assessed = [
+            escalated_at(position, one, council, escalation, clients, progress)
+            for position, (one, council) in enumerate(councils, start=1)
+        ]
+        return (*assessed, *passed_over(findings, every_finding))
+    finally:
+        # Close the bar's line even if a call raised, so the next phase does not land on it.
+        progress.finish()
 
 
 def to_assess(findings: tuple[Finding, ...], every_finding: bool) -> tuple[Finding, ...]:
@@ -169,14 +175,14 @@ def escalated_outcome(
 
 def watching(
     findings: tuple[Finding, ...], roster: Roster, out,
-    every_finding: bool = False, order_check: bool = ORDER_CHECK,
+    every_finding: bool = False, order_check: bool = ORDER_CHECK, debug: bool = False,
 ) -> CouncilProgress:
     """Count the calls this roster will make over the findings it will be asked about."""
     # Only the findings this run will ask about and only the members it will ask:
     # a total that counts calls nobody makes is a progress bar that never fills.
     asking = to_assess(findings, every_finding)
     orders = orders_asked(order_check)
-    return CouncilProgress(len(asking), len(members_to_ask(roster)), out, orders)
+    return CouncilProgress(len(asking), len(members_to_ask(roster)), out, orders, debug)
 
 
 def advisory_text(finding: Finding) -> str:

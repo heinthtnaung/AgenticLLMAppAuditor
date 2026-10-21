@@ -32,6 +32,10 @@ class Approval:
     decision: Decision
     recorded_at: str
     note: str = ""
+    # True only for a decision recorded against a report after the audit ran, by
+    # `cli.approve`; a decision read from the answers file during the run leaves it
+    # False, so an ordinary run's record is byte-identical to what it always was.
+    attached_after_run: bool = False
 
     def __post_init__(self) -> None:
         """Refuse an approval nobody could be held to."""

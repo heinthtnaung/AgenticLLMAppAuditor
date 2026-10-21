@@ -88,6 +88,22 @@ def test_every_band_class_is_a_rule_in_the_sheet():
     assert all(f".{one}" in STYLESHEET for one in BAND_CLASSES.values())
 
 
+def test_the_overridden_badge_has_its_own_rule_in_the_sheet():
+    # An overridden approval shows a `badge-warn` badge; a mis-pointed rule would
+    # render it in the wrong colour, and no markup test would see that, so the
+    # whole rule is held here, formatting and all.
+    assert ".badge-warn { background: var(--warn-bg); color: var(--warn-fg); }" in STYLESHEET
+
+
+def test_the_approval_tile_tones_each_have_their_rule_in_the_sheet():
+    # The Need-approval tile is toned by the audit's decision -- ok, warn or alarm.
+    # Without a rule a tone would render unstyled and read like any other tile.
+    assert ".tone-ok { border-left: 4px solid var(--ok-fg); }" in STYLESHEET
+    assert ".tone-ok .stat-num { color: var(--ok-fg); }" in STYLESHEET
+    assert ".tone-warn { border-left: 4px solid var(--warn-fg); }" in STYLESHEET
+    assert ".tone-warn .stat-num { color: var(--warn-fg); }" in STYLESHEET
+
+
 def test_the_floor_note_has_its_own_rule_in_the_sheet():
     # The floor note carries its own class, not `refusal`, so the sheet must style
     # it; without this the class would render unstyled and no markup test would see.

@@ -2,14 +2,16 @@
 
 Its own file so `report.html_overview` stays about the findings table. Each tile
 is a figure off the record with a label and a jump to the tab that explains it;
-the two contested tiles carry the alarm tone, because they are the ones a reader
-should not scroll past.
+the disagreement tile carries the alarm tone, and so does the approval tile until
+the audit records a decision, because they are the ones a reader should not scroll
+past.
 """
 
 from report.approval_needed import needing_approval
 from report.council_beside import council_figure
 from report.council_queries import was_assessed
 from report.disagreement import sources_disagree
+from report.html_approval import approval_status
 from report.html_layout import tag, text
 from report.record import Report
 
@@ -53,9 +55,12 @@ def disagree_tile(report: Report) -> str:
 
 
 def approval_tile(report: Report) -> str:
-    """Give the alarm tile counting the findings that need approval."""
+    """Give the tile counting the findings that need approval, toned by the audit's decision."""
+    # ok once approved, warn once overridden, alarm while no approval is recorded, so the
+    # tile reads with the badge rather than staying red beside a recorded approval.
     sub = "High/Critical org risk, or sources that disagree"
-    return stat(len(needing_approval(report)), "Need approval", sub, "", "tone-alarm")
+    _, tone = approval_status(report.approval)
+    return stat(len(needing_approval(report)), "Need approval", sub, "", f"tone-{tone}")
 
 
 def council_tile(report: Report) -> str:

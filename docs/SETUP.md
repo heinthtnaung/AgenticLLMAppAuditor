@@ -11,7 +11,7 @@ development machine; no minimum is set for any tool but Python.
 
 | Tool | For | Tested with | Minimum |
 |---|---|---|---|
-| Python | the CLI, the engine and the tests | 3.11.11 | 3.10, the `requires-python` in `pyproject.toml` |
+| Python | the CLI, the engine and the tests | 3.11.11 | 3.11, the `requires-python` in `pyproject.toml` |
 | [Syft](https://github.com/anchore/syft) | building the SBOM | 1.52.0 | none set; the lock-file table in [USAGE.md](USAGE.md) was measured on 1.52 |
 | [Trivy](https://trivy.dev) | the advisory database and the CVE join | 0.74.0 | none set; how the cache is found was measured on 0.74 |
 | [Ollama](https://ollama.com) | the models: the council, escalation and the explanation, on this machine or a server `AUDITOR_REMOTE_SERVER=yes` names (optional) | 0.34.3 | none set |
