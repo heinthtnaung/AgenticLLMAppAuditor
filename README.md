@@ -184,8 +184,9 @@ before the scan. N/A is not offered here; add it by editing the saved file.
 The replies are saved to `reports/<name>.answers.json`, in the example file's
 shape with an empty `approval` block, so `--answers reports/<name>.answers.json`
 reproduces the same score. A flagged finding carries `needs_approval: true` in the
-record whether or not an `approval` block is there; adding one only drops the
-summary's `No approval is recorded for this audit.` line. A later terminal run with
+record whether or not an `approval` block is there; adding one drops the
+summary's `No approval is recorded for this audit.` line and shows the decision
+it records on the page's approval marks. A later terminal run with
 no `--answers` asks again and overwrites this file, so after editing it, rerun with
 `--answers` on it.
 

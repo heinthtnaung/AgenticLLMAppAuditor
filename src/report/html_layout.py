@@ -92,7 +92,7 @@ def empty_note(said: str) -> str:
 
 
 def badge(label: str, kind: str) -> str:
-    """Give one pill badge in a named tone -- alarm, ok or muted."""
+    """Give one pill badge in a named tone -- alarm, ok, warn or muted."""
     return tag("span", text(label), f"badge badge-{kind}")
 
 

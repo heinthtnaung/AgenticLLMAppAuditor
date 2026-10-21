@@ -259,8 +259,9 @@ available by editing the saved file.
 The replies are saved to `reports/<name>.answers.json`, in the example file's
 shape with an empty `approval` block, so `--answers reports/<name>.answers.json`
 reruns to the same score. A flagged finding carries `needs_approval: true` in the
-record whether or not an `approval` block is there; adding one only drops the
-summary's `No approval is recorded for this audit.` line. A later terminal run
+record whether or not an `approval` block is there; adding one drops the
+summary's `No approval is recorded for this audit.` line and shows the decision
+it records on the page's approval marks. A later terminal run
 with no `--answers` asks again and overwrites this file, so after editing it,
 rerun with `--answers` on it.
 
@@ -396,7 +397,7 @@ every time.
 |---|---|
 | the summary | the count and which halves of the rule were checked, as `Approval is needed for 5 of 18: sources that disagree.` |
 | text | a `NEEDS APPROVAL (n)` block before `APPROVAL` and `NOT ASSESSED`, one line per finding with the reasons it meets |
-| the page | `needs approval: sources that disagree` on the finding's heading, and the summary's approval sentences as a paragraph of their own |
+| the page | the Overview's Approval column and the finding's heading. With an approval recorded they show the decision — `Approved` or `Overridden` in the column, `approved:` or `overridden:` with the reasons on the heading; with none, `Needs approval` and `needs approval: sources that disagree`. The summary's approval sentences also render as a paragraph of their own |
 | JSON | `needs_approval` and `approval_reasons` on every finding, and `run.findings_needing_approval` |
 
 **With no answers only disagreement is checked**, because there is no risk
@@ -412,6 +413,8 @@ and stands for every marked finding, so no finding can be approved apart from
 the rest. With the answers above, all 18 findings land High or Critical on some
 source, so all 18 are marked and the mark tells none of them apart:
 `Approval is needed for 18 of 18: a High or Critical Organisation Risk Score, or sources that disagree.`
+Record an approval and every one of those marks shows that one decision — all
+`Approved`, or all `Overridden` — still telling none of them apart.
 The exit code does not change, because a marked finding is a finding and the
 run exits `1` already.
 
