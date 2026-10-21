@@ -651,6 +651,7 @@ flowchart LR
         b5 --> b10
         b6 --> b8
         b6 --> b10
+        b6 --> b9
         b7 --> b9
         b8 --> b9
         b10 --> b8
@@ -702,6 +703,11 @@ one category's weight by name; and `src/report/provenance.py` imports
 by. None is a figure the engine works out. Every number the report shows comes
 off the record, so there is no second place a score could be derived and
 differ.
+
+`src/scoring` reaches `src/cli` as well: `src/cli/interactive_answers.py` imports
+`APPROVED_QUESTIONS` and the `Answer` and `Question` types, to ask the approved
+questions at a terminal and read the replies when no answer file is given. The
+score stays `src/organisation`'s; the prompt only collects the answers it weighs.
 
 What remains in the middle column is smaller than it looks and none of it blocks
 a run. Two are refinements of things that work: a selector would ask fewer

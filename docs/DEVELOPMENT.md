@@ -31,7 +31,7 @@ catalogued nothing.
 
 Diagram 5 of [`docs/diagrams.md`](diagrams.md) draws the same boundary from
 the import graph. Nothing built is unreachable any more: `src/organisation`
-imports the scoring engine, and `src/cli` reaches six packages to close the line
+imports the scoring engine, and `src/cli` reaches seven packages to close the line
 from a directory on disk to a banded score.
 
 ## Running the tests
