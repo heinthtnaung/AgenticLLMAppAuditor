@@ -188,7 +188,30 @@ record whether or not an `approval` block is there; adding one drops the
 summary's `No approval is recorded for this audit.` line and shows the decision
 it records on the page's approval marks. A later terminal run with
 no `--answers` asks again and overwrites this file, so after editing it, rerun with
-`--answers` on it.
+`--answers` on it. Or record the decision on reports already written, without
+auditing again, with `audit --approve` (below).
+
+### Approve a report without re-running it
+
+A council run can take an hour and does not reproduce, so you need not run an
+audit again to approve its findings. `audit --approve` records the answer file's
+`approval` on the reports a run already wrote:
+
+```bash
+audit --approve reports/vulnscout.json --answers answers.json
+```
+
+It reads only the `approval` block from the answer file — the file's answers are
+ignored; the run's own recorded answers are re-weighed only to check the reports
+reproduce, not to change a score — and makes no model call. Before writing it
+reads the saved record back, re-renders the three reports, and checks they agree
+with what this version renders; it rewrites them only if they do, so a report
+another version wrote, or one whose three files no longer agree, is refused. A
+consistent hand-edit to a field only the JSON shows is not caught; `docs/USAGE.md`
+spells out that limit and the full refusal list. The decision is marked
+`added after the run` in the reports and `attached_after_run: true` in the JSON;
+it exits `0` when the decision is recorded and `2` when it refuses. The approval's
+time still comes from the answer file; nothing reads a clock.
 
 ### Add a council of local models
 
@@ -265,7 +288,8 @@ them only on a council run.
 | `2` | could not run, or could not save its reports |
 | `3` | ran and found nothing, but could not read a manifest or catalogued no component |
 
-A pipeline that passes only on `0` stops on the rest.
+A pipeline that passes only on `0` stops on the rest. `audit --approve` uses
+only `0`, when it records the decision, and `2`, when it refuses.
 
 ## Running the tests
 

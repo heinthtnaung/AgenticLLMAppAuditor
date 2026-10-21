@@ -1,4 +1,8 @@
-"""Guards on the command line: what it takes, and what it does by default."""
+"""Guards on the audit-mode command line: what it takes, and what it does by default.
+
+The approve-mode guards -- what `--approve` takes and refuses -- are in
+`test_arguments_approve`.
+"""
 
 import pytest
 

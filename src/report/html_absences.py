@@ -13,6 +13,7 @@ silence for a nil result.
 
 from organisation.approval import Approval
 from report.absences import NOTHING_ABSENT
+from report.approval_words import ATTACHED_AFTER_RUN
 from report.html_filters import empty_line, search_box, toolbar
 from report.html_layout import empty_note, group, listing, panel_head, separated, tag, text
 from report.record import Report
@@ -99,8 +100,16 @@ def approval_card(report: Report) -> str:
     if isinstance(decided, Approval):
         line = f"{decided.decision.value} by {decided.approver} at {decided.recorded_at}"
         note = tag("p", text(decided.note), "muted small") if decided.note else ""
-        return status_card("Approval", line, note + fine(APPROVAL_LEDE), True)
+        rest = note + after_run_note(decided) + fine(APPROVAL_LEDE)
+        return status_card("Approval", line, rest, True)
     return status_card("Approval", "no approval recorded", fine(decided.reason), False)
+
+
+def after_run_note(decided: Approval) -> str:
+    """Give the muted line for a decision attached after the run, or nothing for one in it."""
+    if not decided.attached_after_run:
+        return ""
+    return tag("p", text(ATTACHED_AFTER_RUN), "muted small")
 
 
 def not_assessed_card(report: Report) -> str:

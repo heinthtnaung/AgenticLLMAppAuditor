@@ -37,7 +37,8 @@ import sys
 from pathlib import Path
 from typing import TextIO
 
-from cli.arguments import HTML_FORMAT, JSON_FORMAT, PROGRAM, TEXT_FORMAT, parse_arguments
+from cli.approve import CannotApprove, record_approval, write_approved
+from cli.arguments import HTML_FORMAT, JSON_FORMAT, PROGRAM, TEXT_FORMAT, Options, parse_arguments
 from cli.audit import run_audit
 from cli.preflight import CannotRun, refuse_unrunnable
 from cli.report_files import (
@@ -57,14 +58,16 @@ from report.text_report import as_text
 
 RENDERERS = {TEXT_FORMAT: as_text, JSON_FORMAT: as_json, HTML_FORMAT: as_html}
 REFUSALS = (
-    CannotRun, CannotWriteReports, ManifestsUnreadable, ScannerFailed, ScannerUnavailable,
-    ValueError, OSError,
+    CannotApprove, CannotRun, CannotWriteReports, ManifestsUnreadable, ScannerFailed,
+    ScannerUnavailable, ValueError, OSError,
 )
 
 FOUND_NOTHING = 0
 FOUND_SOMETHING = 1
 COULD_NOT_RUN = 2
 FOUND_NOTHING_BUT_UNCHECKED = 3
+# A separate mode's success: a decision was recorded on a report that already ran.
+APPROVAL_RECORDED = 0
 
 
 def main(
@@ -74,18 +77,27 @@ def main(
     reports: Path = REPORTS_DIRECTORY,
     stdin: TextIO | None = None,
 ) -> int:
-    """Run one audit, write its three reports, and give the code that says which outcome it was."""
+    """Run one audit, or record an approval, and give the code that says which outcome it was."""
     out, error, stdin = default_streams(out, error, stdin)
     try:
         options = parse_arguments(argv)
-        # Resolved once and handed to both halves: the database dated is the one scanned.
-        database = refuse_unrunnable(options.repository, trivy_cache_directory(os.environ))
-        paths = planned_reports(options.repository, reports)
-        # Progress and the prompt go to the error stream, so watching the progress
-        # adds no byte to the record on stdout.
-        report = run_audit(options, database, error, stdin, reports)
+        if options.approve is not None:
+            return approve(options, out, error)
+        return run_and_report(options, reports, out, error, stdin)
     except REFUSALS as fault:
         return refused(fault, error)
+
+
+def run_and_report(
+    options: Options, reports: Path, out: TextIO, error: TextIO, stdin: TextIO | None
+) -> int:
+    """Audit the repository, write its three reports, and give the outcome code."""
+    # Resolved once and handed to both halves: the database dated is the one scanned.
+    database = refuse_unrunnable(options.repository, trivy_cache_directory(os.environ))
+    paths = planned_reports(options.repository, reports)
+    # Progress and the prompt go to the error stream, so watching the progress
+    # adds no byte to the record on stdout.
+    report = run_audit(options, database, error, stdin, reports)
     by_format = renderings(report)
     out.write(by_format[options.report_format])
     try:
@@ -106,6 +118,16 @@ def default_streams(
         sys.stderr if error is None else error,
         sys.stdin if stdin is None else stdin,
     )
+
+
+def approve(options: Options, out: TextIO, error: TextIO) -> int:
+    """Record a decision on a report that already ran, and write the three reports back."""
+    # The guard inside is what runs before any write: a report this did not produce,
+    # or one edited, is refused rather than rewritten.
+    renderings = record_approval(options.approve, options.answers, options.replace_approval)
+    out.write(renderings[TEXT_FORMAT])
+    error.write(write_approved(renderings, options.approve))
+    return APPROVAL_RECORDED
 
 
 def outcome(report: Report) -> int:

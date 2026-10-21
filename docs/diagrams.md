@@ -626,10 +626,11 @@ flowchart LR
         b4["src/cvss<br/>vector parser, metric vocabulary,<br/>Base score equations"]
         b5["src/findings<br/>the join, every source's score apart"]
         b7["src/council<br/>roster and the egress gate, redaction,<br/>prompt, provider registry, chairman,<br/>the model server's settings,<br/>the members --council runs,<br/>the order check, escalation<br/>to one model on that server, and the explainer"]
-        b8["src/report<br/>the record, and three renderings of it:<br/>text, JSON, one self-contained tabbed HTML<br/>page, its stylesheet and script inlined"]
+        b8["src/report<br/>the record, three renderings of it<br/>(text, JSON, one self-contained tabbed HTML<br/>page, its stylesheet and script inlined),<br/>and reading a saved record back"]
         b9["src/cli<br/>arguments, preflight, the audit order,<br/>the council's scope and its record,<br/>the two reads of the model server it makes,<br/>the approved questions asked at a terminal<br/>and the file they are saved to,<br/>the stderr progress stream, the report files<br/>in reports/, and the exit code a<br/>pipeline reads"]
         b6["src/scoring<br/>the approved question library, categories<br/>clamped then weighted, the band,<br/>the severity floors on it<br/>and the version naming those rules"]
         b10["src/organisation<br/>the answer file, the approval record,<br/>the rule for what needs approval,<br/>one score per source"]
+        b12["src/cli/approve.py<br/>record a decision on a saved report,<br/>no audit: read the JSON back via<br/>src/report/load_*, recompute and<br/>re-render, compare byte for byte,<br/>then write the decision in"]
         b0 --> b1
         b0 --> b2
         b0 --> b3
@@ -656,19 +657,20 @@ flowchart LR
         b8 --> b9
         b10 --> b8
         b10 --> b9
+        b6 --> b12
+        b8 --> b12
+        b10 --> b12
     end
 
     subgraph UNBUILT["Designed, not built: no source file"]
         d2["Question selector<br/>every approved question is asked instead"]
         d3["Answer validation<br/>no model reads the answers for contradictions"]
         d6["Hosted provider client<br/>an adapter, and an entry in<br/>the provider registry"]
-        d12["An approval command<br/>nothing stamps a decision; the time<br/>arrives with it in the answer file"]
     end
 
     d6 --> b7
     d2 --> b10
     d3 --> b10
-    b10 --> d12
 
     subgraph REAL["Real today, but not this project's code"]
         x1["The working rules and agent definitions,<br/>on the development machine, and the design<br/>brief, kept outside the repository"]
@@ -694,15 +696,17 @@ and never from a council's vector. So nothing runs from `src/cvss` to
 `src/organisation` either: it reads each source's base score off the finding and
 parses no vector of its own.
 
-The `src/scoring` to `src/report` arrow is four names in four modules.
+The `src/scoring` to `src/report` arrow is four names in five modules.
 `src/report/html_answers.py` imports the `Answer` enum, to mark an Unknown, and
 `RiskScore`, the type whose weights it prints, and `src/report/text_risk.py`
 imports `RiskScore` too; `src/report/json_risk.py` imports `Category`, to find
-one category's weight by name; and `src/report/provenance.py` imports
+one category's weight by name; `src/report/provenance.py` imports
 `SCORING_RULES_VERSION`, the name of the rules every report says it was scored
-by. None is a figure the engine works out. Every number the report shows comes
-off the record, so there is no second place a score could be derived and
-differ.
+by; and `src/report/load_risk.py` imports `Answer`, to read a saved record's
+answers back when `cli.approve` re-scores it. None is a figure the engine works
+out. Every number a run shows comes off the record, and reading a record back
+re-derives the risk from its own answers under a byte-for-byte check, so there
+is still no second place a score could be derived and differ.
 
 `src/scoring` reaches `src/cli` as well: `src/cli/interactive_answers.py` imports
 `APPROVED_QUESTIONS` and the `Answer` and `Question` types, to ask the approved
@@ -712,12 +716,20 @@ score stays `src/organisation`'s; the prompt only collects the answers it weighs
 What remains in the middle column is smaller than it looks and none of it blocks
 a run. Two are refinements of things that work: a selector would ask fewer
 questions than all twelve, and answer validation would read the answers for
-contradictions. One is the council's: a hosted client. Escalation left this
+contradictions. The third is the council's: a hosted client. Escalation left this
 column when it was built, and a hosted escalation never enters it, because it is
-excluded rather than deferred. The fourth is the only one that changes what a
-record can claim — nothing stamps an approval, because the time arrives with the human act
-in the answer file rather than from a clock, and there is no clock anywhere in
-`src/`. An approval command would be the first one.
+excluded rather than deferred.
+
+The approval command left this column too. `src/cli/approve.py` records a
+decision on a report that already ran: it reads the saved JSON back through
+`src/report/load_*`, recomputes the risk, re-renders the record, checks the
+re-render matches the saved files byte for byte, and only then writes the
+decision in. It stamps no clock — the time comes with the human act in the answer
+file, as it always has, and there is still none anywhere in `src/` — and it marks
+the decision `attached_after_run` so the record stays honest that the approval
+was not part of the run. It is drawn apart from `src/cli` only to show that flow:
+`main` dispatches to it and it leans on its sibling `src/cli` modules, which the
+page does not redraw.
 
 The council is still built **except** for a piece of itself: its local client
 works and its `egress` gate is enforced, and the hosted client that gate exists
@@ -742,9 +754,8 @@ wrote.
 
 What this does not show: an order of work for the middle column, because no such
 plan exists. That column is also not evenly documented — the hosted client is
-described in `docs/COUNCIL.md`, the selector and the
-answer validation in `docs/SCORING_MODEL.md`, and the approval command only as a
-note there on where an approval's time comes from.
+described in `docs/COUNCIL.md`, and the selector and the answer validation in
+`docs/SCORING_MODEL.md`.
 
 ## Keeping this page true
 

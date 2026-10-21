@@ -263,7 +263,8 @@ record whether or not an `approval` block is there; adding one drops the
 summary's `No approval is recorded for this audit.` line and shows the decision
 it records on the page's approval marks. A later terminal run
 with no `--answers` asks again and overwrites this file, so after editing it,
-rerun with `--answers` on it.
+rerun with `--answers` on it. To record a decision on reports already written,
+without auditing again, use `audit --approve` (below).
 
 Only the JSON record marks a typed run: `run.answers_source` reads
 `typed at the prompt and saved to reports/<name>.answers.json`, and the text and
@@ -418,6 +419,54 @@ Record an approval and every one of those marks shows that one decision — all
 The exit code does not change, because a marked finding is a finding and the
 run exits `1` already.
 
+## Record a decision on a report without running it again
+
+A council run can take an hour and does not reproduce, so once you have read a
+report you should not have to run it again to approve it. `audit --approve`
+records the answer file's `approval` on the reports a run already wrote:
+
+```bash
+audit --approve reports/vulnscout.json --answers answers.json
+```
+
+It names the saved JSON, reads the decision from `--answers`, makes no model
+call, and rewrites all three reports in place — printing the text report on
+stdout and the `reports written to …` line on stderr, as a run does. From the
+answer file it reads only the `approval` block; the file's answers are ignored.
+The run's own recorded answers are re-weighed, but only to check the reports
+reproduce, so the report's figures stay the run's.
+
+Before it writes, it reads the saved record back, re-renders the three formats,
+and checks they agree with each other and with what this version of the tool
+renders; it writes only if they do. This catches a report another version wrote,
+or one whose three files no longer agree. It does **not** catch a consistent
+hand-edit to a field only the JSON carries — an advisory summary, a fix version,
+a member's quoted evidence or prompt version, or a component's locations —
+because every rendering reproduces that field unchanged, so the three still
+agree.
+
+The decision is marked `attached_after_run: true` in the JSON and shown as
+`added after the run` in the text `APPROVAL` section, the HTML masthead box, and
+the Overview approval card. The time still comes from the answer file's
+`recorded_at`; nothing reads a clock. An approved report is refused unless you
+pass `--replace-approval`, which records the new decision over the old.
+
+It refuses with exit `2`, in a message naming the file, when:
+
+| Refused | Why |
+|---|---|
+| a `.txt` or `.html` beside the JSON is missing or unreadable | all three are needed to check the report reproduces |
+| the JSON is not a report this tool can read | there is nothing to record a decision on |
+| the three files do not agree with what this version renders | a rendered field was edited, or another version wrote them |
+| the report was scored by different rules | another `scoring_rules_version` could not re-render alike |
+| the answer file is missing | its decision cannot be read |
+| the answer file carries no `approval` block | there is no decision to record |
+| the answer file's `approval` block is invalid — a bad decision word or time | the decision cannot be read |
+| the report already carries an approval, without `--replace-approval` | a recorded decision is not overwritten by default |
+| the reports cannot be written back | it refuses before writing, rather than leave them half-written |
+
+Recording the decision exits `0`.
+
 ## The exit code says which of four things happened
 
 | Code | Meaning |
@@ -426,6 +475,9 @@ run exits `1` already.
 | `1` | the audit ran and found something: a vulnerability or a secret |
 | `2` | the audit could not run, or could not save its reports |
 | `3` | the audit ran and found nothing, but could not read a manifest or catalogued no component |
+
+`audit --approve` leaves by only two of these: `0` when it records the decision,
+and `2` when it refuses (above).
 
 **`2` is the one that matters.** A missing database, an absent scanner or a path
 that is not there would otherwise exit 0 beside a genuinely clean repository, and

@@ -18,6 +18,7 @@ it goes on.
 
 from organisation.approval import Approval
 from report.absences import NOTHING_ABSENT
+from report.approval_words import ATTACHED_AFTER_RUN
 from report.provenance import SCORING_RULES_LABEL, AdvisoryDatabase
 from report.record import Report
 from report.summary_words import (
@@ -125,10 +126,12 @@ def approval_line(report: Report) -> str:
     if not isinstance(decided, Approval):
         return ""
     note = f"{SOURCE_SEPARATOR}{decided.note}" if decided.note else ""
-    return section(
-        "APPROVAL",
-        [f"{INDENT}{decided.decision.value} by {decided.approver} at {decided.recorded_at}{note}"],
-    )
+    entries = [
+        f"{INDENT}{decided.decision.value} by {decided.approver} at {decided.recorded_at}{note}"
+    ]
+    if decided.attached_after_run:
+        entries.append(f"{INDENT}{ATTACHED_AFTER_RUN}")
+    return section("APPROVAL", entries)
 
 
 def unidentified_block(report: Report) -> str:
