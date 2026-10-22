@@ -116,17 +116,19 @@ ORGANISATION RISK (23)
                        floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
                        floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
                        floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
-                       the assessor council CVSS 8.6  ·  the risk score does not use it
+                       the assessor council CVSS 8.4  ·  the risk score does not use it
   CVE-2025-13465       nvd 60.9 to redhat 69.6     Critical  ·  provisional
                        floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
                        floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
                        floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+                       the assessor council CVSS 5.1  ·  the risk score does not use it
   CVE-2026-102276      67.5                        Critical  ·  provisional
                        floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
                        floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
   CVE-2026-102278      67.5                        Critical  ·  provisional
                        floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
                        floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+                       the assessor council CVSS 6.2  ·  the risk score does not use it
   CVE-2026-13149       ghsa 60.9 to redhat 67.5    Critical  ·  provisional
                        floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
                        floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
@@ -137,21 +139,22 @@ ORGANISATION RISK (23)
   CVE-2026-14257       67.5                        Critical  ·  provisional
                        floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
                        floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+                       the assessor council CVSS 7.5  ·  the risk score does not use it
   CVE-2026-16221       67.5                        Critical  ·  provisional
                        floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
                        floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
-                       the assessor council CVSS 9.3  ·  the risk score does not use it
+                       the assessor council CVSS 10.0  ·  the risk score does not use it
   CVE-2026-18446       67.5                        Critical  ·  provisional
                        floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
                        floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
-                       the assessor council CVSS 8.6  ·  the risk score does not use it
+                       the assessor council CVSS 10.0  ·  the risk score does not use it
   CVE-2026-59869       67.5                        Critical  ·  provisional
                        floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
                        floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
   CVE-2026-6321        67.5                        Critical  ·  provisional
                        floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
                        floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
-                       the assessor council CVSS 8.6  ·  the risk score does not use it
+                       the assessor council CVSS 10.0  ·  the risk score does not use it
   CVE-2026-6322        67.5                        Critical  ·  provisional
                        floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
                        floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
@@ -165,24 +168,26 @@ ORGANISATION RISK (23)
   CVE-2026-76172       67.5                        Critical  ·  provisional
                        floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
                        floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
-                       the assessor council CVSS 9.6  ·  the risk score does not use it
+                       the assessor council CVSS 10.0  ·  the risk score does not use it
   CVE-2026-84292       67.5                        Critical  ·  provisional
                        floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
                        floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
-                       the assessor council CVSS 8.6  ·  the risk score does not use it
+                       the assessor council CVSS 10.0  ·  the risk score does not use it
   CVE-2026-84375       67.5                        Critical  ·  provisional
                        floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
                        floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
-                       the assessor council CVSS 7.8  ·  the risk score does not use it
   GHSA-5p4m-2wfm-xmqj  67.5                        Critical  ·  provisional
                        floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                       the assessor council CVSS 7.5  ·  the risk score does not use it
   CVE-2026-2950        nvd 60.9 to redhat 64.5     Critical  ·  provisional
                        floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
                        floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
                        floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+                       the assessor council CVSS 5.1  ·  the risk score does not use it
   CVE-2026-102277      60.9                        Critical  ·  provisional
                        floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
                        floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+                       the assessor council CVSS 4.0  ·  the risk score does not use it
   CVE-2026-53550       60.9                        Critical  ·  provisional
                        floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
                        floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
@@ -192,408 +197,521 @@ ORGANISATION RISK (23)
 
 COUNCIL (23)
   escalation model llama3.3:70b: asked each metric the council left open
-  models: gemma4:31b 17ba34c06c80, deepseek-r1:32b edba8017331d, llama3.3:70b (escalation) a6eb4748fd29; Ollama 0.40.2 on 10.205.4.74, not this machine
+  models: qwen3.6:35b a7eb95c53bcf, deepseek-r1:32b edba8017331d, llama3.3:70b (escalation) a6eb4748fd29; Ollama 0.40.2 on 10.205.4.74, not this machine
   CVE-2021-4279  no vector  ·  could not settle C, A
     6 metrics settled
-      6  one member offered a quotation, and no other member offered one
+      6  every member that offered a quotation supported this value
     C  ·  unresolved → escalated to llama3.3:70b: no settlement, order-sensitive: N with the options in order, L reversed  ·  2 members
+      qwen3.6:35b (qwen3.6)  declined  ·  with the options reversed: declined
       deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
       llama3.3:70b (llama3.3), escalation model  order-sensitive: N with the options in order, L reversed
     A  ·  unresolved → escalated to llama3.3:70b: no settlement, declined  ·  2 members
+      qwen3.6:35b (qwen3.6)  declined
       deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
       llama3.3:70b (llama3.3), escalation model  declined  ·  with the options reversed: declined
-  CVE-2025-13465  no vector  ·  could not settle A
+  CVE-2025-13465  settled  ·  CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:L  ·  CVSS 5.1 Medium
     7 metrics settled
-      7  one member offered a quotation, and no other member offered one
-    A  ·  unresolved → escalated to llama3.3:70b: no settlement, order-sensitive: N with the options in order, L reversed  ·  2 members
-      deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
-      llama3.3:70b (llama3.3), escalation model  order-sensitive: N with the options in order, L reversed
-  CVE-2026-102276  no vector  ·  could not settle C, I
-    5 metrics settled
-      5  one member offered a quotation, and no other member offered one
+      4  every member that offered a quotation supported this value
+      3  one member offered a quotation, and no other member offered one
+    UI  ·  contested → escalated to llama3.3:70b: N (verified)  ·  2 members
+      same evidence, different reading: members quoted the same words and read different values
+      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.6:35b (qwen3.6)  N  ·  high confidence  ·  quotation found in the advisory
+        “An attacker can pass crafted paths which cause Lodash to delete methods from global
+        prototypes.”
+      deepseek-r1:32b (deepseek-r1)  R  ·  high confidence  ·  quotation found in the advisory
+        “An attacker can pass crafted paths which cause Lodash to delete methods from global
+        prototypes.”
+      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
+        “An attacker can pass crafted paths which cause Lodash to delete methods from global
+        prototypes.”
+  CVE-2026-102276  no vector  ·  could not settle C
+    6 metrics settled
+      5  every member that offered a quotation supported this value
+      1  one member offered a quotation, and no other member offered one
     AC  ·  unresolved → escalated to llama3.3:70b: L (verified)  ·  2 members
       chairman: L  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.6:35b (qwen3.6)  L  ·  high confidence  ·  quotation not found in the advisory
+        “crafty brace patterns can exhaust the native stack in parseCommaParts because
+        parseCommaParts recursively processes the remainder once per brace group and uses
+        push.apply to pass every element of a very large comma-part array as a function
+        argument.”
       deepseek-r1:32b (deepseek-r1)  order-sensitive: L with the options in order, H reversed
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
       llama3.3:70b (llama3.3), escalation model  L  ·  high confidence  ·  quotation found in the advisory
         “crafted brace patterns can exhaust the native stack in parseCommaParts”
     C  ·  unresolved → escalated to llama3.3:70b: no settlement, guessed N with nothing quoted  ·  2 members
+      qwen3.6:35b (qwen3.6)  guessed N with nothing quoted
       deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
       llama3.3:70b (llama3.3), escalation model  guessed N with nothing quoted
-    I  ·  unresolved → escalated to llama3.3:70b: no settlement, guessed N with nothing quoted  ·  2 members
-      deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
-      llama3.3:70b (llama3.3), escalation model  guessed N with nothing quoted
-  CVE-2026-102277  no vector  ·  could not settle C
-    4 metrics settled
+  CVE-2026-102277  settled  ·  CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L  ·  CVSS 4.0 Medium
+    8 metrics settled
+      4  every member that offered a quotation supported this value
       4  one member offered a quotation, and no other member offered one
-    UI  ·  unresolved → escalated to llama3.3:70b: N (verified)  ·  2 members
-      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
-      deepseek-r1:32b (deepseek-r1)  order-sensitive: N with the options in order, R reversed
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
-      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
-        “The successive full-input rescans with linear working-string growth cause quadratic CPU
-        time and memory pressure that can block the Node.js event loop.”
-    C  ·  unresolved → escalated to llama3.3:70b: no settlement, guessed N with nothing quoted  ·  2 members
-      deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
-      llama3.3:70b (llama3.3), escalation model  guessed N with nothing quoted
-    I  ·  unresolved → escalated to llama3.3:70b: N (verified)  ·  2 members
-      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
-      deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
-      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
-        “The process eventually recovers, making the impact a recoverable CPU denial of
-        service.”
-    A  ·  unresolved → escalated to llama3.3:70b: L (verified)  ·  2 members
-      chairman: L  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
-      deepseek-r1:32b (deepseek-r1)  order-sensitive: H with the options in order, L reversed
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
-      llama3.3:70b (llama3.3), escalation model  L  ·  high confidence  ·  quotation found in the advisory
-        “a recoverable CPU denial of service”
-  CVE-2026-102278  no vector  ·  could not settle C, I
-    4 metrics settled
+  CVE-2026-102278  settled  ·  CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H  ·  CVSS 6.2 Medium
+    8 metrics settled
+      4  every member that offered a quotation supported this value
       4  one member offered a quotation, and no other member offered one
-    AC  ·  unresolved → escalated to llama3.3:70b: L (verified)  ·  2 members
-      chairman: L  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
-      deepseek-r1:32b (deepseek-r1)  order-sensitive: L with the options in order, H reversed
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
-      llama3.3:70b (llama3.3), escalation model  L  ·  high confidence  ·  quotation found in the advisory
-        “exhausting the native stack before output limits can apply and potentially terminating
-        the Node.js process”
-    UI  ·  unresolved → escalated to llama3.3:70b: N (verified)  ·  2 members
-      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
-      deepseek-r1:32b (deepseek-r1)  order-sensitive: N with the options in order, R reversed
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
-      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
-        “deeply nested brace groups supplied as an untrusted pattern”
-    C  ·  unresolved → escalated to llama3.3:70b: no settlement, guessed N with nothing quoted  ·  2 members
-      deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
-      llama3.3:70b (llama3.3), escalation model  guessed N with nothing quoted
-    I  ·  unresolved → escalated to llama3.3:70b: no settlement, guessed N with nothing quoted  ·  2 members
-      deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
-      llama3.3:70b (llama3.3), escalation model  guessed N with nothing quoted
-  CVE-2026-13149  settled  ·  CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H  ·  CVSS 6.2 Medium  ·  every metric on one member's quotation, nothing cross-checked
-    5 metrics settled
-      5  one member offered a quotation, and no other member offered one
-    UI  ·  unresolved → escalated to llama3.3:70b: N (verified)  ·  2 members
-      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
-      deepseek-r1:32b (deepseek-r1)  order-sensitive: R with the options in order, N reversed
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
-      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
-        “An attacker who passes a crafted string to expand(), directly or transitively, can
-        cause significant CPU consumption and event-loop blocking.”
-    C  ·  unresolved → escalated to llama3.3:70b: N (verified)  ·  2 members
-      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
-      deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
-      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
-        “is vulnerable to denial of service”
-    I  ·  unresolved → escalated to llama3.3:70b: N (verified)  ·  2 members
-      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
-      deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
-      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
-        “vulnerable to denial of service”
-  CVE-2026-13676  no vector  ·  could not settle AC, UI, A
+  CVE-2026-13149  settled  ·  CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H  ·  CVSS 6.2 Medium
+    8 metrics settled
+      5  every member that offered a quotation supported this value
+      3  one member offered a quotation, and no other member offered one
+  CVE-2026-13676  no vector  ·  could not settle AC, S
     4 metrics settled
-      4  one member offered a quotation, and no other member offered one
-    AC  ·  unresolved → escalated to llama3.3:70b: no settlement, L, quotation not found in the advisory  ·  2 members
-      deepseek-r1:32b (deepseek-r1)  order-sensitive: L with the options in order, H reversed
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
-      llama3.3:70b (llama3.3), escalation model  L  ·  high confidence  ·  quotation not found in the advisory
-        “Applications that use fast-uri to enforce host-based policy ... can be bypassed when
-        the two implementations resolve the same input to different hosts.”
-    UI  ·  unresolved → escalated to llama3.3:70b: no settlement, N, quotation not found in the advisory  ·  2 members
-      deepseek-r1:32b (deepseek-r1)  order-sensitive: N with the options in order, R reversed
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
-      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation not found in the advisory  ·  with the options in order: quotation not found in the advisory
-        “Applications that use fast-uri to enforce host-based policy ... can be bypassed when
-        the two implementations resolve the same input to different hosts.”
-    C  ·  unresolved → escalated to llama3.3:70b: L (verified)  ·  2 members
-      chairman: L  ·  the council left it open, and the escalation model's verified quotation settled it  ·  medium confidence
-      deepseek-r1:32b (deepseek-r1)  order-sensitive: H with the options in order, L reversed
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
-      llama3.3:70b (llama3.3), escalation model  L  ·  medium confidence  ·  quotation found in the advisory  ·  with the options reversed: quotation not found in the advisory
+      2  every member that offered a quotation supported this value
+      2  one member offered a quotation, and no other member offered one
+    AV  ·  contested → escalated to llama3.3:70b: N (verified)  ·  2 members
+      same evidence, different reading: members quoted the same words and read different values
+      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.6:35b (qwen3.6)  N  ·  high confidence  ·  quotation found in the advisory
         “Applications that use fast-uri to enforce host-based policy (denylists, loopback
         filtering, redirect validation, outbound proxy routing) before passing the same URL to
         Node's URL or fetch can be bypassed when the two implementations resolve the same input
         to different hosts.”
-    A  ·  unresolved → escalated to llama3.3:70b: no settlement, guessed N with nothing quoted  ·  2 members
-      deepseek-r1:32b (deepseek-r1)  order-sensitive: H with the options in order, L reversed
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
-      llama3.3:70b (llama3.3), escalation model  guessed N with nothing quoted
-  CVE-2026-14257  no vector  ·  could not settle C
-    5 metrics settled
-      5  one member offered a quotation, and no other member offered one
-    UI  ·  unresolved → escalated to llama3.3:70b: N (verified)  ·  2 members
+      deepseek-r1:32b (deepseek-r1)  L  ·  high confidence  ·  quotation found in the advisory
+        “Applications that use fast-uri to enforce host-based policy (denylists, loopback
+        filtering, redirect validation, outbound proxy routing) before passing the same URL to
+        Node's URL or fetch can be bypassed when the two implementations resolve the same input
+        to different hosts.”
+      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
+        “Applications that use fast-uri to enforce host-based policy (denylists, loopback
+        filtering, redirect validation, outbound proxy routing) before passing the same URL to
+        Node's URL or fetch can be bypassed when the two implementations resolve the same input
+        to different hosts.”
+    AC  ·  unresolved → escalated to llama3.3:70b: no settlement, L, quotation not found in the advisory  ·  2 members
+      qwen3.6:35b (qwen3.6)  L  ·  high confidence  ·  quotation not found in the advisory  ·  with the options in order: quotation not found in the advisory
+        “An attacker can expect repeatable success against the vulnerable component.”
+      deepseek-r1:32b (deepseek-r1)  order-sensitive: L with the options in order, H reversed
+      llama3.3:70b (llama3.3), escalation model  L  ·  high confidence  ·  quotation not found in the advisory
+        “Applications that use fast-uri to enforce host-based policy ... can be bypassed when
+        the two implementations resolve the same input to different hosts.”
+    S  ·  contested → escalated to llama3.3:70b: no settlement, C, quotation not found in the advisory  ·  2 members
+      same evidence, different reading: members quoted the same words and read different values
+      qwen3.6:35b (qwen3.6)  U  ·  high confidence  ·  quotation found in the advisory
+        “Applications that use fast-uri to enforce host-based policy (denylists, loopback
+        filtering, redirect validation, outbound proxy routing) before passing the same URL to
+        Node's URL or fetch can be bypassed when the two implementations resolve the same input
+        to different hosts.”
+      deepseek-r1:32b (deepseek-r1)  C  ·  high confidence  ·  quotation found in the advisory
+        “Applications that use fast-uri to enforce host-based policy (denylists, loopback
+        filtering, redirect validation, outbound proxy routing) before passing the same URL to
+        Node's URL or fetch can be bypassed when the two implementations resolve the same input
+        to different hosts.”
+      llama3.3:70b (llama3.3), escalation model  C  ·  high confidence  ·  quotation not found in the advisory
+        “Applications that use fast-uri to enforce host-based policy ... can be bypassed when
+        the two implementations resolve the same input to different hosts.”
+    A  ·  unresolved → escalated to llama3.3:70b: N (verified)  ·  2 members
       chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
-      deepseek-r1:32b (deepseek-r1)  order-sensitive: R with the options in order, N reversed
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
+      qwen3.6:35b (qwen3.6)  guessed N with nothing quoted
+      deepseek-r1:32b (deepseek-r1)  order-sensitive: H with the options in order, L reversed
+      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
+        “enforce host policy using the same URL parser used for the actual request, or reject
+        non-ASCII hosts before policy checks”
+  CVE-2026-14257  settled  ·  CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H  ·  CVSS 7.5 High
+    7 metrics settled
+      4  every member that offered a quotation supported this value
+      3  one member offered a quotation, and no other member offered one
+    AV  ·  contested → escalated to llama3.3:70b: N (verified)  ·  2 members
+      same evidence, different reading: members quoted the same words and read different values
+      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.6:35b (qwen3.6)  N  ·  high confidence  ·  quotation found in the advisory
+        “Any application that passes attacker-influenced strings to brace-expansion.expand() -
+        directly or transitively via minimatch / glob brace patterns - can be crashed by a small
+        request.”
+      deepseek-r1:32b (deepseek-r1)  L  ·  high confidence  ·  quotation found in the advisory
+        “Any application that passes attacker-influenced strings to brace-expansion.expand() -
+        directly or transitively via minimatch / glob brace patterns - can be crashed by a small
+        request.”
       llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
         “Any application that passes attacker-influenced strings to brace-expansion.expand() -
         directly or transitively via minimatch / glob brace patterns - can be crashed by a small
         request.”
-    C  ·  unresolved → escalated to llama3.3:70b: no settlement, guessed N with nothing quoted  ·  2 members
-      deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
-      llama3.3:70b (llama3.3), escalation model  guessed N with nothing quoted
-    I  ·  unresolved → escalated to llama3.3:70b: N (verified)  ·  2 members
-      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
-      deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
-      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
-        “vulnerable to denial of service via memory exhaustion”
-  CVE-2026-16221  settled  ·  CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H  ·  CVSS 9.3 Critical  ·  every metric on one member's quotation, nothing cross-checked
+  CVE-2026-16221  settled  ·  CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H  ·  CVSS 10.0 Critical
     7 metrics settled
-      7  one member offered a quotation, and no other member offered one
-    UI  ·  unresolved → escalated to llama3.3:70b: N (verified)  ·  2 members
+      5  every member that offered a quotation supported this value
+      2  one member offered a quotation, and no other member offered one
+    AV  ·  contested → escalated to llama3.3:70b: N (verified)  ·  2 members
+      same evidence, different reading: members quoted the same words and read different values
       chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
-      deepseek-r1:32b (deepseek-r1)  order-sensitive: N with the options in order, R reversed
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process no longer running: exit status 1 llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
-      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
+      qwen3.6:35b (qwen3.6)  N  ·  high confidence  ·  quotation found in the advisory
         “Applications that use fast-uri to enforce host-based policy such as allowlists,
         denylists, loopback or SSRF filtering, redirect validation, or outbound proxy routing
         before passing the same URL into Node's URL or fetch consumers can be steered to an
         unintended destination”
-  CVE-2026-18446  settled  ·  CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:C/C:H/I:H/A:H  ·  CVSS 8.6 High  ·  every metric on one member's quotation, nothing cross-checked
-    8 metrics settled
-      8  one member offered a quotation, and no other member offered one
-  CVE-2026-2950  no vector  ·  could not settle A
+      deepseek-r1:32b (deepseek-r1)  L  ·  high confidence  ·  quotation found in the advisory
+        “Applications that use fast-uri to enforce host-based policy such as allowlists,
+        denylists, loopback or SSRF filtering, redirect validation, or outbound proxy routing
+        before passing the same URL into Node's URL or fetch consumers can be steered to an
+        unintended destination, including cloud metadata endpoints, loopback, or internal
+        hosts.”
+      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
+        “can be steered to an unintended destination, including cloud metadata endpoints,
+        loopback, or internal hosts”
+  CVE-2026-18446  settled  ·  CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H  ·  CVSS 10.0 Critical
     6 metrics settled
-      6  one member offered a quotation, and no other member offered one
-    S  ·  unresolved → escalated to llama3.3:70b: U (verified)  ·  2 members
-      chairman: U  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
-      deepseek-r1:32b (deepseek-r1)  order-sensitive: U with the options in order, C reversed
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
-      llama3.3:70b (llama3.3), escalation model  U  ·  high confidence  ·  quotation found in the advisory
+      4  every member that offered a quotation supported this value
+      2  one member offered a quotation, and no other member offered one
+    AV  ·  contested → escalated to llama3.3:70b: N (verified)  ·  2 members
+      same evidence, different reading: members quoted the same words and read different values
+      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.6:35b (qwen3.6)  N  ·  high confidence  ·  quotation found in the advisory
+        “Applications that use fast-uri to enforce host based policy such as allowlists, SSRF
+        filtering, or redirect validation before passing the same URL into Node's URL or fetch
+        consumers can be steered to an unintended host.”
+      deepseek-r1:32b (deepseek-r1)  L  ·  high confidence  ·  quotation found in the advisory
+        “Applications that use fast-uri to enforce host based policy such as allowlists, SSRF
+        filtering, or redirect validation before passing the same URL into Node's URL or fetch
+        consumers can be steered to an unintended host.”
+      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
+        “can be steered to an unintended host”
+    UI  ·  contested → escalated to llama3.3:70b: N (verified)  ·  2 members
+      same evidence, different reading: members quoted the same words and read different values
+      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.6:35b (qwen3.6)  N  ·  high confidence  ·  quotation found in the advisory
+        “Applications that use fast-uri to enforce host based policy such as allowlists, SSRF
+        filtering, or redirect validation before passing the same URL into Node's URL or fetch
+        consumers can be steered to an unintended host.”
+      deepseek-r1:32b (deepseek-r1)  R  ·  high confidence  ·  quotation found in the advisory
+        “Applications that use fast-uri to enforce host based policy such as allowlists, SSRF
+        filtering, or redirect validation before passing the same URL into Node's URL or fetch
+        consumers can be steered to an unintended host.”
+      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
+        “Applications that use fast-uri to enforce host based policy such as allowlists, SSRF
+        filtering, or redirect validation before passing the same URL into Node's URL or fetch
+        consumers can be steered to an unintended host.”
+  CVE-2026-2950  settled  ·  CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:L  ·  CVSS 5.1 Medium
+    7 metrics settled
+      4  every member that offered a quotation supported this value
+      3  one member offered a quotation, and no other member offered one
+    UI  ·  contested → escalated to llama3.3:70b: N (verified)  ·  2 members
+      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.6:35b (qwen3.6)  N  ·  high confidence  ·  quotation found in the advisory
+        “This allows deletion of properties from built-in prototypes such as Object.prototype,
+        Number.prototype, and String.prototype.”
+      deepseek-r1:32b (deepseek-r1)  R  ·  medium confidence  ·  quotation found in the advisory
         “The issue permits deletion of prototype properties but does not allow overwriting their
         original behavior.”
-    A  ·  unresolved → escalated to llama3.3:70b: no settlement, order-sensitive: N with the options in order, H reversed  ·  2 members
-      deepseek-r1:32b (deepseek-r1)  order-sensitive: N with the options in order, L reversed
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
-      llama3.3:70b (llama3.3), escalation model  order-sensitive: N with the options in order, H reversed
-  CVE-2026-4800  settled  ·  CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:C/C:H/I:H/A:H  ·  CVSS 8.6 High  ·  every metric on one member's quotation, nothing cross-checked
+      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
+        “an attacker can bypass the check by passing array-wrapped path segments”
+  CVE-2026-4800  settled  ·  CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H  ·  CVSS 8.4 High
     6 metrics settled
-      6  one member offered a quotation, and no other member offered one
-    AC  ·  unresolved → escalated to llama3.3:70b: L (verified)  ·  2 members
-      chairman: L  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
-      deepseek-r1:32b (deepseek-r1)  order-sensitive: H with the options in order, L reversed
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
-      llama3.3:70b (llama3.3), escalation model  L  ·  high confidence  ·  quotation found in the advisory
-        “an attacker can inject default-parameter expressions that execute arbitrary code at
-        template compilation time”
-    PR  ·  unresolved → escalated to llama3.3:70b: N (verified)  ·  2 members
+      3  every member that offered a quotation supported this value
+      3  one member offered a quotation, and no other member offered one
+    UI  ·  contested → escalated to llama3.3:70b: N (verified)  ·  2 members
+      same evidence, different reading: members quoted the same words and read different values
       chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
-      deepseek-r1:32b (deepseek-r1)  order-sensitive: L with the options in order, N reversed
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
+      qwen3.6:35b (qwen3.6)  N  ·  high confidence  ·  quotation found in the advisory
+        “When an application passes untrusted input as options.imports key names, an attacker
+        can inject default-parameter expressions that execute arbitrary code at template
+        compilation time.”
+      deepseek-r1:32b (deepseek-r1)  R  ·  high confidence  ·  quotation found in the advisory
+        “When an application passes untrusted input as options.imports key names, an attacker
+        can inject default-parameter expressions that execute arbitrary code at template
+        compilation time.”
       llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
         “an attacker can inject default-parameter expressions that execute arbitrary code at
         template compilation time”
+    S  ·  contested → escalated to llama3.3:70b: U (verified)  ·  2 members
+      same evidence, different reading: members quoted the same words and read different values
+      chairman: U  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.6:35b (qwen3.6)  U  ·  high confidence  ·  quotation found in the advisory
+        “When an application passes untrusted input as options.imports key names, an attacker
+        can inject default-parameter expressions that execute arbitrary code at template
+        compilation time.”
+      deepseek-r1:32b (deepseek-r1)  C  ·  high confidence  ·  quotation found in the advisory
+        “When an application passes untrusted input as options.imports key names, an attacker
+        can inject default-parameter expressions that execute arbitrary code at template
+        compilation time.”
+      llama3.3:70b (llama3.3), escalation model  U  ·  high confidence  ·  quotation found in the advisory
+        “Both paths flow into the same Function() constructor sink.”
   CVE-2026-53550  no vector  ·  could not settle C
     6 metrics settled
-      6  one member offered a quotation, and no other member offered one
-    C  ·  unresolved → escalated to llama3.3:70b: no settlement, guessed N with nothing quoted  ·  2 members
-      deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
-      llama3.3:70b (llama3.3), escalation model  guessed N with nothing quoted
-    I  ·  unresolved → escalated to llama3.3:70b: N (verified)  ·  2 members
+      4  every member that offered a quotation supported this value
+      2  one member offered a quotation, and no other member offered one
+    UI  ·  contested → escalated to llama3.3:70b: N (verified)  ·  2 members
+      same evidence, different reading: members quoted the same words and read different values
       chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
-      deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
+      qwen3.6:35b (qwen3.6)  N  ·  high confidence  ·  quotation found in the advisory
+        “a crafted YAML document can trigger algorithmic CPU exhaustion in js-yaml merge-key
+        processing (<<) by repeating the same alias many times in a merge sequence.”
+      deepseek-r1:32b (deepseek-r1)  R  ·  high confidence  ·  quotation found in the advisory
+        “Prior to 4.2.0 and 3.15.0, a crafted YAML document can trigger algorithmic CPU
+        exhaustion in js-yaml merge-key processing (<<) by repeating the same alias many times
+        in a merge sequence.”
       llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
-        “resulting in denial of service”
+        “a crafted YAML document can trigger algorithmic CPU exhaustion”
+    C  ·  unresolved → escalated to llama3.3:70b: no settlement, guessed N with nothing quoted  ·  2 members
+      qwen3.6:35b (qwen3.6)  guessed N with nothing quoted
+      deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
+      llama3.3:70b (llama3.3), escalation model  guessed N with nothing quoted
   CVE-2026-59869  no vector  ·  could not settle C, I
     4 metrics settled
-      4  one member offered a quotation, and no other member offered one
+      4  every member that offered a quotation supported this value
     AV  ·  unresolved → escalated to llama3.3:70b: N (verified)  ·  2 members
       chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  low confidence
+      qwen3.6:35b (qwen3.6)  declined
       deepseek-r1:32b (deepseek-r1)  declined
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
       llama3.3:70b (llama3.3), escalation model  N  ·  low confidence  ·  quotation found in the advisory
         “a JavaScript YAML parser”
     S  ·  unresolved → escalated to llama3.3:70b: U (verified)  ·  2 members
       chairman: U  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.6:35b (qwen3.6)  declined  ·  with the options in order: declined
       deepseek-r1:32b (deepseek-r1)  declined
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
       llama3.3:70b (llama3.3), escalation model  U  ·  high confidence  ·  quotation found in the advisory
         “js-yaml can spend quadratic CPU time parsing a document”
     C  ·  unresolved → escalated to llama3.3:70b: no settlement, guessed N with nothing quoted  ·  2 members
+      qwen3.6:35b (qwen3.6)  guessed N with nothing quoted
       deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
       llama3.3:70b (llama3.3), escalation model  guessed N with nothing quoted
     I  ·  unresolved → escalated to llama3.3:70b: no settlement, guessed N with nothing quoted  ·  2 members
+      qwen3.6:35b (qwen3.6)  guessed N with nothing quoted
       deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
       llama3.3:70b (llama3.3), escalation model  guessed N with nothing quoted
-  CVE-2026-6321  settled  ·  CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:C/C:H/I:H/A:H  ·  CVSS 8.6 High  ·  every metric on one member's quotation, nothing cross-checked
-    8 metrics settled
-      8  one member offered a quotation, and no other member offered one
-  CVE-2026-6322  settled  ·  CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:L/I:H/A:H  ·  CVSS 10.0 Critical  ·  every metric on one member's quotation, nothing cross-checked
+  CVE-2026-6321  settled  ·  CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:L/I:H/A:H  ·  CVSS 10.0 Critical
     5 metrics settled
-      5  one member offered a quotation, and no other member offered one
-    AV  ·  unresolved → escalated to llama3.3:70b: N (verified)  ·  2 members
+      3  every member that offered a quotation supported this value
+      1  members offering quotations disagreed, and the verified one settled it
+      1  one member offered a quotation, and no other member offered one
+    AV  ·  contested → escalated to llama3.3:70b: N (verified)  ·  2 members
+      same evidence, different reading: members quoted the same words and read different values
       chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
-      deepseek-r1:32b (deepseek-r1)  order-sensitive: N with the options in order, L reversed
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
+      qwen3.6:35b (qwen3.6)  N  ·  high confidence  ·  quotation found in the advisory
+        “Applications that normalize or compare attacker-controlled URLs to enforce path-based
+        policy can be bypassed”
+      deepseek-r1:32b (deepseek-r1)  L  ·  high confidence  ·  quotation found in the advisory
+        “Applications that normalize or compare attacker-controlled URLs to enforce path-based
+        policy can be bypassed, with a path that appears confined under an allowed prefix
+        normalizing to a different location.”
       llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
-        “Applications that normalize untrusted URLs before host allowlist checks, redirect
-        validation, or outbound request routing can be steered to a different authority than the
-        input appeared to specify.”
-    UI  ·  unresolved → escalated to llama3.3:70b: N (verified)  ·  2 members
+        “Applications that normalize or compare attacker-controlled URLs to enforce path-based
+        policy can be bypassed”
+    UI  ·  contested → escalated to llama3.3:70b: N (verified)  ·  2 members
+      same evidence, different reading: members quoted the same words and read different values
       chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
-      deepseek-r1:32b (deepseek-r1)  order-sensitive: N with the options in order, R reversed
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
+      qwen3.6:35b (qwen3.6)  N  ·  high confidence  ·  quotation found in the advisory
+        “Applications that normalize or compare attacker-controlled URLs to enforce path-based
+        policy can be bypassed”
+      deepseek-r1:32b (deepseek-r1)  R  ·  high confidence  ·  quotation found in the advisory
+        “Applications that normalize or compare attacker-controlled URLs to enforce path-based
+        policy can be bypassed, with a path that appears confined under an allowed prefix
+        normalizing to a different location.”
       llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
-        “Applications that normalize untrusted URLs before host allowlist checks, redirect
-        validation, or outbound request routing can be steered to a different authority than the
-        input appeared to specify.”
-    C  ·  unresolved → escalated to llama3.3:70b: L (verified)  ·  2 members
+        “Applications that normalize or compare attacker-controlled URLs to enforce path-based
+        policy can be bypassed”
+    C  ·  contested → escalated to llama3.3:70b: L (verified)  ·  2 members
+      same evidence, different reading: members quoted the same words and read different values
       chairman: L  ·  the council left it open, and the escalation model's verified quotation settled it  ·  medium confidence
-      deepseek-r1:32b (deepseek-r1)  order-sensitive: H with the options in order, L reversed
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
+      qwen3.6:35b (qwen3.6)  L  ·  high confidence  ·  quotation found in the advisory
+        “Applications that normalize or compare attacker-controlled URLs to enforce path-based
+        policy can be bypassed, with a path that appears confined under an allowed prefix
+        normalizing to a different location.”
+      deepseek-r1:32b (deepseek-r1)  H  ·  high confidence  ·  quotation found in the advisory
+        “Applications that normalize or compare attacker-controlled URLs to enforce path-based
+        policy can be bypassed, with a path that appears confined under an allowed prefix
+        normalizing to a different location.”
       llama3.3:70b (llama3.3), escalation model  L  ·  medium confidence  ·  quotation found in the advisory
-        “Applications that normalize untrusted URLs before host allowlist checks, redirect
-        validation, or outbound request routing can be steered to a different authority than the
-        input appeared to specify.”
+        “a path that appears confined under an allowed prefix normalizing to a different
+        location”
+  CVE-2026-6322  settled  ·  CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:L/I:H/A:H  ·  CVSS 10.0 Critical
+    8 metrics settled
+      4  every member that offered a quotation supported this value
+      1  members offering quotations disagreed, and the verified one settled it
+      3  one member offered a quotation, and no other member offered one
   CVE-2026-69152  no vector  ·  could not settle C, I
     6 metrics settled
-      6  one member offered a quotation, and no other member offered one
+      6  every member that offered a quotation supported this value
     C  ·  unresolved → escalated to llama3.3:70b: no settlement, guessed N with nothing quoted  ·  2 members
+      qwen3.6:35b (qwen3.6)  guessed N with nothing quoted
       deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
       llama3.3:70b (llama3.3), escalation model  guessed N with nothing quoted
     I  ·  unresolved → escalated to llama3.3:70b: no settlement, guessed N with nothing quoted  ·  2 members
+      qwen3.6:35b (qwen3.6)  declined  ·  with the options reversed: declined
       deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
       llama3.3:70b (llama3.3), escalation model  guessed N with nothing quoted
-  CVE-2026-75975  no vector  ·  could not settle AV, UI, C
-    5 metrics settled
-      5  one member offered a quotation, and no other member offered one
-    AV  ·  unresolved → escalated to llama3.3:70b: no settlement, N, quotation not found in the advisory  ·  2 members
-      deepseek-r1:32b (deepseek-r1)  order-sensitive: N with the options in order, L reversed
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
-      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation not found in the advisory
-        “an application that normalizes untrusted URLs before outbound requests, redirects,
-        proxy routing, or address-policy enforcement can be redirected to a local or private
-        IPv6 target”
-    UI  ·  unresolved → escalated to llama3.3:70b: no settlement, N, quotation not found in the advisory  ·  2 members
-      deepseek-r1:32b (deepseek-r1)  order-sensitive: N with the options in order, R reversed
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
-      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation not found in the advisory
-        “an application that normalizes untrusted URLs before outbound requests, redirects,
-        proxy routing, or address-policy enforcement can be redirected to a local or private
-        IPv6 target”
+  CVE-2026-75975  no vector  ·  could not settle C
+    7 metrics settled
+      3  every member that offered a quotation supported this value
+      4  one member offered a quotation, and no other member offered one
     C  ·  unresolved → escalated to llama3.3:70b: no settlement, L, quotation not found in the advisory  ·  2 members
+      qwen3.6:35b (qwen3.6)  guessed N with nothing quoted
       deepseek-r1:32b (deepseek-r1)  H  ·  high confidence  ·  quotation not found in the advisory  ·  with the options in order: quotation not found in the advisory
         “an application that normalizes untrusted URLs before outbound requests, redirects,
         proxy routing, or address-policy enforcement can be redirected to a local or private
         IPv6 target, giving a server-side request forgery and address-policy bypass primitive.”
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
       llama3.3:70b (llama3.3), escalation model  L  ·  medium confidence  ·  quotation not found in the advisory
         “an application that normalizes untrusted URLs before outbound requests, redirects,
         proxy routing, or address-policy enforcement can be redirected to a local or private
         IPv6 target”
-  CVE-2026-76172  settled  ·  CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:H/I:H/A:H  ·  CVSS 9.6 Critical  ·  every metric on one member's quotation, nothing cross-checked
-    7 metrics settled
-      7  one member offered a quotation, and no other member offered one
-    AC  ·  unresolved → escalated to llama3.3:70b: L (verified)  ·  2 members
-      chairman: L  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
-      deepseek-r1:32b (deepseek-r1)  order-sensitive: L with the options in order, H reversed
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
-      llama3.3:70b (llama3.3), escalation model  L  ·  high confidence  ·  quotation found in the advisory
+  CVE-2026-76172  settled  ·  CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H  ·  CVSS 10.0 Critical
+    6 metrics settled
+      3  every member that offered a quotation supported this value
+      3  one member offered a quotation, and no other member offered one
+    UI  ·  contested → escalated to llama3.3:70b: N (verified)  ·  2 members
+      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.6:35b (qwen3.6)  N  ·  high confidence  ·  quotation found in the advisory
+        “The issue is fixed in 2.4.5, 3.1.6, and 4.1.3, which reject a scheme that is not valid
+        after decoding.”
+      deepseek-r1:32b (deepseek-r1)  R  ·  high confidence  ·  quotation found in the advisory
+        “An application that allowlists on the parsed host, or treats a reference with no
+        authority as safe to resolve against its base, gets the opposite of what it checked,
+        giving an off-site redirect, server-side request forgery, or address-policy bypass.”
+      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
         “an input whose scheme carries percent-encoded slashes parses as a scheme with no
         authority, so the parsed host and error are both undefined, yet resolving or normalizing
         that same input emits a network-path reference whose authority is attacker-chosen”
-  CVE-2026-84292  settled  ·  CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:C/C:H/I:H/A:H  ·  CVSS 8.6 High  ·  every metric on one member's quotation, nothing cross-checked
-    7 metrics settled
-      7  one member offered a quotation, and no other member offered one
+    S  ·  contested → escalated to llama3.3:70b: C (verified)  ·  2 members
+      same evidence, different reading: members quoted the same words and read different values
+      chairman: C  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.6:35b (qwen3.6)  U  ·  high confidence  ·  quotation found in the advisory
+        “An application that allowlists on the parsed host, or treats a reference with no
+        authority as safe to resolve against its base, gets the opposite of what it checked,
+        giving an off-site redirect, server-side request forgery, or address-policy bypass.”
+      deepseek-r1:32b (deepseek-r1)  C  ·  high confidence  ·  quotation found in the advisory
+        “An application that allowlists on the parsed host, or treats a reference with no
+        authority as safe to resolve against its base, gets the opposite of what it checked,
+        giving an off-site redirect, server-side request forgery, or address-policy bypass.”
+      llama3.3:70b (llama3.3), escalation model  C  ·  high confidence  ·  quotation found in the advisory
+        “giving an off-site redirect, server-side request forgery, or address-policy bypass”
+  CVE-2026-84292  settled  ·  CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H  ·  CVSS 10.0 Critical
+    5 metrics settled
+      1  every member that offered a quotation supported this value
+      4  one member offered a quotation, and no other member offered one
+    AV  ·  contested → escalated to llama3.3:70b: N (verified)  ·  2 members
+      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.6:35b (qwen3.6)  N  ·  high confidence  ·  quotation found in the advisory
+        “This affects applications that build URIs from parts and assign untrusted data to the
+        port component through the serialize, normalize, or equal functions in their object
+        forms.”
+      deepseek-r1:32b (deepseek-r1)  L  ·  high confidence  ·  quotation found in the advisory
+        “Both fast-uri and Node's URL read the result back as the attacker's host with no error,
+        so re-validating the built URI does not catch it.”
+      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
+        “so a port value that is not a sequence of digits can inject authority delimiters,
+        demoting the intended host to userinfo and pointing the authority at an
+        attacker-controlled host”
     AC  ·  unresolved → escalated to llama3.3:70b: L (verified)  ·  2 members
       chairman: L  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.6:35b (qwen3.6)  L  ·  high confidence  ·  quotation not found in the advisory
+        “An attacker can expect repeatable success against the vulnerable component.”
       deepseek-r1:32b (deepseek-r1)  order-sensitive: L with the options in order, H reversed
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
       llama3.3:70b (llama3.3), escalation model  L  ·  high confidence  ·  quotation found in the advisory
         “a port value that is not a sequence of digits can inject authority delimiters, demoting
         the intended host to userinfo and pointing the authority at an attacker-controlled host”
-  CVE-2026-84375  settled  ·  CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H  ·  CVSS 7.8 High  ·  every metric on one member's quotation, nothing cross-checked
-    8 metrics settled
-      8  one member offered a quotation, and no other member offered one
-  CVE-2026-86472  no vector  ·  could not settle S, C, I
+    UI  ·  contested → escalated to llama3.3:70b: N (verified)  ·  2 members
+      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.6:35b (qwen3.6)  N  ·  high confidence  ·  quotation found in the advisory
+        “The issue affects fast-uri versions before 2.4.6, from 3.0.0 before 3.1.7, and from
+        4.0.0 before 4.1.4.”
+      deepseek-r1:32b (deepseek-r1)  R  ·  high confidence  ·  quotation found in the advisory
+        “Both fast-uri and Node's URL read the result back as the attacker's host with no error,
+        so re-validating the built URI does not catch it.”
+      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
+        “a port value that is not a sequence of digits can inject authority delimiters, demoting
+        the intended host to userinfo and pointing the authority at an attacker-controlled host”
+  CVE-2026-84375  no vector  ·  could not settle I, A
+    5 metrics settled
+      3  every member that offered a quotation supported this value
+      2  one member offered a quotation, and no other member offered one
+    UI  ·  contested → escalated to llama3.3:70b: N (verified)  ·  2 members
+      same evidence, different reading: members quoted the same words and read different values
+      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.6:35b (qwen3.6)  N  ·  high confidence  ·  quotation found in the advisory
+        “An attacker can alias a large sequence of empty mappings into many merge targets,
+        causing O(N * K) processing while totalMergeKeys remains unchanged and the configured
+        resource limit is never reached.”
+      deepseek-r1:32b (deepseek-r1)  R  ·  high confidence  ·  quotation found in the advisory
+        “An attacker can alias a large sequence of empty mappings into many merge targets,
+        causing O(N * K) processing while totalMergeKeys remains unchanged and the configured
+        resource limit is never reached.”
+      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
+        “A relatively small YAML document can therefore cause prolonged CPU consumption in
+        applications that parse untrusted YAML”
+    I  ·  contested → escalated to llama3.3:70b: no settlement, guessed N with nothing quoted  ·  2 members
+      same evidence, different reading: members quoted the same words and read different values
+      qwen3.6:35b (qwen3.6)  N  ·  high confidence  ·  quotation found in the advisory
+        “A relatively small YAML document can therefore cause prolonged CPU consumption in
+        applications that parse untrusted YAML”
+      deepseek-r1:32b (deepseek-r1)  H  ·  high confidence  ·  quotation found in the advisory
+        “A relatively small YAML document can therefore cause prolonged CPU consumption in
+        applications that parse untrusted YAML, and merge processing is enabled by default on
+        these release lines.”
+      llama3.3:70b (llama3.3), escalation model  guessed N with nothing quoted
+    A  ·  contested → escalated to llama3.3:70b: no settlement, L, quotation not found in the advisory  ·  2 members
+      same evidence, different reading: members quoted the same words and read different values
+      qwen3.6:35b (qwen3.6)  L  ·  high confidence  ·  quotation found in the advisory
+        “A relatively small YAML document can therefore cause prolonged CPU consumption in
+        applications that parse untrusted YAML”
+      deepseek-r1:32b (deepseek-r1)  H  ·  high confidence  ·  quotation found in the advisory
+        “A relatively small YAML document can therefore cause prolonged CPU consumption in
+        applications that parse untrusted YAML”
+      llama3.3:70b (llama3.3), escalation model  L  ·  medium confidence  ·  quotation not found in the advisory  ·  with the options in order: quotation not found in the advisory
+        “a relatively small YAML document can therefore cause prolonged CPU consumption in
+        applications that parse untrusted YAML”
+  CVE-2026-86472  no vector  ·  could not settle UI
     4 metrics settled
-      4  one member offered a quotation, and no other member offered one
-    S  ·  unresolved → escalated to llama3.3:70b: no settlement, U, quotation not found in the advisory  ·  2 members
-      deepseek-r1:32b (deepseek-r1)  U  ·  high confidence  ·  quotation not found in the advisory  ·  with the options in order: quotation not found in the advisory
+      3  every member that offered a quotation supported this value
+      1  one member offered a quotation, and no other member offered one
+    AV  ·  contested → escalated to llama3.3:70b: N (verified)  ·  2 members
+      same evidence, different reading: members quoted the same words and read different values
+      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.6:35b (qwen3.6)  N  ·  high confidence  ·  quotation found in the advisory
         “An application that makes a case-sensitive host decision on fast-uri output, for
         example a host allowlist or denylist that compares the parsed host or uses equal, can be
         steered past the check with a percent-encoded uppercase octet, and because hostnames are
-        case-insensitive in DNS and HTTP the evading spelling still reaches the vulnerable
-        component.”
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process no longer running: exit status 1 llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
-      llama3.3:70b (llama3.3), escalation model  U  ·  high confidence  ·  quotation not found in the advisory
+        case-insensitive in DNS and HTTP the evading spelling still reaches the host the check
+        meant to gate.”
+      deepseek-r1:32b (deepseek-r1)  L  ·  high confidence  ·  quotation found in the advisory
+        “An application that makes a case-sensitive host decision on fast-uri output, for
+        example a host allowlist or denylist that compares the parsed host or uses equal, can be
+        steered past the check with a percent-encoded uppercase octet, and because hostnames are
+        case-insensitive in DNS and HTTP the evading spelling still reaches the host the check
+        meant to gate.”
+      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
+        “can be steered past the check with a percent-encoded uppercase octet, and because
+        hostnames are case-insensitive in DNS and HTTP the evading spelling still reaches the
+        host the check meant to gate”
+    UI  ·  contested → escalated to llama3.3:70b: no settlement, N, quotation not found in the advisory  ·  2 members
+      same evidence, different reading: members quoted the same words and read different values
+      qwen3.6:35b (qwen3.6)  N  ·  high confidence  ·  quotation found in the advisory
+        “An application that makes a case-sensitive host decision on fast-uri output, for
+        example a host allowlist or denylist that compares the parsed host or uses equal, can be
+        steered past the check with a percent-encoded uppercase octet”
+      deepseek-r1:32b (deepseek-r1)  R  ·  high confidence  ·  quotation found in the advisory
+        “An application that makes a case-sensitive host decision on fast-uri output, for
+        example a host allowlist or denylist that compares the parsed host or uses equal, can be
+        steered past the check with a percent-encoded uppercase octet, and because hostnames are
+        case-insensitive in DNS and HTTP the evading spelling still reaches the host the check
+        meant to gate.”
+      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation not found in the advisory  ·  with the options in order: quotation not found in the advisory
         “an application that makes a case-sensitive host decision on fast-uri output”
-    C  ·  unresolved → escalated to llama3.3:70b: no settlement, order-sensitive: N with the options in order, L reversed  ·  2 members
+    C  ·  unresolved → escalated to llama3.3:70b: N (verified)  ·  2 members
+      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.6:35b (qwen3.6)  guessed N with nothing quoted  ·  with the options reversed: quotation not found in the advisory
       deepseek-r1:32b (deepseek-r1)  order-sensitive: H with the options in order, L reversed
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
-      llama3.3:70b (llama3.3), escalation model  order-sensitive: N with the options in order, L reversed
-    I  ·  unresolved → escalated to llama3.3:70b: no settlement, N, quotation not found in the advisory  ·  2 members
-      deepseek-r1:32b (deepseek-r1)  order-sensitive: H with the options in order, L reversed
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
-      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation not found in the advisory
-        “an application that makes a case-sensitive host decision on fast-uri output”
+      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
+        “hostnames are case-insensitive in DNS and HTTP”
     A  ·  unresolved → escalated to llama3.3:70b: N (verified)  ·  2 members
       chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.6:35b (qwen3.6)  guessed N with nothing quoted
       deepseek-r1:32b (deepseek-r1)  order-sensitive: N with the options in order, L reversed  ·  with the options reversed: quotation not found in the advisory
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
       llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
         “hostnames are case-insensitive in DNS and HTTP the evading spelling still reaches the
         host the check meant to gate”
-  GHSA-5p4m-2wfm-xmqj  no vector  ·  could not settle C
-    3 metrics settled
-      3  one member offered a quotation, and no other member offered one
-    AC  ·  unresolved → escalated to llama3.3:70b: L (verified)  ·  2 members
-      chairman: L  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
-      deepseek-r1:32b (deepseek-r1)  L  ·  high confidence  ·  quotation not found in the advisory  ·  with the options in order: quotation not found in the advisory
-        “A modestly sized YAML document therefore consumes disproportionate CPU inside
-        yaml.load(), giving a denial of service against any consumer that parses untrusted
-        YAML.”
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
-      llama3.3:70b (llama3.3), escalation model  L  ·  high confidence  ·  quotation found in the advisory
-        “Any service that parses attacker-influenced YAML with js-yaml 3.x or 4.x can be stalled
-        with a small input.”
-    UI  ·  unresolved → escalated to llama3.3:70b: N (verified)  ·  2 members
-      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
-      deepseek-r1:32b (deepseek-r1)  N  ·  high confidence  ·  quotation not found in the advisory
-        “no user interaction is required”
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
-      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
-        “no privileges or user interaction required”
+  GHSA-5p4m-2wfm-xmqj  settled  ·  CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H  ·  CVSS 7.5 High
+    7 metrics settled
+      5  every member that offered a quotation supported this value
+      2  one member offered a quotation, and no other member offered one
     S  ·  unresolved → escalated to llama3.3:70b: U (verified)  ·  2 members
       chairman: U  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.6:35b (qwen3.6)  U  ·  high confidence  ·  quotation not found in the advisory  ·  with the options in order: quotation not found in the advisory
+        “Only resources managed by the same security authority as the vulnerable component are
+        affected.”
       deepseek-r1:32b (deepseek-r1)  U  ·  high confidence  ·  quotation not found in the advisory  ·  with the options in order: quotation not found in the advisory
         “The exploit reaches resources beyond the vulnerable component's own security authority:
         it escapes a sandbox, virtual machine or container, or a flaw in one component lets the
         attacker act on a different one.”
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
       llama3.3:70b (llama3.3), escalation model  U  ·  high confidence  ·  quotation found in the advisory
         “a single request blocks the Node.js event loop and stalls every other request in the
         process”
-    C  ·  unresolved → escalated to llama3.3:70b: no settlement, guessed N with nothing quoted  ·  2 members
-      deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
-      llama3.3:70b (llama3.3), escalation model  guessed N with nothing quoted
-    I  ·  unresolved → escalated to llama3.3:70b: N (verified)  ·  2 members
-      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
-      deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
-      gemma4:31b (gemma4)  failed: http://10.205.4.74:11434/api/generate answered 500: {"error":"llama-server process has terminated: exit status 1: llama_init_from_model: failed to initialize the context: Gemma4Assistant requires ctx_other to be set (this warning is normal during memory fitting)\nerror loading model: vector"}
-      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
-        “Any service that parses attacker-influenced YAML with js-yaml 3.x or 4.x can be stalled
-        with a small input.”
 
 SECRETS (0)
   Trivy's built-in secret rules matched nothing in this tree.
