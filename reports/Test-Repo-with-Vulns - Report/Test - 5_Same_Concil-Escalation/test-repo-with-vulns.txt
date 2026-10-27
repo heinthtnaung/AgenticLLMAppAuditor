@@ -1,0 +1,1070 @@
+Audit of fetched/test-repo-with-vulns
+  syft 1.52.0  ·  trivy 0.74.0  ·  advisory database built 2026-10-26T01:20:01.38093772Z
+  scoring rules ors-1
+
+35 findings across 9 components. 14 carry sources that disagree.
+Approval is needed for 35 of 35: a High or Critical Organisation Risk Score, or sources that
+disagree.
+0 secrets matched the secret rules built into Trivy.
+
+SOURCES DISAGREE (14)
+  CVE-2025-62718  axios 0.21.1
+    5.1 apart  ·  Critical and High and Medium  ·  differ on AC, S, C, A
+    ghsa 4.8  ·  nvd 9.9  ·  redhat 7.0
+  CVE-2026-67316  axios 0.21.1
+    3.7 apart  ·  High and Low  ·  differ on C, I
+    nvd 7.4  ·  redhat 3.7
+  CVE-2026-42041  axios 0.21.1
+    3.4 apart  ·  High and Medium  ·  differ on AC, I
+    ghsa 4.8  ·  nvd 6.5  ·  redhat 8.2
+  CVE-2026-44490  axios 0.21.1
+    3.4 apart  ·  High and Medium  ·  differ on AC, A
+    ghsa 4.8  ·  nvd 8.2  ·  redhat 4.8
+  CVE-2026-40175  axios 0.21.1
+    3.3 apart  ·  High and Medium  ·  differ on C, I, A
+    ghsa 4.8  ·  nvd 4.8  ·  redhat 8.1
+  CVE-2025-13465  lodash 4.17.15
+    2.9 apart  ·  High and Medium  ·  differ on A
+    ghsa 6.5  ·  nvd 5.3  ·  redhat 8.2
+  CVE-2026-42043  axios 0.21.1
+    2.8 apart  ·  Critical and High  ·  differ on C, I
+    ghsa 7.2  ·  nvd 10.0  ·  redhat 7.2
+  CVE-2026-67319  axios 0.21.1
+    2.8 apart  ·  Medium and Low  ·  differ on C
+    nvd 3.7  ·  redhat 6.5
+  CVE-2026-4800   lodash 4.17.15
+    1.7 apart  ·  Critical and High  ·  differ on AC
+    ghsa 8.1  ·  nvd 9.8  ·  redhat 8.1
+  CVE-2026-42038  axios 0.21.1
+    0.7 apart  ·  High and Medium  ·  differ on AC, S
+    ghsa 6.8  ·  nvd 7.5  ·  redhat 6.8
+  CVE-2026-2950   lodash 4.17.15
+    1.2 apart  ·  Medium  ·  differ on PR, I, A
+    ghsa 6.5  ·  nvd 5.3  ·  redhat 6.5
+  CVE-2026-42042  axios 0.21.1
+    0.7 apart  ·  Medium  ·  differ on S
+    ghsa 5.4  ·  redhat 6.1
+  CVE-2026-44495  axios 0.21.1
+    0.7 apart  ·  High  ·  differ on A
+    ghsa 7.0  ·  nvd 7.7  ·  redhat 7.0
+  CVE-2024-43796  express 4.17.1
+    0.3 apart  ·  Medium  ·  differ on S, A
+    ghsa 5.0  ·  nvd 4.7  ·  redhat 5.0
+
+WHY THE SOURCES DIFFER (14)
+  Written by a model from the advisory text, for each metric the published sources read
+  differently. Only each quotation is checked: an item is kept where its quotation is in the
+  advisory, one per disputed metric. The explanation beside it is the model's own words, and no
+  score or ruling is computed from it.
+  CVE-2025-62718  explained by qwen3.8:27b
+    AC  ghsa H  ·  nvd L  ·  redhat H
+      model-written, not checked: The advisory states that requests with specific formats like
+      'localhost.' or '[::1]' skip NO_PROXY matching, which implies a deterministic condition
+      that an attacker can control by crafting the request, supporting a Low complexity rating.
+      However, the text notes this 'lets attackers force requests through a proxy' and mentions
+      'SSRF vulnerabilities allowing attackers to reach sensitive loopback or internal
+      services', which could be interpreted as requiring the presence of a configured proxy or
+      specific internal service setup that the attacker does not control, supporting a High
+      complexity rating.
+      “Requests to loopback addresses like localhost. (with a trailing dot) or [::1] (IPv6
+      literal) skip NO_PROXY matching and go through the configured proxy.”  ·  quotation found
+      in the advisory
+    S  ghsa U  ·  nvd C  ·  redhat U
+      model-written, not checked: The advisory describes the vulnerability as allowing attackers
+      to 'reach sensitive loopback or internal services' and mentions 'SSRF vulnerabilities',
+      which suggests the impact extends beyond the Axios library itself to other services or the
+      network environment, supporting a Changed scope. Conversely, the issue is framed as a
+      failure in Axios's own logic ('Axios does not correctly handle hostname normalization')
+      and a deviation from developer expectations regarding its own configuration, which could
+      be seen as an issue contained within the component's own security authority, supporting an
+      Unchanged scope.
+      “This issue leads to the possibility of proxy bypass and SSRF vulnerabilities allowing
+      attackers to reach sensitive loopback or internal services despite the configured
+      protections.”  ·  quotation found in the advisory
+    C  ghsa L  ·  nvd H  ·  redhat H
+      model-written, not checked: The advisory explicitly states the vulnerability allows
+      attackers to 'reach sensitive loopback or internal services', implying access to data or
+      resources that are 'sensitive', which supports a High confidentiality impact. However, the
+      text does not explicitly state that data is exfiltrated or that credentials are stolen,
+      only that services are reached, which could lead a reader to assess the confidentiality
+      impact as Low or None if no data disclosure is confirmed.
+      “allowing attackers to reach sensitive loopback or internal services despite the
+      configured protections.”  ·  quotation found in the advisory
+    A  ghsa N  ·  nvd L  ·  redhat L
+      model-written, not checked: The advisory focuses entirely on 'proxy bypass', 'SSRF', and
+      reaching 'sensitive' services, with no mention of crashes, denial of service, or
+      performance degradation. This lack of any availability impact description supports a None
+      rating. However, the phrase 'service is interrupted' is not present, but the general
+      nature of SSRF could theoretically be used to disrupt services, though the text does not
+      support this, making the None rating the only one directly supported by the text's silence
+      on availability, while the absence of explicit 'no impact' statements might leave room for
+      interpretation, though typically silence implies None.
+      “This issue leads to the possibility of proxy bypass and SSRF vulnerabilities allowing
+      attackers to reach sensitive loopback or internal services despite the configured
+      protections.”  ·  quotation found in the advisory
+  CVE-2026-67316  explained by qwen3.8:27b
+    C  nvd H  ·  redhat N
+      model-written, not checked: The advisory states that an attacker-controlled body is sent
+      on requests that did not set one, which implies the transmission of data (potentially
+      sensitive) that was not intended to be sent, supporting a High confidentiality impact.
+      However, the advisory does not explicitly state that this results in the disclosure of
+      credentials, private keys, or the contents of a store, nor does it confirm that the data
+      sent is sensitive, leaving open the possibility that no significant confidentiality is
+      lost, supporting a None impact.
+      “causing an attacker-controlled body to be sent on requests that did not set one”  ·
+      quotation found in the advisory
+    I  nvd H  ·  redhat L
+      model-written, not checked: The advisory describes the ability to route requests through
+      an attacker-controlled proxy and use an attacker-controlled URL serialization, which
+      allows the attacker to control the destination and format of the request, supporting a
+      High integrity impact. However, the advisory notes that these specific low-level paths are
+      'only reachable when calling exported adapters/helpers... directly' and 'do not reproduce
+      through normal high-level axios calls', suggesting that for standard usage, the
+      modification is limited or not possible, which could lead a reader to assess the integrity
+      impact as Low or None.
+      “These low-level gadgets do not reproduce through normal high-level axios calls on
+      1.15.2+”  ·  quotation found in the advisory
+  CVE-2026-42041  explained by qwen3.8:27b
+    AC  ghsa H  ·  nvd L  ·  redhat L
+      model-written, not checked: The advisory states the attack requires 'any Object.prototype
+      pollution' as a prerequisite, which is a condition the attacker does not control and must
+      first achieve or exploit separately. This dependency on a prior state or separate
+      vulnerability supports a High complexity rating. Conversely, the advisory describes the
+      mechanism as 'inherently traverses the prototype chain' and notes that once polluted, 'all
+      HTTP status codes are accepted as success,' suggesting that if the pollution exists, the
+      suppression of errors is an automatic, repeatable, and low-complexity consequence of the
+      library's design, supporting a Low complexity rating.
+      “allows any Object.prototype pollution to silently suppress all HTTP error responses”  ·
+      quotation found in the advisory
+    I  ghsa L  ·  nvd L  ·  redhat H
+      model-written, not checked: The advisory explicitly states that the vulnerability
+      'completely bypasses application-level authentication and error handling.' Bypassing
+      authentication is a severe integrity impact as it allows unauthorized access or action,
+      supporting a High rating. However, the advisory also limits the scope of the modification
+      to 'suppress all HTTP error responses... causing them to be treated as successful
+      responses,' which is a specific, limited alteration of how status codes are interpreted
+      rather than arbitrary data modification, which could lead a reader to view the integrity
+      impact as Low.
+      “This completely bypasses application-level authentication and error handling.”  ·
+      quotation found in the advisory
+  CVE-2026-44490  explained by qwen3.8:27b
+    AC  ghsa H  ·  nvd L  ·  redhat H
+      model-written, not checked: The advisory states that the vulnerability is triggered when
+      'Object.prototype is polluted by an upstream dependency in the same process', which
+      implies a specific pre-condition (prior pollution by another library) that an attacker may
+      not directly control, supporting a High complexity rating. However, it also notes that
+      once this condition is met, the second gadget causes a synchronous throw 'on every axios
+      request', suggesting that if the pollution exists, the attack is repeatable and requires
+      no further specialized conditions, supporting a Low complexity rating.
+      “When Object.prototype is polluted by an upstream dependency in the same process (e.g.
+      lodash _.merge / [identifier withheld]), axios silently picks up the polluted values.”  ·
+      quotation found in the advisory
+    A  ghsa L  ·  nvd H  ·  redhat L
+      model-written, not checked: The advisory describes the second gadget as causing a call to
+      'throw TypeError synchronously on every axios request', which implies a complete denial of
+      service for the HTTP client functionality, supporting a High availability impact.
+      Conversely, the first gadget is described as causing polluted values to be 'copied into
+      the merged headers and ride out on the wire', which is a data integrity issue rather than
+      a service interruption, and the advisory does not explicitly state that the application
+      crashes or becomes unavailable, allowing for a Low availability impact interpretation.
+      “Object.defineProperty reads descriptor.get/descriptor.set via the prototype chain, so a
+      polluted Object.prototype.get or Object.prototype.set makes the call throw TypeError
+      synchronously on every axios request.”  ·  quotation found in the advisory
+  CVE-2026-40175  explained by qwen3.8:27b
+    C  ghsa L  ·  nvd L  ·  redhat H
+      model-written, not checked: The advisory states that the attack allows injection of
+      'unsanitized header values into outbound requests'. A reader might interpret the
+      transmission of these values to a third party as a disclosure of sensitive data (High),
+      while another might view it as limited to specific header fields without explicit mention
+      of credentials or full store contents (Low).
+      “inject unsanitized header values into outbound requests”  ·  quotation found in the
+      advisory
+    I  ghsa L  ·  nvd L  ·  redhat H
+      model-written, not checked: The advisory describes the ability to 'inject unsanitized
+      header values', which implies modification of request data. A reader might see this as a
+      serious integrity loss if the headers control security-critical behavior (High), while
+      another might see it as limited modification of specific fields without total loss of
+      protection (Low).
+      “inject unsanitized header values into outbound requests”  ·  quotation found in the
+      advisory
+    A  ghsa N  ·  nvd N  ·  redhat H
+      model-written, not checked: The advisory focuses on data injection and does not mention
+      any denial of service, crashes, or resource exhaustion. A reader might infer no
+      availability impact (None), while another might speculate that malformed headers could
+      cause downstream service failures (High), though the text does not state this.
+      “vulnerable to a specific gadget-style attack chain in which prototype pollution in a
+      third-party dependency may be leveraged to inject unsanitized header values into outbound
+      requests”  ·  quotation found in the advisory
+  CVE-2025-13465  explained by qwen3.8:27b
+    A  ghsa L  ·  nvd N  ·  redhat H
+      model-written, not checked: The advisory states that the vulnerability allows an attacker
+      to 'delete methods from global prototypes' but explicitly notes it 'does not allow
+      overwriting their original behavior.' A reader might interpret the deletion of critical
+      methods as a complete denial of service (High), while another might view the inability to
+      overwrite behavior and the specific nature of the impact as a partial performance drop or
+      interruption rather than a full denial (Low), or argue that since the core functionality
+      isn't overwritten, availability is largely unaffected (None).
+      “The issue permits deletion of properties but does not allow overwriting their original
+      behavior.”  ·  quotation found in the advisory
+  CVE-2026-42043  explained by qwen3.8:27b
+    C  ghsa L  ·  nvd H  ·  redhat L
+      model-written, not checked: The advisory states the vulnerability allows bypassing
+      NO_PROXY protection to access the 127.0.0.0/8 range, but it does not specify what data is
+      exposed or whether the attacker can read responses, leaving the scope of information
+      disclosure ambiguous.
+      “an attacker who can influence the target URL of an Axios request can use any address in
+      the 127.0.0.0/8 range (other than 127.0.0.1) to completely bypass the NO_PROXY
+      protection.”  ·  quotation found in the advisory
+    I  ghsa L  ·  nvd H  ·  redhat L
+      model-written, not checked: The advisory describes the vulnerability as a bypass of proxy
+      protection for specific IP ranges but does not explicitly state that the attacker can
+      modify data or send requests that alter state, leaving the potential for integrity impact
+      unclear.
+      “This vulnerability is due to an incomplete for [identifier withheld], This vulnerability
+      is fixed in 1.15.1 and 0.31.1.”  ·  quotation found in the advisory
+  CVE-2026-67319  explained by qwen3.8:27b
+    C  nvd N  ·  redhat H
+      model-written, not checked: The advisory states that inherited values can cause 'silent
+      injection of an Authorization: Basic header', which implies the disclosure or use of
+      credentials (username/password), supporting a High impact. However, it also notes that
+      this is 'exploitable only in the presence of pre-existing prototype pollution' and that
+      the top-level config uses a 'null prototype', suggesting that without that specific
+      pre-condition, no data is lost, supporting a None impact.
+      “inherited username/password values can cause silent injection of an Authorization: Basic
+      header”  ·  quotation found in the advisory
+  CVE-2026-4800  explained by qwen3.8:27b
+    AC  ghsa H  ·  nvd L  ·  redhat H
+      model-written, not checked: The advisory states that the vulnerability is triggered when
+      an application passes untrusted input as key names, which implies a direct injection path
+      that could be seen as Low complexity. However, it also describes a secondary vector
+      involving Object.prototype pollution via 'for..in' enumeration, which requires a
+      pre-existing state change or a separate vulnerability to be exploited, suggesting High
+      complexity due to the need for specific conditions to be met.
+      “if Object.prototype has been polluted by another vector the polluted keys are copied into
+      the imports object and passed to Function()”  ·  quotation found in the advisory
+  CVE-2026-42038  explained by qwen3.8:27b
+    AC  ghsa H  ·  nvd L  ·  redhat H
+      model-written, not checked: The advisory states that the vulnerability occurs specifically
+      'When no_proxy=localhost is set', indicating a specific configuration condition is
+      required for the bypass to fail. A reader might interpret this as a specialized condition
+      the attacker must ensure exists (High complexity), while another might view it as a
+      standard configuration state where the flaw is repeatable and deterministic once present
+      (Low complexity).
+      “When no_proxy=localhost is set, requests to 127.0.0.1 and [::1] still route through the
+      proxy instead of bypassing it.”  ·  quotation found in the advisory
+    S  ghsa C  ·  nvd U  ·  redhat C
+      model-written, not checked: The advisory describes the impact as requests 'still route
+      through the proxy instead of bypassing it'. A reader might interpret this as a scope
+      change because the traffic is directed to a different component (the proxy) than intended,
+      potentially exposing data to a third party (Changed). Conversely, another reader might see
+      this as an unchanged scope because the vulnerability is a logic error within the Axios
+      client's own decision-making process regarding its own network behavior, without
+      necessarily implying a breach of a security boundary or sandbox (Unchanged).
+      “requests to 127.0.0.1 and [::1] still route through the proxy instead of bypassing it.”
+      ·  quotation found in the advisory
+  CVE-2026-2950  explained by qwen3.8:27b
+    PR  ghsa N  ·  nvd N  ·  redhat L
+      model-written, not checked: The advisory states that an 'attacker' can bypass checks and
+      delete properties, but it does not specify whether this requires prior authentication or
+      access to the application. A reader might infer 'None' because the vulnerability is in a
+      library function that can be triggered by untrusted input without login, or 'Low' if they
+      assume the attacker needs to be an authenticated user to reach the code path handling
+      user-supplied paths.
+      “an attacker can bypass the check by passing array-wrapped path segments”  ·  quotation
+      found in the advisory
+    I  ghsa L  ·  nvd L  ·  redhat N
+      model-written, not checked: The advisory explicitly states that the issue 'permits
+      deletion of prototype properties' but 'does not allow overwriting their original
+      behavior'. A reader might assign 'Low' because deletion is a form of modification that can
+      alter application logic (e.g., breaking checks), or 'None' if they interpret the
+      restriction against 'overwriting' as meaning no meaningful data integrity compromise
+      occurs, or if they view the deletion as a denial of service rather than a data integrity
+      issue.
+      “The issue permits deletion of prototype properties but does not allow overwriting their
+      original behavior.”  ·  quotation found in the advisory
+    A  ghsa L  ·  nvd N  ·  redhat H
+      model-written, not checked: The advisory describes the impact as 'deletion of properties
+      from built-in prototypes'. A reader might assign 'High' because deleting critical
+      prototype properties (like `toString` or `hasOwnProperty`) can cause applications to crash
+      or become completely unusable, effectively denying service. Conversely, a reader might
+      assign 'Low' or 'None' if they believe the deletion only affects specific instances or
+      that the application can recover without a full restart, or if they view the primary
+      impact as integrity rather than availability.
+      “This allows deletion of properties from built-in prototypes such as Object.prototype,
+      Number.prototype, and String.prototype.”  ·  quotation found in the advisory
+  CVE-2026-42042  explained by qwen3.8:27b
+    S  ghsa U  ·  redhat C
+      model-written, not checked: The advisory states that the flaw causes tokens to be sent to
+      'cross-origin servers controlled by an attacker,' which implies the impact extends to
+      external systems outside the vulnerable component's authority (Changed). However, it also
+      describes the mechanism as a failure of the 'same-origin check' within the library's own
+      logic, which could be interpreted as a failure of internal validation affecting only the
+      client's own request behavior without escaping a sandbox or acting on a different
+      component's resources (Unchanged).
+      “causing XSRF tokens to be sent to all request targets including cross-origin servers
+      controlled by an attacker”  ·  quotation found in the advisory
+  CVE-2026-44495  explained by qwen3.8:27b
+    A  ghsa L  ·  nvd H  ·  redhat L
+      model-written, not checked: The advisory states that affected versions 'may treat that
+      inherited value as request configuration or as an option validator,' which implies a
+      functional disruption or misconfiguration of the HTTP client (supporting Low), but it does
+      not explicitly state that the application crashes, hangs, or becomes completely
+      unavailable, leaving open the possibility that the process remains responsive but with
+      altered behavior (supporting High if the misconfiguration leads to a denial of service,
+      though the text lacks explicit DoS language). The ambiguity lies in whether 'treating...
+      as request configuration' results in a complete failure of the service or merely a
+      degraded/incorrect state.
+      “affected Axios versions may treat that inherited value as request configuration or as an
+      option validator.”  ·  quotation found in the advisory
+  CVE-2024-43796  explained by qwen3.8:27b
+    S  ghsa U  ·  nvd C  ·  redhat U
+      model-written, not checked: The advisory states that the flaw allows execution of
+      untrusted code, which implies a change in scope as the attacker gains code execution
+      privileges beyond the initial request handling context, but it does not explicitly
+      describe a sandbox escape or cross-component impact, leaving the scope interpretation
+      open.
+      “passing untrusted user input - even after sanitizing it - to response.redirect() may
+      execute untrusted code”  ·  quotation found in the advisory
+    A  ghsa L  ·  nvd N  ·  redhat L
+      model-written, not checked: The advisory focuses on code execution as the primary impact
+      and does not mention any service interruption, performance degradation, or denial of
+      service, which could lead one reader to conclude availability is unaffected (None) while
+      another might infer that code execution could potentially disrupt service (Low), though
+      the text itself omits availability details entirely.
+      “This issue is patched in express 4.20.0.”  ·  quotation found in the advisory
+
+SOURCES AGREE (20)
+  CVE-2021-3749   axios 0.21.1                    7.5  High      3 sources
+  CVE-2023-45857  axios 0.21.1                    6.5  Medium    3 sources
+  CVE-2025-27152  axios 0.21.1                    5.3  Medium    2 sources
+  CVE-2026-25639  axios 0.21.1                    7.5  High      2 sources
+  CVE-2026-42033  axios 0.21.1                    7.4  High      2 sources
+  CVE-2026-42034  axios 0.21.1                    5.3  Medium    2 sources
+  CVE-2026-42035  axios 0.21.1                    7.4  High      2 sources
+  CVE-2026-42036  axios 0.21.1                    5.3  Medium    2 sources
+  CVE-2026-42039  axios 0.21.1                    7.5  High      3 sources
+  CVE-2026-42040  axios 0.21.1                    3.7  Low       2 sources
+  CVE-2026-44486  axios 0.21.1                    7.5  High      2 sources
+  CVE-2026-44487  axios 0.21.1                    7.5  High      2 sources
+  CVE-2026-44492  axios 0.21.1                    8.6  High      2 sources
+  CVE-2026-44496  axios 0.21.1                    7.5  High      2 sources
+  CVE-2024-29041  express 4.17.1                  6.1  Medium    2 sources
+  CVE-2020-28500  lodash 4.17.15                  5.3  Medium    3 sources
+  CVE-2020-8203   lodash 4.17.15                  7.4  High      3 sources
+  CVE-2021-23337  lodash 4.17.15                  7.2  High      3 sources
+  CVE-2022-24785  moment 2.29.1                   7.5  High      3 sources
+  CVE-2022-31129  moment 2.29.1                   7.5  High      3 sources
+
+NOT SCORED (1)
+  NSWG-ECO-516  lodash 4.17.15                no source published a v3 vector
+
+ORGANISATION RISK (35)
+  weighted Technical severity 0.3, Exposure and reachability 0.25, Business impact 0.25, Threat and exploitation 0.2
+  CVE-2026-42043  ghsa 66.6 to nvd 75.0       Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2025-62718  ghsa 59.4 to nvd 74.7       Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-4800   ghsa 69.3 to nvd 74.4       Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-44492  70.8                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2025-13465  nvd 60.9 to redhat 69.6     Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-42041  ghsa 59.4 to redhat 69.6    Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-44490  ghsa 59.4 to nvd 69.6       Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-40175  ghsa 59.4 to redhat 69.3    Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-44495  ghsa 66.0 to nvd 68.1       Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2021-3749   67.5                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2022-24785  67.5                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2022-31129  67.5                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-25639  67.5                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-42038  ghsa 65.4 to nvd 67.5       Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-42039  67.5                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+                  the assessor council CVSS 7.5  ·  the risk score does not use it
+  CVE-2026-44486  67.5                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+                  the assessor council CVSS 7.5  ·  the risk score does not use it
+  CVE-2026-44487  67.5                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-44496  67.5                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+                  the assessor council CVSS 5.3  ·  the risk score does not use it
+  CVE-2020-8203   67.2                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-42033  67.2                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-42035  67.2                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-67316  redhat 56.1 to nvd 67.2     Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2021-23337  66.6                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2023-45857  64.5                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+                  the assessor council CVSS 7.5  ·  the risk score does not use it
+  CVE-2026-2950   nvd 60.9 to redhat 64.5     Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-67319  nvd 56.1 to redhat 64.5     Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2024-29041  63.3                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-42042  ghsa 61.2 to redhat 63.3    Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2020-28500  60.9                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2025-27152  60.9                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-42034  60.9                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-42036  60.9                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2024-43796  nvd 59.1 to redhat 60.0     Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-42040  56.1                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  NSWG-ECO-516    45.0                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-HIGH: Medium to High
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: High to Critical
+
+COUNCIL (35)
+  escalation model qwen3.8:27b: asked each metric the council left open
+  models: qwen3.8:27b aaee06c39dcf, qwen3.8:27b aaee06c39dcf, qwen3.8:27b (escalation) aaee06c39dcf; Ollama 0.40.2 on 10.205.4.74, not this machine
+  CVE-2020-28500  no vector  ·  could not settle AV, PR, UI, I
+    4 metrics settled
+      4  every member that offered a quotation supported this value
+    AV  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+    PR  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+    UI  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+    I  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8), escalation model  declined  ·  with the options reversed: declined
+  CVE-2020-8203  no vector  ·  could not settle AV, AC, PR, UI, S, C, I, A
+    AV  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+    AC  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8), escalation model  declined  ·  with the options reversed: declined
+    PR  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+    UI  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+    S  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+    C  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+    I  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+    A  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+  CVE-2021-23337  no vector  ·  could not settle AV, PR, UI, C, A
+    3 metrics settled
+      3  every member that offered a quotation supported this value
+    AV  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+    PR  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+    UI  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+    C  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8), escalation model  declined  ·  with the options reversed: declined
+    A  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+  CVE-2021-3749  no vector  ·  could not settle AV, AC, PR, UI, S, C, I, A
+    AV  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+    AC  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+    PR  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+    UI  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+    S  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+    C  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+    I  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+    A  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+  CVE-2022-24785  no vector  ·  could not settle UI, S, C, I, A
+    3 metrics settled
+      3  every member that offered a quotation supported this value
+    UI  ·  unresolved → escalated to qwen3.8:27b: no settlement, order-sensitive: N with the options in order, R reversed  ·  2 members
+      qwen3.8:27b (qwen3.8)  order-sensitive: N with the options in order, R reversed
+      qwen3.8:27b (qwen3.8)  order-sensitive: N with the options in order, R reversed
+      qwen3.8:27b (qwen3.8), escalation model  order-sensitive: N with the options in order, R reversed
+    S  ·  unresolved → escalated to qwen3.8:27b: no settlement, order-sensitive: C with the options in order, U reversed  ·  2 members
+      qwen3.8:27b (qwen3.8)  order-sensitive: C with the options in order, U reversed
+      qwen3.8:27b (qwen3.8)  order-sensitive: C with the options in order, U reversed
+      qwen3.8:27b (qwen3.8), escalation model  order-sensitive: C with the options in order, U reversed
+    C  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8), escalation model  declined  ·  with the options reversed: declined
+    I  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8), escalation model  declined  ·  with the options reversed: declined
+    A  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+  CVE-2022-31129  no vector  ·  could not settle AV, A
+    6 metrics settled
+      6  every member that offered a quotation supported this value
+    AV  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+    A  ·  unresolved → escalated to qwen3.8:27b: no settlement, order-sensitive: L with the options in order, H reversed  ·  2 members
+      qwen3.8:27b (qwen3.8)  order-sensitive: L with the options in order, H reversed
+      qwen3.8:27b (qwen3.8)  order-sensitive: L with the options in order, H reversed
+      qwen3.8:27b (qwen3.8), escalation model  order-sensitive: L with the options in order, H reversed
+  CVE-2023-45857  settled  ·  CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N  ·  CVSS 7.5 High
+    8 metrics settled
+      8  every member that offered a quotation supported this value
+  CVE-2024-29041  no vector  ·  could not settle I
+    7 metrics settled
+      7  every member that offered a quotation supported this value
+    I  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8), escalation model  declined  ·  with the options reversed: declined
+  CVE-2024-43796  no vector  ·  could not settle UI, S, C, A
+    4 metrics settled
+      4  every member that offered a quotation supported this value
+    UI  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+    S  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options in order: declined
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options in order: declined
+      qwen3.8:27b (qwen3.8), escalation model  declined  ·  with the options in order: declined
+    C  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8), escalation model  declined  ·  with the options reversed: declined
+    A  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+  CVE-2025-13465  no vector  ·  could not settle AV, PR, UI
+    5 metrics settled
+      5  every member that offered a quotation supported this value
+    AV  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+    PR  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options in order: declined
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options in order: declined
+      qwen3.8:27b (qwen3.8), escalation model  declined  ·  with the options in order: declined
+    UI  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+  CVE-2025-27152  no vector  ·  could not settle UI, S, I, A
+    4 metrics settled
+      4  every member that offered a quotation supported this value
+    UI  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8), escalation model  declined  ·  with the options reversed: declined
+    S  ·  unresolved → escalated to qwen3.8:27b: no settlement, order-sensitive: C with the options in order, U reversed  ·  2 members
+      qwen3.8:27b (qwen3.8)  order-sensitive: C with the options in order, U reversed
+      qwen3.8:27b (qwen3.8)  order-sensitive: C with the options in order, U reversed
+      qwen3.8:27b (qwen3.8), escalation model  order-sensitive: C with the options in order, U reversed
+    I  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8), escalation model  declined  ·  with the options reversed: declined
+    A  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8), escalation model  declined  ·  with the options reversed: declined
+  CVE-2025-62718  no vector  ·  could not settle S, I, A
+    5 metrics settled
+      5  every member that offered a quotation supported this value
+    S  ·  unresolved → escalated to qwen3.8:27b: no settlement, order-sensitive: C with the options in order, U reversed  ·  2 members
+      qwen3.8:27b (qwen3.8)  order-sensitive: C with the options in order, U reversed
+      qwen3.8:27b (qwen3.8)  order-sensitive: C with the options in order, U reversed
+      qwen3.8:27b (qwen3.8), escalation model  order-sensitive: C with the options in order, U reversed
+    I  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8), escalation model  declined  ·  with the options reversed: declined
+    A  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8), escalation model  declined  ·  with the options reversed: declined
+  CVE-2026-25639  no vector  ·  could not settle AV
+    7 metrics settled
+      7  every member that offered a quotation supported this value
+    AV  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+  CVE-2026-2950  no vector  ·  could not settle AV, PR, UI, I, A
+    3 metrics settled
+      3  every member that offered a quotation supported this value
+    AV  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+    PR  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options in order: declined
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options in order: declined
+      qwen3.8:27b (qwen3.8), escalation model  declined  ·  with the options in order: declined
+    UI  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+    I  ·  unresolved → escalated to qwen3.8:27b: no settlement, order-sensitive: L with the options in order, H reversed  ·  2 members
+      qwen3.8:27b (qwen3.8)  order-sensitive: L with the options in order, H reversed
+      qwen3.8:27b (qwen3.8)  order-sensitive: L with the options in order, H reversed
+      qwen3.8:27b (qwen3.8), escalation model  order-sensitive: L with the options in order, H reversed
+    A  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8), escalation model  declined  ·  with the options reversed: declined
+  CVE-2026-40175  no vector  ·  could not settle AC, PR, UI, C, A
+    3 metrics settled
+      3  every member that offered a quotation supported this value
+    AC  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8), escalation model  declined  ·  with the options reversed: declined
+    PR  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+    UI  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+    C  ·  unresolved → escalated to qwen3.8:27b: no settlement, order-sensitive: N with the options in order, L reversed  ·  2 members
+      qwen3.8:27b (qwen3.8)  order-sensitive: N with the options in order, L reversed
+      qwen3.8:27b (qwen3.8)  order-sensitive: N with the options in order, L reversed
+      qwen3.8:27b (qwen3.8), escalation model  order-sensitive: N with the options in order, L reversed
+    A  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+  CVE-2026-42033  no vector  ·  could not settle A
+    7 metrics settled
+      7  every member that offered a quotation supported this value
+    A  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8), escalation model  declined  ·  with the options reversed: declined
+  CVE-2026-42034  no vector  ·  could not settle PR, UI, I, A
+    4 metrics settled
+      4  every member that offered a quotation supported this value
+    PR  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+    UI  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options in order: declined
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options in order: declined
+      qwen3.8:27b (qwen3.8), escalation model  declined  ·  with the options in order: declined
+    I  ·  unresolved → escalated to qwen3.8:27b: no settlement, order-sensitive: N with the options in order, L reversed  ·  2 members
+      qwen3.8:27b (qwen3.8)  order-sensitive: N with the options in order, L reversed
+      qwen3.8:27b (qwen3.8)  order-sensitive: N with the options in order, L reversed
+      qwen3.8:27b (qwen3.8), escalation model  order-sensitive: N with the options in order, L reversed
+    A  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+  CVE-2026-42035  no vector  ·  could not settle S, C
+    6 metrics settled
+      6  every member that offered a quotation supported this value
+    S  ·  unresolved → escalated to qwen3.8:27b: no settlement, order-sensitive: C with the options in order, U reversed  ·  2 members
+      qwen3.8:27b (qwen3.8)  order-sensitive: C with the options in order, U reversed
+      qwen3.8:27b (qwen3.8)  order-sensitive: C with the options in order, U reversed
+      qwen3.8:27b (qwen3.8), escalation model  order-sensitive: C with the options in order, U reversed
+    C  ·  unresolved → escalated to qwen3.8:27b: no settlement, order-sensitive: N with the options in order, L reversed  ·  2 members
+      qwen3.8:27b (qwen3.8)  order-sensitive: N with the options in order, L reversed
+      qwen3.8:27b (qwen3.8)  order-sensitive: N with the options in order, L reversed
+      qwen3.8:27b (qwen3.8), escalation model  order-sensitive: N with the options in order, L reversed
+  CVE-2026-42036  no vector  ·  could not settle I
+    7 metrics settled
+      7  every member that offered a quotation supported this value
+    I  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8), escalation model  declined  ·  with the options reversed: declined
+  CVE-2026-42038  no vector  ·  could not settle PR, UI, I, A
+    4 metrics settled
+      4  every member that offered a quotation supported this value
+    PR  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options in order: declined
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options in order: declined
+      qwen3.8:27b (qwen3.8), escalation model  declined  ·  with the options in order: declined
+    UI  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+    I  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8), escalation model  declined  ·  with the options reversed: declined
+    A  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8), escalation model  declined  ·  with the options reversed: declined
+  CVE-2026-42039  settled  ·  CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H  ·  CVSS 7.5 High
+    8 metrics settled
+      8  every member that offered a quotation supported this value
+  CVE-2026-42040  no vector  ·  could not settle AV, PR, UI, C, A
+    3 metrics settled
+      3  every member that offered a quotation supported this value
+    AV  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+    PR  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+    UI  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+    C  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8), escalation model  declined  ·  with the options reversed: declined
+    A  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8), escalation model  declined  ·  with the options reversed: declined
+  CVE-2026-42041  no vector  ·  could not settle AV, UI
+    6 metrics settled
+      6  every member that offered a quotation supported this value
+    AV  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8), escalation model  declined  ·  with the options reversed: declined
+    UI  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+  CVE-2026-42042  no vector  ·  could not settle AC, UI, I
+    5 metrics settled
+      5  every member that offered a quotation supported this value
+    AC  ·  unresolved → escalated to qwen3.8:27b: no settlement, order-sensitive: L with the options in order, H reversed  ·  2 members
+      qwen3.8:27b (qwen3.8)  order-sensitive: L with the options in order, H reversed
+      qwen3.8:27b (qwen3.8)  order-sensitive: L with the options in order, H reversed
+      qwen3.8:27b (qwen3.8), escalation model  order-sensitive: L with the options in order, H reversed
+    UI  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options in order: declined
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options in order: declined
+      qwen3.8:27b (qwen3.8), escalation model  declined  ·  with the options in order: declined
+    I  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8), escalation model  declined  ·  with the options reversed: declined
+  CVE-2026-42043  no vector  ·  could not settle C, I, A
+    5 metrics settled
+      5  every member that offered a quotation supported this value
+    C  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8), escalation model  declined  ·  with the options reversed: declined
+    I  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8), escalation model  declined  ·  with the options reversed: declined
+    A  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8), escalation model  declined  ·  with the options reversed: declined
+  CVE-2026-44486  settled  ·  CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N  ·  CVSS 7.5 High
+    8 metrics settled
+      8  every member that offered a quotation supported this value
+  CVE-2026-44487  no vector  ·  could not settle S
+    7 metrics settled
+      7  every member that offered a quotation supported this value
+    S  ·  unresolved → escalated to qwen3.8:27b: no settlement, order-sensitive: C with the options in order, U reversed  ·  2 members
+      qwen3.8:27b (qwen3.8)  order-sensitive: C with the options in order, U reversed
+      qwen3.8:27b (qwen3.8)  order-sensitive: C with the options in order, U reversed
+      qwen3.8:27b (qwen3.8), escalation model  order-sensitive: C with the options in order, U reversed
+  CVE-2026-44490  no vector  ·  could not settle PR, UI
+    6 metrics settled
+      6  every member that offered a quotation supported this value
+    PR  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options in order: declined
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options in order: declined
+      qwen3.8:27b (qwen3.8), escalation model  declined  ·  with the options in order: declined
+    UI  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+  CVE-2026-44492  no vector  ·  could not settle I, A
+    6 metrics settled
+      6  every member that offered a quotation supported this value
+    I  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8), escalation model  declined  ·  with the options reversed: declined
+    A  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8), escalation model  declined  ·  with the options reversed: declined
+  CVE-2026-44495  no vector  ·  could not settle UI, C, A
+    5 metrics settled
+      5  every member that offered a quotation supported this value
+    UI  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8), escalation model  declined  ·  with the options reversed: declined
+    C  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8), escalation model  declined  ·  with the options reversed: declined
+    A  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+  CVE-2026-44496  settled  ·  CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L  ·  CVSS 5.3 Medium
+    8 metrics settled
+      8  every member that offered a quotation supported this value
+  CVE-2026-4800  no vector  ·  could not settle AV, A
+    6 metrics settled
+      6  every member that offered a quotation supported this value
+    AV  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8), escalation model  declined  ·  with the options reversed: declined
+    A  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8), escalation model  declined  ·  with the options reversed: declined
+  CVE-2026-67316  no vector  ·  could not settle AV, UI
+    6 metrics settled
+      6  every member that offered a quotation supported this value
+    AV  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options in order: declined
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options in order: declined
+      qwen3.8:27b (qwen3.8), escalation model  declined  ·  with the options in order: declined
+    UI  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8), escalation model  declined  ·  with the options reversed: declined
+  CVE-2026-67319  no vector  ·  could not settle AV, PR, UI, S
+    4 metrics settled
+      4  every member that offered a quotation supported this value
+    AV  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options reversed: declined
+      qwen3.8:27b (qwen3.8), escalation model  declined  ·  with the options reversed: declined
+    PR  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options in order: declined
+      qwen3.8:27b (qwen3.8)  declined  ·  with the options in order: declined
+      qwen3.8:27b (qwen3.8), escalation model  declined  ·  with the options in order: declined
+    UI  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+    S  ·  unresolved → escalated to qwen3.8:27b: no settlement, order-sensitive: C with the options in order, U reversed  ·  2 members
+      qwen3.8:27b (qwen3.8)  order-sensitive: C with the options in order, U reversed
+      qwen3.8:27b (qwen3.8)  order-sensitive: C with the options in order, U reversed
+      qwen3.8:27b (qwen3.8), escalation model  order-sensitive: C with the options in order, U reversed
+  NSWG-ECO-516  no vector  ·  could not settle AV, AC, PR, UI, S, C, I, A
+    AV  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+    AC  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+    PR  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+    UI  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+    S  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+    C  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+    I  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+    A  ·  unresolved → escalated to qwen3.8:27b: no settlement, declined  ·  2 members
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8)  declined
+      qwen3.8:27b (qwen3.8), escalation model  declined
+
+SECRETS (0)
+  Trivy's built-in secret rules matched nothing in this tree.
+
+MATCHED NOTHING
+  5 components carry no advisory
+  0 advisories matched no component
+
+NEEDS APPROVAL (35)
+  CVE-2021-3749   a High or Critical Organisation Risk Score
+  CVE-2023-45857  a High or Critical Organisation Risk Score
+  CVE-2025-27152  a High or Critical Organisation Risk Score
+  CVE-2025-62718  a High or Critical Organisation Risk Score  ·  sources that disagree
+  CVE-2026-25639  a High or Critical Organisation Risk Score
+  CVE-2026-40175  a High or Critical Organisation Risk Score  ·  sources that disagree
+  CVE-2026-42033  a High or Critical Organisation Risk Score
+  CVE-2026-42034  a High or Critical Organisation Risk Score
+  CVE-2026-42035  a High or Critical Organisation Risk Score
+  CVE-2026-42036  a High or Critical Organisation Risk Score
+  CVE-2026-42038  a High or Critical Organisation Risk Score  ·  sources that disagree
+  CVE-2026-42039  a High or Critical Organisation Risk Score
+  CVE-2026-42040  a High or Critical Organisation Risk Score
+  CVE-2026-42041  a High or Critical Organisation Risk Score  ·  sources that disagree
+  CVE-2026-42042  a High or Critical Organisation Risk Score  ·  sources that disagree
+  CVE-2026-42043  a High or Critical Organisation Risk Score  ·  sources that disagree
+  CVE-2026-44486  a High or Critical Organisation Risk Score
+  CVE-2026-44487  a High or Critical Organisation Risk Score
+  CVE-2026-44490  a High or Critical Organisation Risk Score  ·  sources that disagree
+  CVE-2026-44492  a High or Critical Organisation Risk Score
+  CVE-2026-44495  a High or Critical Organisation Risk Score  ·  sources that disagree
+  CVE-2026-44496  a High or Critical Organisation Risk Score
+  CVE-2026-67316  a High or Critical Organisation Risk Score  ·  sources that disagree
+  CVE-2026-67319  a High or Critical Organisation Risk Score  ·  sources that disagree
+  CVE-2024-29041  a High or Critical Organisation Risk Score
+  CVE-2024-43796  a High or Critical Organisation Risk Score  ·  sources that disagree
+  CVE-2020-28500  a High or Critical Organisation Risk Score
+  CVE-2020-8203   a High or Critical Organisation Risk Score
+  CVE-2021-23337  a High or Critical Organisation Risk Score
+  CVE-2025-13465  a High or Critical Organisation Risk Score  ·  sources that disagree
+  CVE-2026-2950   a High or Critical Organisation Risk Score  ·  sources that disagree
+  CVE-2026-4800   a High or Critical Organisation Risk Score  ·  sources that disagree
+  NSWG-ECO-516    a High or Critical Organisation Risk Score
+  CVE-2022-24785  a High or Critical Organisation Risk Score
+  CVE-2022-31129  a High or Critical Organisation Risk Score
+
+APPROVAL
+  approved by Hein.TN at 2026-10-21  ·   Running tests with same Council Members and Escalation model (qwen3.8:27b).
+
+NOT ASSESSED
+  Nothing: the component inventory, the Organisation Risk Score, the approval record, a council ruling and an explanation of why the sources differ are all here.

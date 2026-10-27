@@ -1,0 +1,973 @@
+Audit of fetched/test-repo-with-vulns
+  syft 1.52.0  ·  trivy 0.74.0  ·  advisory database built 2026-10-26T01:20:01.38093772Z
+  scoring rules ors-1
+
+35 findings across 9 components. 14 carry sources that disagree.
+Approval is needed for 35 of 35: a High or Critical Organisation Risk Score, or sources that
+disagree.
+0 secrets matched the secret rules built into Trivy.
+
+SOURCES DISAGREE (14)
+  CVE-2025-62718  axios 0.21.1
+    5.1 apart  ·  Critical and High and Medium  ·  differ on AC, S, C, A
+    ghsa 4.8  ·  nvd 9.9  ·  redhat 7.0
+  CVE-2026-67316  axios 0.21.1
+    3.7 apart  ·  High and Low  ·  differ on C, I
+    nvd 7.4  ·  redhat 3.7
+  CVE-2026-42041  axios 0.21.1
+    3.4 apart  ·  High and Medium  ·  differ on AC, I
+    ghsa 4.8  ·  nvd 6.5  ·  redhat 8.2
+  CVE-2026-44490  axios 0.21.1
+    3.4 apart  ·  High and Medium  ·  differ on AC, A
+    ghsa 4.8  ·  nvd 8.2  ·  redhat 4.8
+  CVE-2026-40175  axios 0.21.1
+    3.3 apart  ·  High and Medium  ·  differ on C, I, A
+    ghsa 4.8  ·  nvd 4.8  ·  redhat 8.1
+  CVE-2025-13465  lodash 4.17.15
+    2.9 apart  ·  High and Medium  ·  differ on A
+    ghsa 6.5  ·  nvd 5.3  ·  redhat 8.2
+  CVE-2026-42043  axios 0.21.1
+    2.8 apart  ·  Critical and High  ·  differ on C, I
+    ghsa 7.2  ·  nvd 10.0  ·  redhat 7.2
+  CVE-2026-67319  axios 0.21.1
+    2.8 apart  ·  Medium and Low  ·  differ on C
+    nvd 3.7  ·  redhat 6.5
+  CVE-2026-4800   lodash 4.17.15
+    1.7 apart  ·  Critical and High  ·  differ on AC
+    ghsa 8.1  ·  nvd 9.8  ·  redhat 8.1
+  CVE-2026-42038  axios 0.21.1
+    0.7 apart  ·  High and Medium  ·  differ on AC, S
+    ghsa 6.8  ·  nvd 7.5  ·  redhat 6.8
+  CVE-2026-2950   lodash 4.17.15
+    1.2 apart  ·  Medium  ·  differ on PR, I, A
+    ghsa 6.5  ·  nvd 5.3  ·  redhat 6.5
+  CVE-2026-42042  axios 0.21.1
+    0.7 apart  ·  Medium  ·  differ on S
+    ghsa 5.4  ·  redhat 6.1
+  CVE-2026-44495  axios 0.21.1
+    0.7 apart  ·  High  ·  differ on A
+    ghsa 7.0  ·  nvd 7.7  ·  redhat 7.0
+  CVE-2024-43796  express 4.17.1
+    0.3 apart  ·  Medium  ·  differ on S, A
+    ghsa 5.0  ·  nvd 4.7  ·  redhat 5.0
+
+WHY THE SOURCES DIFFER (14)
+  Written by a model from the advisory text, for each metric the published sources read
+  differently. Only each quotation is checked: an item is kept where its quotation is in the
+  advisory, one per disputed metric. The explanation beside it is the model's own words, and no
+  score or ruling is computed from it.
+  CVE-2025-62718  not explained: llama3.3:70b: no readable explanation:
+  http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111]
+  Connection refused>
+  CVE-2026-67316  not explained: llama3.3:70b: no readable explanation:
+  http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111]
+  Connection refused>
+  CVE-2026-42041  not explained: llama3.3:70b: no readable explanation:
+  http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111]
+  Connection refused>
+  CVE-2026-44490  not explained: llama3.3:70b: no readable explanation:
+  http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111]
+  Connection refused>
+  CVE-2026-40175  not explained: llama3.3:70b: no readable explanation:
+  http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111]
+  Connection refused>
+  CVE-2025-13465  not explained: llama3.3:70b: no readable explanation:
+  http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111]
+  Connection refused>
+  CVE-2026-42043  not explained: llama3.3:70b: no readable explanation:
+  http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111]
+  Connection refused>
+  CVE-2026-67319  not explained: llama3.3:70b: no readable explanation:
+  http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111]
+  Connection refused>
+  CVE-2026-4800  not explained: llama3.3:70b: no readable explanation:
+  http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111]
+  Connection refused>
+  CVE-2026-42038  not explained: llama3.3:70b: no readable explanation:
+  http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111]
+  Connection refused>
+  CVE-2026-2950  not explained: llama3.3:70b: no readable explanation:
+  http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111]
+  Connection refused>
+  CVE-2026-42042  not explained: llama3.3:70b: no readable explanation:
+  http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111]
+  Connection refused>
+  CVE-2026-44495  not explained: llama3.3:70b: no readable explanation:
+  http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111]
+  Connection refused>
+  CVE-2024-43796  not explained: llama3.3:70b: no readable explanation:
+  http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111]
+  Connection refused>
+
+SOURCES AGREE (20)
+  CVE-2021-3749   axios 0.21.1                    7.5  High      3 sources
+  CVE-2023-45857  axios 0.21.1                    6.5  Medium    3 sources
+  CVE-2025-27152  axios 0.21.1                    5.3  Medium    2 sources
+  CVE-2026-25639  axios 0.21.1                    7.5  High      2 sources
+  CVE-2026-42033  axios 0.21.1                    7.4  High      2 sources
+  CVE-2026-42034  axios 0.21.1                    5.3  Medium    2 sources
+  CVE-2026-42035  axios 0.21.1                    7.4  High      2 sources
+  CVE-2026-42036  axios 0.21.1                    5.3  Medium    2 sources
+  CVE-2026-42039  axios 0.21.1                    7.5  High      3 sources
+  CVE-2026-42040  axios 0.21.1                    3.7  Low       2 sources
+  CVE-2026-44486  axios 0.21.1                    7.5  High      2 sources
+  CVE-2026-44487  axios 0.21.1                    7.5  High      2 sources
+  CVE-2026-44492  axios 0.21.1                    8.6  High      2 sources
+  CVE-2026-44496  axios 0.21.1                    7.5  High      2 sources
+  CVE-2024-29041  express 4.17.1                  6.1  Medium    2 sources
+  CVE-2020-28500  lodash 4.17.15                  5.3  Medium    3 sources
+  CVE-2020-8203   lodash 4.17.15                  7.4  High      3 sources
+  CVE-2021-23337  lodash 4.17.15                  7.2  High      3 sources
+  CVE-2022-24785  moment 2.29.1                   7.5  High      3 sources
+  CVE-2022-31129  moment 2.29.1                   7.5  High      3 sources
+
+NOT SCORED (1)
+  NSWG-ECO-516  lodash 4.17.15                no source published a v3 vector
+
+ORGANISATION RISK (35)
+  weighted Technical severity 0.3, Exposure and reachability 0.25, Business impact 0.25, Threat and exploitation 0.2
+  CVE-2026-42043  ghsa 66.6 to nvd 75.0       Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2025-62718  ghsa 59.4 to nvd 74.7       Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+                  the assessor council CVSS 10.0  ·  the risk score does not use it
+  CVE-2026-4800   ghsa 69.3 to nvd 74.4       Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-44492  70.8                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+                  the assessor council CVSS 0.0  ·  the risk score does not use it
+  CVE-2025-13465  nvd 60.9 to redhat 69.6     Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-42041  ghsa 59.4 to redhat 69.6    Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-44490  ghsa 59.4 to nvd 69.6       Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-40175  ghsa 59.4 to redhat 69.3    Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-44495  ghsa 66.0 to nvd 68.1       Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+                  the assessor council CVSS 2.5  ·  the risk score does not use it
+  CVE-2021-3749   67.5                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2022-24785  67.5                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2022-31129  67.5                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-25639  67.5                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+                  the assessor council CVSS 6.2  ·  the risk score does not use it
+  CVE-2026-42038  ghsa 65.4 to nvd 67.5       Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-42039  67.5                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+                  the assessor council CVSS 6.2  ·  the risk score does not use it
+  CVE-2026-44486  67.5                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+                  the assessor council CVSS 6.8  ·  the risk score does not use it
+  CVE-2026-44487  67.5                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+                  the assessor council CVSS 10.0  ·  the risk score does not use it
+  CVE-2026-44496  67.5                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+                  the assessor council CVSS 5.1  ·  the risk score does not use it
+  CVE-2020-8203   67.2                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-42033  67.2                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+                  the assessor council CVSS 7.8  ·  the risk score does not use it
+  CVE-2026-42035  67.2                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-67316  redhat 56.1 to nvd 67.2     Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2021-23337  66.6                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2023-45857  64.5                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+                  the assessor council CVSS 9.1  ·  the risk score does not use it
+  CVE-2026-2950   nvd 60.9 to redhat 64.5     Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-67319  nvd 56.1 to redhat 64.5     Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2024-29041  63.3                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-42042  ghsa 61.2 to redhat 63.3    Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+                  the assessor council CVSS 9.3  ·  the risk score does not use it
+  CVE-2020-28500  60.9                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2025-27152  60.9                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+                  the assessor council CVSS 10.0  ·  the risk score does not use it
+  CVE-2026-42034  60.9                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-42036  60.9                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2024-43796  nvd 59.1 to redhat 60.0     Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-42040  56.1                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+                  the assessor council CVSS 4.0  ·  the risk score does not use it
+  NSWG-ECO-516    45.0                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-HIGH: Medium to High
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: High to Critical
+
+COUNCIL (35)
+  escalation model llama3.3:70b: asked each metric the council left open
+  models: qwen3.5:4b d8b0f5e9760c, deepseek-r1:32b edba8017331d, llama3.3:70b (escalation) a6eb4748fd29; Ollama 0.40.2 on 10.205.4.74, not this machine
+  CVE-2020-28500  no vector  ·  could not settle C, I, A
+    5 metrics settled
+      1  every member that offered a quotation supported this value
+      4  one member offered a quotation, and no other member offered one
+    C  ·  unresolved → escalated to llama3.3:70b: no settlement, failed: http://10.205.4.74:11434/api/generate could not be reached: Remote end closed connection without response  ·  2 members
+      qwen3.5:4b (qwen3.5)  guessed N with nothing quoted
+      deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
+      llama3.3:70b (llama3.3), escalation model  failed: http://10.205.4.74:11434/api/generate could not be reached: Remote end closed connection without response
+    I  ·  unresolved → escalated to llama3.3:70b: no settlement, failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 113] No route to host>  ·  2 members
+      qwen3.5:4b (qwen3.5)  declined  ·  with the options reversed: declined
+      deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
+      llama3.3:70b (llama3.3), escalation model  failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 113] No route to host>
+    A  ·  contested → escalated to llama3.3:70b: no settlement, failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 113] No route to host>  ·  2 members
+      same evidence, different reading: members quoted the same words and read different values
+      qwen3.5:4b (qwen3.5)  L  ·  high confidence  ·  quotation found in the advisory
+        “Regular Expression Denial of Service (ReDoS)”
+      deepseek-r1:32b (deepseek-r1)  H  ·  high confidence  ·  quotation found in the advisory
+        “Regular Expression Denial of Service (ReDoS)”
+      llama3.3:70b (llama3.3), escalation model  failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 113] No route to host>
+  CVE-2020-8203  no vector  ·  could not settle C, A
+    6 metrics settled
+      6  one member offered a quotation, and no other member offered one
+    C  ·  unresolved → escalated to llama3.3:70b: no settlement, failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 113] No route to host>  ·  2 members
+      qwen3.5:4b (qwen3.5)  declined  ·  with the options reversed: declined
+      deepseek-r1:32b (deepseek-r1)  order-sensitive: N with the options in order, H reversed
+      llama3.3:70b (llama3.3), escalation model  failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 113] No route to host>
+    A  ·  unresolved → escalated to llama3.3:70b: no settlement, failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 113] No route to host>  ·  2 members
+      qwen3.5:4b (qwen3.5)  declined
+      deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
+      llama3.3:70b (llama3.3), escalation model  failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 113] No route to host>
+  CVE-2021-23337  no vector  ·  could not settle UI, S, A
+    5 metrics settled
+      2  every member that offered a quotation supported this value
+      3  one member offered a quotation, and no other member offered one
+    UI  ·  unresolved → escalated to llama3.3:70b: no settlement, failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>  ·  2 members
+      qwen3.5:4b (qwen3.5)  guessed N with nothing quoted
+      deepseek-r1:32b (deepseek-r1)  order-sensitive: N with the options in order, R reversed
+      llama3.3:70b (llama3.3), escalation model  failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>
+    S  ·  unresolved → escalated to llama3.3:70b: no settlement, failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>  ·  2 members
+      qwen3.5:4b (qwen3.5)  declined  ·  with the options in order: declined
+      deepseek-r1:32b (deepseek-r1)  order-sensitive: U with the options in order, C reversed
+      llama3.3:70b (llama3.3), escalation model  failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>
+    A  ·  unresolved → escalated to llama3.3:70b: no settlement, failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>  ·  2 members
+      qwen3.5:4b (qwen3.5)  declined  ·  with the options reversed: declined
+      deepseek-r1:32b (deepseek-r1)  order-sensitive: N with the options in order, H reversed
+      llama3.3:70b (llama3.3), escalation model  failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>
+  CVE-2021-3749  no vector  ·  could not settle UI, S, C, I, A
+    3 metrics settled
+      3  one member offered a quotation, and no other member offered one
+    UI  ·  unresolved → escalated to llama3.3:70b: no settlement, declined  ·  2 members
+      qwen3.5:4b (qwen3.5)  declined  ·  with the options in order: declined
+      deepseek-r1:32b (deepseek-r1)  order-sensitive: R with the options in order, N reversed
+      llama3.3:70b (llama3.3), escalation model  declined
+    S  ·  unresolved → escalated to llama3.3:70b: no settlement, declined  ·  2 members
+      qwen3.5:4b (qwen3.5)  declined
+      deepseek-r1:32b (deepseek-r1)  declined
+      llama3.3:70b (llama3.3), escalation model  declined
+    C  ·  unresolved → escalated to llama3.3:70b: no settlement, declined  ·  2 members
+      qwen3.5:4b (qwen3.5)  declined
+      deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
+      llama3.3:70b (llama3.3), escalation model  declined  ·  with the options reversed: declined
+    I  ·  unresolved → escalated to llama3.3:70b: no settlement, declined  ·  2 members
+      qwen3.5:4b (qwen3.5)  declined
+      deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
+      llama3.3:70b (llama3.3), escalation model  declined
+    A  ·  unresolved → escalated to llama3.3:70b: no settlement, declined  ·  2 members
+      qwen3.5:4b (qwen3.5)  declined
+      deepseek-r1:32b (deepseek-r1)  order-sensitive: N with the options in order, L reversed
+      llama3.3:70b (llama3.3), escalation model  declined
+  CVE-2022-24785  no vector  ·  could not settle C, I, A
+    5 metrics settled
+      5  one member offered a quotation, and no other member offered one
+    C  ·  unresolved → escalated to llama3.3:70b: no settlement, failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>  ·  2 members
+      qwen3.5:4b (qwen3.5)  declined  ·  with the options reversed: declined
+      deepseek-r1:32b (deepseek-r1)  order-sensitive: H with the options in order, L reversed
+      llama3.3:70b (llama3.3), escalation model  failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>
+    I  ·  contested → escalated to llama3.3:70b: no settlement, failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>  ·  2 members
+      qwen3.5:4b (qwen3.5)  L  ·  high confidence  ·  quotation found in the advisory
+        “As a workaround, sanitize the user-provided locale name before passing it to
+        Moment.js.”
+      deepseek-r1:32b (deepseek-r1)  H  ·  high confidence  ·  quotation found in the advisory
+        “A path traversal vulnerability impacts npm (server) users of Moment.js between versions
+        1.0.1 and 2.29.1, especially if a user-provided locale string is directly used to switch
+        moment locale.”
+      llama3.3:70b (llama3.3), escalation model  failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>
+    A  ·  unresolved → escalated to llama3.3:70b: no settlement, failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>  ·  2 members
+      qwen3.5:4b (qwen3.5)  declined  ·  with the options reversed: declined
+      deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
+      llama3.3:70b (llama3.3), escalation model  failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>
+  CVE-2022-31129  no vector  ·  could not settle C, I
+    6 metrics settled
+      3  every member that offered a quotation supported this value
+      3  one member offered a quotation, and no other member offered one
+    C  ·  unresolved → escalated to llama3.3:70b: no settlement, failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: N with the options in order, L reversed
+      deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
+      llama3.3:70b (llama3.3), escalation model  failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>
+    I  ·  unresolved → escalated to llama3.3:70b: no settlement, failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: L with the options in order, H reversed
+      deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
+      llama3.3:70b (llama3.3), escalation model  failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>
+  CVE-2023-45857  settled  ·  CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N  ·  CVSS 9.1 Critical
+    7 metrics settled
+      5  every member that offered a quotation supported this value
+      2  one member offered a quotation, and no other member offered one
+    A  ·  unresolved → escalated to llama3.3:70b: N (verified)  ·  2 members
+      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.5:4b (qwen3.5)  guessed N with nothing quoted
+      deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
+      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
+        “inadvertently reveals the confidential XSRF-TOKEN stored in cookies”
+  CVE-2024-29041  no vector  ·  could not settle I
+    5 metrics settled
+      2  every member that offered a quotation supported this value
+      3  one member offered a quotation, and no other member offered one
+    AV  ·  unresolved → escalated to llama3.3:70b: N (verified)  ·  2 members
+      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.5:4b (qwen3.5)  order-sensitive: L with the options in order, N reversed
+      deepseek-r1:32b (deepseek-r1)  order-sensitive: N with the options in order, L reversed
+      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
+        “malformed URLs to be evaluated in unexpected ways by common redirect allow list
+        implementations in Express applications, leading to an Open Redirect via bypass of a
+        properly implemented allow list”
+    UI  ·  contested → escalated to llama3.3:70b: N (verified)  ·  2 members
+      same evidence, different reading: members quoted the same words and read different values
+      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.5:4b (qwen3.5)  N  ·  high confidence  ·  quotation found in the advisory
+        “When a user of Express performs a redirect using a user-provided URL Express performs
+        an encode [using `encodeurl`](https://github.com/pillarjs/encodeurl) on the contents
+        before passing it to the `location` header.”
+      deepseek-r1:32b (deepseek-r1)  R  ·  high confidence  ·  quotation found in the advisory
+        “When a user of Express performs a redirect using a user-provided URL Express performs
+        an encode [using `encodeurl`](https://github.com/pillarjs/encodeurl) on the contents
+        before passing it to the `location` header.”
+      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
+        “malformed URLs to be evaluated in unexpected ways by common redirect allow list
+        implementations in Express applications”
+    I  ·  contested → escalated to llama3.3:70b: no settlement, order-sensitive: N with the options in order, L reversed  ·  2 members
+      same evidence, different reading: members quoted the same words and read different values
+      qwen3.5:4b (qwen3.5)  H  ·  high confidence  ·  quotation found in the advisory
+        “leading to an Open Redirect via bypass of a properly implemented allow list.”
+      deepseek-r1:32b (deepseek-r1)  L  ·  high confidence  ·  quotation found in the advisory
+        “When a user of Express performs a redirect using a user-provided URL Express performs
+        an encode [using `encodeurl`](https://github.com/pillarjs/encodeurl) on the contents
+        before passing it to the `location` header. This can cause malformed URLs to be
+        evaluated in unexpected ways by common redirect allow list implementations in Express
+        applications, leading to an Open Redirect via bypass of a properly implemented allow
+        list.”
+      llama3.3:70b (llama3.3), escalation model  order-sensitive: N with the options in order, L reversed
+  CVE-2024-43796  no vector  ·  could not settle AV
+    7 metrics settled
+      3  every member that offered a quotation supported this value
+      4  one member offered a quotation, and no other member offered one
+    AV  ·  unresolved → escalated to llama3.3:70b: no settlement, failed: with the options reversed: http://10.205.4.74:11434/api/generate could not be reached: Remote end closed connection without response  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: L with the options in order, N reversed
+      deepseek-r1:32b (deepseek-r1)  order-sensitive: N with the options in order, L reversed
+      llama3.3:70b (llama3.3), escalation model  failed: with the options reversed: http://10.205.4.74:11434/api/generate could not be reached: Remote end closed connection without response  ·  with the options in order: quotation not found in the advisory
+  CVE-2025-13465  no vector  ·  could not settle A
+    7 metrics settled
+      3  every member that offered a quotation supported this value
+      4  one member offered a quotation, and no other member offered one
+    A  ·  unresolved → escalated to llama3.3:70b: no settlement, failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: N with the options in order, L reversed
+      deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
+      llama3.3:70b (llama3.3), escalation model  failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>
+  CVE-2025-27152  settled  ·  CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:N  ·  CVSS 10.0 Critical
+    6 metrics settled
+      4  every member that offered a quotation supported this value
+      2  one member offered a quotation, and no other member offered one
+    AV  ·  unresolved → escalated to llama3.3:70b: N (verified)  ·  2 members
+      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.5:4b (qwen3.5)  order-sensitive: L with the options in order, N reversed
+      deepseek-r1:32b (deepseek-r1)  order-sensitive: N with the options in order, L reversed
+      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
+        “axios sends the request to the specified absolute URL, potentially causing SSRF and
+        credential leakage”
+    A  ·  unresolved → escalated to llama3.3:70b: N (verified)  ·  2 members
+      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.5:4b (qwen3.5)  guessed N with nothing quoted
+      deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
+      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
+        “This issue impacts both server-side and client-side usage of axios.”
+  CVE-2025-62718  settled  ·  CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H  ·  CVSS 10.0 Critical
+    7 metrics settled
+      5  every member that offered a quotation supported this value
+      2  one member offered a quotation, and no other member offered one
+    AV  ·  unresolved → escalated to llama3.3:70b: N (verified)  ·  2 members
+      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.5:4b (qwen3.5)  order-sensitive: L with the options in order, N reversed
+      deepseek-r1:32b (deepseek-r1)  order-sensitive: N with the options in order, L reversed
+      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
+        “allowing attackers to reach sensitive loopback or internal services despite the
+        configured protections”
+  CVE-2026-25639  settled  ·  CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H  ·  CVSS 6.2 Medium
+    7 metrics settled
+      3  every member that offered a quotation supported this value
+      4  one member offered a quotation, and no other member offered one
+    UI  ·  contested → escalated to llama3.3:70b: N (verified)  ·  2 members
+      same evidence, different reading: members quoted the same words and read different values
+      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.5:4b (qwen3.5)  N  ·  high confidence  ·  quotation found in the advisory
+        “An attacker can trigger this by providing a malicious configuration object created via
+        JSON.parse()”
+      deepseek-r1:32b (deepseek-r1)  R  ·  high confidence  ·  quotation found in the advisory
+        “An attacker can trigger this by providing a malicious configuration object created via
+        JSON.parse(),”
+      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
+        “An attacker can trigger this by providing a malicious configuration object created via
+        JSON.parse(), causing complete denial of service.”
+  CVE-2026-2950  no vector  ·  could not settle UI
+    7 metrics settled
+      3  every member that offered a quotation supported this value
+      4  one member offered a quotation, and no other member offered one
+    UI  ·  contested → escalated to llama3.3:70b: no settlement, failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>  ·  2 members
+      same evidence, different reading: members quoted the same words and read different values
+      qwen3.5:4b (qwen3.5)  N  ·  high confidence  ·  quotation found in the advisory
+        “The fix for [identifier withheld] only guards against string key members, so an
+        attacker can bypass the check by passing array-wrapped path segments.”
+      deepseek-r1:32b (deepseek-r1)  R  ·  high confidence  ·  quotation found in the advisory
+        “The fix for [identifier withheld] only guards against string key members, so an
+        attacker can bypass the check by passing array-wrapped path segments.”
+      llama3.3:70b (llama3.3), escalation model  failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>
+  CVE-2026-40175  no vector  ·  could not settle A
+    6 metrics settled
+      2  every member that offered a quotation supported this value
+      4  one member offered a quotation, and no other member offered one
+    S  ·  unresolved → escalated to llama3.3:70b: U (verified)  ·  2 members
+      chairman: U  ·  the council left it open, and the escalation model's verified quotation settled it  ·  medium confidence
+      qwen3.5:4b (qwen3.5)  order-sensitive: C with the options in order, U reversed
+      deepseek-r1:32b (deepseek-r1)  order-sensitive: U with the options in order, C reversed
+      llama3.3:70b (llama3.3), escalation model  U  ·  medium confidence  ·  quotation found in the advisory
+        “in which prototype pollution in a third-party dependency may be leveraged to inject
+        unsanitized header values into outbound requests”
+    A  ·  unresolved → escalated to llama3.3:70b: no settlement, declined  ·  2 members
+      qwen3.5:4b (qwen3.5)  guessed N with nothing quoted
+      deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
+      llama3.3:70b (llama3.3), escalation model  declined  ·  with the options reversed: declined
+  CVE-2026-42033  settled  ·  CVSS:3.1/AV:L/AC:H/PR:N/UI:N/S:C/C:H/I:H/A:N  ·  CVSS 7.8 High
+    5 metrics settled
+      3  every member that offered a quotation supported this value
+      2  one member offered a quotation, and no other member offered one
+    AC  ·  contested → escalated to llama3.3:70b: H (verified)  ·  2 members
+      same evidence, different reading: members quoted the same words and read different values
+      chairman: H  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.5:4b (qwen3.5)  L  ·  high confidence  ·  quotation found in the advisory
+        “The precondition is prototype pollution from a separate source in the same process.”
+      deepseek-r1:32b (deepseek-r1)  H  ·  high confidence  ·  quotation found in the advisory
+        “The precondition is prototype pollution from a separate source in the same process.”
+      llama3.3:70b (llama3.3), escalation model  H  ·  high confidence  ·  quotation found in the advisory
+        “The precondition is prototype pollution from a separate source in the same process.”
+    UI  ·  contested → escalated to llama3.3:70b: N (verified)  ·  2 members
+      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.5:4b (qwen3.5)  N  ·  high confidence  ·  quotation found in the advisory
+        “an attacker can (a) silently intercept and modify every JSON response before the
+        application sees it, or (b) fully hijack the underlying HTTP transport, gaining access
+        to request credentials, headers, and body.”
+      deepseek-r1:32b (deepseek-r1)  R  ·  high confidence  ·  quotation found in the advisory
+        “The precondition is prototype pollution from a separate source in the same process.”
+      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
+        “an attacker can (a) silently intercept and modify every JSON response before the
+        application sees it, or (b) fully hijack the underlying HTTP transport”
+    A  ·  contested → escalated to llama3.3:70b: N (verified)  ·  2 members
+      same evidence, different reading: members quoted the same words and read different values
+      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.5:4b (qwen3.5)  N  ·  high confidence  ·  quotation found in the advisory
+        “an attacker can (a) silently intercept and modify every JSON response before the
+        application sees it, or (b) fully hijack the underlying HTTP transport, gaining access
+        to request credentials, headers, and body.”
+      deepseek-r1:32b (deepseek-r1)  H  ·  high confidence  ·  quotation found in the advisory
+        “an attacker can (a) silently intercept and modify every JSON response before the
+        application sees it, or (b) fully hijack the underlying HTTP transport, gaining access
+        to request credentials, headers, and body.”
+      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
+        “an attacker can (a) silently intercept and modify every JSON response before the
+        application sees it, or (b) fully hijack the underlying HTTP transport”
+  CVE-2026-42034  no vector  ·  could not settle C, I
+    5 metrics settled
+      5  one member offered a quotation, and no other member offered one
+    C  ·  unresolved → escalated to llama3.3:70b: no settlement, guessed N with nothing quoted  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: N with the options in order, L reversed
+      deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
+      llama3.3:70b (llama3.3), escalation model  guessed N with nothing quoted
+    I  ·  unresolved → escalated to llama3.3:70b: no settlement, guessed N with nothing quoted  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: L with the options in order, H reversed
+      deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
+      llama3.3:70b (llama3.3), escalation model  guessed N with nothing quoted
+    A  ·  unresolved → escalated to llama3.3:70b: N (verified)  ·  2 members
+      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.5:4b (qwen3.5)  guessed N with nothing quoted
+      deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
+      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
+        “This vulnerability is fixed in 1.15.1 and 0.31.1.”
+  CVE-2026-42035  no vector  ·  could not settle C
+    7 metrics settled
+      6  every member that offered a quotation supported this value
+      1  one member offered a quotation, and no other member offered one
+    C  ·  contested → escalated to llama3.3:70b: no settlement, order-sensitive: N with the options in order, L reversed  ·  2 members
+      same evidence, different reading: members quoted the same words and read different values
+      qwen3.5:4b (qwen3.5)  L  ·  high confidence  ·  quotation found in the advisory
+        “allows an attacker to inject arbitrary HTTP headers into outgoing requests”
+      deepseek-r1:32b (deepseek-r1)  H  ·  high confidence  ·  quotation found in the advisory
+        “allows an attacker to inject arbitrary HTTP headers into outgoing requests”
+      llama3.3:70b (llama3.3), escalation model  order-sensitive: N with the options in order, L reversed
+  CVE-2026-42036  no vector  ·  could not settle C
+    7 metrics settled
+      4  every member that offered a quotation supported this value
+      3  one member offered a quotation, and no other member offered one
+    C  ·  unresolved → escalated to llama3.3:70b: no settlement, guessed N with nothing quoted  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: N with the options in order, L reversed
+      deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
+      llama3.3:70b (llama3.3), escalation model  guessed N with nothing quoted
+  CVE-2026-42038  no vector  ·  could not settle C
+    5 metrics settled
+      2  every member that offered a quotation supported this value
+      3  one member offered a quotation, and no other member offered one
+    C  ·  unresolved → escalated to llama3.3:70b: no settlement, order-sensitive: N with the options in order, L reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: N with the options in order, L reversed
+      deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
+      llama3.3:70b (llama3.3), escalation model  order-sensitive: N with the options in order, L reversed
+    I  ·  unresolved → escalated to llama3.3:70b: N (verified)  ·  2 members
+      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.5:4b (qwen3.5)  order-sensitive: H with the options in order, L reversed
+      deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
+      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
+        “This vulnerability is fixed in 1.15.1 and 0.31.1.”
+    A  ·  unresolved → escalated to llama3.3:70b: N (verified)  ·  2 members
+      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.5:4b (qwen3.5)  order-sensitive: N with the options in order, L reversed
+      deepseek-r1:32b (deepseek-r1)  order-sensitive: N with the options in order, L reversed
+      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
+        “This vulnerability is fixed in 1.15.1 and 0.31.1.”
+  CVE-2026-42039  settled  ·  CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H  ·  CVSS 6.2 Medium
+    8 metrics settled
+      2  every member that offered a quotation supported this value
+      6  one member offered a quotation, and no other member offered one
+  CVE-2026-42040  settled  ·  CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N  ·  CVSS 4.0 Medium
+    7 metrics settled
+      6  every member that offered a quotation supported this value
+      1  one member offered a quotation, and no other member offered one
+    C  ·  unresolved → escalated to llama3.3:70b: N (verified)  ·  2 members
+      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.5:4b (qwen3.5)  order-sensitive: N with the options in order, L reversed
+      deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
+      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
+        “Primary impact is limited because the standard axios request flow is not affected.”
+  CVE-2026-42041  no vector  ·  could not settle A
+    4 metrics settled
+      3  every member that offered a quotation supported this value
+      1  one member offered a quotation, and no other member offered one
+    AV  ·  unresolved → escalated to llama3.3:70b: N (verified)  ·  2 members
+      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.5:4b (qwen3.5)  order-sensitive: L with the options in order, N reversed
+      deepseek-r1:32b (deepseek-r1)  L  ·  high confidence  ·  quotation not found in the advisory
+        “Prior to 1.15.1 and 0.31.1, the Axios library is vulnerable to a Prototype Pollution
+        'Gadget' attack that allows any Object.prototype pollution to silently suppress all HTTP
+        error responses (401, 403, 500, etc.), causing them to be treated as successful
+        responses.”
+      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
+        “a promise based HTTP client for the browser and Node.js”
+    AC  ·  unresolved → escalated to llama3.3:70b: L (verified)  ·  2 members
+      chairman: L  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.5:4b (qwen3.5)  L  ·  low confidence  ·  quotation not found in the advisory  ·  with the options in order: quotation not found in the advisory
+        “an attacker can expect repeatable success against the vulnerable component.”
+      deepseek-r1:32b (deepseek-r1)  L  ·  high confidence  ·  quotation not found in the advisory
+        “Prior to 1.15.1 and 0.31.1, the Axios library is vulnerable to a Prototype Pollution
+        'Gadget' attack that allows any Object.prototype pollution to silently suppress all HTTP
+        error responses (401, 403, 500, etc.), causing them to be treated as successful
+        responses.”
+      llama3.3:70b (llama3.3), escalation model  L  ·  high confidence  ·  quotation found in the advisory
+        “allows any Object.prototype pollution to silently suppress all HTTP error responses”
+    UI  ·  unresolved → escalated to llama3.3:70b: N (verified)  ·  2 members
+      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.5:4b (qwen3.5)  guessed N with nothing quoted
+      deepseek-r1:32b (deepseek-r1)  N  ·  high confidence  ·  quotation not found in the advisory
+        “Prior to 1.15.1 and 0.31.1, the Axios library is vulnerable to a Prototype Pollution
+        'Gadget' attack that allows any Object.prototype pollution to silently suppress all HTTP
+        error responses (401, 403, 500, etc.), causing them to be treated as successful
+        responses.”
+      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
+        “allows any Object.prototype pollution to silently suppress all HTTP error responses”
+    A  ·  contested → escalated to llama3.3:70b: no settlement, order-sensitive: N with the options in order, H reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  L  ·  high confidence  ·  quotation found in the advisory
+        “causing them to be treated as successful responses”
+      deepseek-r1:32b (deepseek-r1)  H  ·  high confidence  ·  quotation found in the advisory
+        “This completely bypasses application-level authentication and error handling.”
+      llama3.3:70b (llama3.3), escalation model  order-sensitive: N with the options in order, H reversed
+  CVE-2026-42042  settled  ·  CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:H/I:H/A:N  ·  CVSS 9.3 Critical
+    6 metrics settled
+      3  every member that offered a quotation supported this value
+      3  one member offered a quotation, and no other member offered one
+    AV  ·  unresolved → escalated to llama3.3:70b: N (verified)  ·  2 members
+      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.5:4b (qwen3.5)  order-sensitive: L with the options in order, N reversed
+      deepseek-r1:32b (deepseek-r1)  order-sensitive: N with the options in order, L reversed
+      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
+        “causing XSRF tokens to be sent to all request targets including cross-origin servers
+        controlled by an attacker”
+    A  ·  unresolved → escalated to llama3.3:70b: N (verified)  ·  2 members
+      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.5:4b (qwen3.5)  order-sensitive: N with the options in order, L reversed
+      deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
+      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
+        “causing XSRF tokens to be sent to all request targets including cross-origin servers
+        controlled by an attacker”
+  CVE-2026-42043  no vector  ·  could not settle I
+    7 metrics settled
+      3  every member that offered a quotation supported this value
+      4  one member offered a quotation, and no other member offered one
+    I  ·  contested → escalated to llama3.3:70b: no settlement, guessed N with nothing quoted  ·  2 members
+      qwen3.5:4b (qwen3.5)  N  ·  high confidence  ·  quotation found in the advisory
+        “This vulnerability is due to an incomplete for [identifier withheld]”
+      deepseek-r1:32b (deepseek-r1)  H  ·  high confidence  ·  quotation found in the advisory
+        “completely bypass the NO_PROXY protection”
+      llama3.3:70b (llama3.3), escalation model  guessed N with nothing quoted
+  CVE-2026-44486  settled  ·  CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:H/I:L/A:N  ·  CVSS 6.8 Medium
+    5 metrics settled
+      3  every member that offered a quotation supported this value
+      2  one member offered a quotation, and no other member offered one
+    S  ·  contested → escalated to llama3.3:70b: U (verified)  ·  2 members
+      same evidence, different reading: members quoted the same words and read different values
+      chairman: U  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.5:4b (qwen3.5)  C  ·  high confidence  ·  quotation found in the advisory
+        “the stale Proxy-Authorization header can remain on the redirected request and be sent
+        to the redirect target”
+      deepseek-r1:32b (deepseek-r1)  U  ·  high confidence  ·  quotation found in the advisory
+        “When a request is sent through an authenticated proxy, Axios may add a
+        Proxy-Authorization header. If Axios then follows a redirect and the redirected request
+        is no longer sent through that proxy, the stale Proxy-Authorization header can remain on
+        the redirected request and be sent to the redirect target.”
+      llama3.3:70b (llama3.3), escalation model  U  ·  high confidence  ·  quotation found in the advisory
+        “Browser adapters are not affected”
+    C  ·  contested → escalated to llama3.3:70b: H (verified)  ·  2 members
+      same evidence, different reading: members quoted the same words and read different values
+      chairman: H  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.5:4b (qwen3.5)  L  ·  high confidence  ·  quotation found in the advisory
+        “the stale Proxy-Authorization header can remain on the redirected request and be sent
+        to the redirect target”
+      deepseek-r1:32b (deepseek-r1)  H  ·  high confidence  ·  quotation found in the advisory
+        “When a request is sent through an authenticated proxy, Axios may add a
+        Proxy-Authorization header. If Axios then follows a redirect and the redirected request
+        is no longer sent through that proxy, the stale Proxy-Authorization header can remain on
+        the redirected request and be sent to the redirect target.”
+      llama3.3:70b (llama3.3), escalation model  H  ·  high confidence  ·  quotation found in the advisory
+        “leak proxy credentials”
+    A  ·  unresolved → escalated to llama3.3:70b: N (verified)  ·  2 members
+      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.5:4b (qwen3.5)  order-sensitive: N with the options in order, L reversed
+      deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
+      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
+        “This vulnerability is fixed in 0.32.0 and 1.16.0.”
+  CVE-2026-44487  settled  ·  CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:N  ·  CVSS 10.0 Critical
+    4 metrics settled
+      2  every member that offered a quotation supported this value
+      2  one member offered a quotation, and no other member offered one
+    AV  ·  unresolved → escalated to llama3.3:70b: N (verified)  ·  2 members
+      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.5:4b (qwen3.5)  order-sensitive: L with the options in order, N reversed
+      deepseek-r1:32b (deepseek-r1)  order-sensitive: L with the options in order, N reversed
+      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
+        “an initial HTTP request is sent through an authenticated HTTP proxy, redirects are
+        followed, and the redirected URL is no longer proxied”
+    AC  ·  contested → escalated to llama3.3:70b: L (verified)  ·  2 members
+      same evidence, different reading: members quoted the same words and read different values
+      chairman: L  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.5:4b (qwen3.5)  L  ·  high confidence  ·  quotation found in the advisory  ·  with the options reversed: quotation not found in the advisory
+        “Prior to 0.32.0 and 1.16.0, Axios's Node.js HTTP adapter may forward a
+        Proxy-Authorization header to a redirected origin during specific proxy-to-direct
+        redirect flows.”
+      deepseek-r1:32b (deepseek-r1)  H  ·  high confidence  ·  quotation found in the advisory
+        “Prior to 0.32.0 and 1.16.0, Axios’s Node.js HTTP adapter may forward a
+        Proxy-Authorization header to a redirected origin during specific proxy-to-direct
+        redirect flows.”
+      llama3.3:70b (llama3.3), escalation model  L  ·  high confidence  ·  quotation found in the advisory
+        “This affects Node.js usage, where an initial HTTP request is sent through an
+        authenticated HTTP proxy, redirects are followed, and the redirected URL is no longer
+        proxied.”
+    UI  ·  unresolved → escalated to llama3.3:70b: N (verified)  ·  2 members
+      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.5:4b (qwen3.5)  guessed N with nothing quoted
+      deepseek-r1:32b (deepseek-r1)  order-sensitive: N with the options in order, R reversed
+      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
+        “an initial HTTP request is sent through an authenticated HTTP proxy, redirects are
+        followed, and the redirected URL is no longer proxied”
+    A  ·  unresolved → escalated to llama3.3:70b: N (verified)  ·  2 members
+      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.5:4b (qwen3.5)  guessed N with nothing quoted
+      deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
+      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
+        “This vulnerability is fixed in 0.32.0 and 1.16.0.”
+  CVE-2026-44490  no vector  ·  could not settle C, I
+    6 metrics settled
+      2  every member that offered a quotation supported this value
+      4  one member offered a quotation, and no other member offered one
+    C  ·  unresolved → escalated to llama3.3:70b: no settlement, guessed N with nothing quoted  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: N with the options in order, L reversed
+      deepseek-r1:32b (deepseek-r1)  order-sensitive: N with the options in order, L reversed
+      llama3.3:70b (llama3.3), escalation model  guessed N with nothing quoted
+    I  ·  contested → escalated to llama3.3:70b: no settlement, order-sensitive: N with the options in order, H reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  L  ·  high confidence  ·  quotation found in the advisory
+        “Object.defineProperty reads descriptor.get/descriptor.set via the prototype chain, so a
+        polluted Object.prototype.get or Object.prototype.set makes the call throw TypeError
+        synchronously on every axios request.”
+      deepseek-r1:32b (deepseek-r1)  H  ·  high confidence  ·  quotation found in the advisory
+        “When Object.prototype is polluted by an upstream dependency in the same process (e.g.
+        lodash _.merge / [identifier withheld]), axios silently picks up the polluted values.”
+      llama3.3:70b (llama3.3), escalation model  order-sensitive: N with the options in order, H reversed
+  CVE-2026-44492  settled  ·  CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N  ·  CVSS 0.0 None
+    6 metrics settled
+      2  every member that offered a quotation supported this value
+      4  one member offered a quotation, and no other member offered one
+    AV  ·  unresolved → escalated to llama3.3:70b: N (verified)  ·  2 members
+      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.5:4b (qwen3.5)  order-sensitive: L with the options in order, N reversed  ·  with the options in order: quotation not found in the advisory
+      deepseek-r1:32b (deepseek-r1)  order-sensitive: N with the options in order, L reversed
+      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
+        “a request URL using the IPv4-mapped IPv6 form (::ffff:7f00:1, ::ffff:a9fe:a9fe) still
+        routes through the configured proxy”
+    A  ·  unresolved → escalated to llama3.3:70b: N (verified)  ·  2 members
+      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.5:4b (qwen3.5)  guessed N with nothing quoted
+      deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
+      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
+        “Node.js resolves these addresses to the underlying IPv4 host, so the request reaches
+        the internal service via the proxy rather than being blocked”
+  CVE-2026-44495  settled  ·  CVSS:3.1/AV:L/AC:H/PR:N/UI:R/S:U/C:N/I:L/A:N  ·  CVSS 2.5 Low
+    8 metrics settled
+      3  every member that offered a quotation supported this value
+      5  one member offered a quotation, and no other member offered one
+  CVE-2026-44496  settled  ·  CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:L  ·  CVSS 5.1 Medium
+    7 metrics settled
+      4  every member that offered a quotation supported this value
+      3  one member offered a quotation, and no other member offered one
+    UI  ·  contested → escalated to llama3.3:70b: N (verified)  ·  2 members
+      same evidence, different reading: members quoted the same words and read different values
+      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.5:4b (qwen3.5)  N  ·  high confidence  ·  quotation found in the advisory
+        “In standard browser environments, an attacker who can influence the cookie name passed
+        to axios can cause expensive regex backtracking while axios reads document.cookie.”
+      deepseek-r1:32b (deepseek-r1)  R  ·  high confidence  ·  quotation found in the advisory
+        “In standard browser environments, an attacker who can influence the cookie name passed
+        to axios can cause expensive regex backtracking while axios reads document.cookie.”
+      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
+        “an attacker who can influence the cookie name passed to axios can cause expensive regex
+        backtracking while axios reads document.cookie”
+  CVE-2026-4800  no vector  ·  could not settle UI
+    7 metrics settled
+      5  every member that offered a quotation supported this value
+      2  one member offered a quotation, and no other member offered one
+    UI  ·  contested → escalated to llama3.3:70b: no settlement, failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>  ·  2 members
+      same evidence, different reading: members quoted the same words and read different values
+      qwen3.5:4b (qwen3.5)  N  ·  high confidence  ·  quotation found in the advisory
+        “When an application passes untrusted input as options.imports key names, an attacker
+        can inject default-parameter expressions that execute arbitrary code at template
+        compilation time.”
+      deepseek-r1:32b (deepseek-r1)  R  ·  high confidence  ·  quotation found in the advisory
+        “When an application passes untrusted input as options.imports key names, an attacker
+        can inject default-parameter expressions that execute arbitrary code at template
+        compilation time.”
+      llama3.3:70b (llama3.3), escalation model  failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>
+  CVE-2026-67316  no vector  ·  could not settle A
+    4 metrics settled
+      1  every member that offered a quotation supported this value
+      1  members offering quotations disagreed, and the verified one settled it
+      2  one member offered a quotation, and no other member offered one
+    UI  ·  contested → escalated to llama3.3:70b: N (verified)  ·  2 members
+      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.5:4b (qwen3.5)  N  ·  high confidence  ·  quotation found in the advisory
+        “axios is vulnerable to read-side prototype-pollution gadgets that can alter request
+        construction when Object.prototype has already been polluted by a separate vulnerability
+        or dependency.”
+      deepseek-r1:32b (deepseek-r1)  R  ·  high confidence  ·  quotation found in the advisory
+        “In the bodyless method aliases (axios.get(), axios.delete(), axios.head(),
+        axios.options()), inherited data is read via (config || {}).data before config
+        normalization, causing an attacker-controlled body to be sent on requests that did not
+        set one.”
+      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
+        “inherited data is read via (config || {}).data before config normalization, causing an
+        attacker-controlled body to be sent on requests that did not set one”
+    S  ·  contested → escalated to llama3.3:70b: U (verified)  ·  2 members
+      chairman: U  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.5:4b (qwen3.5)  U  ·  high confidence  ·  quotation found in the advisory
+        “axios is vulnerable to read-side prototype-pollution gadgets that can alter request
+        construction when Object.prototype has already been polluted by a separate vulnerability
+        or dependency.”
+      deepseek-r1:32b (deepseek-r1)  C  ·  high confidence  ·  quotation found in the advisory
+        “In the bodyless method aliases (axios.get(), axios.delete(), axios.head(),
+        axios.options()), inherited data is read via (config || {}).data before config
+        normalization, causing an attacker-controlled body to be sent on requests that did not
+        set one.”
+      llama3.3:70b (llama3.3), escalation model  U  ·  high confidence  ·  quotation found in the advisory
+        “causing an attacker-controlled body to be sent on requests that did not set one”
+    I  ·  contested → escalated to llama3.3:70b: H (verified)  ·  2 members
+      same evidence, different reading: members quoted the same words and read different values
+      chairman: H  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.5:4b (qwen3.5)  L  ·  high confidence  ·  quotation found in the advisory
+        “causing an attacker-controlled body to be sent on requests that did not set one”
+      deepseek-r1:32b (deepseek-r1)  H  ·  high confidence  ·  quotation found in the advisory
+        “In the bodyless method aliases (axios.get(), axios.delete(), axios.head(),
+        axios.options()), inherited data is read via (config || {}).data before config
+        normalization, causing an attacker-controlled body to be sent on requests that did not
+        set one.”
+      llama3.3:70b (llama3.3), escalation model  H  ·  high confidence  ·  quotation found in the advisory
+        “causing an attacker-controlled body to be sent on requests that did not set one”
+    A  ·  unresolved → escalated to llama3.3:70b: no settlement, guessed N with nothing quoted  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: N with the options in order, L reversed
+      deepseek-r1:32b (deepseek-r1)  order-sensitive: H with the options in order, L reversed
+      llama3.3:70b (llama3.3), escalation model  guessed N with nothing quoted
+  CVE-2026-67319  no vector  ·  could not settle S, A
+    4 metrics settled
+      1  every member that offered a quotation supported this value
+      3  one member offered a quotation, and no other member offered one
+    UI  ·  contested → escalated to llama3.3:70b: N (verified)  ·  2 members
+      same evidence, different reading: members quoted the same words and read different values
+      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.5:4b (qwen3.5)  N  ·  high confidence  ·  quotation found in the advisory
+        “This is exploitable only in the presence of pre-existing prototype pollution.”
+      deepseek-r1:32b (deepseek-r1)  R  ·  high confidence  ·  quotation found in the advisory
+        “This is exploitable only in the presence of pre-existing prototype pollution.”
+      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
+        “This is exploitable only in the presence of pre-existing prototype pollution.”
+    S  ·  unresolved → escalated to llama3.3:70b: no settlement, U, quotation not found in the advisory  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: C with the options in order, U reversed
+      deepseek-r1:32b (deepseek-r1)  order-sensitive: U with the options in order, C reversed
+      llama3.3:70b (llama3.3), escalation model  U  ·  low confidence  ·  quotation not found in the advisory  ·  with the options in order: quotation not found in the advisory
+        “consumed by another component”
+    C  ·  unresolved → escalated to llama3.3:70b: L (verified)  ·  2 members
+      chairman: L  ·  the council left it open, and the escalation model's verified quotation settled it  ·  medium confidence
+      qwen3.5:4b (qwen3.5)  order-sensitive: N with the options in order, L reversed
+      deepseek-r1:32b (deepseek-r1)  order-sensitive: H with the options in order, L reversed
+      llama3.3:70b (llama3.3), escalation model  L  ·  medium confidence  ·  quotation found in the advisory
+        “inherited username/password values can cause silent injection of an Authorization:
+        Basic header”
+    A  ·  unresolved → escalated to llama3.3:70b: no settlement, order-sensitive: N with the options in order, L reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: N with the options in order, L reversed
+      deepseek-r1:32b (deepseek-r1)  order-sensitive: H with the options in order, L reversed
+      llama3.3:70b (llama3.3), escalation model  order-sensitive: N with the options in order, L reversed  ·  with the options reversed: quotation not found in the advisory
+  NSWG-ECO-516  no vector  ·  could not settle AV, UI, S
+    5 metrics settled
+      5  one member offered a quotation, and no other member offered one
+    AV  ·  unresolved → escalated to llama3.3:70b: no settlement, failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>  ·  2 members
+      qwen3.5:4b (qwen3.5)  declined
+      deepseek-r1:32b (deepseek-r1)  L  ·  high confidence  ·  quotation not found in the advisory
+        “The vulnerability is a prototype pollution attack in lodash.”
+      llama3.3:70b (llama3.3), escalation model  failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>
+    UI  ·  unresolved → escalated to llama3.3:70b: no settlement, failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>  ·  2 members
+      qwen3.5:4b (qwen3.5)  guessed N with nothing quoted
+      deepseek-r1:32b (deepseek-r1)  R  ·  medium confidence  ·  quotation not found in the advisory
+        “The vulnerability occurs when an attacker provides a specially crafted payload that
+        causes the application to parse and process it, leading to the prototype pollution.”
+      llama3.3:70b (llama3.3), escalation model  failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>
+    S  ·  unresolved → escalated to llama3.3:70b: no settlement, failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>  ·  2 members
+      qwen3.5:4b (qwen3.5)  declined
+      deepseek-r1:32b (deepseek-r1)  guessed U with nothing quoted
+      llama3.3:70b (llama3.3), escalation model  failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>
+
+SECRETS (0)
+  Trivy's built-in secret rules matched nothing in this tree.
+
+MATCHED NOTHING
+  5 components carry no advisory
+  0 advisories matched no component
+
+NEEDS APPROVAL (35)
+  CVE-2021-3749   a High or Critical Organisation Risk Score
+  CVE-2023-45857  a High or Critical Organisation Risk Score
+  CVE-2025-27152  a High or Critical Organisation Risk Score
+  CVE-2025-62718  a High or Critical Organisation Risk Score  ·  sources that disagree
+  CVE-2026-25639  a High or Critical Organisation Risk Score
+  CVE-2026-40175  a High or Critical Organisation Risk Score  ·  sources that disagree
+  CVE-2026-42033  a High or Critical Organisation Risk Score
+  CVE-2026-42034  a High or Critical Organisation Risk Score
+  CVE-2026-42035  a High or Critical Organisation Risk Score
+  CVE-2026-42036  a High or Critical Organisation Risk Score
+  CVE-2026-42038  a High or Critical Organisation Risk Score  ·  sources that disagree
+  CVE-2026-42039  a High or Critical Organisation Risk Score
+  CVE-2026-42040  a High or Critical Organisation Risk Score
+  CVE-2026-42041  a High or Critical Organisation Risk Score  ·  sources that disagree
+  CVE-2026-42042  a High or Critical Organisation Risk Score  ·  sources that disagree
+  CVE-2026-42043  a High or Critical Organisation Risk Score  ·  sources that disagree
+  CVE-2026-44486  a High or Critical Organisation Risk Score
+  CVE-2026-44487  a High or Critical Organisation Risk Score
+  CVE-2026-44490  a High or Critical Organisation Risk Score  ·  sources that disagree
+  CVE-2026-44492  a High or Critical Organisation Risk Score
+  CVE-2026-44495  a High or Critical Organisation Risk Score  ·  sources that disagree
+  CVE-2026-44496  a High or Critical Organisation Risk Score
+  CVE-2026-67316  a High or Critical Organisation Risk Score  ·  sources that disagree
+  CVE-2026-67319  a High or Critical Organisation Risk Score  ·  sources that disagree
+  CVE-2024-29041  a High or Critical Organisation Risk Score
+  CVE-2024-43796  a High or Critical Organisation Risk Score  ·  sources that disagree
+  CVE-2020-28500  a High or Critical Organisation Risk Score
+  CVE-2020-8203   a High or Critical Organisation Risk Score
+  CVE-2021-23337  a High or Critical Organisation Risk Score
+  CVE-2025-13465  a High or Critical Organisation Risk Score  ·  sources that disagree
+  CVE-2026-2950   a High or Critical Organisation Risk Score  ·  sources that disagree
+  CVE-2026-4800   a High or Critical Organisation Risk Score  ·  sources that disagree
+  NSWG-ECO-516    a High or Critical Organisation Risk Score
+  CVE-2022-24785  a High or Critical Organisation Risk Score
+  CVE-2022-31129  a High or Critical Organisation Risk Score
+
+APPROVAL
+  approved by Hein.TN at 2026-10-21  ·   Running tests with same Council Members and Escalation model (qwen3.8:27b).
+
+NOT ASSESSED
+  Why the sources differ
+    a model was asked why the sources differ, and no explanation was kept

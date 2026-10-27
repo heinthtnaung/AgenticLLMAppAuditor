@@ -1,0 +1,1203 @@
+Audit of fetched/test-repo-with-vulns
+  syft 1.52.0  ·  trivy 0.74.0  ·  advisory database built 2026-10-26T01:20:01.38093772Z
+  scoring rules ors-1
+
+35 findings across 9 components. 14 carry sources that disagree.
+Approval is needed for 35 of 35: a High or Critical Organisation Risk Score, or sources that
+disagree.
+0 secrets matched the secret rules built into Trivy.
+
+SOURCES DISAGREE (14)
+  CVE-2025-62718  axios 0.21.1
+    5.1 apart  ·  Critical and High and Medium  ·  differ on AC, S, C, A
+    ghsa 4.8  ·  nvd 9.9  ·  redhat 7.0
+  CVE-2026-67316  axios 0.21.1
+    3.7 apart  ·  High and Low  ·  differ on C, I
+    nvd 7.4  ·  redhat 3.7
+  CVE-2026-42041  axios 0.21.1
+    3.4 apart  ·  High and Medium  ·  differ on AC, I
+    ghsa 4.8  ·  nvd 6.5  ·  redhat 8.2
+  CVE-2026-44490  axios 0.21.1
+    3.4 apart  ·  High and Medium  ·  differ on AC, A
+    ghsa 4.8  ·  nvd 8.2  ·  redhat 4.8
+  CVE-2026-40175  axios 0.21.1
+    3.3 apart  ·  High and Medium  ·  differ on C, I, A
+    ghsa 4.8  ·  nvd 4.8  ·  redhat 8.1
+  CVE-2025-13465  lodash 4.17.15
+    2.9 apart  ·  High and Medium  ·  differ on A
+    ghsa 6.5  ·  nvd 5.3  ·  redhat 8.2
+  CVE-2026-42043  axios 0.21.1
+    2.8 apart  ·  Critical and High  ·  differ on C, I
+    ghsa 7.2  ·  nvd 10.0  ·  redhat 7.2
+  CVE-2026-67319  axios 0.21.1
+    2.8 apart  ·  Medium and Low  ·  differ on C
+    nvd 3.7  ·  redhat 6.5
+  CVE-2026-4800   lodash 4.17.15
+    1.7 apart  ·  Critical and High  ·  differ on AC
+    ghsa 8.1  ·  nvd 9.8  ·  redhat 8.1
+  CVE-2026-42038  axios 0.21.1
+    0.7 apart  ·  High and Medium  ·  differ on AC, S
+    ghsa 6.8  ·  nvd 7.5  ·  redhat 6.8
+  CVE-2026-2950   lodash 4.17.15
+    1.2 apart  ·  Medium  ·  differ on PR, I, A
+    ghsa 6.5  ·  nvd 5.3  ·  redhat 6.5
+  CVE-2026-42042  axios 0.21.1
+    0.7 apart  ·  Medium  ·  differ on S
+    ghsa 5.4  ·  redhat 6.1
+  CVE-2026-44495  axios 0.21.1
+    0.7 apart  ·  High  ·  differ on A
+    ghsa 7.0  ·  nvd 7.7  ·  redhat 7.0
+  CVE-2024-43796  express 4.17.1
+    0.3 apart  ·  Medium  ·  differ on S, A
+    ghsa 5.0  ·  nvd 4.7  ·  redhat 5.0
+
+WHY THE SOURCES DIFFER (14)
+  Written by a model from the advisory text, for each metric the published sources read
+  differently. Only each quotation is checked: an item is kept where its quotation is in the
+  advisory, one per disputed metric. The explanation beside it is the model's own words, and no
+  score or ruling is computed from it.
+  CVE-2025-62718  not explained: qwen2.5:1.5b: the model offered 1 item, and none was kept
+  (unverified quotation 1)
+  CVE-2026-67316  explained by qwen2.5:1.5b
+    C  nvd H  ·  redhat N
+      model-written, not checked: the advisory states that the vulnerability affects 'read-side
+      prototype-pollution gadgets' that can alter request construction when Object.prototype has
+      already been polluted by a separate vulnerability or dependency.
+      “In the bodyless method aliases (axios.get(), axios.delete(), axios.head(),
+      axios.options()), inherited data is read via (config || {}).data before config
+      normalization, causing an attacker-controlled body to be sent on requests that did not set
+      one.”  ·  quotation found in the advisory
+    I  nvd H  ·  redhat L
+      model-written, not checked: the advisory mentions that additional low-level paths can
+      inherit polluted proxy values or paramsSerializer values, which are not covered by the
+      'read-side prototype-pollution gadgets' mentioned in the first item.
+      “Additional low-level paths, only reachable when calling exported adapters/helpers (e.g.
+      lib/adapters/http.js, unsafe/helpers/resolveConfig.js) directly with plain configs and no
+      own proxy or paramsSerializer, can inherit polluted proxy values (routing requests through
+      an attacker-controlled proxy) or paramsSerializer values (attacker-controlled URL
+      serialization).”  ·  quotation found in the advisory
+  CVE-2026-42041  not explained: qwen2.5:1.5b: the model offered 2 items, and none was kept
+  (unverified quotation 2)
+  CVE-2026-44490  not explained: qwen2.5:1.5b: the model offered 2 items, and none was kept
+  (unverified quotation 2)
+  CVE-2026-40175  explained by qwen2.5:1.5b
+    C  ghsa L  ·  nvd L  ·  redhat H
+      model-written, not checked: The advisory mentions that the vulnerability is fixed in
+      versions 1.15.0 and 0.3.1, which implies that the vulnerability is present in versions
+      prior to these.
+      “Versions prior to 1.15.0 and 0.3.1 are vulnerable to a specific gadget-style attack chain
+      in which prototype pollution in a third-party dependency may be leveraged to inject
+      unsanitized header values into outbound requests.”  ·  quotation found in the advisory
+    I  ghsa L  ·  nvd L  ·  redhat H
+      model-written, not checked: The advisory states that the vulnerability is fixed in
+      versions 1.15.0 and 0.3.1, which implies that the vulnerability is present in versions
+      prior to these.
+      “Versions prior to 1.15.0 and 0.3.1 are vulnerable to a specific gadget-style attack chain
+      in which prototype pollution in a third-party dependency may be leveraged to inject
+      unsanitized header values into outbound requests.”  ·  quotation found in the advisory
+    A  ghsa N  ·  nvd N  ·  redhat H
+      model-written, not checked: The advisory mentions that the vulnerability is fixed in
+      versions 1.15.0 and 0.3.1, which implies that the vulnerability is present in versions
+      prior to these.
+      “Versions prior to 1.15.0 and 0.3.1 are vulnerable to a specific gadget-style attack chain
+      in which prototype pollution in a third-party dependency may be leveraged to inject
+      unsanitized header values into outbound requests.”  ·  quotation found in the advisory
+  CVE-2025-13465  not explained: qwen2.5:1.5b: the model offered 1 item, and none was kept (not
+  a disputed metric 1)
+  CVE-2026-42043  not explained: qwen2.5:1.5b: the model offered 2 items, and none was kept
+  (unverified quotation 2)
+  CVE-2026-67319  not explained: qwen2.5:1.5b: the model offered 1 item, and none was kept
+  (unverified quotation 1)
+  CVE-2026-4800  not explained: qwen2.5:1.5b: the model offered 1 item, and none was kept
+  (unverified quotation 1)
+  CVE-2026-42038  not explained: qwen2.5:1.5b: the model offered 2 items, and none was kept
+  (unverified quotation 2)
+  CVE-2026-2950  explained by qwen2.5:1.5b
+    PR  ghsa N  ·  nvd N  ·  redhat L
+      model-written, not checked: The advisory mentions that the fix for the vulnerability only
+      guards against string key members, which means that an attacker can bypass the check by
+      passing array-wrapped path segments. This allows deletion of properties from built-in
+      prototypes such as Object.prototype, Number.prototype, and String.prototype.
+      “The fix for [identifier withheld] only guards against string key members, so an attacker
+      can bypass the check by passing array-wrapped path segments.”  ·  quotation found in the
+      advisory
+    I  ghsa L  ·  nvd L  ·  redhat N
+      model-written, not checked: The advisory states that the issue permits deletion of
+      prototype properties but does not allow overwriting their original behavior.
+      “The issue permits deletion of prototype properties but does not allow overwriting their
+      original behavior.”  ·  quotation found in the advisory
+    A  ghsa L  ·  nvd N  ·  redhat H
+      model-written, not checked: The advisory mentions that the fix for the vulnerability only
+      guards against string key members, which means that an attacker can bypass the check by
+      passing array-wrapped path segments. This allows deletion of properties from built-in
+      prototypes such as Object.prototype, Number.prototype, and String.prototype.
+      “The fix for [identifier withheld] only guards against string key members, so an attacker
+      can bypass the check by passing array-wrapped path segments.”  ·  quotation found in the
+      advisory
+  CVE-2026-42042  explained by qwen2.5:1.5b
+    S  ghsa U  ·  redhat C
+      model-written, not checked: the advisory states that the vulnerability is fixed in
+      versions 1.15.1 and 0.31.1, which implies that the vulnerability is present in versions
+      prior to these.
+      “Prior to 1.15.1 and 0.31.1, the Axios library's XSRF token protection logic uses
+      JavaScript truthy/falsy semantics instead of strict boolean comparison for the
+      withXSRFToken config property.”  ·  quotation found in the advisory
+  CVE-2026-44495  not explained: qwen2.5:1.5b: the model offered 1 item, and none was kept (not
+  a disputed metric 1)
+  CVE-2024-43796  not explained: qwen2.5:1.5b: the model offered 2 items, and none was kept
+  (unverified quotation 2)
+
+SOURCES AGREE (20)
+  CVE-2021-3749   axios 0.21.1                    7.5  High      3 sources
+  CVE-2023-45857  axios 0.21.1                    6.5  Medium    3 sources
+  CVE-2025-27152  axios 0.21.1                    5.3  Medium    2 sources
+  CVE-2026-25639  axios 0.21.1                    7.5  High      2 sources
+  CVE-2026-42033  axios 0.21.1                    7.4  High      2 sources
+  CVE-2026-42034  axios 0.21.1                    5.3  Medium    2 sources
+  CVE-2026-42035  axios 0.21.1                    7.4  High      2 sources
+  CVE-2026-42036  axios 0.21.1                    5.3  Medium    2 sources
+  CVE-2026-42039  axios 0.21.1                    7.5  High      3 sources
+  CVE-2026-42040  axios 0.21.1                    3.7  Low       2 sources
+  CVE-2026-44486  axios 0.21.1                    7.5  High      2 sources
+  CVE-2026-44487  axios 0.21.1                    7.5  High      2 sources
+  CVE-2026-44492  axios 0.21.1                    8.6  High      2 sources
+  CVE-2026-44496  axios 0.21.1                    7.5  High      2 sources
+  CVE-2024-29041  express 4.17.1                  6.1  Medium    2 sources
+  CVE-2020-28500  lodash 4.17.15                  5.3  Medium    3 sources
+  CVE-2020-8203   lodash 4.17.15                  7.4  High      3 sources
+  CVE-2021-23337  lodash 4.17.15                  7.2  High      3 sources
+  CVE-2022-24785  moment 2.29.1                   7.5  High      3 sources
+  CVE-2022-31129  moment 2.29.1                   7.5  High      3 sources
+
+NOT SCORED (1)
+  NSWG-ECO-516  lodash 4.17.15                no source published a v3 vector
+
+ORGANISATION RISK (35)
+  weighted Technical severity 0.3, Exposure and reachability 0.25, Business impact 0.25, Threat and exploitation 0.2
+  CVE-2026-42043  ghsa 66.6 to nvd 75.0       Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2025-62718  ghsa 59.4 to nvd 74.7       Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-4800   ghsa 69.3 to nvd 74.4       Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-44492  70.8                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2025-13465  nvd 60.9 to redhat 69.6     Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-42041  ghsa 59.4 to redhat 69.6    Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-44490  ghsa 59.4 to nvd 69.6       Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-40175  ghsa 59.4 to redhat 69.3    Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-44495  ghsa 66.0 to nvd 68.1       Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2021-3749   67.5                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2022-24785  67.5                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2022-31129  67.5                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-25639  67.5                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-42038  ghsa 65.4 to nvd 67.5       Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-42039  67.5                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-44486  67.5                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+                  the assessor council CVSS 6.8  ·  the risk score does not use it
+  CVE-2026-44487  67.5                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-44496  67.5                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2020-8203   67.2                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-42033  67.2                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-42035  67.2                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-67316  redhat 56.1 to nvd 67.2     Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2021-23337  66.6                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2023-45857  64.5                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-2950   nvd 60.9 to redhat 64.5     Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-67319  nvd 56.1 to redhat 64.5     Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+                  the assessor council CVSS 5.6  ·  the risk score does not use it
+  CVE-2024-29041  63.3                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-42042  ghsa 61.2 to redhat 63.3    Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2020-28500  60.9                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2025-27152  60.9                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-42034  60.9                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-42036  60.9                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2024-43796  nvd 59.1 to redhat 60.0     Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+  CVE-2026-42040  56.1                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+                  the assessor council CVSS 5.1  ·  the risk score does not use it
+  NSWG-ECO-516    45.0                        Critical  ·  provisional
+                  floored by FLOOR-EXPLOITED-HIGH: Medium to High
+                  floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: High to Critical
+
+COUNCIL (35)
+  escalation model qwen2.5:1.5b: asked each metric the council left open
+  models: qwen3.5:4b d8b0f5e9760c, llama3.2:3b a80c4f17acd5, qwen2.5:1.5b (escalation) 65ec06548149; Ollama 0.40.2 on 10.205.4.74, not this machine
+  CVE-2020-28500  no vector  ·  could not settle PR, S, C, I
+    2 metrics settled
+      2  one member offered a quotation, and no other member offered one
+    AV  ·  unresolved → escalated to qwen2.5:1.5b: L (verified)  ·  2 members
+      chairman: L  ·  the council left it open, and the escalation model's verified quotation settled it  ·  medium confidence
+      qwen3.5:4b (qwen3.5)  declined  ·  with the options reversed: declined
+      llama3.2:3b (llama3.2)  guessed L with nothing quoted
+      qwen2.5:1.5b (qwen2.5), escalation model  L  ·  medium confidence  ·  quotation found in the advisory
+        “Lodash versions prior to 4.17.21 are vulnerable to Regular Expression Denial of Service
+        (ReDoS) via the toNumber, trim and trimEnd functions.”
+    PR  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, L, quotation not found in the advisory  ·  2 members
+      qwen3.5:4b (qwen3.5)  guessed N with nothing quoted
+      llama3.2:3b (llama3.2)  order-sensitive: N with the options in order, L reversed
+      qwen2.5:1.5b (qwen2.5), escalation model  L  ·  medium confidence  ·  quotation not found in the advisory
+        “The advisory mentions that Lodash versions prior to 4.17.21 are vulnerable to Regular
+        Expression Denial of Service (ReDoS) via the toNumber, trim and trimEnd functions.”
+    UI  ·  unresolved → escalated to qwen2.5:1.5b: R (verified)  ·  2 members
+      chairman: R  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.5:4b (qwen3.5)  guessed N with nothing quoted
+      llama3.2:3b (llama3.2)  guessed N with nothing quoted
+      qwen2.5:1.5b (qwen2.5), escalation model  R  ·  high confidence  ·  quotation found in the advisory
+        “Lodash versions prior to 4.17.21 are vulnerable to Regular Expression Denial of Service
+        (ReDoS) via the toNumber, trim and trimEnd functions.”
+    S  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: C with the options in order, U reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  guessed U with nothing quoted
+      llama3.2:3b (llama3.2)  guessed C with nothing quoted
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: C with the options in order, U reversed  ·  with the options reversed: quotation not found in the advisory
+    C  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, L, quotation not found in the advisory  ·  2 members
+      qwen3.5:4b (qwen3.5)  guessed N with nothing quoted
+      llama3.2:3b (llama3.2)  guessed L with nothing quoted
+      qwen2.5:1.5b (qwen2.5), escalation model  L  ·  medium confidence  ·  quotation not found in the advisory
+        “a quotation copied word for word from the advisory above: 'Lodash versions prior to
+        4.17.21 are vulnerable to Regular Expression Denial of Service (ReDoS) via the toNumber,
+        trim and trimEnd functions.'”
+    I  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, L, quotation not found in the advisory  ·  2 members
+      qwen3.5:4b (qwen3.5)  declined  ·  with the options reversed: declined
+      llama3.2:3b (llama3.2)  guessed L with nothing quoted
+      qwen2.5:1.5b (qwen2.5), escalation model  L  ·  medium confidence  ·  quotation not found in the advisory
+        “a quotation copied word for word from the advisory above: 'Lodash versions prior to
+        4.17.21 are vulnerable to Regular Expression Denial of Service (ReDoS) via the toNumber,
+        trim and trimEnd functions.'”
+  CVE-2020-8203  no vector  ·  could not settle AV, AC, PR, UI, S, C, I, A
+    AV  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: A with the options in order, L reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  declined
+      llama3.2:3b (llama3.2)  order-sensitive: A with the options in order, P reversed  ·  with the options in order: quotation not found in the advisory
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: A with the options in order, L reversed
+    AC  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: H with the options in order, L reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  declined
+      llama3.2:3b (llama3.2)  order-sensitive: H with the options in order, L reversed  ·  with the options in order: quotation not found in the advisory
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: H with the options in order, L reversed
+    PR  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, L, quotation not found in the advisory  ·  2 members
+      qwen3.5:4b (qwen3.5)  declined  ·  with the options in order: declined
+      llama3.2:3b (llama3.2)  order-sensitive: N with the options in order, H reversed  ·  with the options reversed: quotation not found in the advisory
+      qwen2.5:1.5b (qwen2.5), escalation model  L  ·  medium confidence  ·  quotation not found in the advisory
+        “The advisory mentions that the prototype pollution attack occurs when using
+        _.zipObjectDeep in lodash before 4.17.20, which requires low privileges to exploit.”
+    UI  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, R, quotation not found in the advisory  ·  2 members
+      qwen3.5:4b (qwen3.5)  guessed N with nothing quoted
+      llama3.2:3b (llama3.2)  order-sensitive: R with the options in order, N reversed  ·  with the options in order: quotation not found in the advisory
+      qwen2.5:1.5b (qwen2.5), escalation model  R  ·  high confidence  ·  quotation not found in the advisory
+        “The advisory states: 'Prototype pollution attack when using _.zipObjectDeep in lodash
+        before 4.17.20.' This indicates that another user must perform an action before the
+        vulnerability can be exploited.”
+    S  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: C with the options in order, U reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  declined
+      llama3.2:3b (llama3.2)  C  ·  high confidence  ·  quotation not found in the advisory
+        “The vulnerability allows a prototype pollution attack when using _.zipObjectDeep in
+        lodash before 4.17.20.”
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: C with the options in order, U reversed
+    C  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: L with the options in order, H reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  declined  ·  with the options reversed: declined
+      llama3.2:3b (llama3.2)  order-sensitive: H with the options in order, L reversed
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: L with the options in order, H reversed
+    I  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: L with the options in order, H reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  declined  ·  with the options reversed: declined
+      llama3.2:3b (llama3.2)  order-sensitive: H with the options in order, L reversed
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: L with the options in order, H reversed
+    A  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, L, quotation not found in the advisory  ·  2 members
+      qwen3.5:4b (qwen3.5)  declined
+      llama3.2:3b (llama3.2)  order-sensitive: H with the options in order, L reversed
+      qwen2.5:1.5b (qwen2.5), escalation model  L  ·  high confidence  ·  quotation not found in the advisory
+        “The advisory states that the prototype pollution attack can lead to denial of service
+        by causing the service to be interrupted.”
+  CVE-2021-23337  no vector  ·  could not settle AV, S, C, I, A
+    2 metrics settled
+      2  one member offered a quotation, and no other member offered one
+    AV  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, L, quotation not found in the advisory  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: L with the options in order, N reversed
+      llama3.2:3b (llama3.2)  guessed L with nothing quoted
+      qwen2.5:1.5b (qwen2.5), escalation model  L  ·  high confidence  ·  quotation not found in the advisory  ·  with the options in order: quotation not found in the advisory
+        “The advisory states: 'Lodash versions prior to 4.17.21 are vulnerable to Command
+        Injection via the template function.'”
+    UI  ·  unresolved → escalated to qwen2.5:1.5b: R (verified)  ·  2 members
+      chairman: R  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.5:4b (qwen3.5)  guessed N with nothing quoted
+      llama3.2:3b (llama3.2)  guessed N with nothing quoted
+      qwen2.5:1.5b (qwen2.5), escalation model  R  ·  high confidence  ·  quotation found in the advisory
+        “Lodash versions prior to 4.17.21 are vulnerable to Command Injection via the template
+        function.”
+    S  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: C with the options in order, U reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  declined  ·  with the options in order: declined
+      llama3.2:3b (llama3.2)  guessed C with nothing quoted
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: C with the options in order, U reversed
+    C  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, L, quotation not found in the advisory  ·  2 members
+      qwen3.5:4b (qwen3.5)  declined  ·  with the options reversed: declined
+      llama3.2:3b (llama3.2)  guessed L with nothing quoted
+      qwen2.5:1.5b (qwen2.5), escalation model  L  ·  high confidence  ·  quotation not found in the advisory
+        “a quotation copied word for word from the advisory above: 'Lodash versions prior to
+        4.17.21 are vulnerable to Command Injection via the template function.'”
+    I  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, L, quotation not found in the advisory  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: N with the options in order, H reversed
+      llama3.2:3b (llama3.2)  guessed L with nothing quoted
+      qwen2.5:1.5b (qwen2.5), escalation model  L  ·  high confidence  ·  quotation not found in the advisory
+        “a quotation copied word for word from the advisory above: 'Lodash versions prior to
+        4.17.21 are vulnerable to Command Injection via the template function.'”
+    A  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, L, quotation not found in the advisory  ·  2 members
+      qwen3.5:4b (qwen3.5)  declined  ·  with the options reversed: declined
+      llama3.2:3b (llama3.2)  guessed L with nothing quoted
+      qwen2.5:1.5b (qwen2.5), escalation model  L  ·  high confidence  ·  quotation not found in the advisory
+        “The advisory states that Lodash versions prior to 4.17.21 are vulnerable to Command
+        Injection via the template function.”
+  CVE-2021-3749  no vector  ·  could not settle AV, AC, PR, UI, S, C, I, A
+    AV  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: A with the options in order, L reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  declined
+      llama3.2:3b (llama3.2)  declined
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: A with the options in order, L reversed
+    AC  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: H with the options in order, L reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  declined
+      llama3.2:3b (llama3.2)  order-sensitive: H with the options in order, L reversed
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: H with the options in order, L reversed
+    PR  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, L, quotation not found in the advisory  ·  2 members
+      qwen3.5:4b (qwen3.5)  declined  ·  with the options in order: declined
+      llama3.2:3b (llama3.2)  declined  ·  with the options in order: declined
+      qwen2.5:1.5b (qwen2.5), escalation model  L  ·  low confidence  ·  quotation not found in the advisory
+        “The advisory states that the vulnerability is due to inefficient regular expression
+        complexity, which is a low-risk issue.”
+    UI  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, R, quotation not found in the advisory  ·  2 members
+      qwen3.5:4b (qwen3.5)  declined  ·  with the options in order: declined
+      llama3.2:3b (llama3.2)  order-sensitive: R with the options in order, N reversed  ·  with the options in order: quotation not found in the advisory
+      qwen2.5:1.5b (qwen2.5), escalation model  R  ·  high confidence  ·  quotation not found in the advisory
+        “The advisory states: 'The attack needs no participation from any other user.'”
+    S  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: C with the options in order, U reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  declined
+      llama3.2:3b (llama3.2)  order-sensitive: C with the options in order, U reversed
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: C with the options in order, U reversed
+    C  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, L, quotation not found in the advisory  ·  2 members
+      qwen3.5:4b (qwen3.5)  declined
+      llama3.2:3b (llama3.2)  declined
+      qwen2.5:1.5b (qwen2.5), escalation model  L  ·  medium confidence  ·  quotation not found in the advisory
+        “The advisory states: 'The regular expression used to validate the URL is inefficient
+        and can lead to a denial of service attack.' This indicates that the loss of
+        confidentiality is limited and not serious on its own, hence the value 'Low'.”
+    I  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, L, quotation not found in the advisory  ·  2 members
+      qwen3.5:4b (qwen3.5)  declined
+      llama3.2:3b (llama3.2)  declined  ·  with the options reversed: declined
+      qwen2.5:1.5b (qwen2.5), escalation model  L  ·  high confidence  ·  quotation not found in the advisory
+        “The advisory states: 'axios is vulnerable to Inefficient Regular Expression Complexity.
+        The attacker can modify any data, or the modification they can make has a serious
+        consequence on its own.'”
+    A  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, L, quotation not found in the advisory  ·  2 members
+      qwen3.5:4b (qwen3.5)  declined
+      llama3.2:3b (llama3.2)  declined  ·  with the options reversed: declined
+      qwen2.5:1.5b (qwen2.5), escalation model  L  ·  high confidence  ·  quotation not found in the advisory
+        “The advisory states: 'The regular expression used to validate the request body is
+        inefficient, leading to a high number of false positives and a significant performance
+        impact.'”
+  CVE-2022-24785  no vector  ·  could not settle AV, PR, UI, S, C, A
+    2 metrics settled
+      2  one member offered a quotation, and no other member offered one
+    AV  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: A with the options in order, L reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  declined  ·  with the options reversed: declined
+      llama3.2:3b (llama3.2)  declined  ·  with the options reversed: declined
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: A with the options in order, L reversed
+    PR  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, L, quotation not found in the advisory  ·  2 members
+      qwen3.5:4b (qwen3.5)  declined  ·  with the options in order: declined
+      llama3.2:3b (llama3.2)  guessed N with nothing quoted
+      qwen2.5:1.5b (qwen2.5), escalation model  L  ·  low confidence  ·  quotation not found in the advisory
+        “The advisory mentions that the vulnerability impacts users of Moment.js between
+        versions 1.0.1 and 2.29.1, especially if a user-provided locale string is directly used
+        to switch moment locale. This suggests that the vulnerability is related to the use of
+        user-provided locale strings, which is a low-risk scenario.”
+    UI  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, R, quotation not found in the advisory  ·  2 members
+      qwen3.5:4b (qwen3.5)  guessed N with nothing quoted
+      llama3.2:3b (llama3.2)  order-sensitive: R with the options in order, N reversed  ·  with the options in order: quotation not found in the advisory
+      qwen2.5:1.5b (qwen2.5), escalation model  R  ·  high confidence  ·  quotation not found in the advisory
+        “The advisory mentions that a user-provided locale string is directly used to switch
+        moment locale, and the vulnerability is patched in version 2.29.2, which can be applied
+        to all affected versions.”
+    S  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: C with the options in order, U reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  guessed U with nothing quoted
+      llama3.2:3b (llama3.2)  guessed C with nothing quoted  ·  with the options reversed: quotation not found in the advisory
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: C with the options in order, U reversed
+    C  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, L, quotation not found in the advisory  ·  2 members
+      qwen3.5:4b (qwen3.5)  declined  ·  with the options reversed: declined
+      llama3.2:3b (llama3.2)  guessed L with nothing quoted
+      qwen2.5:1.5b (qwen2.5), escalation model  L  ·  medium confidence  ·  quotation not found in the advisory
+        “The advisory mentions that the vulnerability impacts users of Moment.js between
+        versions 1.0.1 and 2.29.1, especially if a user-provided locale string is directly used
+        to switch moment locale. This problem is patched in 2.29.2, and the patch can be applied
+        to all affected versions. As a workaround, sanitize the user-provided locale name before
+        passing it to Moment.js.”
+    A  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, L, quotation not found in the advisory  ·  2 members
+      qwen3.5:4b (qwen3.5)  declined  ·  with the options reversed: declined
+      llama3.2:3b (llama3.2)  guessed L with nothing quoted
+      qwen2.5:1.5b (qwen2.5), escalation model  L  ·  medium confidence  ·  quotation not found in the advisory
+        “The advisory mentions that the vulnerability impacts users of Moment.js between
+        versions 1.0.1 and 2.29.1, especially if a user-provided locale string is directly used
+        to switch moment locale. This problem is patched in 2.29.2, and the patch can be applied
+        to all affected versions. As a workaround, sanitize the user-provided locale name before
+        passing it to Moment.js.”
+  CVE-2022-31129  no vector  ·  could not settle AV, S, C
+    3 metrics settled
+      3  one member offered a quotation, and no other member offered one
+    AV  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: A with the options in order, L reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: L with the options in order, N reversed
+      llama3.2:3b (llama3.2)  declined  ·  with the options reversed: declined
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: A with the options in order, L reversed
+    UI  ·  unresolved → escalated to qwen2.5:1.5b: R (verified)  ·  2 members
+      chairman: R  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.5:4b (qwen3.5)  order-sensitive: N with the options in order, R reversed
+      llama3.2:3b (llama3.2)  order-sensitive: R with the options in order, N reversed
+      qwen2.5:1.5b (qwen2.5), escalation model  R  ·  high confidence  ·  quotation found in the advisory
+        “Users may notice a noticeable slowdown is observed with inputs above 10k characters.”
+    S  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: C with the options in order, U reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  guessed U with nothing quoted
+      llama3.2:3b (llama3.2)  order-sensitive: C with the options in order, U reversed
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: C with the options in order, U reversed
+    C  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, L, quotation not found in the advisory  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: N with the options in order, L reversed
+      llama3.2:3b (llama3.2)  declined  ·  with the options reversed: declined
+      qwen2.5:1.5b (qwen2.5), escalation model  L  ·  medium confidence  ·  quotation not found in the advisory
+        “moment was found to use an inefficient parsing algorithm, specifically rfc2822 parsing,
+        which is tried by default, and this algorithm has quadratic complexity on specific
+        inputs, leading to a noticeable slowdown with inputs above 10k characters.”
+    I  ·  unresolved → escalated to qwen2.5:1.5b: L (verified)  ·  2 members
+      chairman: L  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.5:4b (qwen3.5)  order-sensitive: L with the options in order, H reversed
+      llama3.2:3b (llama3.2)  declined  ·  with the options reversed: declined
+      qwen2.5:1.5b (qwen2.5), escalation model  L  ·  high confidence  ·  quotation found in the advisory  ·  with the options reversed: quotation not found in the advisory
+        “Users may notice a noticeable slowdown is observed with inputs above 10k characters.”
+  CVE-2023-45857  no vector  ·  could not settle AC
+    6 metrics settled
+      6  one member offered a quotation, and no other member offered one
+    AC  ·  contested → escalated to qwen2.5:1.5b: no settlement, order-sensitive: H with the options in order, L reversed  ·  2 members
+      same evidence, different reading: members quoted the same words and read different values
+      qwen3.5:4b (qwen3.5)  L  ·  high confidence  ·  quotation found in the advisory
+        “An issue discovered in Axios 1.5.1 inadvertently reveals the confidential XSRF-TOKEN
+        stored in cookies by including it in the HTTP header X-XSRF-TOKEN for every request made
+        to any host allowing attackers to view sensitive information.”
+      llama3.2:3b (llama3.2)  H  ·  high confidence  ·  quotation found in the advisory
+        “including it in the HTTP header X-XSRF-TOKEN for every request made to any host”
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: H with the options in order, L reversed
+    A  ·  unresolved → escalated to qwen2.5:1.5b: L (verified)  ·  2 members
+      chairman: L  ·  the council left it open, and the escalation model's verified quotation settled it  ·  medium confidence
+      qwen3.5:4b (qwen3.5)  guessed N with nothing quoted
+      llama3.2:3b (llama3.2)  order-sensitive: H with the options in order, L reversed
+      qwen2.5:1.5b (qwen2.5), escalation model  L  ·  medium confidence  ·  quotation found in the advisory
+        “An issue discovered in Axios 1.5.1 inadvertently reveals the confidential XSRF-TOKEN
+        stored in cookies by including it in the HTTP header X-XSRF-TOKEN for every request made
+        to any host allowing attackers to view sensitive information.”
+  CVE-2024-29041  no vector  ·  could not settle AV, C, A
+    5 metrics settled
+      5  one member offered a quotation, and no other member offered one
+    AV  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: A with the options in order, L reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: L with the options in order, N reversed
+      llama3.2:3b (llama3.2)  order-sensitive: L with the options in order, A reversed  ·  with the options reversed: quotation not found in the advisory
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: A with the options in order, L reversed
+    C  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, L, quotation not found in the advisory  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: N with the options in order, L reversed
+      llama3.2:3b (llama3.2)  guessed H with nothing quoted
+      qwen2.5:1.5b (qwen2.5), escalation model  L  ·  medium confidence  ·  quotation not found in the advisory
+        “When a user of Express performs a redirect using a user-provided URL, Express performs
+        an encode [using `encodeurl`](https://github.com/pillarjs/encodeurl) on the contents
+        before passing it to the `location` header. This can cause malformed URLs to be
+        evaluated in unexpected ways by common redirect allow list implementations in Express
+        applications, leading to an Open Redirect via bypass of a properly implemented allow
+        list.”
+    A  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, L, quotation not found in the advisory  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: N with the options in order, L reversed
+      llama3.2:3b (llama3.2)  guessed L with nothing quoted
+      qwen2.5:1.5b (qwen2.5), escalation model  L  ·  medium confidence  ·  quotation not found in the advisory
+        “When a user of Express performs a redirect using a user-provided URL, Express performs
+        an encode [using `encodeurl`](https://github.com/pillarjs/encodeurl) on the contents
+        before passing it to the `location` header. This can cause malformed URLs to be
+        evaluated in unexpected ways by common redirect allow list implementations in Express
+        applications, leading to an Open Redirect via bypass of a properly implemented allow
+        list.”
+  CVE-2024-43796  no vector  ·  could not settle AV, UI, S, C, A
+    3 metrics settled
+      3  one member offered a quotation, and no other member offered one
+    AV  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: A with the options in order, L reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: L with the options in order, N reversed
+      llama3.2:3b (llama3.2)  order-sensitive: L with the options in order, P reversed  ·  with the options reversed: quotation not found in the advisory
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: A with the options in order, L reversed
+    UI  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, R, quotation not found in the advisory  ·  2 members
+      qwen3.5:4b (qwen3.5)  guessed N with nothing quoted
+      llama3.2:3b (llama3.2)  order-sensitive: R with the options in order, N reversed  ·  with the options in order: quotation not found in the advisory
+      qwen2.5:1.5b (qwen2.5), escalation model  R  ·  high confidence  ·  quotation not found in the advisory
+        “Passing untrusted user input to response.redirect() may execute untrusted code, and
+        this issue is patched in express 4.20.0.”
+    S  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: C with the options in order, U reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: C with the options in order, U reversed
+      llama3.2:3b (llama3.2)  C  ·  high confidence  ·  quotation not found in the advisory
+        “Passing untrusted user input to response.redirect() may execute untrusted code.”
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: C with the options in order, U reversed
+    C  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, L, quotation not found in the advisory  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: N with the options in order, L reversed
+      llama3.2:3b (llama3.2)  H  ·  high confidence  ·  quotation not found in the advisory
+        “Passing untrusted user input to response.redirect() may execute untrusted code.”
+      qwen2.5:1.5b (qwen2.5), escalation model  L  ·  high confidence  ·  quotation not found in the advisory
+        “Passing untrusted user input to response.redirect() may execute untrusted code, which
+        is a serious loss of confidentiality.”
+    A  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, L, quotation not found in the advisory  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: N with the options in order, L reversed
+      llama3.2:3b (llama3.2)  H  ·  high confidence  ·  quotation not found in the advisory  ·  with the options in order: quotation not found in the advisory
+        “Passing untrusted user input to response.redirect() may execute untrusted code.”
+      qwen2.5:1.5b (qwen2.5), escalation model  L  ·  medium confidence  ·  quotation not found in the advisory
+        “Passing untrusted user input to response.redirect() may execute untrusted code, and the
+        issue is patched in express 4.20.0.”
+  CVE-2025-13465  no vector  ·  could not settle AV, C
+    5 metrics settled
+      5  one member offered a quotation, and no other member offered one
+    AV  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: A with the options in order, L reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: L with the options in order, N reversed
+      llama3.2:3b (llama3.2)  guessed L with nothing quoted
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: A with the options in order, L reversed
+    C  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: L with the options in order, H reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: N with the options in order, L reversed
+      llama3.2:3b (llama3.2)  order-sensitive: N with the options in order, L reversed
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: L with the options in order, H reversed
+    A  ·  unresolved → escalated to qwen2.5:1.5b: L (verified)  ·  2 members
+      chairman: L  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.5:4b (qwen3.5)  order-sensitive: N with the options in order, L reversed
+      llama3.2:3b (llama3.2)  order-sensitive: N with the options in order, L reversed
+      qwen2.5:1.5b (qwen2.5), escalation model  L  ·  high confidence  ·  quotation found in the advisory
+        “An attacker can pass crafted paths which cause Lodash to delete methods from global
+        prototypes.”
+  CVE-2025-27152  no vector  ·  could not settle AV, AC, S, C, A
+    3 metrics settled
+      3  one member offered a quotation, and no other member offered one
+    AV  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: A with the options in order, L reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: L with the options in order, N reversed
+      llama3.2:3b (llama3.2)  declined  ·  with the options reversed: declined
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: A with the options in order, L reversed
+    AC  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: H with the options in order, L reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  L  ·  high confidence  ·  quotation not found in the advisory  ·  with the options in order: quotation not found in the advisory
+        “This issue occurs when passing absolute URLs rather than protocol-relative URLs to
+        axios.”
+      llama3.2:3b (llama3.2)  order-sensitive: H with the options in order, L reversed
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: H with the options in order, L reversed
+    S  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: C with the options in order, U reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: C with the options in order, U reversed
+      llama3.2:3b (llama3.2)  guessed C with nothing quoted
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: C with the options in order, U reversed
+    C  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: L with the options in order, H reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: L with the options in order, H reversed
+      llama3.2:3b (llama3.2)  order-sensitive: N with the options in order, H reversed
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: L with the options in order, H reversed
+    A  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, L, quotation not found in the advisory  ·  2 members
+      qwen3.5:4b (qwen3.5)  guessed N with nothing quoted
+      llama3.2:3b (llama3.2)  order-sensitive: N with the options in order, H reversed
+      qwen2.5:1.5b (qwen2.5), escalation model  L  ·  medium confidence  ·  quotation not found in the advisory
+        “The advisory states: 'This issue impacts both server-side and client-side usage of
+        axios.'”
+  CVE-2025-62718  no vector  ·  could not settle AV, I
+    6 metrics settled
+      2  every member that offered a quotation supported this value
+      4  one member offered a quotation, and no other member offered one
+    AV  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: A with the options in order, L reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: L with the options in order, N reversed
+      llama3.2:3b (llama3.2)  order-sensitive: L with the options in order, A reversed
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: A with the options in order, L reversed
+    I  ·  contested → escalated to qwen2.5:1.5b: no settlement, L, quotation not found in the advisory  ·  2 members
+      qwen3.5:4b (qwen3.5)  H  ·  high confidence  ·  quotation found in the advisory
+        “This issue leads to the possibility of proxy bypass and SSRF vulnerabilities allowing
+        attackers to reach sensitive loopback or internal services despite the configured
+        protections.”
+      llama3.2:3b (llama3.2)  L  ·  medium confidence  ·  quotation found in the advisory
+        “Requests to loopback addresses like localhost. (with a trailing dot) or [::1] (IPv6
+        literal) skip NO_PROXY matching and go through the configured proxy.”
+      qwen2.5:1.5b (qwen2.5), escalation model  L  ·  high confidence  ·  quotation not found in the advisory
+        “Axios does not correctly handle hostname normalization when checking NO_PROXY rules,
+        leading to the possibility of proxy bypass and SSRF vulnerabilities allowing attackers
+        to reach sensitive loopback or internal services despite the configured protections.”
+  CVE-2026-25639  no vector  ·  could not settle AV, S
+    5 metrics settled
+      1  every member that offered a quotation supported this value
+      4  one member offered a quotation, and no other member offered one
+    AV  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: A with the options in order, L reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: L with the options in order, N reversed
+      llama3.2:3b (llama3.2)  guessed L with nothing quoted
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: A with the options in order, L reversed
+    PR  ·  unresolved → escalated to qwen2.5:1.5b: L (verified)  ·  2 members
+      chairman: L  ·  the council left it open, and the escalation model's verified quotation settled it  ·  medium confidence
+      qwen3.5:4b (qwen3.5)  guessed N with nothing quoted
+      llama3.2:3b (llama3.2)  guessed N with nothing quoted
+      qwen2.5:1.5b (qwen2.5), escalation model  L  ·  medium confidence  ·  quotation found in the advisory
+        “An attacker can trigger this by providing a malicious configuration object created via
+        JSON.parse(), causing complete denial of service.”
+    S  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: C with the options in order, U reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  guessed U with nothing quoted
+      llama3.2:3b (llama3.2)  order-sensitive: C with the options in order, U reversed
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: C with the options in order, U reversed
+  CVE-2026-2950  no vector  ·  could not settle AV, A
+    6 metrics settled
+      1  every member that offered a quotation supported this value
+      5  one member offered a quotation, and no other member offered one
+    AV  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: A with the options in order, L reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: L with the options in order, N reversed
+      llama3.2:3b (llama3.2)  guessed L with nothing quoted  ·  with the options reversed: quotation not found in the advisory
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: A with the options in order, L reversed
+    A  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, L, quotation not found in the advisory  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: N with the options in order, L reversed
+      llama3.2:3b (llama3.2)  guessed L with nothing quoted  ·  with the options reversed: quotation not found in the advisory
+      qwen2.5:1.5b (qwen2.5), escalation model  L  ·  high confidence  ·  quotation not found in the advisory
+        “The advisory states that the fix for [identifier withheld] only guards against string
+        key members, allowing an attacker to bypass the check by passing array-wrapped path
+        segments, which is the primary vulnerability described.”
+  CVE-2026-40175  no vector  ·  could not settle AV, S
+    4 metrics settled
+      4  one member offered a quotation, and no other member offered one
+    AV  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: A with the options in order, L reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: L with the options in order, N reversed
+      llama3.2:3b (llama3.2)  declined  ·  with the options reversed: declined
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: A with the options in order, L reversed  ·  with the options reversed: quotation not found in the advisory
+    UI  ·  unresolved → escalated to qwen2.5:1.5b: R (verified)  ·  2 members
+      chairman: R  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.5:4b (qwen3.5)  guessed N with nothing quoted
+      llama3.2:3b (llama3.2)  order-sensitive: R with the options in order, N reversed  ·  with the options in order: quotation not found in the advisory
+      qwen2.5:1.5b (qwen2.5), escalation model  R  ·  high confidence  ·  quotation found in the advisory
+        “Versions prior to 1.15.0 and 0.3.1 are vulnerable to a specific gadget-style attack
+        chain in which prototype pollution in a third-party dependency may be leveraged to
+        inject unsanitized header values into outbound requests.”
+    S  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: C with the options in order, U reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: C with the options in order, U reversed
+      llama3.2:3b (llama3.2)  order-sensitive: C with the options in order, U reversed
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: C with the options in order, U reversed  ·  with the options reversed: quotation not found in the advisory
+    A  ·  unresolved → escalated to qwen2.5:1.5b: L (verified)  ·  2 members
+      chairman: L  ·  the council left it open, and the escalation model's verified quotation settled it  ·  medium confidence
+      qwen3.5:4b (qwen3.5)  guessed N with nothing quoted
+      llama3.2:3b (llama3.2)  declined  ·  with the options reversed: declined
+      qwen2.5:1.5b (qwen2.5), escalation model  L  ·  medium confidence  ·  quotation found in the advisory
+        “Versions prior to 1.15.0 and 0.3.1 are vulnerable to a specific gadget-style attack
+        chain in which prototype pollution in a third-party dependency may be leveraged to
+        inject unsanitized header values into outbound requests.”
+  CVE-2026-42033  no vector  ·  could not settle S, I
+    6 metrics settled
+      1  every member that offered a quotation supported this value
+      5  one member offered a quotation, and no other member offered one
+    S  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: C with the options in order, U reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: C with the options in order, U reversed
+      llama3.2:3b (llama3.2)  order-sensitive: C with the options in order, U reversed
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: C with the options in order, U reversed
+    I  ·  contested → escalated to qwen2.5:1.5b: no settlement, order-sensitive: L with the options in order, H reversed  ·  2 members
+      same evidence, different reading: members quoted the same words and read different values
+      qwen3.5:4b (qwen3.5)  H  ·  high confidence  ·  quotation found in the advisory
+        “an attacker can (a) silently intercept and modify every JSON response before the
+        application sees it, or (b) fully hijack the underlying HTTP transport, gaining access
+        to request credentials, headers, and body.”
+      llama3.2:3b (llama3.2)  L  ·  low confidence  ·  quotation found in the advisory
+        “an attacker can (a) silently intercept and modify every JSON response before the
+        application sees it”
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: L with the options in order, H reversed
+  CVE-2026-42034  no vector  ·  could not settle AV, AC, PR, S, I, A
+    AV  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: A with the options in order, L reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: L with the options in order, N reversed
+      llama3.2:3b (llama3.2)  declined  ·  with the options reversed: declined
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: A with the options in order, L reversed  ·  with the options reversed: quotation not found in the advisory
+    AC  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: H with the options in order, L reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  guessed L with nothing quoted
+      llama3.2:3b (llama3.2)  order-sensitive: H with the options in order, L reversed  ·  with the options in order: quotation not found in the advisory
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: H with the options in order, L reversed
+    PR  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, L, quotation not found in the advisory  ·  2 members
+      qwen3.5:4b (qwen3.5)  guessed N with nothing quoted
+      llama3.2:3b (llama3.2)  guessed N with nothing quoted
+      qwen2.5:1.5b (qwen2.5), escalation model  L  ·  medium confidence  ·  quotation not found in the advisory
+        “The advisory states that for stream request bodies, maxBodyLength is bypassed when
+        maxRedirects is set to 0, and oversize streamed uploads are sent fully even when the
+        caller sets strict body limits.”
+    UI  ·  unresolved → escalated to qwen2.5:1.5b: R (verified)  ·  2 members
+      chairman: R  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.5:4b (qwen3.5)  guessed N with nothing quoted
+      llama3.2:3b (llama3.2)  order-sensitive: R with the options in order, N reversed  ·  with the options in order: quotation not found in the advisory
+      qwen2.5:1.5b (qwen2.5), escalation model  R  ·  high confidence  ·  quotation found in the advisory
+        “Prior to 1.15.1 and 0.31.1, for stream request bodies, maxBodyLength is bypassed when
+        maxRedirects is set to 0 (native http/https transport path). Oversized streamed uploads
+        are sent fully even when the caller sets strict body limits.”
+    S  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: C with the options in order, U reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  guessed U with nothing quoted
+      llama3.2:3b (llama3.2)  order-sensitive: C with the options in order, U reversed
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: C with the options in order, U reversed
+    C  ·  unresolved → escalated to qwen2.5:1.5b: L (verified)  ·  2 members
+      chairman: L  ·  the council left it open, and the escalation model's verified quotation settled it  ·  medium confidence
+      qwen3.5:4b (qwen3.5)  order-sensitive: N with the options in order, L reversed
+      llama3.2:3b (llama3.2)  order-sensitive: L with the options in order, H reversed
+      qwen2.5:1.5b (qwen2.5), escalation model  L  ·  medium confidence  ·  quotation found in the advisory
+        “Prior to 1.15.1 and 0.31.1, for stream request bodies, maxBodyLength is bypassed when
+        maxRedirects is set to 0 (native http/https transport path). Oversized streamed uploads
+        are sent fully even when the caller sets strict body limits.”
+    I  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, L, quotation not found in the advisory  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: L with the options in order, H reversed
+      llama3.2:3b (llama3.2)  order-sensitive: L with the options in order, H reversed
+      qwen2.5:1.5b (qwen2.5), escalation model  L  ·  high confidence  ·  quotation not found in the advisory
+        “The advisory states that oversized streamed uploads are sent fully even when the caller
+        sets strict body limits, indicating a serious consequence on its own.”
+    A  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, L, quotation not found in the advisory  ·  2 members
+      qwen3.5:4b (qwen3.5)  guessed N with nothing quoted
+      llama3.2:3b (llama3.2)  L  ·  medium confidence  ·  quotation not found in the advisory
+        “Performance drops or service is interrupted, but even repeated exploitation does not
+        deny service completely.”
+      qwen2.5:1.5b (qwen2.5), escalation model  L  ·  medium confidence  ·  quotation not found in the advisory  ·  with the options in order: quotation not found in the advisory
+        “The advisory states that for stream request bodies, maxBodyLength is bypassed when
+        maxRedirects is set to 0, and oversize streamed uploads are sent fully even when the
+        caller sets strict body limits.”
+  CVE-2026-42035  no vector  ·  could not settle S
+    7 metrics settled
+      7  one member offered a quotation, and no other member offered one
+    S  ·  contested → escalated to qwen2.5:1.5b: no settlement, order-sensitive: C with the options in order, U reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  U  ·  high confidence  ·  quotation found in the advisory
+        “The vulnerable code resides exclusively in lib/adapters/http.js.”
+      llama3.2:3b (llama3.2)  C  ·  high confidence  ·  quotation found in the advisory  ·  with the options reversed: quotation not found in the advisory
+        “The prototype pollution source does not need to originate from Axios itself — any
+        prototype pollution primitive in any dependency in the application's dependency tree is
+        sufficient to trigger this gadget.”
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: C with the options in order, U reversed
+  CVE-2026-42036  no vector  ·  could not settle AV
+    7 metrics settled
+      7  one member offered a quotation, and no other member offered one
+    AV  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: A with the options in order, L reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: L with the options in order, N reversed
+      llama3.2:3b (llama3.2)  order-sensitive: L with the options in order, A reversed
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: A with the options in order, L reversed
+  CVE-2026-42038  no vector  ·  could not settle AV, S
+    6 metrics settled
+      6  one member offered a quotation, and no other member offered one
+    AV  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: A with the options in order, L reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: L with the options in order, N reversed
+      llama3.2:3b (llama3.2)  order-sensitive: L with the options in order, A reversed
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: A with the options in order, L reversed  ·  with the options reversed: quotation not found in the advisory
+    S  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: C with the options in order, U reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  guessed U with nothing quoted
+      llama3.2:3b (llama3.2)  order-sensitive: C with the options in order, U reversed
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: C with the options in order, U reversed
+  CVE-2026-42039  no vector  ·  could not settle AV, PR, S, C
+    3 metrics settled
+      3  one member offered a quotation, and no other member offered one
+    AV  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: A with the options in order, L reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: L with the options in order, N reversed
+      llama3.2:3b (llama3.2)  guessed L with nothing quoted
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: A with the options in order, L reversed  ·  with the options reversed: quotation not found in the advisory
+    PR  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, L, quotation not found in the advisory  ·  2 members
+      qwen3.5:4b (qwen3.5)  guessed N with nothing quoted
+      llama3.2:3b (llama3.2)  guessed N with nothing quoted
+      qwen2.5:1.5b (qwen2.5), escalation model  L  ·  medium confidence  ·  quotation not found in the advisory
+        “The advisory mentions that the vulnerability is fixed in versions 1.15.1 and 0.31.1,
+        indicating that the attacker does not need any specific privileges to exploit the
+        vulnerability.”
+    UI  ·  unresolved → escalated to qwen2.5:1.5b: R (verified)  ·  2 members
+      chairman: R  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.5:4b (qwen3.5)  guessed N with nothing quoted
+      llama3.2:3b (llama3.2)  order-sensitive: R with the options in order, N reversed
+      qwen2.5:1.5b (qwen2.5), escalation model  R  ·  high confidence  ·  quotation found in the advisory
+        “Prior to 1.15.1 and 0.31.1, toFormData recursively walks nested objects with no depth
+        limit, so a deeply nested value passed as request data crashes the Node.js process with
+        a RangeError.”
+    S  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: C with the options in order, U reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  guessed U with nothing quoted
+      llama3.2:3b (llama3.2)  order-sensitive: C with the options in order, U reversed
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: C with the options in order, U reversed
+    C  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, L, quotation not found in the advisory  ·  2 members
+      qwen3.5:4b (qwen3.5)  guessed N with nothing quoted
+      llama3.2:3b (llama3.2)  guessed L with nothing quoted
+      qwen2.5:1.5b (qwen2.5), escalation model  L  ·  high confidence  ·  quotation not found in the advisory  ·  with the options in order: quotation not found in the advisory
+        “The advisory states that the vulnerability is fixed in versions 1.15.1 and 0.31.1,
+        indicating that the issue was resolved and no further disclosure of sensitive
+        information is possible.”
+  CVE-2026-42040  settled  ·  CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:N  ·  CVSS 5.1 Medium
+    8 metrics settled
+      1  every member that offered a quotation supported this value
+      7  one member offered a quotation, and no other member offered one
+  CVE-2026-42041  no vector  ·  could not settle AV, AC, UI, S
+    4 metrics settled
+      1  every member that offered a quotation supported this value
+      3  one member offered a quotation, and no other member offered one
+    AV  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: A with the options in order, L reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: L with the options in order, N reversed
+      llama3.2:3b (llama3.2)  order-sensitive: L with the options in order, A reversed
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: A with the options in order, L reversed
+    AC  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: H with the options in order, L reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  L  ·  low confidence  ·  quotation not found in the advisory  ·  with the options in order: quotation not found in the advisory
+        “an attacker can expect repeatable success against the vulnerable component.”
+      llama3.2:3b (llama3.2)  order-sensitive: H with the options in order, L reversed
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: H with the options in order, L reversed
+    UI  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, R, quotation not found in the advisory  ·  2 members
+      qwen3.5:4b (qwen3.5)  guessed N with nothing quoted
+      llama3.2:3b (llama3.2)  order-sensitive: R with the options in order, N reversed  ·  with the options in order: quotation not found in the advisory
+      qwen2.5:1.5b (qwen2.5), escalation model  R  ·  high confidence  ·  quotation not found in the advisory
+        “The advisory states that the attack needs another user to open a file, follow a link,
+        or install an update before the vulnerability can be exploited.”
+    S  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: C with the options in order, U reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: C with the options in order, U reversed
+      llama3.2:3b (llama3.2)  guessed C with nothing quoted
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: C with the options in order, U reversed
+  CVE-2026-42042  no vector  ·  could not settle AV, UI
+    5 metrics settled
+      2  every member that offered a quotation supported this value
+      3  one member offered a quotation, and no other member offered one
+    AV  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: A with the options in order, L reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: L with the options in order, N reversed
+      llama3.2:3b (llama3.2)  order-sensitive: L with the options in order, A reversed
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: A with the options in order, L reversed
+    UI  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, R, quotation not found in the advisory  ·  2 members
+      qwen3.5:4b (qwen3.5)  guessed N with nothing quoted
+      llama3.2:3b (llama3.2)  order-sensitive: R with the options in order, N reversed
+      qwen2.5:1.5b (qwen2.5), escalation model  R  ·  high confidence  ·  quotation not found in the advisory
+        “The advisory states that the XSRF token protection logic is short-circuited when the
+        `withXSRFToken` config property is set to any truthy non-boolean value, which can be
+        exploited by attackers.”
+    A  ·  unresolved → escalated to qwen2.5:1.5b: L (verified)  ·  2 members
+      chairman: L  ·  the council left it open, and the escalation model's verified quotation settled it  ·  medium confidence
+      qwen3.5:4b (qwen3.5)  order-sensitive: N with the options in order, L reversed
+      llama3.2:3b (llama3.2)  order-sensitive: L with the options in order, H reversed
+      qwen2.5:1.5b (qwen2.5), escalation model  L  ·  medium confidence  ·  quotation found in the advisory
+        “When this property is set to any truthy non-boolean value (via prototype pollution or
+        misconfiguration), the same-origin check (isURLSameOrigin) is short-circuited, causing
+        XSRF tokens to be sent to all request targets including cross-origin servers controlled
+        by an attacker.”
+  CVE-2026-42043  no vector  ·  could not settle AV, C, A
+    5 metrics settled
+      5  one member offered a quotation, and no other member offered one
+    AV  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: A with the options in order, L reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: L with the options in order, N reversed
+      llama3.2:3b (llama3.2)  order-sensitive: L with the options in order, A reversed
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: A with the options in order, L reversed
+    C  ·  contested → escalated to qwen2.5:1.5b: no settlement, H, quotation not found in the advisory  ·  2 members
+      same evidence, different reading: members quoted the same words and read different values
+      qwen3.5:4b (qwen3.5)  N  ·  high confidence  ·  quotation found in the advisory
+        “an attacker who can influence the target URL of an Axios request can use any address in
+        the 127.0.0.0/8 range (other than 127.0.0.1) to completely bypass the NO_PROXY
+        protection.”
+      llama3.2:3b (llama3.2)  H  ·  high confidence  ·  quotation found in the advisory
+        “an attacker who can influence the target URL of an Axios request can use any address in
+        the 127.0.0.0/8 range (other than 127.0.0.1) to completely bypass the NO_PROXY
+        protection”
+      qwen2.5:1.5b (qwen2.5), escalation model  H  ·  high confidence  ·  quotation not found in the advisory
+        “An attacker can influence the target URL of an Axios request to use any address in the
+        127.0.0.0/8 range (other than 127.0.0.1), which bypasses the NO_PROXY protection.”
+    A  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, L, quotation not found in the advisory  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: H with the options in order, L reversed
+      llama3.2:3b (llama3.2)  order-sensitive: L with the options in order, H reversed
+      qwen2.5:1.5b (qwen2.5), escalation model  L  ·  medium confidence  ·  quotation not found in the advisory
+        “An attacker can influence the target URL of an Axios request, allowing them to use any
+        address in the 127.0.0.0/8 range (other than 127.0.0.1) to completely bypass the
+        NO_PROXY protection.”
+  CVE-2026-44486  settled  ·  CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:C/C:L/I:L/A:L  ·  CVSS 6.8 Medium
+    8 metrics settled
+      1  every member that offered a quotation supported this value
+      7  one member offered a quotation, and no other member offered one
+  CVE-2026-44487  no vector  ·  could not settle AV
+    5 metrics settled
+      1  every member that offered a quotation supported this value
+      4  one member offered a quotation, and no other member offered one
+    AV  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: A with the options in order, L reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: L with the options in order, N reversed
+      llama3.2:3b (llama3.2)  order-sensitive: L with the options in order, A reversed
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: A with the options in order, L reversed
+    UI  ·  unresolved → escalated to qwen2.5:1.5b: R (verified)  ·  2 members
+      chairman: R  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.5:4b (qwen3.5)  guessed N with nothing quoted
+      llama3.2:3b (llama3.2)  order-sensitive: R with the options in order, N reversed  ·  with the options in order: quotation not found in the advisory
+      qwen2.5:1.5b (qwen2.5), escalation model  R  ·  high confidence  ·  quotation found in the advisory
+        “Under affected redirect shapes, the final origin can receive the proxy credential that
+        was intended only for the outbound proxy.”
+    A  ·  unresolved → escalated to qwen2.5:1.5b: L (verified)  ·  2 members
+      chairman: L  ·  the council left it open, and the escalation model's verified quotation settled it  ·  medium confidence
+      qwen3.5:4b (qwen3.5)  guessed N with nothing quoted
+      llama3.2:3b (llama3.2)  order-sensitive: N with the options in order, L reversed
+      qwen2.5:1.5b (qwen2.5), escalation model  L  ·  medium confidence  ·  quotation found in the advisory
+        “Under affected redirect shapes, the final origin can receive the proxy credential that
+        was intended only for the outbound proxy.”
+  CVE-2026-44490  no vector  ·  could not settle AV, UI, C
+    5 metrics settled
+      5  one member offered a quotation, and no other member offered one
+    AV  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: A with the options in order, L reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: L with the options in order, N reversed
+      llama3.2:3b (llama3.2)  order-sensitive: L with the options in order, A reversed  ·  with the options reversed: quotation not found in the advisory
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: A with the options in order, L reversed
+    UI  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, R, quotation not found in the advisory  ·  2 members
+      qwen3.5:4b (qwen3.5)  guessed N with nothing quoted
+      llama3.2:3b (llama3.2)  order-sensitive: R with the options in order, N reversed  ·  with the options in order: quotation not found in the advisory
+      qwen2.5:1.5b (qwen2.5), escalation model  R  ·  high confidence  ·  quotation not found in the advisory  ·  with the options in order: quotation not found in the advisory
+        “Axios silently picks up the polluted values when Object.prototype is polluted by an
+        upstream dependency in the same process.”
+    C  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, L, quotation not found in the advisory  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: N with the options in order, L reversed
+      llama3.2:3b (llama3.2)  guessed L with nothing quoted
+      qwen2.5:1.5b (qwen2.5), escalation model  L  ·  medium confidence  ·  quotation not found in the advisory  ·  with the options in order: quotation not found in the advisory
+        “axios silently picks up the polluted values and Object.prototype.get or
+        Object.prototype.set makes the call throw TypeError synchronously on every axios
+        request.”
+  CVE-2026-44492  no vector  ·  could not settle AV, S
+    4 metrics settled
+      4  one member offered a quotation, and no other member offered one
+    AV  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: A with the options in order, L reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: L with the options in order, N reversed  ·  with the options in order: quotation not found in the advisory
+      llama3.2:3b (llama3.2)  order-sensitive: L with the options in order, A reversed
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: A with the options in order, L reversed
+    UI  ·  unresolved → escalated to qwen2.5:1.5b: R (verified)  ·  2 members
+      chairman: R  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
+      qwen3.5:4b (qwen3.5)  guessed N with nothing quoted
+      llama3.2:3b (llama3.2)  order-sensitive: R with the options in order, N reversed
+      qwen2.5:1.5b (qwen2.5), escalation model  R  ·  high confidence  ·  quotation found in the advisory
+        “When NO_PROXY lists an IPv4 address such as 127.0.0.1 or 169.254.169.254, a request URL
+        using the IPv4-mapped IPv6 form (::ffff:7f00:1, ::ffff:a9fe:a9fe) still routes through
+        the configured proxy. Node.js resolves these addresses to the underlying IPv4 host, so
+        the request reaches the internal service via the proxy rather than being blocked.”
+    S  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: C with the options in order, U reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  guessed U with nothing quoted
+      llama3.2:3b (llama3.2)  order-sensitive: C with the options in order, U reversed
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: C with the options in order, U reversed
+    C  ·  contested → escalated to qwen2.5:1.5b: L (verified)  ·  2 members
+      same evidence, different reading: members quoted the same words and read different values
+      chairman: L  ·  the council left it open, and the escalation model's verified quotation settled it  ·  medium confidence
+      qwen3.5:4b (qwen3.5)  N  ·  high confidence  ·  quotation found in the advisory
+        “When NO_PROXY lists an IPv4 address such as 127.0.0.1 or 169.254.169.254, a request URL
+        using the IPv4-mapped IPv6 form (::ffff:7f00:1, ::ffff:a9fe:a9fe) still routes through
+        the configured proxy.”
+      llama3.2:3b (llama3.2)  L  ·  low confidence  ·  quotation found in the advisory
+        “When NO_PROXY lists an IPv4 address such as 127.0.0.1 or 169.254.169.254, a request URL
+        using the IPv4-mapped IPv6 form (::ffff:7f00:1, ::ffff:a9fe:a9fe) still routes through
+        the configured proxy.”
+      qwen2.5:1.5b (qwen2.5), escalation model  L  ·  medium confidence  ·  quotation found in the advisory
+        “When NO_PROXY lists an IPv4 address such as 127.0.0.1 or 169.254.169.254, a request URL
+        using the IPv4-mapped IPv6 form (::ffff:7f00:1, ::ffff:a9fe:a9fe) still routes through
+        the configured proxy. Node.js resolves these addresses to the underlying IPv4 host, so
+        the request reaches the internal service via the proxy rather than being blocked.”
+  CVE-2026-44495  no vector  ·  could not settle AC
+    7 metrics settled
+      7  one member offered a quotation, and no other member offered one
+    AC  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: H with the options in order, L reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: H with the options in order, L reversed
+      llama3.2:3b (llama3.2)  order-sensitive: H with the options in order, L reversed
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: H with the options in order, L reversed
+  CVE-2026-44496  no vector  ·  could not settle S, C
+    6 metrics settled
+      2  every member that offered a quotation supported this value
+      4  one member offered a quotation, and no other member offered one
+    S  ·  contested → escalated to qwen2.5:1.5b: no settlement, order-sensitive: C with the options in order, U reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  U  ·  high confidence  ·  quotation found in the advisory
+        “The practical impact is client-side availability degradation, such as freezing the
+        affected browser tab while axios prepares a request.”
+      llama3.2:3b (llama3.2)  C  ·  high confidence  ·  quotation found in the advisory
+        “In standard browser environments, an attacker who can influence the cookie name passed
+        to axios can cause expensive regex backtracking while axios reads document.cookie.”
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: C with the options in order, U reversed
+    C  ·  contested → escalated to qwen2.5:1.5b: no settlement, L, quotation not found in the advisory  ·  2 members
+      same evidence, different reading: members quoted the same words and read different values
+      qwen3.5:4b (qwen3.5)  N  ·  high confidence  ·  quotation found in the advisory
+        “The practical impact is client-side availability degradation, such as freezing the
+        affected browser tab while axios prepares a request.”
+      llama3.2:3b (llama3.2)  L  ·  low confidence  ·  quotation found in the advisory
+        “The practical impact is client-side availability degradation, such as freezing the
+        affected browser tab while axios prepares a request.”
+      qwen2.5:1.5b (qwen2.5), escalation model  L  ·  medium confidence  ·  quotation not found in the advisory
+        “An attacker who can influence the cookie name passed to axios can cause expensive regex
+        backtracking while axios reads document.cookie.”
+  CVE-2026-4800  no vector  ·  could not settle AV
+    7 metrics settled
+      2  every member that offered a quotation supported this value
+      5  one member offered a quotation, and no other member offered one
+    AV  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: A with the options in order, L reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  order-sensitive: L with the options in order, N reversed
+      llama3.2:3b (llama3.2)  order-sensitive: L with the options in order, A reversed
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: A with the options in order, L reversed
+  CVE-2026-67316  no vector  ·  could not settle AC
+    6 metrics settled
+      6  one member offered a quotation, and no other member offered one
+    AC  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: H with the options in order, L reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  L  ·  high confidence  ·  quotation not found in the advisory
+        “An attacker can expect repeatable success against the vulnerable component.”
+      llama3.2:3b (llama3.2)  order-sensitive: H with the options in order, L reversed
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: H with the options in order, L reversed
+    A  ·  unresolved → escalated to qwen2.5:1.5b: L (verified)  ·  2 members
+      chairman: L  ·  the council left it open, and the escalation model's verified quotation settled it  ·  medium confidence
+      qwen3.5:4b (qwen3.5)  order-sensitive: N with the options in order, L reversed
+      llama3.2:3b (llama3.2)  guessed L with nothing quoted
+      qwen2.5:1.5b (qwen2.5), escalation model  L  ·  medium confidence  ·  quotation found in the advisory
+        “Additional low-level paths, only reachable when calling exported adapters/helpers (e.g.
+        lib/adapters/http.js, unsafe/helpers/resolveConfig.js) directly with plain configs and
+        no own proxy or paramsSerializer, can inherit polluted proxy values (routing requests
+        through an attacker-controlled proxy) or paramsSerializer values (attacker-controlled
+        URL serialization). These low-level gadgets do not reproduce through normal high-level
+        axios calls on 1.15.2+.”
+  CVE-2026-67319  settled  ·  CVSS:3.1/AV:L/AC:H/PR:N/UI:N/S:C/C:L/I:L/A:L  ·  CVSS 5.6 Medium
+    8 metrics settled
+      1  every member that offered a quotation supported this value
+      7  one member offered a quotation, and no other member offered one
+  NSWG-ECO-516  no vector  ·  could not settle AV, AC, PR, UI, S, C, I, A
+    AV  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: A with the options in order, L reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  declined
+      llama3.2:3b (llama3.2)  order-sensitive: A with the options in order, L reversed
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: A with the options in order, L reversed
+    AC  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: H with the options in order, L reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  declined
+      llama3.2:3b (llama3.2)  order-sensitive: H with the options in order, L reversed  ·  with the options in order: quotation not found in the advisory
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: H with the options in order, L reversed
+    PR  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, L, quotation not found in the advisory  ·  2 members
+      qwen3.5:4b (qwen3.5)  declined  ·  with the options in order: declined
+      llama3.2:3b (llama3.2)  guessed N with nothing quoted
+      qwen2.5:1.5b (qwen2.5), escalation model  L  ·  high confidence  ·  quotation not found in the advisory
+        “The advisory states: 'The attacker is unauthorised: no access to any setting or file is
+        needed before the attack.'”
+    UI  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, R, quotation not found in the advisory  ·  2 members
+      qwen3.5:4b (qwen3.5)  guessed N with nothing quoted
+      llama3.2:3b (llama3.2)  order-sensitive: R with the options in order, N reversed  ·  with the options in order: quotation not found in the advisory
+      qwen2.5:1.5b (qwen2.5), escalation model  R  ·  high confidence  ·  quotation not found in the advisory
+        “The advisory states: 'The attacker must open a file or follow a link to exploit the
+        vulnerability.'”
+    S  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, order-sensitive: C with the options in order, U reversed  ·  2 members
+      qwen3.5:4b (qwen3.5)  declined
+      llama3.2:3b (llama3.2)  C  ·  high confidence  ·  quotation not found in the advisory
+        “The vulnerability allows an attacker to pollute the prototype of an object, potentially
+        leading to arbitrary code execution.”
+      qwen2.5:1.5b (qwen2.5), escalation model  order-sensitive: C with the options in order, U reversed
+    C  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, L, quotation not found in the advisory  ·  2 members
+      qwen3.5:4b (qwen3.5)  declined
+      llama3.2:3b (llama3.2)  order-sensitive: H with the options in order, L reversed
+      qwen2.5:1.5b (qwen2.5), escalation model  L  ·  high confidence  ·  quotation not found in the advisory
+        “The advisory states: 'The attacker can inject arbitrary JavaScript code into the
+        prototype of an object, leading to prototype pollution.' This indicates that the
+        attacker can inject arbitrary code, which is a serious loss of confidentiality.”
+    I  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, L, quotation not found in the advisory  ·  2 members
+      qwen3.5:4b (qwen3.5)  declined
+      llama3.2:3b (llama3.2)  L  ·  medium confidence  ·  quotation not found in the advisory
+        “The vulnerability allows an attacker to modify the `_.cloneDeep` function to pollute
+        the prototype of the `lodash` library.”
+      qwen2.5:1.5b (qwen2.5), escalation model  L  ·  high confidence  ·  quotation not found in the advisory
+        “The attacker can modify any data, and the modification they can make has a serious
+        consequence on its own.”
+    A  ·  unresolved → escalated to qwen2.5:1.5b: no settlement, L, quotation not found in the advisory  ·  2 members
+      qwen3.5:4b (qwen3.5)  declined  ·  with the options reversed: declined
+      llama3.2:3b (llama3.2)  L  ·  medium confidence  ·  quotation not found in the advisory
+        “The vulnerability allows a remote attacker to pollute the prototype of an object,
+        potentially leading to arbitrary code execution.”
+      qwen2.5:1.5b (qwen2.5), escalation model  L  ·  medium confidence  ·  quotation not found in the advisory
+        “The advisory states: 'The prototype pollution attack can cause the service to be
+        interrupted, but repeated exploitation does not deny service completely.'”
+
+SECRETS (0)
+  Trivy's built-in secret rules matched nothing in this tree.
+
+MATCHED NOTHING
+  5 components carry no advisory
+  0 advisories matched no component
+
+NEEDS APPROVAL (35)
+  CVE-2021-3749   a High or Critical Organisation Risk Score
+  CVE-2023-45857  a High or Critical Organisation Risk Score
+  CVE-2025-27152  a High or Critical Organisation Risk Score
+  CVE-2025-62718  a High or Critical Organisation Risk Score  ·  sources that disagree
+  CVE-2026-25639  a High or Critical Organisation Risk Score
+  CVE-2026-40175  a High or Critical Organisation Risk Score  ·  sources that disagree
+  CVE-2026-42033  a High or Critical Organisation Risk Score
+  CVE-2026-42034  a High or Critical Organisation Risk Score
+  CVE-2026-42035  a High or Critical Organisation Risk Score
+  CVE-2026-42036  a High or Critical Organisation Risk Score
+  CVE-2026-42038  a High or Critical Organisation Risk Score  ·  sources that disagree
+  CVE-2026-42039  a High or Critical Organisation Risk Score
+  CVE-2026-42040  a High or Critical Organisation Risk Score
+  CVE-2026-42041  a High or Critical Organisation Risk Score  ·  sources that disagree
+  CVE-2026-42042  a High or Critical Organisation Risk Score  ·  sources that disagree
+  CVE-2026-42043  a High or Critical Organisation Risk Score  ·  sources that disagree
+  CVE-2026-44486  a High or Critical Organisation Risk Score
+  CVE-2026-44487  a High or Critical Organisation Risk Score
+  CVE-2026-44490  a High or Critical Organisation Risk Score  ·  sources that disagree
+  CVE-2026-44492  a High or Critical Organisation Risk Score
+  CVE-2026-44495  a High or Critical Organisation Risk Score  ·  sources that disagree
+  CVE-2026-44496  a High or Critical Organisation Risk Score
+  CVE-2026-67316  a High or Critical Organisation Risk Score  ·  sources that disagree
+  CVE-2026-67319  a High or Critical Organisation Risk Score  ·  sources that disagree
+  CVE-2024-29041  a High or Critical Organisation Risk Score
+  CVE-2024-43796  a High or Critical Organisation Risk Score  ·  sources that disagree
+  CVE-2020-28500  a High or Critical Organisation Risk Score
+  CVE-2020-8203   a High or Critical Organisation Risk Score
+  CVE-2021-23337  a High or Critical Organisation Risk Score
+  CVE-2025-13465  a High or Critical Organisation Risk Score  ·  sources that disagree
+  CVE-2026-2950   a High or Critical Organisation Risk Score  ·  sources that disagree
+  CVE-2026-4800   a High or Critical Organisation Risk Score  ·  sources that disagree
+  NSWG-ECO-516    a High or Critical Organisation Risk Score
+  CVE-2022-24785  a High or Critical Organisation Risk Score
+  CVE-2022-31129  a High or Critical Organisation Risk Score
+
+APPROVAL
+  approved by Hein.TN at 2026-10-21  ·   Running tests with same Council Members and Escalation model (qwen3.8:27b).
+
+NOT ASSESSED
+  Nothing: the component inventory, the Organisation Risk Score, the approval record, a council ruling and an explanation of why the sources differ are all here.
