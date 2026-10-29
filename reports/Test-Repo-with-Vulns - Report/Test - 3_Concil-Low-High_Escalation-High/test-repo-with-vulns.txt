@@ -56,48 +56,204 @@ WHY THE SOURCES DIFFER (14)
   differently. Only each quotation is checked: an item is kept where its quotation is in the
   advisory, one per disputed metric. The explanation beside it is the model's own words, and no
   score or ruling is computed from it.
-  CVE-2025-62718  not explained: llama3.3:70b: no readable explanation:
-  http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111]
-  Connection refused>
-  CVE-2026-67316  not explained: llama3.3:70b: no readable explanation:
-  http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111]
-  Connection refused>
-  CVE-2026-42041  not explained: llama3.3:70b: no readable explanation:
-  http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111]
-  Connection refused>
-  CVE-2026-44490  not explained: llama3.3:70b: no readable explanation:
-  http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111]
-  Connection refused>
-  CVE-2026-40175  not explained: llama3.3:70b: no readable explanation:
-  http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111]
-  Connection refused>
-  CVE-2025-13465  not explained: llama3.3:70b: no readable explanation:
-  http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111]
-  Connection refused>
-  CVE-2026-42043  not explained: llama3.3:70b: no readable explanation:
-  http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111]
-  Connection refused>
-  CVE-2026-67319  not explained: llama3.3:70b: no readable explanation:
-  http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111]
-  Connection refused>
-  CVE-2026-4800  not explained: llama3.3:70b: no readable explanation:
-  http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111]
-  Connection refused>
-  CVE-2026-42038  not explained: llama3.3:70b: no readable explanation:
-  http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111]
-  Connection refused>
-  CVE-2026-2950  not explained: llama3.3:70b: no readable explanation:
-  http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111]
-  Connection refused>
-  CVE-2026-42042  not explained: llama3.3:70b: no readable explanation:
-  http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111]
-  Connection refused>
-  CVE-2026-44495  not explained: llama3.3:70b: no readable explanation:
-  http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111]
-  Connection refused>
-  CVE-2024-43796  not explained: llama3.3:70b: no readable explanation:
-  http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111]
-  Connection refused>
+  CVE-2025-62718  explained by llama3.3:70b
+    AC  ghsa H  ·  nvd L  ·  redhat H
+      model-written, not checked: The advisory does not explicitly state whether the attacker
+      needs to have prior knowledge of the internal services or the proxy configuration, which
+      could lead one reader to believe the attack complexity is High (H) because it depends on
+      conditions the attacker does not control, while another reader might think it is Low (L)
+      because the vulnerability can be exploited without specialized conditions.
+      “This issue leads to the possibility of proxy bypass and SSRF vulnerabilities allowing
+      attackers to reach sensitive loopback or internal services despite the configured
+      protections.”  ·  quotation found in the advisory
+  CVE-2026-67316  explained by llama3.3:70b
+    C  nvd H  ·  redhat N
+      model-written, not checked: The advisory mentions 'attacker-controlled body' and
+      'attacker-controlled proxy', which could lead one reader to believe that sensitive
+      information like credentials or private keys could be disclosed (High Confidentiality),
+      while another reader might interpret it as not directly related to confidentiality loss
+      (None Confidentiality)
+      “causing an attacker-controlled body to be sent on requests that did not set one”  ·
+      quotation found in the advisory
+    I  nvd H  ·  redhat L
+      model-written, not checked: The advisory states that an attacker can 'alter request
+      construction' and 'inherit polluted proxy values', which could lead one reader to believe
+      that the attacker has total control over the modification (High Integrity), while another
+      reader might think that the modification is limited and not serious on its own (Low
+      Integrity)
+      “inherited data is read via (config || {}).data before config normalization”  ·  quotation
+      found in the advisory
+  CVE-2026-42041  explained by llama3.3:70b
+    AC  ghsa H  ·  nvd L  ·  redhat L
+      model-written, not checked: The advisory states that the attack relies on polluting
+      Object.prototype, which could be seen as a condition that the attacker does not control,
+      leading some readers to conclude that the attack complexity is High, while others might
+      interpret it as a straightforward exploit, leading to a Low attack complexity
+      “When Object.prototype.validateStatus is polluted with () => true, all HTTP status codes
+      are accepted as success”  ·  quotation found in the advisory
+    I  ghsa L  ·  nvd L  ·  redhat H
+      model-written, not checked: The advisory mentions that the vulnerability allows
+      suppression of HTTP error responses, which could be seen as a total loss of protection,
+      leading some readers to conclude that the integrity impact is High, while others might
+      interpret it as a limited modification, leading to a Low integrity impact
+      “causing them to be treated as successful responses”  ·  quotation found in the advisory
+  CVE-2026-44490  explained by llama3.3:70b
+    AC  ghsa H  ·  nvd L  ·  redhat H
+      model-written, not checked: The advisory mentions that the vulnerability requires an
+      upstream dependency to pollute Object.prototype, which could lead one reader to believe
+      the attack complexity is High because it depends on conditions outside the attacker's
+      control, while another reader might think it's Low because the pollution can be achieved
+      through a dependency like lodash, which is a common and widely-used library.
+      “When Object.prototype is polluted by an upstream dependency in the same process (e.g.
+      lodash _.merge / [identifier withheld]), axios silently picks up the polluted values.”  ·
+      quotation found in the advisory
+    A  ghsa L  ·  nvd H  ·  redhat L
+      model-written, not checked: The advisory states that the polluted Object.prototype.get or
+      Object.prototype.set makes the call throw TypeError synchronously on every axios request,
+      which could lead one reader to believe the Availability impact is High because it seems to
+      completely deny service, while another reader might think it's Low because the service is
+      not completely denied, but rather throws an error.
+      “so a polluted Object.prototype.get or Object.prototype.set makes the call throw TypeError
+      synchronously on every axios request.”  ·  quotation found in the advisory
+  CVE-2026-40175  explained by llama3.3:70b
+    C  ghsa L  ·  nvd L  ·  redhat H
+      model-written, not checked: The advisory does not explicitly state what kind of
+      information could be disclosed, which could lead one reader to believe the loss is serious
+      (High) and another to believe it is not (Low), depending on their interpretation of
+      'unsanitized header values'
+      “inject unsanitized header values into outbound requests”  ·  quotation found in the
+      advisory
+    I  ghsa L  ·  nvd L  ·  redhat H
+      model-written, not checked: The advisory mentions 'inject unsanitized header values',
+      which could be interpreted as either allowing the attacker to modify any data (High) or
+      only limited modification (Low), depending on the reader's understanding of the impact of
+      'unsanitized header values'
+      “inject unsanitized header values into outbound requests”  ·  quotation found in the
+      advisory
+    A  ghsa N  ·  nvd N  ·  redhat H
+      model-written, not checked: The advisory does not mention any impact on availability,
+      which could lead one reader to believe that availability is unaffected (None), while
+      another reader might assume that the injection of unsanitized header values could
+      potentially deny access (High), depending on their understanding of the potential
+      consequences
+      “inject unsanitized header values into outbound requests”  ·  quotation found in the
+      advisory
+  CVE-2025-13465  explained by llama3.3:70b
+    A  ghsa L  ·  nvd N  ·  redhat H
+      model-written, not checked: The advisory states that the issue 'permits deletion of
+      properties' which could lead one reader to believe that availability is denied (High),
+      while another reader might interpret 'does not allow overwriting their original behavior'
+      and 'deletion of properties' as only a performance drop or interruption (Low or None),
+      depending on the context of 'properties' and 'behavior'
+      “The issue permits deletion of properties but does not allow overwriting their original
+      behavior”  ·  quotation found in the advisory
+  CVE-2026-42043  explained by llama3.3:70b
+    C  ghsa L  ·  nvd H  ·  redhat L
+      model-written, not checked: The advisory does not explicitly state what kind of
+      information can be disclosed due to the vulnerability, which could lead one reader to
+      believe it's limited (Low) and another to think it's more serious (High), given the phrase
+      'completely bypass the NO_PROXY protection' might imply access to sensitive data or not,
+      depending on interpretation.
+      “completely bypass the NO_PROXY protection”  ·  quotation found in the advisory
+  CVE-2026-67319  explained by llama3.3:70b
+    C  nvd N  ·  redhat H
+      model-written, not checked: The advisory mentions 'inherited username/password values'
+      which could lead one reader to believe that confidentiality is lost (H) because
+      credentials are disclosed, while another reader might interpret it as no confidentiality
+      is lost (N) because the disclosure is due to pre-existing prototype pollution and not a
+      direct result of the vulnerability itself.
+      “inherited username/password values can cause silent injection of an Authorization: Basic
+      header”  ·  quotation found in the advisory
+  CVE-2026-4800  explained by llama3.3:70b
+    AC  ghsa H  ·  nvd L  ·  redhat H
+      model-written, not checked: The advisory mentions that the attack requires untrusted input
+      to be passed as options.imports key names and that Object.prototype pollution is needed
+      for a related attack vector, which could lead one reader to believe the attack complexity
+      is High because it depends on specific conditions, while another reader might think it is
+      Low because the advisory also states that an attacker can inject arbitrary code at
+      template compilation time simply by passing untrusted input as key names, without needing
+      to control other factors.
+      “an attacker can inject default-parameter expressions that execute arbitrary code at
+      template compilation time”  ·  quotation found in the advisory
+  CVE-2026-42038  explained by llama3.3:70b
+    AC  ghsa H  ·  nvd L  ·  redhat H
+      model-written, not checked: The advisory states that the vulnerability occurs when a
+      specific condition is met (no_proxy=localhost is set), which could lead one reader to
+      believe the attack complexity is High (H) because the target must be prepared first, while
+      another reader might interpret it as Low (L) because the condition is not uncommon and the
+      attack can still be mounted with relative ease.
+      “When no_proxy=localhost is set, requests to 127.0.0.1 and [::1] still route through the
+      proxy instead of bypassing it.”  ·  quotation found in the advisory
+    S  ghsa C  ·  nvd U  ·  redhat C
+      model-written, not checked: The advisory does not explicitly state whether the
+      vulnerability allows the attacker to access resources beyond the vulnerable component's
+      security authority, which could lead one reader to believe the scope is Changed (C) if
+      they assume the proxy has access to more resources, while another reader might believe it
+      is Unchanged (U) if they think the proxy only has access to the same resources as the
+      vulnerable component.
+      “requests to 127.0.0.1 and [::1] still route through the proxy instead of bypassing it.”
+      ·  quotation found in the advisory
+  CVE-2026-2950  explained by llama3.3:70b
+    PR  ghsa N  ·  nvd N  ·  redhat L
+      model-written, not checked: The advisory does not explicitly state that the attacker needs
+      any privileges to exploit the vulnerability, which could lead one reader to conclude that
+      no privileges are required, while another reader might assume that some level of access is
+      needed to use the Lodash functions.
+      “The _.unset and _.omit functions in Lodash are vulnerable to prototype pollution.”  ·
+      quotation found in the advisory
+    I  ghsa L  ·  nvd L  ·  redhat N
+      model-written, not checked: The advisory states that the issue 'permits deletion of
+      prototype properties' which could lead one reader to conclude that the integrity impact is
+      low because the attacker can modify some data, while another reader might interpret this
+      as no integrity impact because the original behavior of the prototypes is not overwritten.
+      “The issue permits deletion of prototype properties but does not allow overwriting their
+      original behavior.”  ·  quotation found in the advisory
+    A  ghsa L  ·  nvd N  ·  redhat H
+      model-written, not checked: The advisory does not mention any impact on the availability
+      of the system, which could lead one reader to conclude that availability is unaffected,
+      while another reader might assume that the deletion of prototype properties could cause
+      significant problems, potentially leading to a denial of service.
+      “This allows deletion of properties from built-in prototypes such as Object.prototype,
+      Number.prototype, and String.prototype.”  ·  quotation found in the advisory
+  CVE-2026-42042  explained by llama3.3:70b
+    S  ghsa U  ·  redhat C
+      model-written, not checked: The advisory could lead one reader to believe the scope is
+      Unchanged (U) because it mentions the vulnerability affects the 'same-origin check',
+      implying the exploit is contained within the same security authority, while another reader
+      might interpret the phrase 'including cross-origin servers controlled by an attacker' to
+      mean the scope is Changed (C), as it suggests the exploit can reach resources beyond the
+      vulnerable component's own security authority.
+      “including cross-origin servers controlled by an attacker”  ·  quotation found in the
+      advisory
+  CVE-2026-44495  explained by llama3.3:70b
+    A  ghsa L  ·  nvd H  ·  redhat L
+      model-written, not checked: The advisory states that exploitability requires a separate
+      prototype-pollution vulnerability, which could lead one reader to believe that the impact
+      on availability is low because the vulnerability can only be exploited in combination with
+      another vulnerability, while another reader might interpret the fact that 'affected Axios
+      versions may treat that inherited value as request configuration or as an option
+      validator' as a potential for significant disruption, leading to a high availability
+      impact.
+      “affected Axios versions may treat that inherited value as request configuration or as an
+      option validator”  ·  quotation found in the advisory
+  CVE-2024-43796  explained by llama3.3:70b
+    S  ghsa U  ·  nvd C  ·  redhat U
+      model-written, not checked: The advisory does not explicitly state whether the exploit can
+      reach resources beyond the vulnerable component's own security authority, which could lead
+      one reader to conclude that the scope is Unchanged (U) if they assume the vulnerable
+      component is the Express.js framework itself, while another reader might interpret it as
+      Changed (C) if they consider the vulnerable component to be the specific route or function
+      that handles the redirect, potentially allowing the exploit to affect other components or
+      resources.
+      “passing untrusted user input - even after sanitizing it - to response.redirect() may
+      execute untrusted code”  ·  quotation found in the advisory
+    A  ghsa L  ·  nvd N  ·  redhat L
+      model-written, not checked: The advisory mentions that the issue 'may execute untrusted
+      code', which could be interpreted as a potential denial of service or performance impact,
+      leading one reader to conclude that Availability is Low (L), while another reader might
+      see it as None (N) if they believe the execution of untrusted code does not necessarily
+      affect the service's availability.
+      “may execute untrusted code”  ·  quotation found in the advisory
 
 SOURCES AGREE (20)
   CVE-2021-3749   axios 0.21.1                    7.5  High      3 sources
@@ -138,6 +294,7 @@ ORGANISATION RISK (35)
                   floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
                   floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
                   floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+                  the assessor council CVSS 9.3  ·  the risk score does not use it
   CVE-2026-44492  70.8                        Critical  ·  provisional
                   floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
                   floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
@@ -227,6 +384,7 @@ ORGANISATION RISK (35)
                   floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: ghsa High to Critical
                   floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
                   floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
+                  the assessor council CVSS 9.2  ·  the risk score does not use it
   CVE-2026-67319  nvd 56.1 to redhat 64.5     Critical  ·  provisional
                   floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: nvd High to Critical
                   floored by FLOOR-EXPLOITED-EXPOSED-CRITICAL: redhat High to Critical
@@ -266,52 +424,59 @@ ORGANISATION RISK (35)
 COUNCIL (35)
   escalation model llama3.3:70b: asked each metric the council left open
   models: qwen3.5:4b d8b0f5e9760c, deepseek-r1:32b edba8017331d, llama3.3:70b (escalation) a6eb4748fd29; Ollama 0.40.2 on 10.205.4.74, not this machine
-  CVE-2020-28500  no vector  ·  could not settle C, I, A
+  CVE-2020-28500  no vector  ·  could not settle C, I
     5 metrics settled
       1  every member that offered a quotation supported this value
       4  one member offered a quotation, and no other member offered one
-    C  ·  unresolved → escalated to llama3.3:70b: no settlement, failed: http://10.205.4.74:11434/api/generate could not be reached: Remote end closed connection without response  ·  2 members
+    C  ·  unresolved → escalated to llama3.3:70b: no settlement, guessed N with nothing quoted  ·  2 members
       qwen3.5:4b (qwen3.5)  guessed N with nothing quoted
       deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
-      llama3.3:70b (llama3.3), escalation model  failed: http://10.205.4.74:11434/api/generate could not be reached: Remote end closed connection without response
-    I  ·  unresolved → escalated to llama3.3:70b: no settlement, failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 113] No route to host>  ·  2 members
+      llama3.3:70b (llama3.3), escalation model  guessed N with nothing quoted
+    I  ·  unresolved → escalated to llama3.3:70b: no settlement, guessed N with nothing quoted  ·  2 members
       qwen3.5:4b (qwen3.5)  declined  ·  with the options reversed: declined
       deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
-      llama3.3:70b (llama3.3), escalation model  failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 113] No route to host>
-    A  ·  contested → escalated to llama3.3:70b: no settlement, failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 113] No route to host>  ·  2 members
+      llama3.3:70b (llama3.3), escalation model  guessed N with nothing quoted
+    A  ·  contested → escalated to llama3.3:70b: L (verified)  ·  2 members
       same evidence, different reading: members quoted the same words and read different values
+      chairman: L  ·  the council left it open, and the escalation model's verified quotation settled it  ·  medium confidence
       qwen3.5:4b (qwen3.5)  L  ·  high confidence  ·  quotation found in the advisory
         “Regular Expression Denial of Service (ReDoS)”
       deepseek-r1:32b (deepseek-r1)  H  ·  high confidence  ·  quotation found in the advisory
         “Regular Expression Denial of Service (ReDoS)”
-      llama3.3:70b (llama3.3), escalation model  failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 113] No route to host>
+      llama3.3:70b (llama3.3), escalation model  L  ·  medium confidence  ·  quotation found in the advisory
+        “Regular Expression Denial of Service (ReDoS)”
   CVE-2020-8203  no vector  ·  could not settle C, A
     6 metrics settled
       6  one member offered a quotation, and no other member offered one
-    C  ·  unresolved → escalated to llama3.3:70b: no settlement, failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 113] No route to host>  ·  2 members
+    C  ·  unresolved → escalated to llama3.3:70b: no settlement, order-sensitive: N with the options in order, L reversed  ·  2 members
       qwen3.5:4b (qwen3.5)  declined  ·  with the options reversed: declined
       deepseek-r1:32b (deepseek-r1)  order-sensitive: N with the options in order, H reversed
-      llama3.3:70b (llama3.3), escalation model  failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 113] No route to host>
-    A  ·  unresolved → escalated to llama3.3:70b: no settlement, failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 113] No route to host>  ·  2 members
+      llama3.3:70b (llama3.3), escalation model  order-sensitive: N with the options in order, L reversed
+    A  ·  unresolved → escalated to llama3.3:70b: no settlement, declined  ·  2 members
       qwen3.5:4b (qwen3.5)  declined
       deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
-      llama3.3:70b (llama3.3), escalation model  failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 113] No route to host>
-  CVE-2021-23337  no vector  ·  could not settle UI, S, A
+      llama3.3:70b (llama3.3), escalation model  declined  ·  with the options reversed: declined
+  CVE-2021-23337  no vector  ·  could not settle A
     5 metrics settled
       2  every member that offered a quotation supported this value
       3  one member offered a quotation, and no other member offered one
-    UI  ·  unresolved → escalated to llama3.3:70b: no settlement, failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>  ·  2 members
+    UI  ·  unresolved → escalated to llama3.3:70b: N (verified)  ·  2 members
+      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
       qwen3.5:4b (qwen3.5)  guessed N with nothing quoted
       deepseek-r1:32b (deepseek-r1)  order-sensitive: N with the options in order, R reversed
-      llama3.3:70b (llama3.3), escalation model  failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>
-    S  ·  unresolved → escalated to llama3.3:70b: no settlement, failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>  ·  2 members
+      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
+        “Lodash versions prior to 4.17.21 are vulnerable to Command Injection via the template
+        function.”
+    S  ·  unresolved → escalated to llama3.3:70b: U (verified)  ·  2 members
+      chairman: U  ·  the council left it open, and the escalation model's verified quotation settled it  ·  low confidence
       qwen3.5:4b (qwen3.5)  declined  ·  with the options in order: declined
       deepseek-r1:32b (deepseek-r1)  order-sensitive: U with the options in order, C reversed
-      llama3.3:70b (llama3.3), escalation model  failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>
-    A  ·  unresolved → escalated to llama3.3:70b: no settlement, failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>  ·  2 members
+      llama3.3:70b (llama3.3), escalation model  U  ·  low confidence  ·  quotation found in the advisory
+        “via the template function”
+    A  ·  unresolved → escalated to llama3.3:70b: no settlement, declined  ·  2 members
       qwen3.5:4b (qwen3.5)  declined  ·  with the options reversed: declined
       deepseek-r1:32b (deepseek-r1)  order-sensitive: N with the options in order, H reversed
-      llama3.3:70b (llama3.3), escalation model  failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>
+      llama3.3:70b (llama3.3), escalation model  declined  ·  with the options reversed: declined
   CVE-2021-3749  no vector  ·  could not settle UI, S, C, I, A
     3 metrics settled
       3  one member offered a quotation, and no other member offered one
@@ -338,11 +503,11 @@ COUNCIL (35)
   CVE-2022-24785  no vector  ·  could not settle C, I, A
     5 metrics settled
       5  one member offered a quotation, and no other member offered one
-    C  ·  unresolved → escalated to llama3.3:70b: no settlement, failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>  ·  2 members
+    C  ·  unresolved → escalated to llama3.3:70b: no settlement, order-sensitive: N with the options in order, L reversed  ·  2 members
       qwen3.5:4b (qwen3.5)  declined  ·  with the options reversed: declined
       deepseek-r1:32b (deepseek-r1)  order-sensitive: H with the options in order, L reversed
-      llama3.3:70b (llama3.3), escalation model  failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>
-    I  ·  contested → escalated to llama3.3:70b: no settlement, failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>  ·  2 members
+      llama3.3:70b (llama3.3), escalation model  order-sensitive: N with the options in order, L reversed  ·  with the options reversed: quotation not found in the advisory
+    I  ·  contested → escalated to llama3.3:70b: no settlement, order-sensitive: L with the options in order, H reversed  ·  2 members
       qwen3.5:4b (qwen3.5)  L  ·  high confidence  ·  quotation found in the advisory
         “As a workaround, sanitize the user-provided locale name before passing it to
         Moment.js.”
@@ -350,23 +515,23 @@ COUNCIL (35)
         “A path traversal vulnerability impacts npm (server) users of Moment.js between versions
         1.0.1 and 2.29.1, especially if a user-provided locale string is directly used to switch
         moment locale.”
-      llama3.3:70b (llama3.3), escalation model  failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>
-    A  ·  unresolved → escalated to llama3.3:70b: no settlement, failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>  ·  2 members
+      llama3.3:70b (llama3.3), escalation model  order-sensitive: L with the options in order, H reversed
+    A  ·  unresolved → escalated to llama3.3:70b: no settlement, order-sensitive: N with the options in order, L reversed  ·  2 members
       qwen3.5:4b (qwen3.5)  declined  ·  with the options reversed: declined
       deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
-      llama3.3:70b (llama3.3), escalation model  failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>
+      llama3.3:70b (llama3.3), escalation model  order-sensitive: N with the options in order, L reversed
   CVE-2022-31129  no vector  ·  could not settle C, I
     6 metrics settled
       3  every member that offered a quotation supported this value
       3  one member offered a quotation, and no other member offered one
-    C  ·  unresolved → escalated to llama3.3:70b: no settlement, failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>  ·  2 members
+    C  ·  unresolved → escalated to llama3.3:70b: no settlement, guessed N with nothing quoted  ·  2 members
       qwen3.5:4b (qwen3.5)  order-sensitive: N with the options in order, L reversed
       deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
-      llama3.3:70b (llama3.3), escalation model  failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>
-    I  ·  unresolved → escalated to llama3.3:70b: no settlement, failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>  ·  2 members
+      llama3.3:70b (llama3.3), escalation model  guessed N with nothing quoted
+    I  ·  unresolved → escalated to llama3.3:70b: no settlement, guessed N with nothing quoted  ·  2 members
       qwen3.5:4b (qwen3.5)  order-sensitive: L with the options in order, H reversed
       deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
-      llama3.3:70b (llama3.3), escalation model  failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>
+      llama3.3:70b (llama3.3), escalation model  guessed N with nothing quoted
   CVE-2023-45857  settled  ·  CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N  ·  CVSS 9.1 Critical
     7 metrics settled
       5  every member that offered a quotation supported this value
@@ -419,18 +584,19 @@ COUNCIL (35)
     7 metrics settled
       3  every member that offered a quotation supported this value
       4  one member offered a quotation, and no other member offered one
-    AV  ·  unresolved → escalated to llama3.3:70b: no settlement, failed: with the options reversed: http://10.205.4.74:11434/api/generate could not be reached: Remote end closed connection without response  ·  2 members
+    AV  ·  unresolved → escalated to llama3.3:70b: no settlement, N, quotation not found in the advisory  ·  2 members
       qwen3.5:4b (qwen3.5)  order-sensitive: L with the options in order, N reversed
       deepseek-r1:32b (deepseek-r1)  order-sensitive: N with the options in order, L reversed
-      llama3.3:70b (llama3.3), escalation model  failed: with the options reversed: http://10.205.4.74:11434/api/generate could not be reached: Remote end closed connection without response  ·  with the options in order: quotation not found in the advisory
+      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation not found in the advisory
+        “passing untrusted user input to response.redirect() may execute untrusted code”
   CVE-2025-13465  no vector  ·  could not settle A
     7 metrics settled
       3  every member that offered a quotation supported this value
       4  one member offered a quotation, and no other member offered one
-    A  ·  unresolved → escalated to llama3.3:70b: no settlement, failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>  ·  2 members
+    A  ·  unresolved → escalated to llama3.3:70b: no settlement, order-sensitive: N with the options in order, L reversed  ·  2 members
       qwen3.5:4b (qwen3.5)  order-sensitive: N with the options in order, L reversed
       deepseek-r1:32b (deepseek-r1)  guessed N with nothing quoted
-      llama3.3:70b (llama3.3), escalation model  failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>
+      llama3.3:70b (llama3.3), escalation model  order-sensitive: N with the options in order, L reversed
   CVE-2025-27152  settled  ·  CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:N  ·  CVSS 10.0 Critical
     6 metrics settled
       4  every member that offered a quotation supported this value
@@ -475,19 +641,21 @@ COUNCIL (35)
       llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
         “An attacker can trigger this by providing a malicious configuration object created via
         JSON.parse(), causing complete denial of service.”
-  CVE-2026-2950  no vector  ·  could not settle UI
+  CVE-2026-2950  settled  ·  CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:C/C:L/I:H/A:H  ·  CVSS 9.2 Critical
     7 metrics settled
       3  every member that offered a quotation supported this value
       4  one member offered a quotation, and no other member offered one
-    UI  ·  contested → escalated to llama3.3:70b: no settlement, failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>  ·  2 members
+    UI  ·  contested → escalated to llama3.3:70b: N (verified)  ·  2 members
       same evidence, different reading: members quoted the same words and read different values
+      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
       qwen3.5:4b (qwen3.5)  N  ·  high confidence  ·  quotation found in the advisory
         “The fix for [identifier withheld] only guards against string key members, so an
         attacker can bypass the check by passing array-wrapped path segments.”
       deepseek-r1:32b (deepseek-r1)  R  ·  high confidence  ·  quotation found in the advisory
         “The fix for [identifier withheld] only guards against string key members, so an
         attacker can bypass the check by passing array-wrapped path segments.”
-      llama3.3:70b (llama3.3), escalation model  failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>
+      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
+        “an attacker can bypass the check by passing array-wrapped path segments”
   CVE-2026-40175  no vector  ·  could not settle A
     6 metrics settled
       2  every member that offered a quotation supported this value
@@ -810,12 +978,13 @@ COUNCIL (35)
       llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
         “an attacker who can influence the cookie name passed to axios can cause expensive regex
         backtracking while axios reads document.cookie”
-  CVE-2026-4800  no vector  ·  could not settle UI
+  CVE-2026-4800  settled  ·  CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H  ·  CVSS 9.3 Critical
     7 metrics settled
       5  every member that offered a quotation supported this value
       2  one member offered a quotation, and no other member offered one
-    UI  ·  contested → escalated to llama3.3:70b: no settlement, failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>  ·  2 members
+    UI  ·  contested → escalated to llama3.3:70b: N (verified)  ·  2 members
       same evidence, different reading: members quoted the same words and read different values
+      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
       qwen3.5:4b (qwen3.5)  N  ·  high confidence  ·  quotation found in the advisory
         “When an application passes untrusted input as options.imports key names, an attacker
         can inject default-parameter expressions that execute arbitrary code at template
@@ -824,7 +993,9 @@ COUNCIL (35)
         “When an application passes untrusted input as options.imports key names, an attacker
         can inject default-parameter expressions that execute arbitrary code at template
         compilation time.”
-      llama3.3:70b (llama3.3), escalation model  failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>
+      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
+        “an attacker can inject default-parameter expressions that execute arbitrary code at
+        template compilation time”
   CVE-2026-67316  no vector  ·  could not settle A
     4 metrics settled
       1  every member that offered a quotation supported this value
@@ -902,24 +1073,28 @@ COUNCIL (35)
       qwen3.5:4b (qwen3.5)  order-sensitive: N with the options in order, L reversed
       deepseek-r1:32b (deepseek-r1)  order-sensitive: H with the options in order, L reversed
       llama3.3:70b (llama3.3), escalation model  order-sensitive: N with the options in order, L reversed  ·  with the options reversed: quotation not found in the advisory
-  NSWG-ECO-516  no vector  ·  could not settle AV, UI, S
+  NSWG-ECO-516  no vector  ·  could not settle S
     5 metrics settled
       5  one member offered a quotation, and no other member offered one
-    AV  ·  unresolved → escalated to llama3.3:70b: no settlement, failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>  ·  2 members
+    AV  ·  unresolved → escalated to llama3.3:70b: N (verified)  ·  2 members
+      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
       qwen3.5:4b (qwen3.5)  declined
       deepseek-r1:32b (deepseek-r1)  L  ·  high confidence  ·  quotation not found in the advisory
         “The vulnerability is a prototype pollution attack in lodash.”
-      llama3.3:70b (llama3.3), escalation model  failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>
-    UI  ·  unresolved → escalated to llama3.3:70b: no settlement, failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>  ·  2 members
+      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
+        “Prototype pollution attack”
+    UI  ·  unresolved → escalated to llama3.3:70b: N (verified)  ·  2 members
+      chairman: N  ·  the council left it open, and the escalation model's verified quotation settled it  ·  high confidence
       qwen3.5:4b (qwen3.5)  guessed N with nothing quoted
       deepseek-r1:32b (deepseek-r1)  R  ·  medium confidence  ·  quotation not found in the advisory
         “The vulnerability occurs when an attacker provides a specially crafted payload that
         causes the application to parse and process it, leading to the prototype pollution.”
-      llama3.3:70b (llama3.3), escalation model  failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>
-    S  ·  unresolved → escalated to llama3.3:70b: no settlement, failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>  ·  2 members
+      llama3.3:70b (llama3.3), escalation model  N  ·  high confidence  ·  quotation found in the advisory
+        “Prototype pollution attack”
+    S  ·  unresolved → escalated to llama3.3:70b: no settlement, order-sensitive: C with the options in order, U reversed  ·  2 members
       qwen3.5:4b (qwen3.5)  declined
       deepseek-r1:32b (deepseek-r1)  guessed U with nothing quoted
-      llama3.3:70b (llama3.3), escalation model  failed: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>
+      llama3.3:70b (llama3.3), escalation model  order-sensitive: C with the options in order, U reversed
 
 SECRETS (0)
   Trivy's built-in secret rules matched nothing in this tree.
@@ -969,5 +1144,4 @@ APPROVAL
   approved by Hein.TN at 2026-10-21  ·   Running tests with same Council Members and Escalation model (qwen3.8:27b).
 
 NOT ASSESSED
-  Why the sources differ
-    a model was asked why the sources differ, and no explanation was kept
+  Nothing: the component inventory, the Organisation Risk Score, the approval record, a council ruling and an explanation of why the sources differ are all here.

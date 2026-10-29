@@ -2642,10 +2642,19 @@
         ]
       },
       "llm_explanation": {
-        "assessed": false,
+        "assessed": true,
         "model": "llama3.3:70b",
         "prompt_version": "sources-differ-1",
-        "because": "llama3.3:70b: no readable explanation: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>",
+        "items": [
+          {
+            "metric": "AC",
+            "why": "The advisory does not explicitly state whether the attacker needs to have prior knowledge of the internal services or the proxy configuration, which could lead one reader to believe the attack complexity is High (H) because it depends on conditions the attacker does not control, while another reader might think it is Low (L) because the vulnerability can be exploited without specialized conditions.",
+            "evidence": "This issue leads to the possibility of proxy bypass and SSRF vulnerabilities allowing attackers to reach sensitive loopback or internal services despite the configured protections.",
+            "evidence_verified": true,
+            "why_checked": false
+          }
+        ],
+        "dropped": 0,
         "dropped_items": []
       },
       "organisation_risk": {
@@ -3990,10 +3999,33 @@
         ]
       },
       "llm_explanation": {
-        "assessed": false,
+        "assessed": true,
         "model": "llama3.3:70b",
         "prompt_version": "sources-differ-1",
-        "because": "llama3.3:70b: no readable explanation: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>",
+        "items": [
+          {
+            "metric": "C",
+            "why": "The advisory does not explicitly state what kind of information could be disclosed, which could lead one reader to believe the loss is serious (High) and another to believe it is not (Low), depending on their interpretation of 'unsanitized header values'",
+            "evidence": "inject unsanitized header values into outbound requests",
+            "evidence_verified": true,
+            "why_checked": false
+          },
+          {
+            "metric": "I",
+            "why": "The advisory mentions 'inject unsanitized header values', which could be interpreted as either allowing the attacker to modify any data (High) or only limited modification (Low), depending on the reader's understanding of the impact of 'unsanitized header values'",
+            "evidence": "inject unsanitized header values into outbound requests",
+            "evidence_verified": true,
+            "why_checked": false
+          },
+          {
+            "metric": "A",
+            "why": "The advisory does not mention any impact on availability, which could lead one reader to believe that availability is unaffected (None), while another reader might assume that the injection of unsanitized header values could potentially deny access (High), depending on their understanding of the potential consequences",
+            "evidence": "inject unsanitized header values into outbound requests",
+            "evidence_verified": true,
+            "why_checked": false
+          }
+        ],
+        "dropped": 0,
         "dropped_items": []
       },
       "organisation_risk": {
@@ -7345,10 +7377,26 @@
         ]
       },
       "llm_explanation": {
-        "assessed": false,
+        "assessed": true,
         "model": "llama3.3:70b",
         "prompt_version": "sources-differ-1",
-        "because": "llama3.3:70b: no readable explanation: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>",
+        "items": [
+          {
+            "metric": "AC",
+            "why": "The advisory states that the vulnerability occurs when a specific condition is met (no_proxy=localhost is set), which could lead one reader to believe the attack complexity is High (H) because the target must be prepared first, while another reader might interpret it as Low (L) because the condition is not uncommon and the attack can still be mounted with relative ease.",
+            "evidence": "When no_proxy=localhost is set, requests to 127.0.0.1 and [::1] still route through the proxy instead of bypassing it.",
+            "evidence_verified": true,
+            "why_checked": false
+          },
+          {
+            "metric": "S",
+            "why": "The advisory does not explicitly state whether the vulnerability allows the attacker to access resources beyond the vulnerable component's security authority, which could lead one reader to believe the scope is Changed (C) if they assume the proxy has access to more resources, while another reader might believe it is Unchanged (U) if they think the proxy only has access to the same resources as the vulnerable component.",
+            "evidence": "requests to 127.0.0.1 and [::1] still route through the proxy instead of bypassing it.",
+            "evidence_verified": true,
+            "why_checked": false
+          }
+        ],
+        "dropped": 0,
         "dropped_items": []
       },
       "organisation_risk": {
@@ -9386,10 +9434,26 @@
         ]
       },
       "llm_explanation": {
-        "assessed": false,
+        "assessed": true,
         "model": "llama3.3:70b",
         "prompt_version": "sources-differ-1",
-        "because": "llama3.3:70b: no readable explanation: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>",
+        "items": [
+          {
+            "metric": "AC",
+            "why": "The advisory states that the attack relies on polluting Object.prototype, which could be seen as a condition that the attacker does not control, leading some readers to conclude that the attack complexity is High, while others might interpret it as a straightforward exploit, leading to a Low attack complexity",
+            "evidence": "When Object.prototype.validateStatus is polluted with () => true, all HTTP status codes are accepted as success",
+            "evidence_verified": true,
+            "why_checked": false
+          },
+          {
+            "metric": "I",
+            "why": "The advisory mentions that the vulnerability allows suppression of HTTP error responses, which could be seen as a total loss of protection, leading some readers to conclude that the integrity impact is High, while others might interpret it as a limited modification, leading to a Low integrity impact",
+            "evidence": "causing them to be treated as successful responses",
+            "evidence_verified": true,
+            "why_checked": false
+          }
+        ],
+        "dropped": 0,
         "dropped_items": []
       },
       "organisation_risk": {
@@ -10079,10 +10143,19 @@
         ]
       },
       "llm_explanation": {
-        "assessed": false,
+        "assessed": true,
         "model": "llama3.3:70b",
         "prompt_version": "sources-differ-1",
-        "because": "llama3.3:70b: no readable explanation: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>",
+        "items": [
+          {
+            "metric": "S",
+            "why": "The advisory could lead one reader to believe the scope is Unchanged (U) because it mentions the vulnerability affects the 'same-origin check', implying the exploit is contained within the same security authority, while another reader might interpret the phrase 'including cross-origin servers controlled by an attacker' to mean the scope is Changed (C), as it suggests the exploit can reach resources beyond the vulnerable component's own security authority.",
+            "evidence": "including cross-origin servers controlled by an attacker",
+            "evidence_verified": true,
+            "why_checked": false
+          }
+        ],
+        "dropped": 0,
         "dropped_items": []
       },
       "organisation_risk": {
@@ -10738,10 +10811,19 @@
         ]
       },
       "llm_explanation": {
-        "assessed": false,
+        "assessed": true,
         "model": "llama3.3:70b",
         "prompt_version": "sources-differ-1",
-        "because": "llama3.3:70b: no readable explanation: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>",
+        "items": [
+          {
+            "metric": "C",
+            "why": "The advisory does not explicitly state what kind of information can be disclosed due to the vulnerability, which could lead one reader to believe it's limited (Low) and another to think it's more serious (High), given the phrase 'completely bypass the NO_PROXY protection' might imply access to sensitive data or not, depending on interpretation.",
+            "evidence": "completely bypass the NO_PROXY protection",
+            "evidence_verified": true,
+            "why_checked": false
+          }
+        ],
+        "dropped": 0,
         "dropped_items": []
       },
       "organisation_risk": {
@@ -12817,10 +12899,26 @@
         ]
       },
       "llm_explanation": {
-        "assessed": false,
+        "assessed": true,
         "model": "llama3.3:70b",
         "prompt_version": "sources-differ-1",
-        "because": "llama3.3:70b: no readable explanation: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>",
+        "items": [
+          {
+            "metric": "AC",
+            "why": "The advisory mentions that the vulnerability requires an upstream dependency to pollute Object.prototype, which could lead one reader to believe the attack complexity is High because it depends on conditions outside the attacker's control, while another reader might think it's Low because the pollution can be achieved through a dependency like lodash, which is a common and widely-used library.",
+            "evidence": "When Object.prototype is polluted by an upstream dependency in the same process (e.g. lodash _.merge / [identifier withheld]), axios silently picks up the polluted values.",
+            "evidence_verified": true,
+            "why_checked": false
+          },
+          {
+            "metric": "A",
+            "why": "The advisory states that the polluted Object.prototype.get or Object.prototype.set makes the call throw TypeError synchronously on every axios request, which could lead one reader to believe the Availability impact is High because it seems to completely deny service, while another reader might think it's Low because the service is not completely denied, but rather throws an error.",
+            "evidence": "so a polluted Object.prototype.get or Object.prototype.set makes the call throw TypeError synchronously on every axios request.",
+            "evidence_verified": true,
+            "why_checked": false
+          }
+        ],
+        "dropped": 0,
         "dropped_items": []
       },
       "organisation_risk": {
@@ -14138,10 +14236,19 @@
         ]
       },
       "llm_explanation": {
-        "assessed": false,
+        "assessed": true,
         "model": "llama3.3:70b",
         "prompt_version": "sources-differ-1",
-        "because": "llama3.3:70b: no readable explanation: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>",
+        "items": [
+          {
+            "metric": "A",
+            "why": "The advisory states that exploitability requires a separate prototype-pollution vulnerability, which could lead one reader to believe that the impact on availability is low because the vulnerability can only be exploited in combination with another vulnerability, while another reader might interpret the fact that 'affected Axios versions may treat that inherited value as request configuration or as an option validator' as a potential for significant disruption, leading to a high availability impact.",
+            "evidence": "affected Axios versions may treat that inherited value as request configuration or as an option validator",
+            "evidence_verified": true,
+            "why_checked": false
+          }
+        ],
+        "dropped": 0,
         "dropped_items": []
       },
       "organisation_risk": {
@@ -15513,10 +15620,26 @@
         ]
       },
       "llm_explanation": {
-        "assessed": false,
+        "assessed": true,
         "model": "llama3.3:70b",
         "prompt_version": "sources-differ-1",
-        "because": "llama3.3:70b: no readable explanation: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>",
+        "items": [
+          {
+            "metric": "C",
+            "why": "The advisory mentions 'attacker-controlled body' and 'attacker-controlled proxy', which could lead one reader to believe that sensitive information like credentials or private keys could be disclosed (High Confidentiality), while another reader might interpret it as not directly related to confidentiality loss (None Confidentiality)",
+            "evidence": "causing an attacker-controlled body to be sent on requests that did not set one",
+            "evidence_verified": true,
+            "why_checked": false
+          },
+          {
+            "metric": "I",
+            "why": "The advisory states that an attacker can 'alter request construction' and 'inherit polluted proxy values', which could lead one reader to believe that the attacker has total control over the modification (High Integrity), while another reader might think that the modification is limited and not serious on its own (Low Integrity)",
+            "evidence": "inherited data is read via (config || {}).data before config normalization",
+            "evidence_verified": true,
+            "why_checked": false
+          }
+        ],
+        "dropped": 0,
         "dropped_items": []
       },
       "organisation_risk": {
@@ -16239,10 +16362,19 @@
         ]
       },
       "llm_explanation": {
-        "assessed": false,
+        "assessed": true,
         "model": "llama3.3:70b",
         "prompt_version": "sources-differ-1",
-        "because": "llama3.3:70b: no readable explanation: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>",
+        "items": [
+          {
+            "metric": "C",
+            "why": "The advisory mentions 'inherited username/password values' which could lead one reader to believe that confidentiality is lost (H) because credentials are disclosed, while another reader might interpret it as no confidentiality is lost (N) because the disclosure is due to pre-existing prototype pollution and not a direct result of the vulnerability itself.",
+            "evidence": "inherited username/password values can cause silent injection of an Authorization: Basic header",
+            "evidence_verified": true,
+            "why_checked": false
+          }
+        ],
+        "dropped": 0,
         "dropped_items": []
       },
       "organisation_risk": {
@@ -17223,16 +17355,17 @@
               "ran_local": false,
               "prompt_version": "member-base-metric-3",
               "reversed_prompt_version": "member-base-metric-3+reversed-1",
-              "said": "failed",
-              "value": null,
-              "evidence": null,
-              "confidence": null,
+              "said": "answered",
+              "value": "N",
+              "evidence": "passing untrusted user input to response.redirect() may execute untrusted code",
+              "confidence": "high",
               "evidence_verified": false,
-              "reason": "with the options reversed: http://10.205.4.74:11434/api/generate could not be reached: Remote end closed connection without response",
+              "reason": null,
               "orders": null,
               "declined_in": [],
               "unverified_in": [
-                "in_order"
+                "in_order",
+                "reversed"
               ]
             },
             "same_evidence_different_reading": false
@@ -17585,10 +17718,26 @@
         ]
       },
       "llm_explanation": {
-        "assessed": false,
+        "assessed": true,
         "model": "llama3.3:70b",
         "prompt_version": "sources-differ-1",
-        "because": "llama3.3:70b: no readable explanation: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>",
+        "items": [
+          {
+            "metric": "S",
+            "why": "The advisory does not explicitly state whether the exploit can reach resources beyond the vulnerable component's own security authority, which could lead one reader to conclude that the scope is Unchanged (U) if they assume the vulnerable component is the Express.js framework itself, while another reader might interpret it as Changed (C) if they consider the vulnerable component to be the specific route or function that handles the redirect, potentially allowing the exploit to affect other components or resources.",
+            "evidence": "passing untrusted user input - even after sanitizing it - to response.redirect() may execute untrusted code",
+            "evidence_verified": true,
+            "why_checked": false
+          },
+          {
+            "metric": "A",
+            "why": "The advisory mentions that the issue 'may execute untrusted code', which could be interpreted as a potential denial of service or performance impact, leading one reader to conclude that Availability is Low (L), while another reader might see it as None (N) if they believe the execution of untrusted code does not necessarily affect the service's availability.",
+            "evidence": "may execute untrusted code",
+            "evidence_verified": true,
+            "why_checked": false
+          }
+        ],
+        "dropped": 0,
         "dropped_items": []
       },
       "organisation_risk": {
@@ -17844,9 +17993,7 @@
           "C",
           "I"
         ],
-        "contested_metrics": [
-          "A"
-        ],
+        "contested_metrics": [],
         "metrics": [
           {
             "metric": "AV",
@@ -18144,12 +18291,12 @@
               "ran_local": false,
               "prompt_version": "member-base-metric-3",
               "reversed_prompt_version": "member-base-metric-3+reversed-1",
-              "said": "failed",
-              "value": null,
+              "said": "guessed",
+              "value": "N",
               "evidence": null,
               "confidence": null,
               "evidence_verified": false,
-              "reason": "http://10.205.4.74:11434/api/generate could not be reached: Remote end closed connection without response",
+              "reason": null,
               "orders": null,
               "declined_in": [],
               "unverified_in": []
@@ -18212,12 +18359,12 @@
               "ran_local": false,
               "prompt_version": "member-base-metric-3",
               "reversed_prompt_version": "member-base-metric-3+reversed-1",
-              "said": "failed",
-              "value": null,
+              "said": "guessed",
+              "value": "N",
               "evidence": null,
               "confidence": null,
               "evidence_verified": false,
-              "reason": "http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 113] No route to host>",
+              "reason": null,
               "orders": null,
               "declined_in": [],
               "unverified_in": []
@@ -18226,10 +18373,10 @@
           },
           {
             "metric": "A",
-            "outcome": "contested",
-            "value": null,
-            "basis": null,
-            "confidence": null,
+            "outcome": "settled",
+            "value": "L",
+            "basis": "the council left it open, and the escalation model's verified quotation settled it",
+            "confidence": "medium",
             "fallback_source": null,
             "members": [
               {
@@ -18278,12 +18425,12 @@
               "ran_local": false,
               "prompt_version": "member-base-metric-3",
               "reversed_prompt_version": "member-base-metric-3+reversed-1",
-              "said": "failed",
-              "value": null,
-              "evidence": null,
-              "confidence": null,
-              "evidence_verified": false,
-              "reason": "http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 113] No route to host>",
+              "said": "answered",
+              "value": "L",
+              "evidence": "Regular Expression Denial of Service (ReDoS)",
+              "confidence": "medium",
+              "evidence_verified": true,
+              "reason": null,
               "orders": null,
               "declined_in": [],
               "unverified_in": []
@@ -18861,13 +19008,16 @@
               "ran_local": false,
               "prompt_version": "member-base-metric-3",
               "reversed_prompt_version": "member-base-metric-3+reversed-1",
-              "said": "failed",
+              "said": "order-sensitive",
               "value": null,
               "evidence": null,
               "confidence": null,
               "evidence_verified": false,
-              "reason": "http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 113] No route to host>",
-              "orders": null,
+              "reason": null,
+              "orders": {
+                "in_order": "N",
+                "reversed": "L"
+              },
               "declined_in": [],
               "unverified_in": []
             },
@@ -18980,14 +19130,16 @@
               "ran_local": false,
               "prompt_version": "member-base-metric-3",
               "reversed_prompt_version": "member-base-metric-3+reversed-1",
-              "said": "failed",
+              "said": "declined",
               "value": null,
               "evidence": null,
               "confidence": null,
               "evidence_verified": false,
-              "reason": "http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 113] No route to host>",
+              "reason": null,
               "orders": null,
-              "declined_in": [],
+              "declined_in": [
+                "reversed"
+              ],
               "unverified_in": []
             },
             "same_evidence_different_reading": false
@@ -19248,8 +19400,6 @@
         "single_assessor": false,
         "nothing_cross_checked": null,
         "unresolved_metrics": [
-          "UI",
-          "S",
           "A"
         ],
         "contested_metrics": [],
@@ -19403,10 +19553,10 @@
           },
           {
             "metric": "UI",
-            "outcome": "unresolved",
-            "value": null,
-            "basis": null,
-            "confidence": null,
+            "outcome": "settled",
+            "value": "N",
+            "basis": "the council left it open, and the escalation model's verified quotation settled it",
+            "confidence": "high",
             "fallback_source": null,
             "members": [
               {
@@ -19458,12 +19608,12 @@
               "ran_local": false,
               "prompt_version": "member-base-metric-3",
               "reversed_prompt_version": "member-base-metric-3+reversed-1",
-              "said": "failed",
-              "value": null,
-              "evidence": null,
-              "confidence": null,
-              "evidence_verified": false,
-              "reason": "http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>",
+              "said": "answered",
+              "value": "N",
+              "evidence": "Lodash versions prior to 4.17.21 are vulnerable to Command Injection via the template function.",
+              "confidence": "high",
+              "evidence_verified": true,
+              "reason": null,
               "orders": null,
               "declined_in": [],
               "unverified_in": []
@@ -19472,10 +19622,10 @@
           },
           {
             "metric": "S",
-            "outcome": "unresolved",
-            "value": null,
-            "basis": null,
-            "confidence": null,
+            "outcome": "settled",
+            "value": "U",
+            "basis": "the council left it open, and the escalation model's verified quotation settled it",
+            "confidence": "low",
             "fallback_source": null,
             "members": [
               {
@@ -19529,12 +19679,12 @@
               "ran_local": false,
               "prompt_version": "member-base-metric-3",
               "reversed_prompt_version": "member-base-metric-3+reversed-1",
-              "said": "failed",
-              "value": null,
-              "evidence": null,
-              "confidence": null,
-              "evidence_verified": false,
-              "reason": "http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>",
+              "said": "answered",
+              "value": "U",
+              "evidence": "via the template function",
+              "confidence": "low",
+              "evidence_verified": true,
+              "reason": null,
               "orders": null,
               "declined_in": [],
               "unverified_in": []
@@ -19701,14 +19851,16 @@
               "ran_local": false,
               "prompt_version": "member-base-metric-3",
               "reversed_prompt_version": "member-base-metric-3+reversed-1",
-              "said": "failed",
+              "said": "declined",
               "value": null,
               "evidence": null,
               "confidence": null,
               "evidence_verified": false,
-              "reason": "http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>",
+              "reason": null,
               "orders": null,
-              "declined_in": [],
+              "declined_in": [
+                "reversed"
+              ],
               "unverified_in": []
             },
             "same_evidence_different_reading": false
@@ -20381,13 +20533,16 @@
               "ran_local": false,
               "prompt_version": "member-base-metric-3",
               "reversed_prompt_version": "member-base-metric-3+reversed-1",
-              "said": "failed",
+              "said": "order-sensitive",
               "value": null,
               "evidence": null,
               "confidence": null,
               "evidence_verified": false,
-              "reason": "http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>",
-              "orders": null,
+              "reason": null,
+              "orders": {
+                "in_order": "N",
+                "reversed": "L"
+              },
               "declined_in": [],
               "unverified_in": []
             },
@@ -20396,10 +20551,19 @@
         ]
       },
       "llm_explanation": {
-        "assessed": false,
+        "assessed": true,
         "model": "llama3.3:70b",
         "prompt_version": "sources-differ-1",
-        "because": "llama3.3:70b: no readable explanation: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>",
+        "items": [
+          {
+            "metric": "A",
+            "why": "The advisory states that the issue 'permits deletion of properties' which could lead one reader to believe that availability is denied (High), while another reader might interpret 'does not allow overwriting their original behavior' and 'deletion of properties' as only a performance drop or interruption (Low or None), depending on the context of 'properties' and 'behavior'",
+            "evidence": "The issue permits deletion of properties but does not allow overwriting their original behavior",
+            "evidence_verified": true,
+            "why_checked": false
+          }
+        ],
+        "dropped": 0,
         "dropped_items": []
       },
       "organisation_risk": {
@@ -20651,14 +20815,12 @@
       ],
       "council": {
         "ran": true,
-        "vector": null,
-        "base_score": null,
+        "vector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:C/C:L/I:H/A:H",
+        "base_score": 9.2,
         "single_assessor": false,
-        "nothing_cross_checked": null,
+        "nothing_cross_checked": false,
         "unresolved_metrics": [],
-        "contested_metrics": [
-          "UI"
-        ],
+        "contested_metrics": [],
         "metrics": [
           {
             "metric": "AV",
@@ -20809,10 +20971,10 @@
           },
           {
             "metric": "UI",
-            "outcome": "contested",
-            "value": null,
-            "basis": null,
-            "confidence": null,
+            "outcome": "settled",
+            "value": "N",
+            "basis": "the council left it open, and the escalation model's verified quotation settled it",
+            "confidence": "high",
             "fallback_source": null,
             "members": [
               {
@@ -20861,12 +21023,12 @@
               "ran_local": false,
               "prompt_version": "member-base-metric-3",
               "reversed_prompt_version": "member-base-metric-3+reversed-1",
-              "said": "failed",
-              "value": null,
-              "evidence": null,
-              "confidence": null,
-              "evidence_verified": false,
-              "reason": "http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>",
+              "said": "answered",
+              "value": "N",
+              "evidence": "an attacker can bypass the check by passing array-wrapped path segments",
+              "confidence": "high",
+              "evidence_verified": true,
+              "reason": null,
               "orders": null,
               "declined_in": [],
               "unverified_in": []
@@ -21077,10 +21239,33 @@
         ]
       },
       "llm_explanation": {
-        "assessed": false,
+        "assessed": true,
         "model": "llama3.3:70b",
         "prompt_version": "sources-differ-1",
-        "because": "llama3.3:70b: no readable explanation: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>",
+        "items": [
+          {
+            "metric": "PR",
+            "why": "The advisory does not explicitly state that the attacker needs any privileges to exploit the vulnerability, which could lead one reader to conclude that no privileges are required, while another reader might assume that some level of access is needed to use the Lodash functions.",
+            "evidence": "The _.unset and _.omit functions in Lodash are vulnerable to prototype pollution.",
+            "evidence_verified": true,
+            "why_checked": false
+          },
+          {
+            "metric": "I",
+            "why": "The advisory states that the issue 'permits deletion of prototype properties' which could lead one reader to conclude that the integrity impact is low because the attacker can modify some data, while another reader might interpret this as no integrity impact because the original behavior of the prototypes is not overwritten.",
+            "evidence": "The issue permits deletion of prototype properties but does not allow overwriting their original behavior.",
+            "evidence_verified": true,
+            "why_checked": false
+          },
+          {
+            "metric": "A",
+            "why": "The advisory does not mention any impact on the availability of the system, which could lead one reader to conclude that availability is unaffected, while another reader might assume that the deletion of prototype properties could cause significant problems, potentially leading to a denial of service.",
+            "evidence": "This allows deletion of properties from built-in prototypes such as Object.prototype, Number.prototype, and String.prototype.",
+            "evidence_verified": true,
+            "why_checked": false
+          }
+        ],
+        "dropped": 0,
         "dropped_items": []
       },
       "organisation_risk": {
@@ -21279,7 +21464,12 @@
             ]
           }
         },
-        "council_figure": null
+        "council_figure": {
+          "source": "the assessor council",
+          "vector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:C/C:L/I:H/A:H",
+          "base_score": 9.2,
+          "used_in_score": false
+        }
       },
       "needs_approval": true,
       "approval_reasons": [
@@ -21331,14 +21521,12 @@
       ],
       "council": {
         "ran": true,
-        "vector": null,
-        "base_score": null,
+        "vector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H",
+        "base_score": 9.3,
         "single_assessor": false,
-        "nothing_cross_checked": null,
+        "nothing_cross_checked": false,
         "unresolved_metrics": [],
-        "contested_metrics": [
-          "UI"
-        ],
+        "contested_metrics": [],
         "metrics": [
           {
             "metric": "AV",
@@ -21489,10 +21677,10 @@
           },
           {
             "metric": "UI",
-            "outcome": "contested",
-            "value": null,
-            "basis": null,
-            "confidence": null,
+            "outcome": "settled",
+            "value": "N",
+            "basis": "the council left it open, and the escalation model's verified quotation settled it",
+            "confidence": "high",
             "fallback_source": null,
             "members": [
               {
@@ -21541,12 +21729,12 @@
               "ran_local": false,
               "prompt_version": "member-base-metric-3",
               "reversed_prompt_version": "member-base-metric-3+reversed-1",
-              "said": "failed",
-              "value": null,
-              "evidence": null,
-              "confidence": null,
-              "evidence_verified": false,
-              "reason": "http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>",
+              "said": "answered",
+              "value": "N",
+              "evidence": "an attacker can inject default-parameter expressions that execute arbitrary code at template compilation time",
+              "confidence": "high",
+              "evidence_verified": true,
+              "reason": null,
               "orders": null,
               "declined_in": [],
               "unverified_in": []
@@ -21751,10 +21939,19 @@
         ]
       },
       "llm_explanation": {
-        "assessed": false,
+        "assessed": true,
         "model": "llama3.3:70b",
         "prompt_version": "sources-differ-1",
-        "because": "llama3.3:70b: no readable explanation: http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>",
+        "items": [
+          {
+            "metric": "AC",
+            "why": "The advisory mentions that the attack requires untrusted input to be passed as options.imports key names and that Object.prototype pollution is needed for a related attack vector, which could lead one reader to believe the attack complexity is High because it depends on specific conditions, while another reader might think it is Low because the advisory also states that an attacker can inject arbitrary code at template compilation time simply by passing untrusted input as key names, without needing to control other factors.",
+            "evidence": "an attacker can inject default-parameter expressions that execute arbitrary code at template compilation time",
+            "evidence_verified": true,
+            "why_checked": false
+          }
+        ],
+        "dropped": 0,
         "dropped_items": []
       },
       "organisation_risk": {
@@ -21953,7 +22150,12 @@
             ]
           }
         },
-        "council_figure": null
+        "council_figure": {
+          "source": "the assessor council",
+          "vector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H",
+          "base_score": 9.3,
+          "used_in_score": false
+        }
       },
       "needs_approval": true,
       "approval_reasons": [
@@ -21989,18 +22191,16 @@
         "single_assessor": false,
         "nothing_cross_checked": null,
         "unresolved_metrics": [
-          "AV",
-          "UI",
           "S"
         ],
         "contested_metrics": [],
         "metrics": [
           {
             "metric": "AV",
-            "outcome": "unresolved",
-            "value": null,
-            "basis": null,
-            "confidence": null,
+            "outcome": "settled",
+            "value": "N",
+            "basis": "the council left it open, and the escalation model's verified quotation settled it",
+            "confidence": "high",
             "fallback_source": null,
             "members": [
               {
@@ -22055,12 +22255,12 @@
               "ran_local": false,
               "prompt_version": "member-base-metric-3",
               "reversed_prompt_version": "member-base-metric-3+reversed-1",
-              "said": "failed",
-              "value": null,
-              "evidence": null,
-              "confidence": null,
-              "evidence_verified": false,
-              "reason": "http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>",
+              "said": "answered",
+              "value": "N",
+              "evidence": "Prototype pollution attack",
+              "confidence": "high",
+              "evidence_verified": true,
+              "reason": null,
               "orders": null,
               "declined_in": [],
               "unverified_in": []
@@ -22170,10 +22370,10 @@
           },
           {
             "metric": "UI",
-            "outcome": "unresolved",
-            "value": null,
-            "basis": null,
-            "confidence": null,
+            "outcome": "settled",
+            "value": "N",
+            "basis": "the council left it open, and the escalation model's verified quotation settled it",
+            "confidence": "high",
             "fallback_source": null,
             "members": [
               {
@@ -22225,12 +22425,12 @@
               "ran_local": false,
               "prompt_version": "member-base-metric-3",
               "reversed_prompt_version": "member-base-metric-3+reversed-1",
-              "said": "failed",
-              "value": null,
-              "evidence": null,
-              "confidence": null,
-              "evidence_verified": false,
-              "reason": "http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>",
+              "said": "answered",
+              "value": "N",
+              "evidence": "Prototype pollution attack",
+              "confidence": "high",
+              "evidence_verified": true,
+              "reason": null,
               "orders": null,
               "declined_in": [],
               "unverified_in": []
@@ -22294,13 +22494,16 @@
               "ran_local": false,
               "prompt_version": "member-base-metric-3",
               "reversed_prompt_version": "member-base-metric-3+reversed-1",
-              "said": "failed",
+              "said": "order-sensitive",
               "value": null,
               "evidence": null,
               "confidence": null,
               "evidence_verified": false,
-              "reason": "http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>",
-              "orders": null,
+              "reason": null,
+              "orders": {
+                "in_order": "C",
+                "reversed": "U"
+              },
               "declined_in": [],
               "unverified_in": []
             },
@@ -22985,15 +23188,20 @@
               "ran_local": false,
               "prompt_version": "member-base-metric-3",
               "reversed_prompt_version": "member-base-metric-3+reversed-1",
-              "said": "failed",
+              "said": "order-sensitive",
               "value": null,
               "evidence": null,
               "confidence": null,
               "evidence_verified": false,
-              "reason": "http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>",
-              "orders": null,
+              "reason": null,
+              "orders": {
+                "in_order": "N",
+                "reversed": "L"
+              },
               "declined_in": [],
-              "unverified_in": []
+              "unverified_in": [
+                "reversed"
+              ]
             },
             "same_evidence_different_reading": false
           },
@@ -23051,15 +23259,21 @@
               "ran_local": false,
               "prompt_version": "member-base-metric-3",
               "reversed_prompt_version": "member-base-metric-3+reversed-1",
-              "said": "failed",
+              "said": "order-sensitive",
               "value": null,
               "evidence": null,
               "confidence": null,
               "evidence_verified": false,
-              "reason": "http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>",
-              "orders": null,
+              "reason": null,
+              "orders": {
+                "in_order": "L",
+                "reversed": "H"
+              },
               "declined_in": [],
-              "unverified_in": []
+              "unverified_in": [
+                "in_order",
+                "reversed"
+              ]
             },
             "same_evidence_different_reading": false
           },
@@ -23119,13 +23333,16 @@
               "ran_local": false,
               "prompt_version": "member-base-metric-3",
               "reversed_prompt_version": "member-base-metric-3+reversed-1",
-              "said": "failed",
+              "said": "order-sensitive",
               "value": null,
               "evidence": null,
               "confidence": null,
               "evidence_verified": false,
-              "reason": "http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>",
-              "orders": null,
+              "reason": null,
+              "orders": {
+                "in_order": "N",
+                "reversed": "L"
+              },
               "declined_in": [],
               "unverified_in": []
             },
@@ -23695,12 +23912,12 @@
               "ran_local": false,
               "prompt_version": "member-base-metric-3",
               "reversed_prompt_version": "member-base-metric-3+reversed-1",
-              "said": "failed",
-              "value": null,
+              "said": "guessed",
+              "value": "N",
               "evidence": null,
               "confidence": null,
               "evidence_verified": false,
-              "reason": "http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>",
+              "reason": null,
               "orders": null,
               "declined_in": [],
               "unverified_in": []
@@ -23764,12 +23981,12 @@
               "ran_local": false,
               "prompt_version": "member-base-metric-3",
               "reversed_prompt_version": "member-base-metric-3+reversed-1",
-              "said": "failed",
-              "value": null,
+              "said": "guessed",
+              "value": "N",
               "evidence": null,
               "confidence": null,
               "evidence_verified": false,
-              "reason": "http://10.205.4.74:11434/api/generate could not be reached: <urlopen error [Errno 111] Connection refused>",
+              "reason": null,
               "orders": null,
               "declined_in": [],
               "unverified_in": []
@@ -24053,10 +24270,5 @@
     "recorded_at": "2026-10-21",
     "note": " Running tests with same Council Members and Escalation model (qwen3.8:27b)."
   },
-  "not_assessed": [
-    {
-      "what": "Why the sources differ",
-      "because": "a model was asked why the sources differ, and no explanation was kept"
-    }
-  ]
+  "not_assessed": []
 }
